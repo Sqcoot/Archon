@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/skills/save-task-list/hooks/verify-task-list.sh",
+            "command": ".codex/hooks/verify-task-list.sh",
             "statusMessage": "Checking for restored task list..."
           }
         ]
