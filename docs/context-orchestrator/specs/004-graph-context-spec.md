@@ -1,0 +1,62 @@
+# 004 Graph Context Spec
+
+## Purpose
+
+Define GraphContext and graph evidence use.
+
+## Scope
+
+Graphify modes, normalized graph summaries, merge behavior, waivers, and path safety.
+
+## Non-Goals
+
+- Do not require Graphify for every ACO run.
+- Do not make graph merge quality an architecture decision by itself.
+
+## Generic Behavior
+
+- GraphContext summarizes repository graphs, graph status, node/edge counts, waivers, and open questions.
+- Graph modes are auto, required, off, and fixture.
+
+## Archon-Specific Behavior
+
+- Research graphs live under ignored `research/graphs/`; workflow archives use `$ARTIFACTS_DIR`.
+- Graph scripts must not dirty upstream repositories.
+
+## Inputs
+
+- upstream manifest
+- Graphify outputs
+- graph metadata
+- waivers
+
+## Outputs
+
+- GraphContext
+- graph evidence summary
+- merged ecosystem report
+
+## Known Unknowns
+
+- whether deeper semantic Graphify extraction is needed for ADRs
+
+## Evidence References
+
+- docs/context-orchestrator/research/graph-evidence-index.md
+- docs/context-orchestrator/research/merged-ecosystem-report.md
+
+## Acceptance Scenarios
+
+- Given Graphify fails for a non-controlling repo, when GraphContext is created, then status includes failed and waiverRequired=true.
+
+## Failure Behavior
+
+- Graph mode required fails if graph outputs cannot be produced or waived.
+
+## Security Constraints
+
+- Validate graph paths and keep outputs under approved artifact roots.
+
+## Open Questions
+
+- Should graph evidence normalize `links` to `edges` in persisted JSON?

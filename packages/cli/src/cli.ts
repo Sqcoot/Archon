@@ -68,6 +68,12 @@ import { skillInstallCommand } from './commands/skill';
 import { validateWorkflowsCommand, validateCommandsCommand } from './commands/validate';
 import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
+import {
+  contextCompileCommand,
+  contextRouteCommand,
+  contextStatusCommand,
+  contextValidateCommand,
+} from './commands/context';
 import { closeDatabase } from '@archon/core';
 import {
   setLogLevel,
@@ -110,6 +116,10 @@ Commands:
   isolation cleanup --merged Remove environments with branches merged into main
   continue <branch> [msg]    Continue work on an existing worktree with prior context
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
+  context route <prompt>     Select an ACO BMAD route
+  context compile <prompt>   Compile an ACO Codex-ready prompt package
+  context status             Show ACO research and validation status
+  context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
   skill install [path]       Install the bundled Archon skill into .claude/skills/archon
   doctor                     Verify your Archon setup (Claude binary, gh auth, DB, adapters)
@@ -142,6 +152,9 @@ Examples:
   archon workflow run implement --branch feature-auth "Implement auth"
   archon workflow run quick-fix --no-worktree "Fix typo"
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
+  archon context route --cwd /path/to/repo "Plan this feature"
+  archon context compile --cwd /path/to/repo "Plan this feature"
+  archon context validate --cwd /path/to/repo
   archon skill install
   archon skill install /path/to/project
   archon workflow search "pr review"
@@ -242,6 +255,9 @@ async function main(): Promise<number> {
         'download-only': { type: 'boolean' },
         scope: { type: 'string' },
         force: { type: 'boolean' },
+        'archive-root': { type: 'string' },
+        timestamp: { type: 'string' },
+        caveman: { type: 'string' },
       },
       allowPositionals: true,
       strict: false, // Allow unknown flags to pass through
@@ -608,6 +624,64 @@ async function main(): Promise<number> {
             console.error('Available: workflows, commands');
             return 1;
         }
+
+      case 'context':
+        switch (subcommand) {
+          case 'route': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context route [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            await contextRouteCommand(prompt, { cwd: effectiveCwd, json: jsonFlag });
+            break;
+          }
+
+          case 'status':
+            await contextStatusCommand({ cwd: effectiveCwd, json: jsonFlag });
+            break;
+
+          case 'validate':
+            return await contextValidateCommand({ cwd: effectiveCwd, json: jsonFlag });
+
+          case 'compile': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context compile [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            const cavemanMode = values.caveman as string | undefined;
+            if (
+              cavemanMode !== undefined &&
+              cavemanMode !== 'off' &&
+              cavemanMode !== 'lite' &&
+              cavemanMode !== 'full' &&
+              cavemanMode !== 'ultra'
+            ) {
+              console.error('Error: --caveman must be one of: off, lite, full, ultra');
+              return 1;
+            }
+            await contextCompileCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              archiveRoot: values['archive-root'] as string | undefined,
+              runId: values['run-id'] as string | undefined,
+              timestamp: values.timestamp as string | undefined,
+              cavemanMode,
+            });
+            break;
+          }
+
+          default:
+            if (subcommand === undefined) {
+              console.error('Missing context subcommand');
+            } else {
+              console.error(`Unknown context subcommand: ${subcommand}`);
+            }
+            console.error('Available: route, compile, status, validate');
+            return 1;
+        }
+        break;
 
       case 'complete': {
         const branches = positionals.slice(1);

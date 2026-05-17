@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Archon Context Orchestrator API Contract
+  version: 0.0.0
+  description: >-
+    Candidate ACO REST API contract. Purpose: define API shape before implementation.
+    Scope: status, route, compile, graph, docs, bmad, accept, validate, and package retrieval.
+    Non-goals: no API implementation before ADR selection. Generic behavior: expose prompt package orchestration
+    through request/response contracts. Archon-specific behavior: use registerOpenApiRoute(createRoute({...}), handler)
+    if API surface is selected. Inputs: JSON request bodies. Outputs: JSON response bodies and archive paths.
+    Known unknowns: whether API is MVP. Evidence references: docs/context-orchestrator/specs/008-prompt-package-spec.md.
+    Acceptance scenarios: API returns redacted JSON and validates required fields. Failure behavior: explicit 4xx/5xx errors.
+    Security constraints: no secrets in responses. Open questions: whether package retrieval streams files or returns paths.
+paths:
+  /api/context/status:
+    get:
+      summary: Candidate ACO status endpoint
+      responses:
+        "200":
+          description: ACO readiness status
+  /api/context/compile:
+    post:
+      summary: Candidate ACO prompt package compile endpoint
+      responses:
+        "200":
+          description: Compiled prompt package summary
+        "400":
+          description: Invalid request or readiness blocker
+  /api/context/packages/{runId}:
+    get:
+      summary: Candidate prompt package lookup endpoint
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prompt package manifest or archive reference
+        "404":
+          description: Prompt package not found
