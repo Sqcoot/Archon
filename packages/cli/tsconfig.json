@@ -7,6 +7,8 @@
       "@archon/adapters/*": ["../adapters/src/*"],
       "@archon/core": ["../core/src"],
       "@archon/core/*": ["../core/src/*"],
+      "@archon/context-orchestrator": ["../context-orchestrator/src"],
+      "@archon/context-orchestrator/*": ["../context-orchestrator/src/*"],
       "@archon/server": ["../server/src"],
       "@archon/server/*": ["../server/src/*"],
       "@archon/workflows": ["../workflows/src"],
@@ -17,6 +19,7 @@
   },
   "include": [
     "src/**/*",
+    "../context-orchestrator/src/**/*.ts",
     "../core/src/**/*.ts",
     "../server/src/**/*.ts",
     "../adapters/src/**/*.ts",
@@ -27,6 +30,7 @@
     "dist",
     "**/*.test.ts",
     "../core/src/**/*.test.ts",
+    "../context-orchestrator/src/**/*.test.ts",
     "../server/src/**/*.test.ts",
     "../adapters/src/**/*.test.ts"
   ]
