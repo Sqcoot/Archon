@@ -110,7 +110,7 @@ export interface PromptPackage {
   unknowns: string[];
   humanPrompt: string;
   codexPrompt: string;
-  nextArchonCommand: string;
+  nextArchonCommand: string[];
   validationReport: ValidationReport;
 }
 

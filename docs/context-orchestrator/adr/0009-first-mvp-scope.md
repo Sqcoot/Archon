@@ -10,9 +10,12 @@ ACO has candidate CLI, slash command, workflow, and API surfaces.
 
 The first MVP is CLI only:
 
+- `context route`
 - `context status`
 - `context validate`
 - `context compile`
+
+`context route` was added as a small deterministic adjunct to the original CLI MVP decision. It does not broaden the MVP beyond the CLI surface; it exposes the same BMAD route selection used by `context compile` so users can inspect routing before writing archives.
 
 ## Alternatives Considered
 
@@ -24,6 +27,8 @@ The first MVP is CLI only:
 
 - Smaller blast radius.
 - Later surfaces can reuse the generic package.
+- Route inspection is available without creating prompt package artifacts.
+- Slash command, REST API, workflow, and workflow-event surfaces remain deferred.
 
 ## Evidence
 
@@ -33,6 +38,7 @@ The first MVP is CLI only:
 ## Acceptance Tests Required
 
 - CLI acceptance.
+- Route acceptance.
 - Release acceptance.
 
 ## Rollback Or Correct-Course Trigger

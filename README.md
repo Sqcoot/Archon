@@ -254,6 +254,19 @@ Archon ships 17 default workflows - run `archon workflow list` or describe what 
 
 See [Authoring Workflows](https://archon.diy/guides/authoring-workflows/) and [Authoring Commands](https://archon.diy/guides/authoring-commands/).
 
+## Archon Context Orchestrator
+
+The CLI-first Archon Context Orchestrator (ACO) helps plan broad or architecture-sensitive Codex work before implementation. It can route a prompt, compile a prompt package, report status, and validate the local ACO research/spec corpus.
+
+```bash
+bun run cli context route --cwd . "Plan this implementation"
+bun run cli context compile --cwd . --json "Plan this implementation"
+bun run cli context status --cwd . --json
+bun run cli context validate --cwd . --json
+```
+
+`context compile` writes prompt package artifacts under `.archon/artifacts/context-orchestrator/<run-id>/` by default. Slash command, REST API, workflow, and workflow-event surfaces are deferred beyond the CLI MVP.
+
 ## Add a Platform
 
 The Web UI and CLI work out of the box. Optionally connect a chat platform for remote access:

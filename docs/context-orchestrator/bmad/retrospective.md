@@ -15,6 +15,7 @@ Date: 2026-05-17
 - Root acceptance tests could not import `@archon/context-orchestrator` until the root package declared the workspace package as a dev dependency and `bun install` refreshed links.
 - `archon context route` was documented in the intended guidance but was not in the initial MVP implementation. It was added before final validation.
 - Full workflow validation exposed a pre-existing missing MCP config for `archon-smart-pr-review`; this remains a baseline waiver, not an ACO regression.
+- Post-audit correction found stale provider names in AGENTS.md, thin Graphify waivers, and security claims that were broader than the original acceptance coverage.
 
 ## Discovery Changes
 
@@ -43,7 +44,9 @@ Date: 2026-05-17
 ## Security Lessons
 
 - Redaction must happen before archive rendering, not only at CLI output.
-- Archive paths need containment checks even for generated run IDs.
+- Archive paths need containment checks even for generated run IDs; the corrective slice added runId validation plus symlink-root and symlink-file collision tests.
+- Follow-up commands should be represented as argv arrays, not shell-shaped strings.
+- Redaction needs broad coverage for lowercase keys, JSON/YAML-style values, URL credentials, common token prefixes, and private-key blocks.
 - Target repo `.env` files must remain outside the evidence and archive model.
 - Caveman compression must not touch fenced structured artifacts.
 
@@ -56,8 +59,8 @@ Date: 2026-05-17
 
 ## Next BMAD Workflow
 
-`/bmad-bmm-create-story`
+`/bmad-bmm-code-review`
 
 Recommended story:
 
-Add the next Archon-native surface for ACO, with workflow/event integration as the highest-value candidate if observability is the next priority.
+Review the corrective security/documentation slice before opening milestone-2 stories for the next Archon-native surface.

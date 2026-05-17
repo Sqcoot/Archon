@@ -19,7 +19,7 @@ Deferred surfaces:
 - REST API surface
 - Workflow/event surface
 
-Deferral is intentional and documented by ADR 0009. The first milestone proves the generic core, research corpus, SDD/ATDD artifacts, BMAD route selection, docs planning, prompt package compilation, archive writing, redaction, and CLI contract.
+Deferral is intentional and documented by ADR 0009. The first milestone locally validates the generic core, research corpus, SDD/ATDD artifacts, BMAD route selection, docs planning, prompt package compilation, archive writing, redaction, and CLI contract. This report is local validation evidence, not proof that hosted GitHub CI is green.
 
 ## Specs Completed
 
@@ -40,9 +40,9 @@ Acceptance harness:
 
 - `tests/acceptance/context-orchestrator/`
 
-Latest result:
+Latest local result after the corrective security/documentation slice:
 
-- `bun run aco:test:acceptance`: 17 passed, 4 todo, 0 failed
+- `bun run aco:test:acceptance`: 26 passed, 4 todo, 0 failed
 
 Intentional todo surfaces:
 
@@ -101,6 +101,7 @@ Documentation behavior:
 
 - Codex/OpenAI topics route to OpenAI Docs MCP.
 - Third-party library/API topics route to Context7 with unresolved library IDs unless resolved first.
+- Runtime resolver behavior in the CLI MVP is static planning: the package records documentation targets and MCP readiness states from research evidence. It does not perform live MCP resolution during every `context compile` invocation.
 
 ## BMAD Route Status
 
@@ -152,7 +153,9 @@ Expected archive files are written, including:
 - `acceptance-plan.md`
 - `validation-report.md`
 
-## Validation Results
+## Local Validation Results
+
+These commands were run locally. They do not replace hosted CI.
 
 Passed:
 
@@ -168,10 +171,17 @@ Passed:
 - `bun run cli context validate --cwd . --json`
 - `bun run cli context compile --cwd . --run-id aco-validation-run --timestamp 2026-05-17T12:00:00.000Z --json "Validate the ACO MVP."`
 
-Known baseline failure:
+Known baseline workflow validation waiver:
 
 - `bun run cli validate workflows --cwd .` fails on pre-existing workflow `archon-smart-pr-review` because `.archon/mcp/ntfy.json` is missing for node `notify`.
 - This is not introduced by ACO and is documented as a baseline waiver.
+
+Hosted CI status:
+
+- PR #1 checks were not green at audit time.
+- `docker-build` and `test (windows-latest)` did not execute because GitHub reported an account/billing runner lock.
+- `test (ubuntu-latest)` was cancelled after the Windows matrix failure.
+- Treat hosted CI as externally blocked until GitHub can run the jobs; do not treat this report as CI-green evidence.
 
 Build note:
 
@@ -184,13 +194,18 @@ Passed:
 - Secret redaction in prompt/archive output
 - `.env` non-reading acceptance test
 - Archive path containment
+- Unsafe runId rejection
+- Symlink archive-root and archive-file collision blocking
+- Structured next-command argv instead of shell-interpolated command strings
+- Broader redaction for lowercase and mixed-case keys, JSON/YAML style secrets, bearer tokens, OpenAI/GitHub/npm/AWS token shapes, URL credentials, and private-key blocks
+- Project Codex hook task-id allowlisting and realpath containment checks
 - Caveman structured-artifact preservation
 
 Security posture:
 
 - ACO does not read target repo `.env` files.
 - Prompt text is not interpolated into shell commands.
-- Archive writes are constrained under the selected archive root.
+- Archive writes are constrained under the selected archive root and reject known path traversal or symlink escape cases.
 - Token-like prompt values are redacted before archive output.
 
 ## Package Scripts Added
@@ -217,10 +232,16 @@ Research and acceptance scripts:
 - Workflow definitions and workflow events are deferred.
 - Graph evidence remains partial because two upstreams required waivers.
 - Context7 version-specific docs are not used until a library ID is resolved.
+- Hosted CI is externally blocked until GitHub runner billing/account status is resolved.
+- Workflow validation still has the pre-existing non-ACO `archon-smart-pr-review` `.archon/mcp/ntfy.json` waiver.
 
 ## Next BMAD Command
 
-Next recommended BMAD step:
+Next recommended BMAD step for this corrective slice:
+
+`/bmad-bmm-code-review`
+
+Next recommended BMAD step for milestone 2 after review:
 
 `/bmad-bmm-create-story`
 

@@ -62,4 +62,36 @@ describe('ACO CLI acceptance', () => {
     expect(parsed.archivePath).toContain('aco-cli-run');
     expect(parsed.files['codex-prompt.md']).toContain('codex-prompt.md');
   });
+
+  test('Spec: 012-cli-contract.md Acceptance: ACO-CLI-003 context compile JSON does not leak prompt secrets', async () => {
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-cli-'));
+    const proc = Bun.spawn(
+      [
+        process.execPath,
+        'packages/cli/src/cli.ts',
+        'context',
+        'compile',
+        '--cwd',
+        process.cwd(),
+        '--archive-root',
+        archiveRoot,
+        '--run-id',
+        'aco-cli-redaction',
+        '--timestamp',
+        '2026-05-17T12:00:00.000Z',
+        '--json',
+        'Validate with secret_token=cli-secret-value and sk-abcdefghijklmnopqrstuvwxyz.',
+      ],
+      { cwd: process.cwd(), stdout: 'pipe', stderr: 'pipe' }
+    );
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(stderr).toBe('');
+    expect(exitCode).toBe(0);
+    expect(stdout).not.toContain('cli-secret-value');
+    expect(stdout).not.toContain('sk-abcdefghijklmnopqrstuvwxyz');
+  });
 });

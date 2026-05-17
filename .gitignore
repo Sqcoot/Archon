@@ -127,3 +127,7 @@ research/graphs/
 research/merged/
 graphify-out/
 .agents/
+
+# BMAD local user configuration
+_bmad/**/*.user.toml
+_bmad/**/config.user.toml

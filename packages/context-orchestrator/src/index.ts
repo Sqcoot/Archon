@@ -4,7 +4,17 @@ export { applyCavemanPolicy } from './caveman';
 export { compilePromptPackage } from './compiler';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
-export { redactSecrets, isPathInside, assertPathInside } from './security';
+export {
+  assertNoSecretLikeValue,
+  assertPathInside,
+  assertRealPathInside,
+  containsSecretLikeValue,
+  isPathInside,
+  prepareArchiveDirectory,
+  redactSecrets,
+  validateSafeRunId,
+  writeFileNoFollow,
+} from './security';
 export { getContextOrchestratorStatus } from './status';
 export { validateContextOrchestrator } from './validation';
 export type {
