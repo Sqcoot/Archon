@@ -1,6 +1,6 @@
 ## Project Overview
 
-**Remote Agentic Coding Platform**: Control AI coding assistants (Codex SDK, Codex SDK) remotely from Slack, Telegram, and GitHub. Built with **Bun + TypeScript + SQLite/PostgreSQL**, single-developer tool for AI-assisted development practitioners. Architecture prioritizes simplicity, flexibility, and user control.
+**Remote Agentic Coding Platform**: Control AI coding assistants (Claude Code SDK, Codex SDK) remotely from Slack, Telegram, and GitHub. Built with **Bun + TypeScript + SQLite/PostgreSQL**, single-developer tool for AI-assisted development practitioners. Architecture prioritizes simplicity, flexibility, and user control.
 
 ## Archon Context Orchestrator Guidance
 
@@ -296,7 +296,7 @@ packages/
 │       ├── types.ts          # Contract layer (IAgentProvider, SendQueryOptions, MessageChunk — ZERO SDK deps)
 │       ├── registry.ts       # Typed provider registry (ProviderRegistration records)
 │       ├── errors.ts         # UnknownProviderError
-│       ├── Codex/           # ClaudeProvider + parseClaudeConfig + MCP/hooks/skills translation
+│       ├── claude/          # ClaudeProvider + parseClaudeConfig + MCP/hooks/skills translation
 │       ├── codex/            # CodexProvider + parseCodexConfig + binary-resolver
 │       ├── community/pi/     # PiProvider (builtIn: false) — @mariozechner/pi-coding-agent, ~20 LLM backends
 │       └── index.ts          # Package exports
@@ -434,7 +434,7 @@ import type { DagNode, WorkflowDefinition } from '@/lib/api';
 **Package Split:**
 - **@archon/paths**: Path resolution utilities, Pino logger factory, web dist cache path (`getWebDistDir`), CWD env stripper (`stripCwdEnv`, `strip-cwd-env-boot`) (no @archon/* deps; `pino` and `dotenv` are allowed external deps)
 - **@archon/git**: Git operations - worktrees, branches, repos, exec wrappers (depends only on @archon/paths)
-- **@archon/providers**: AI agent providers (Codex, Codex, Pi community) — owns SDK deps, `IAgentProvider` interface, `sendQuery()` contract, and provider-specific option translation. `@archon/providers/types` is the contract subpath (zero SDK deps, zero runtime side effects) that `@archon/workflows` imports from. Providers receive raw `nodeConfig` + `assistantConfig` and translate to SDK-specific options internally. Core providers live under `Codex/` and `codex/`; community providers live under `community/` (currently `community/pi/`, registered with `builtIn: false`).
+- **@archon/providers**: AI agent providers (Claude, Codex, Pi community) — owns SDK deps, `IAgentProvider` interface, `sendQuery()` contract, and provider-specific option translation. `@archon/providers/types` is the contract subpath (zero SDK deps, zero runtime side effects) that `@archon/workflows` imports from. Providers receive raw `nodeConfig` + `assistantConfig` and translate to SDK-specific options internally. Core providers live under `claude/` and `codex/`; community providers live under `community/` (currently `community/pi/`, registered with `builtIn: false`).
 - **@archon/isolation**: Worktree isolation types, providers, resolver, error classifiers (depends only on @archon/git + @archon/paths)
 - **@archon/workflows**: Workflow engine - loader, router, executor, DAG, logger, bundled defaults (depends only on @archon/git + @archon/paths + @archon/providers/types + @hono/zod-openapi + zod; DB/AI/config injected via `WorkflowDeps`)
 - **@archon/cli**: Command-line interface for running workflows and starting the web UI server (depends on @archon/server + @archon/adapters for the serve command)
@@ -476,9 +476,9 @@ import type { DagNode, WorkflowDefinition } from '@/lib/api';
 
 **4. AI Agent Providers** (`packages/providers/src/`)
 - Implement `IAgentProvider` interface
-- **ClaudeProvider**: `@anthropic-ai/Codex-agent-sdk`
+- **ClaudeProvider**: `@anthropic-ai/claude-agent-sdk`
 - **CodexProvider**: `@openai/codex-sdk`
-- **PiProvider** (community, `builtIn: false`): `@mariozechner/pi-coding-agent` — one harness for ~20 LLM backends via `<provider>/<model>` refs (e.g. `anthropic/Codex-haiku-4-5`, `openrouter/qwen/qwen3-coder`); supports extensions, skills, tool restrictions, thinking level, best-effort structured output. See `packages/docs-web/src/content/docs/getting-started/ai-assistants.md` for setup, capability matrix, and extension config.
+- **PiProvider** (community, `builtIn: false`): `@mariozechner/pi-coding-agent` — one harness for ~20 LLM backends via `<provider>/<model>` refs (e.g. `anthropic/claude-haiku-4-5`, `openrouter/qwen/qwen3-coder`); supports extensions, skills, tool restrictions, thinking level, best-effort structured output. See `packages/docs-web/src/content/docs/getting-started/ai-assistants.md` for setup, capability matrix, and extension config.
 - Streaming: `for await (const event of events) { await platform.send(event) }`
 
 ### Configuration
@@ -494,14 +494,14 @@ The system supports configuring default models and options per assistant in `.ar
 
 ```yaml
 assistants:
-  Codex:
+  claude:
     model: sonnet  # or 'opus', 'haiku', 'Codex-*', 'inherit'
-    settingSources:  # Controls which AGENTS.md, skills, commands, and agents the SDK loads
-      - project      # Project-level <cwd>/.Codex/ (included in default)
-      - user         # User-level ~/.Codex/ (included in default; omit both to restrict to project-only)
-    claudeBinaryPath: /absolute/path/to/Codex  # Optional: Codex executable.
+    settingSources:  # Controls which CLAUDE.md, skills, commands, and agents the SDK loads
+      - project      # Project-level <cwd>/.claude/ (included in default)
+      - user         # User-level ~/.claude/ (included in default; omit both to restrict to project-only)
+    claudeBinaryPath: /absolute/path/to/claude  # Optional: Claude Code executable.
                                                 # Native binary (curl installer at
-                                                # ~/.local/bin/Codex) or npm cli.js.
+                                                # ~/.local/bin/claude) or npm cli.js.
                                                 # Required in compiled binaries if
                                                 # CLAUDE_BIN_PATH env var is not set.
   codex:
@@ -612,7 +612,7 @@ When working with external SDKs (Codex Agent SDK, Codex SDK), prefer importing a
 
 ```typescript
 // ✅ CORRECT - Import SDK types directly
-import { query, type Options } from '@anthropic-ai/Codex-agent-sdk';
+import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
 
 const options: Options = {
   cwd,

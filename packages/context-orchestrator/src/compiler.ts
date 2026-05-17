@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
@@ -6,7 +5,12 @@ import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
-import { assertPathInside, redactSecrets } from './security';
+import {
+  prepareArchiveDirectory,
+  redactSecrets,
+  validateSafeRunId,
+  writeFileNoFollow,
+} from './security';
 import { validateContextOrchestrator } from './validation';
 import type {
   CavemanMode,
@@ -36,14 +40,13 @@ const archiveFiles = [
 export async function compilePromptPackage(
   options: CompilePromptPackageOptions
 ): Promise<PromptPackageResult> {
-  const runId = options.runId ?? `aco-${crypto.randomUUID()}`;
+  const runId = validateSafeRunId(options.runId ?? `aco-${crypto.randomUUID()}`);
   const timestamp = options.timestamp ?? new Date().toISOString();
   const cavemanMode: CavemanMode = options.cavemanMode ?? 'lite';
   const archiveRoot = resolve(
     options.archiveRoot ?? join(options.cwd, '.archon/artifacts/context-orchestrator')
   );
-  const archivePath = resolve(archiveRoot, runId);
-  assertPathInside(archiveRoot, archivePath);
+  const archivePath = await prepareArchiveDirectory(archiveRoot, runId);
 
   const redactedPrompt = redactSecrets(options.prompt);
   const graphContext = await getGraphContext({ cwd: options.cwd });
@@ -85,17 +88,23 @@ export async function compilePromptPackage(
     unknowns,
     humanPrompt: applyCavemanPolicy(humanPrompt, cavemanMode),
     codexPrompt,
-    nextArchonCommand: `archon context compile --cwd ${options.cwd} ${JSON.stringify(redactedPrompt)}`,
+    nextArchonCommand: [
+      'bun',
+      'run',
+      'cli',
+      'context',
+      'compile',
+      '--cwd',
+      options.cwd,
+      '--',
+      redactedPrompt,
+    ],
     validationReport,
   };
 
-  await mkdir(archivePath, { recursive: true });
   const files = Object.fromEntries(archiveFiles.map(file => [file, join(archivePath, file)]));
-  for (const filePath of Object.values(files)) {
-    assertPathInside(archivePath, filePath);
-  }
 
-  await writeArchiveFiles(files, promptPackage);
+  await writeArchiveFiles(archivePath, files, promptPackage);
 
   return {
     package: promptPackage,
@@ -145,36 +154,73 @@ function renderCodexPrompt(prompt: string, steps: string[]): string {
 }
 
 async function writeArchiveFiles(
+  archivePath: string,
   files: Record<string, string>,
   promptPackage: PromptPackage
 ): Promise<void> {
-  await writeFile(
+  await writeFileNoFollow(
+    archivePath,
     files['manifest.json'],
     `${JSON.stringify(toManifest(promptPackage), null, 2)}\n`
   );
-  await writeFile(files['original-prompt.md'], `${promptPackage.originalPrompt}\n`);
-  await writeFile(files['user-prompt.md'], `${promptPackage.humanPrompt}\n`);
-  await writeFile(files['codex-prompt.md'], `${promptPackage.codexPrompt}\n`);
-  await writeFile(files['final-prompt-package.md'], `${renderFinalPackage(promptPackage)}\n`);
-  await writeFile(files['route-report.md'], `${renderRouteReport(promptPackage)}\n`);
-  await writeFile(files['graph-summary.md'], `${renderGraphSummary(promptPackage)}\n`);
-  await writeFile(
+  await writeFileNoFollow(
+    archivePath,
+    files['original-prompt.md'],
+    `${promptPackage.originalPrompt}\n`
+  );
+  await writeFileNoFollow(archivePath, files['user-prompt.md'], `${promptPackage.humanPrompt}\n`);
+  await writeFileNoFollow(archivePath, files['codex-prompt.md'], `${promptPackage.codexPrompt}\n`);
+  await writeFileNoFollow(
+    archivePath,
+    files['final-prompt-package.md'],
+    `${renderFinalPackage(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['route-report.md'],
+    `${renderRouteReport(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['graph-summary.md'],
+    `${renderGraphSummary(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
     files['graph-evidence.json'],
     `${JSON.stringify(promptPackage.graphContext, null, 2)}\n`
   );
-  await writeFile(files['docs-plan.md'], `${renderDocsPlan(promptPackage)}\n`);
-  await writeFile(
+  await writeFileNoFollow(archivePath, files['docs-plan.md'], `${renderDocsPlan(promptPackage)}\n`);
+  await writeFileNoFollow(
+    archivePath,
     files['docs-evidence.json'],
     `${JSON.stringify(promptPackage.documentationPlan, null, 2)}\n`
   );
-  await writeFile(files['bmad-route.md'], `${renderBmadRoute(promptPackage)}\n`);
-  await writeFile(files['acceptance-plan.md'], `${renderAcceptancePlan(promptPackage)}\n`);
-  await writeFile(
+  await writeFileNoFollow(
+    archivePath,
+    files['bmad-route.md'],
+    `${renderBmadRoute(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['acceptance-plan.md'],
+    `${renderAcceptancePlan(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
     files['capability-route.json'],
     `${JSON.stringify(promptPackage.selectedCapabilities, null, 2)}\n`
   );
-  await writeFile(files['caveman-policy.md'], `${renderCavemanPolicy(promptPackage)}\n`);
-  await writeFile(files['validation-report.md'], `${renderValidationReport(promptPackage)}\n`);
+  await writeFileNoFollow(
+    archivePath,
+    files['caveman-policy.md'],
+    `${renderCavemanPolicy(promptPackage)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['validation-report.md'],
+    `${renderValidationReport(promptPackage)}\n`
+  );
 }
 
 function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
@@ -187,6 +233,7 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     bmadRoute: promptPackage.bmadRoute.id,
     acceptanceStatus: promptPackage.acceptancePlan.status,
     validationStatus: promptPackage.validationReport.status,
+    nextArchonCommand: promptPackage.nextArchonCommand,
   };
 }
 

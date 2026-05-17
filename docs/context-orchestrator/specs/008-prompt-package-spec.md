@@ -14,7 +14,7 @@ Prompt package fields, renderers, traceability, validation report, and Codex han
 
 ## Generic Behavior
 
-- PromptPackage includes runId, timestamp, original prompt, target codebase, intent, evidence, GraphContext, DocumentationPlan, MCP readiness, BmadRoute, AcceptancePlan, capabilities, CavemanPolicy, security constraints, unknowns, human prompt, Codex prompt, next command, and validation report.
+- PromptPackage includes runId, timestamp, original prompt, target codebase, intent, evidence, GraphContext, DocumentationPlan, MCP readiness, BmadRoute, AcceptancePlan, capabilities, CavemanPolicy, security constraints, unknowns, human prompt, Codex prompt, structured next command argv, and validation report.
 
 ## Archon-Specific Behavior
 
@@ -54,7 +54,7 @@ Prompt package fields, renderers, traceability, validation report, and Codex han
 
 ## Security Constraints
 
-- Redact secrets and validate all paths before writing.
+- Redact secrets, validate all paths before writing, and represent follow-up commands as argv arrays rather than shell-interpolated strings.
 
 ## Open Questions
 
