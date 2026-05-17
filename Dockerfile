@@ -16,6 +16,7 @@ COPY package.json bun.lock ./
 # Copy ALL workspace package.json files (monorepo lockfile depends on all of them)
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/cli/package.json ./packages/cli/
+COPY packages/context-orchestrator/package.json ./packages/context-orchestrator/
 COPY packages/core/package.json ./packages/core/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
@@ -126,6 +127,7 @@ COPY package.json bun.lock ./
 # Copy ALL workspace package.json files
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/cli/package.json ./packages/cli/
+COPY packages/context-orchestrator/package.json ./packages/context-orchestrator/
 COPY packages/core/package.json ./packages/core/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
@@ -145,6 +147,7 @@ RUN bun install --frozen-lockfile --production --ignore-scripts --linker=hoisted
 # Copy application source (Bun runs TypeScript directly, no compile step needed)
 COPY packages/adapters/ ./packages/adapters/
 COPY packages/cli/ ./packages/cli/
+COPY packages/context-orchestrator/ ./packages/context-orchestrator/
 COPY packages/core/ ./packages/core/
 COPY packages/git/ ./packages/git/
 COPY packages/isolation/ ./packages/isolation/
