@@ -42,6 +42,9 @@
     "research:validate-sdd": "bun scripts/research/render-sdd-scaffold.ts --check",
     "research:validate-corpus": "bun scripts/research/validate-research-corpus.ts",
     "aco:research": "bun scripts/research/bootstrap-upstreams.ts --fetch-only && bun scripts/research/graph-upstreams.ts && bun scripts/research/merge-graphs.ts && bun scripts/research/render-graph-evidence-docs.ts && bun scripts/research/render-sdd-scaffold.ts && bun scripts/research/validate-research-corpus.ts && bun scripts/research/render-sdd-scaffold.ts --check",
+    "aco:policy:test": "opa test --ignore fixtures packages/context-orchestrator/policies/prompt-package",
+    "aco:policy:fixtures": "bun scripts/policy/validate-aco-policy.ts --fixtures",
+    "aco:policy": "bun run aco:policy:test && bun run aco:policy:fixtures",
     "aco:test:acceptance": "bun test ./tests/acceptance/context-orchestrator/*.test.ts"
   },
   "devDependencies": {

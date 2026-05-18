@@ -30,8 +30,12 @@ export async function validateContextOrchestrator(
       'research:graph',
       'research:merge-graphs',
       'research:validate-corpus',
+      'aco:policy:test',
+      'aco:policy:fixtures',
+      'aco:policy',
     ])
   );
+  checks.push(await policyCheck(options.cwd));
 
   const failed = checks.some(check => check.status === 'failed');
   const warned = checks.some(check => check.status === 'warning');
@@ -48,6 +52,72 @@ async function fileCheck(id: string, path: string): Promise<ValidationCheck> {
   } catch {
     return { id, status: 'failed', message: `${path} is missing.` };
   }
+}
+
+async function policyCheck(cwd: string): Promise<ValidationCheck> {
+  const skipRequested = process.env.ARCHON_SKIP_OPA === '1';
+  const ci = process.env.CI === 'true';
+
+  if (skipRequested && ci) {
+    return {
+      id: 'aco-policy',
+      status: 'failed',
+      message: 'ARCHON_SKIP_OPA=1 is forbidden when CI=true.',
+    };
+  }
+
+  if (skipRequested) {
+    return {
+      id: 'aco-policy',
+      status: 'warning',
+      message:
+        'ARCHON_SKIP_OPA=1 requested; OPA policy validation skipped for local aggregate validation only.',
+    };
+  }
+
+  try {
+    const proc = Bun.spawn(['bun', 'run', 'aco:policy'], {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env,
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    const output = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
+
+    if (exitCode === 0) {
+      return {
+        id: 'aco-policy',
+        status: 'passed',
+        message: summarizeOutput(output, 'OPA prompt-package policy validation passed.'),
+      };
+    }
+
+    return {
+      id: 'aco-policy',
+      status: 'failed',
+      message: summarizeOutput(
+        output,
+        `OPA prompt-package policy validation failed (${exitCode}).`
+      ),
+    };
+  } catch (error) {
+    return {
+      id: 'aco-policy',
+      status: 'failed',
+      message: `OPA prompt-package policy validation could not run: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+function summarizeOutput(output: string, fallback: string): string {
+  if (output.length === 0) return fallback;
+  const normalized = output.replace(/\s+/g, ' ').trim();
+  return normalized.length > 400 ? `${normalized.slice(0, 397)}...` : normalized;
 }
 
 async function packageScriptCheck(cwd: string, scripts: string[]): Promise<ValidationCheck> {

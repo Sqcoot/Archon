@@ -88,6 +88,31 @@ export interface ValidationReport {
   checks: ValidationCheck[];
 }
 
+export interface PromptPackagePolicyArtifact {
+  id: string;
+  path: string;
+  kind: string;
+}
+
+export interface PromptPackagePolicyInput {
+  schema_version: string;
+  package_id: string;
+  generated_at: string;
+  source_request: {
+    text: string;
+  };
+  manifest: Record<string, unknown>;
+  artifacts: PromptPackagePolicyArtifact[];
+  evidence: {
+    graph: Record<string, unknown>;
+    docs: Record<string, unknown>;
+    bmad: Record<string, unknown>;
+    acceptance: Record<string, unknown>;
+    security: Record<string, unknown>;
+  };
+  validation: Record<string, unknown>;
+}
+
 export type CavemanMode = 'off' | 'lite' | 'full' | 'ultra';
 
 export interface PromptPackage {

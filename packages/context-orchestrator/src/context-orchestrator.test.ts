@@ -1,14 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, readFile, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import {
   applyCavemanPolicy,
   compilePromptPackage,
   isPathInside,
   redactSecrets,
   routeBmad,
+  validateContextOrchestrator,
 } from './index';
+
+const repoRoot = resolve(import.meta.dir, '../../..');
 
 describe('context orchestrator core', () => {
   test('routes ambiguous tasks to BMAD help', () => {
@@ -52,6 +55,26 @@ describe('context orchestrator core', () => {
       'Implement safely with SECRET_TOKEN=[REDACTED]',
     ]);
     expect(result.files['manifest.json']).toContain('manifest.json');
+    expect(result.files['prompt-package.json']).toContain('prompt-package.json');
+
+    const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
+      schema_version: string;
+      package_id: string;
+      evidence: {
+        graph?: unknown;
+        docs?: unknown;
+        bmad?: unknown;
+        acceptance?: unknown;
+        security?: unknown;
+      };
+    };
+    expect(policyInput.schema_version).toBe('aco.prompt-package.policy-input.v1');
+    expect(policyInput.package_id).toBe('aco-core-test');
+    expect(policyInput.evidence.graph).toBeDefined();
+    expect(policyInput.evidence.docs).toBeDefined();
+    expect(policyInput.evidence.bmad).toBeDefined();
+    expect(policyInput.evidence.acceptance).toBeDefined();
+    expect(policyInput.evidence.security).toBeDefined();
   });
 
   test('rejects unsafe archive run IDs', async () => {
@@ -151,9 +174,62 @@ describe('context orchestrator core', () => {
     });
     const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
     const manifest = await readFile(result.files['manifest.json'], 'utf8');
+    const policyInput = await readFile(result.files['prompt-package.json'], 'utf8');
     expect(finalPackage).not.toContain('json-secret-value');
     expect(finalPackage).not.toContain('npm_abcdefghijklmnop');
     expect(manifest).not.toContain('json-secret-value');
     expect(manifest).not.toContain('npm_abcdefghijklmnop');
+    expect(policyInput).not.toContain('json-secret-value');
+    expect(policyInput).not.toContain('npm_abcdefghijklmnop');
+  });
+
+  test('reports explicit local OPA policy skip for aggregate validation only', async () => {
+    const originalSkip = process.env.ARCHON_SKIP_OPA;
+    const originalCi = process.env.CI;
+    try {
+      process.env.ARCHON_SKIP_OPA = '1';
+      delete process.env.CI;
+      const report = await validateContextOrchestrator({ cwd: repoRoot });
+      const policyCheck = report.checks.find(check => check.id === 'aco-policy');
+      expect(report.status).toBe('warning');
+      expect(policyCheck?.status).toBe('warning');
+      expect(policyCheck?.message).toContain('local aggregate validation only');
+    } finally {
+      if (originalSkip === undefined) {
+        delete process.env.ARCHON_SKIP_OPA;
+      } else {
+        process.env.ARCHON_SKIP_OPA = originalSkip;
+      }
+      if (originalCi === undefined) {
+        delete process.env.CI;
+      } else {
+        process.env.CI = originalCi;
+      }
+    }
+  });
+
+  test('fails closed when OPA policy skip is requested in CI', async () => {
+    const originalSkip = process.env.ARCHON_SKIP_OPA;
+    const originalCi = process.env.CI;
+    try {
+      process.env.ARCHON_SKIP_OPA = '1';
+      process.env.CI = 'true';
+      const report = await validateContextOrchestrator({ cwd: repoRoot });
+      const policyCheck = report.checks.find(check => check.id === 'aco-policy');
+      expect(report.status).toBe('failed');
+      expect(policyCheck?.status).toBe('failed');
+      expect(policyCheck?.message).toContain('forbidden');
+    } finally {
+      if (originalSkip === undefined) {
+        delete process.env.ARCHON_SKIP_OPA;
+      } else {
+        process.env.ARCHON_SKIP_OPA = originalSkip;
+      }
+      if (originalCi === undefined) {
+        delete process.env.CI;
+      } else {
+        process.env.CI = originalCi;
+      }
+    }
   });
 });

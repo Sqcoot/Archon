@@ -31,6 +31,7 @@ Archive layout, manifest, deterministic tests, redaction, and workflow artifact 
 
 - archive directory
 - manifest.json
+- prompt-package.json
 - validation-report.md
 
 ## Known Unknowns
@@ -45,6 +46,7 @@ Archive layout, manifest, deterministic tests, redaction, and workflow artifact 
 ## Acceptance Scenarios
 
 - Given an archive path containing `..`, when archive writer validates it, then write is blocked.
+- Given a prompt package is archived, when policy validation runs, then OPA evaluates the archived prompt-package.json artifact rather than compiler internals.
 
 ## Failure Behavior
 

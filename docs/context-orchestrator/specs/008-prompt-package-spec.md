@@ -32,9 +32,12 @@ Prompt package fields, renderers, traceability, validation report, and Codex han
 ## Outputs
 
 - manifest.json
+- prompt-package.json
 - final-prompt-package.md
 - codex-prompt.md
 - validation-report.md
+
+`prompt-package.json` is the stable machine-readable policy input for ACO prompt-package validation. It includes `schema_version`, `package_id`, `generated_at`, `source_request`, `manifest`, artifact references, graph/docs/BMAD/acceptance/security evidence, and the validation report.
 
 ## Known Unknowns
 
@@ -47,6 +50,7 @@ Prompt package fields, renderers, traceability, validation report, and Codex han
 ## Acceptance Scenarios
 
 - Given a compiled prompt package, when final-prompt-package.md is opened, then it references specs, acceptance criteria, graph status, docs plan, BMAD route, capabilities, and unknowns.
+- Given a compiled prompt package, when prompt-package.json is opened, then it exposes the archived evidence contract consumed by the OPA prompt-package policy.
 
 ## Failure Behavior
 

@@ -16,11 +16,14 @@ import type {
   CavemanMode,
   CompilePromptPackageOptions,
   PromptPackage,
+  PromptPackagePolicyArtifact,
+  PromptPackagePolicyInput,
   PromptPackageResult,
 } from './types';
 
 const archiveFiles = [
   'manifest.json',
+  'prompt-package.json',
   'original-prompt.md',
   'user-prompt.md',
   'codex-prompt.md',
@@ -165,6 +168,11 @@ async function writeArchiveFiles(
   );
   await writeFileNoFollow(
     archivePath,
+    files['prompt-package.json'],
+    `${JSON.stringify(toPolicyInput(promptPackage), null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
     files['original-prompt.md'],
     `${promptPackage.originalPrompt}\n`
   );
@@ -235,6 +243,47 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     validationStatus: promptPackage.validationReport.status,
     nextArchonCommand: promptPackage.nextArchonCommand,
   };
+}
+
+function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
+  return {
+    schema_version: 'aco.prompt-package.policy-input.v1',
+    package_id: promptPackage.runId,
+    generated_at: promptPackage.timestamp,
+    source_request: {
+      text: promptPackage.originalPrompt,
+    },
+    manifest: {
+      ...toManifest(promptPackage),
+      schemaVersion: 'aco.prompt-package.policy-input.v1',
+      specs: [
+        'docs/context-orchestrator/specs/008-prompt-package-spec.md',
+        'docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md',
+      ],
+      upstreamManifest: 'docs/context-orchestrator/research/upstream-manifest.json',
+    },
+    artifacts: toPolicyArtifacts(),
+    evidence: {
+      graph: promptPackage.graphContext as unknown as Record<string, unknown>,
+      docs: promptPackage.documentationPlan as unknown as Record<string, unknown>,
+      bmad: promptPackage.bmadRoute as unknown as Record<string, unknown>,
+      acceptance: promptPackage.acceptancePlan as unknown as Record<string, unknown>,
+      security: {
+        constraints: promptPackage.securityConstraints,
+        cavemanPolicy: promptPackage.cavemanPolicy,
+        redaction: 'applied',
+      },
+    },
+    validation: promptPackage.validationReport as unknown as Record<string, unknown>,
+  };
+}
+
+function toPolicyArtifacts(): PromptPackagePolicyArtifact[] {
+  return archiveFiles.map(file => ({
+    id: file.replace(/\.[^.]+$/, ''),
+    path: file,
+    kind: file.endsWith('.json') ? 'json' : 'markdown',
+  }));
 }
 
 function renderFinalPackage(promptPackage: PromptPackage): string {
