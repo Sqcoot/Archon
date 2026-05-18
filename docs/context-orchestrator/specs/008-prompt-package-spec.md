@@ -55,7 +55,7 @@ Prompt package fields, renderers, traceability, validation report, archived OPA 
 
 - Given a compiled prompt package, when final-prompt-package.md is opened, then it references specs, acceptance criteria, graph status, docs plan, BMAD route, capabilities, and unknowns.
 - Given a compiled prompt package, when prompt-package.json is opened, then it exposes the archived evidence contract consumed by the OPA prompt-package policy.
-- Given a compiled prompt package, when policy-decision.json is opened, then it exposes the deterministic OPA decision derived from the archived prompt-package.json artifact.
+- ACO-POLICY-DECISION-001: Given a compiled prompt package, when policy-decision.json is opened, then it exposes the deterministic OPA decision derived from the archived prompt-package.json artifact.
 
 ## Failure Behavior
 

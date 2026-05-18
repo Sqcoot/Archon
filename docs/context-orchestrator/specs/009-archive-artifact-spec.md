@@ -49,7 +49,7 @@ Archive layout, manifest, deterministic tests, redaction, policy-decision eviden
 - Given an archive path containing `..`, when archive writer validates it, then write is blocked.
 - Given a prompt package is archived, when policy validation runs, then OPA evaluates the archived prompt-package.json artifact rather than compiler internals.
 - Given OPA returns a valid decision, when archive writing completes, then policy-decision.json is written beside prompt-package.json.
-- Given OPA denies the archived prompt-package.json, when archive admission runs, then policy-decision.json is written and compile/archive validation fails with stable deny codes.
+- ACO-POLICY-DECISION-002: Given OPA denies the archived prompt-package.json, when archive admission runs, then policy-decision.json is written and compile/archive validation fails with stable deny codes.
 
 ## Failure Behavior
 

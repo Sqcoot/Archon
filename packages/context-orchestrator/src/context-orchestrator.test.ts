@@ -34,7 +34,7 @@ describe('context orchestrator core', () => {
     expect(isPathInside('/tmp/aco-root', '/tmp/not-aco-root/package')).toBe(false);
   });
 
-  test('compiles a deterministic redacted archive', async () => {
+  test('ACO-POLICY-DECISION-001 compiles a deterministic redacted archive', async () => {
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-core-'));
     const result = await compilePromptPackage({
       cwd: process.cwd(),
@@ -262,7 +262,7 @@ describe('context orchestrator core', () => {
     }
   });
 
-  test('writes policy decision artifact for denied policy inputs', async () => {
+  test('ACO-POLICY-DECISION-002 writes policy decision artifact for denied policy inputs', async () => {
     const archivePath = await mkdtemp(join(tmpdir(), 'aco-policy-deny-'));
     const policyDecisionPath = join(archivePath, 'policy-decision.json');
     await writeArchivedPolicyDecision({
@@ -282,7 +282,7 @@ describe('context orchestrator core', () => {
     expect(decision.codes.deny).toContain('ACO_POLICY_MISSING_ACCEPTANCE_EVIDENCE');
   });
 
-  test('does not write policy decision artifact when OPA is unavailable', async () => {
+  test('ACO-POLICY-DECISION-003 does not write policy decision artifact when OPA is unavailable', async () => {
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-policy-missing-opa-'));
     const originalPath = process.env.PATH;
     try {
@@ -386,7 +386,7 @@ describe('context orchestrator core', () => {
     expect(changedPolicy.policy.sha256).not.toBe(changedInput.policy.sha256);
   });
 
-  test('malformed OPA output does not produce an archived policy decision', async () => {
+  test('ACO-POLICY-DECISION-003 malformed OPA output does not produce an archived policy decision', async () => {
     const policyDir = await mkdtemp(join(tmpdir(), 'aco-policy-malformed-'));
     const inputPath = join(
       repoRoot,

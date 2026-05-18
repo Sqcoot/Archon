@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { readFile } from 'fs/promises';
+import { mkdtemp, readFile, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
 import { join } from 'path';
+import { validateContextOrchestrator } from '@archon/context-orchestrator';
 
 const specDir = join(process.cwd(), 'docs/context-orchestrator/specs');
+const traceabilityManifestPath = join(specDir, 'traceability', 'aco-traceability.json');
 const requiredSections = [
   '## Purpose',
   '## Scope',
@@ -41,7 +44,16 @@ const specs = [
   '019-observability-and-events-spec.md',
   '020-package-scripts-and-research-corpus-spec.md',
   '021-opa-prompt-package-policy-spec.md',
+  '022-sdd-atdd-traceability-gate-spec.md',
 ];
+
+interface TraceabilityManifest {
+  requirements: Array<{
+    evidence: Array<{
+      markers: string[];
+    }>;
+  }>;
+}
 
 describe('ACO spec acceptance', () => {
   test('Spec: 016-acceptance-test-plan.md Acceptance: ACO-SPECS-001 required specs are sectioned', async () => {
@@ -52,4 +64,64 @@ describe('ACO spec acceptance', () => {
       }
     }
   });
+
+  test('Spec: 022-sdd-atdd-traceability-gate-spec.md Acceptance: ACO-TRACE-001 manifest links ACO-POLICY-001 ACO-POLICY-002 ACO-POLICY-003 ACO-POLICY-DECISION-001 ACO-POLICY-DECISION-002 ACO-POLICY-DECISION-003', async () => {
+    const report = await runTraceability(['--json']);
+    expect(report.status).toBe('passed');
+    expect(report.errors).toHaveLength(0);
+  });
+
+  test('Spec: 022-sdd-atdd-traceability-gate-spec.md Acceptance: ACO-TRACE-002 temp manifest missing marker fails without mutating committed manifest', async () => {
+    const manifest = JSON.parse(
+      await readFile(traceabilityManifestPath, 'utf8')
+    ) as TraceabilityManifest;
+    manifest.requirements[0].evidence[0].markers = ['__missing_trace_marker__'];
+    const tempDir = await mkdtemp(join(tmpdir(), 'aco-traceability-'));
+    const tempManifestPath = join(tempDir, 'aco-traceability.json');
+    await writeFile(tempManifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+    const report = await runTraceability(['--json', '--manifest', tempManifestPath], 1);
+    expect(report.status).toBe('failed');
+    expect(
+      report.errors.some(
+        error =>
+          error.requirement_id === 'ACO-POLICY-001' && error.marker === '__missing_trace_marker__'
+      )
+    ).toBe(true);
+  });
+
+  test('Spec: 022-sdd-atdd-traceability-gate-spec.md Acceptance: ACO-TRACE-003 aggregate validation reports traceability check', async () => {
+    const report = await validateContextOrchestrator({ cwd: process.cwd() });
+    const traceabilityCheck = report.checks.find(check => check.id === 'aco-traceability');
+    expect(traceabilityCheck?.status).toBe('passed');
+  });
 });
+
+async function runTraceability(
+  args: string[],
+  expectedExitCode = 0
+): Promise<{
+  status: 'passed' | 'failed';
+  errors: Array<{ requirement_id?: string; marker?: string }>;
+}> {
+  const proc = Bun.spawn(
+    [process.execPath, 'scripts/context-orchestrator/validate-traceability.ts', ...args],
+    {
+      cwd: process.cwd(),
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env,
+    }
+  );
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  expect(stderr).toBe('');
+  expect(exitCode).toBe(expectedExitCode);
+  return JSON.parse(stdout) as {
+    status: 'passed' | 'failed';
+    errors: Array<{ requirement_id?: string; marker?: string }>;
+  };
+}

@@ -30,6 +30,7 @@ Package-local Rego policy, policy tests, fixtures, archived prompt-package JSON 
 - Findings in `policy-decision.json` are deduplicated by `severity`, `code`, `path`, and `message`, then sorted by the same fields.
 - `policy-decision.json` includes SHA-256 hashes for the archived input and the sorted Rego policy files under `packages/context-orchestrator/policies/prompt-package`, excluding `fixtures/**`.
 - `policy-decision.json` does not include a wall-clock evaluation timestamp.
+- OPA and policy-decision acceptance IDs must map through the traceability manifest defined by `022-sdd-atdd-traceability-gate-spec.md`.
 
 ## Archon-Specific Behavior
 
@@ -65,26 +66,27 @@ Package-local Rego policy, policy tests, fixtures, archived prompt-package JSON 
 - OPA CLI documentation for `opa test` and `opa eval`
 - OPA repository `build/policy/pr-check` policy and test conventions
 - docs/context-orchestrator/specs/008-prompt-package-spec.md
+- docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md
 
 ## Acceptance Scenarios
 
-- Given a valid prompt-package fixture, when `bun run aco:policy` runs, then the policy allows it with no denials.
-- Given a fixture missing acceptance evidence, when `bun run aco:policy` runs, then the policy denies it with `ACO_POLICY_MISSING_ACCEPTANCE_EVIDENCE`.
-- Given a fixture missing security evidence, when `bun run aco:policy` runs, then the policy denies it with `ACO_POLICY_MISSING_SECURITY_EVIDENCE`.
-- Given a warning-only fixture, when `bun run aco:policy` runs, then the policy allows it and reports warning codes.
-- Given a compiled package has warning-only policy findings, when archive-time admission runs, then policy-decision.json records the warning codes and compile succeeds.
-- Given a compiled package has deny policy findings, when archive-time admission runs, then policy-decision.json records the deny codes and compile fails.
-- Given duplicate policy findings are emitted, when policy-decision.json is written, then duplicate findings are suppressed deterministically.
+- ACO-POLICY-001: Given a valid prompt-package fixture, when `bun run aco:policy` runs, then the policy allows it with no denials.
+- ACO-POLICY-002: Given a fixture is missing required acceptance or security evidence, when `bun run aco:policy` runs, then the policy denies it with a stable missing-evidence finding code.
+- ACO-POLICY-003: Given a warning-only fixture, when `bun run aco:policy` runs, then the policy allows it and reports warning codes.
+- ACO-POLICY-DECISION-001: Given a compiled package has warning-only policy findings, when archive-time admission runs, then policy-decision.json records the warning codes and compile succeeds.
+- ACO-POLICY-DECISION-002: Given a compiled package has deny policy findings, when archive-time admission runs, then policy-decision.json records the deny codes and compile fails.
+- ACO-POLICY-DECISION-003: Given duplicate or malformed policy-decision output conditions are exercised, when policy-decision evidence is produced or rejected, then duplicate findings are suppressed deterministically and malformed output writes no fake pass artifact.
 - Given `ARCHON_SKIP_OPA=1` and `CI=true`, when validation runs, then validation fails closed.
 
 ## Failure Behavior
 
 - Missing OPA fails explicit policy scripts.
 - Policy denials fail explicit policy scripts and CI.
-- Archive-time policy denials fail compile/archive validation after writing policy-decision.json.
 - Missing OPA, failed OPA eval, or malformed OPA output fail archive-time admission and write no policy-decision.json.
+- Archive-time policy denials fail compile/archive validation after writing policy-decision.json.
 - Missing `policy_version` in the OPA decision is malformed output.
 - Fixture decision drift fails fixture validation.
+- Traceability drift for enforced OPA and policy-decision acceptance IDs fails `bun run aco:traceability`.
 - Local aggregate skip is explicit and reports a warning.
 
 ## Security Constraints
