@@ -6,8 +6,19 @@ import { validationErrorHook } from './openapi-defaults';
 import { mockAllWorkflowModules } from '../test/workflow-mock-factories';
 
 const mockListCodebases = mock(async () => [{ default_cwd: '/tmp/project' }]);
-const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
+const testContextIntent = {
+  objective: 'Implement native loop',
+  normalizedObjective: 'implement native loop',
+  intentHash: 'intent-123',
   cwd: '/tmp/project',
+  commitSha: 'abc123',
+  generatedAt: '2026-05-18T12:00:00.000Z',
+};
+const testEvidenceBlockers: [] = [];
+
+const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: unknown) => ({
+  cwd: '/tmp/project',
+  contextIntent: testContextIntent,
   validationStatus: 'passed',
   graphStatus: 'forbidden',
   graphWaivers: 2,
@@ -16,6 +27,7 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
   approvalRequired: true,
   readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+  evidenceBlockers: testEvidenceBlockers,
   ledgerSummary: {
     toolAvailability: {
       total: 20,
@@ -55,10 +67,12 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
     },
   },
 }));
-const mockGetContextOrchestratorLedgers = mock(async (_cwd: string) => ({
+const mockGetContextOrchestratorLedgers = mock(async (_cwd: string, _options?: unknown) => ({
   schemaVersion: 'aco.ledger-bundle.v1',
+  contextIntent: testContextIntent,
   toolAvailability: [],
   commands: [],
+  evidenceBlockers: testEvidenceBlockers,
   summary: {
     toolAvailability: { total: 0, counts: zeroLedgerCounts() },
     commands: { total: 0, counts: zeroLedgerCounts() },
@@ -78,6 +92,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
   },
   package: {
     runId: 'run-1',
+    contextIntent: testContextIntent,
     graphContext: {
       status: 'forbidden',
       waiverCount: 2,
@@ -87,6 +102,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
     bmadRoute: mockRouteBmad({ prompt: 'compile' }),
     ledgerBundle: {
       schemaVersion: 'aco.ledger-bundle.v1',
+      evidenceBlockers: testEvidenceBlockers,
       summary: {
         toolAvailability: { total: 0, counts: zeroLedgerCounts() },
         commands: { total: 0, counts: zeroLedgerCounts() },
@@ -286,55 +302,59 @@ describe('GET /api/aco/status', () => {
     mockListCodebases.mockReset();
     mockListCodebases.mockImplementation(async () => [{ default_cwd: '/tmp/project' }]);
     mockGetContextOrchestratorStatus.mockReset();
-    mockGetContextOrchestratorStatus.mockImplementation(async (_cwd: string) => ({
-      cwd: '/tmp/project',
-      validationStatus: 'passed',
-      graphStatus: 'forbidden',
-      graphWaivers: 2,
-      graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
-      waivers: [],
-      approvalRequired: true,
-      readiness: 'needs_approval',
-      ledgerSchemaVersion: 'aco.ledger-bundle.v1',
-      ledgerSummary: {
-        toolAvailability: {
-          total: 20,
-          counts: {
-            available: 17,
-            partial: 1,
-            blocked: 0,
-            deferred: 0,
-            forbidden: 2,
-            'not used': 0,
-            unknown: 0,
+    mockGetContextOrchestratorStatus.mockImplementation(
+      async (_cwd: string, _options?: unknown) => ({
+        cwd: '/tmp/project',
+        contextIntent: testContextIntent,
+        validationStatus: 'passed',
+        graphStatus: 'forbidden',
+        graphWaivers: 2,
+        graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+        waivers: [],
+        approvalRequired: true,
+        readiness: 'needs_approval',
+        ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+        evidenceBlockers: testEvidenceBlockers,
+        ledgerSummary: {
+          toolAvailability: {
+            total: 20,
+            counts: {
+              available: 17,
+              partial: 1,
+              blocked: 0,
+              deferred: 0,
+              forbidden: 2,
+              'not used': 0,
+              unknown: 0,
+            },
+          },
+          commands: {
+            total: 19,
+            counts: {
+              available: 9,
+              partial: 1,
+              blocked: 0,
+              deferred: 3,
+              forbidden: 6,
+              'not used': 0,
+              unknown: 0,
+            },
+          },
+          combined: {
+            total: 39,
+            counts: {
+              available: 26,
+              partial: 2,
+              blocked: 0,
+              deferred: 3,
+              forbidden: 8,
+              'not used': 0,
+              unknown: 0,
+            },
           },
         },
-        commands: {
-          total: 19,
-          counts: {
-            available: 9,
-            partial: 1,
-            blocked: 0,
-            deferred: 3,
-            forbidden: 6,
-            'not used': 0,
-            unknown: 0,
-          },
-        },
-        combined: {
-          total: 39,
-          counts: {
-            available: 26,
-            partial: 2,
-            blocked: 0,
-            deferred: 3,
-            forbidden: 8,
-            'not used': 0,
-            unknown: 0,
-          },
-        },
-      },
-    }));
+      })
+    );
     mockGetContextOrchestratorLedgers.mockClear();
     mockRouteBmad.mockClear();
     mockCompilePromptPackage.mockClear();
@@ -343,7 +363,9 @@ describe('GET /api/aco/status', () => {
 
   test('AC-P1-API returns raw ACO status for a registered cwd', async () => {
     const app = makeApp();
-    const response = await app.request('/api/aco/status?cwd=/tmp/project');
+    const response = await app.request(
+      '/api/aco/status?cwd=/tmp/project&objective=Implement+native+loop'
+    );
 
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
@@ -351,12 +373,16 @@ describe('GET /api/aco/status', () => {
       graphStatus?: string;
       graphWaiverIds?: string[];
       readiness?: string;
+      contextIntent?: { intentHash?: string };
     };
     expect(body.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(body.contextIntent?.intentHash).toBe('intent-123');
     expect(body.graphStatus).toBe('forbidden');
     expect(body.readiness).toBe('needs_approval');
     expect(body.graphWaiverIds).toContain('graph-waiver.bmad-plugins-marketplace');
-    expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/tmp/project');
+    expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/tmp/project', {
+      objective: 'Implement native loop',
+    });
   });
 
   test('AC-ACO-STATUS-003 rejects missing cwd before status read', async () => {
@@ -397,7 +423,9 @@ describe('GET /api/aco/status', () => {
     expect(response.status).toBe(200);
     const body = (await response.json()) as { schemaVersion?: string };
     expect(body.schemaVersion).toBe('aco.ledger-bundle.v1');
-    expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/tmp/project');
+    expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/tmp/project', {
+      objective: undefined,
+    });
   });
 
   test('AC-P1-API routes a request for a registered cwd', async () => {

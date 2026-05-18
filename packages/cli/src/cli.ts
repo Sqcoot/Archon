@@ -126,9 +126,9 @@ Commands:
   context dossier <prompt>   Show ACO decision dossier for a prompt
   context compile <prompt>   Compile an ACO Codex-ready prompt package
   context graph-waivers      Diagnose failed ACO graph waivers
-  context ledgers            Show ACO Tool Availability and Commands ledgers
+  context ledgers [prompt]   Show ACO Tool Availability and Commands ledgers
   context approval-capsule <prompt> Show/write ACO approval capsule for a run
-  context status             Show ACO research and validation status
+  context status [prompt]    Show ACO research and validation status
   context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
   skill install [path]       Install the bundled Archon skill into .claude/skills/archon
@@ -167,7 +167,7 @@ Examples:
   archon context dossier --cwd /path/to/repo "Plan this feature"
   archon context compile --cwd /path/to/repo "Plan this feature"
   archon context graph-waivers --cwd /path/to/repo --json
-  archon context ledgers --cwd /path/to/repo --json
+  archon context ledgers --cwd /path/to/repo --json "Plan this feature"
   archon context approval-capsule --cwd /path/to/repo --run-id run-1 --json "Plan this feature"
   archon context validate --cwd /path/to/repo
   archon skill install
@@ -643,9 +643,16 @@ async function main(): Promise<number> {
 
       case 'aco':
         switch (subcommand) {
-          case 'status':
-            await acoStatusCommand({ cwd: effectiveCwd, json: jsonFlag });
+          case 'status': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            await acoStatusCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
             break;
+          }
 
           default:
             if (subcommand === undefined) {
@@ -683,15 +690,29 @@ async function main(): Promise<number> {
             });
           }
 
-          case 'status':
-            await contextStatusCommand({ cwd: effectiveCwd, json: jsonFlag });
+          case 'status': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            await contextStatusCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
             break;
+          }
 
           case 'validate':
             return await contextValidateCommand({ cwd: effectiveCwd, json: jsonFlag });
 
-          case 'ledgers':
-            return await contextLedgersCommand({ cwd: effectiveCwd, json: jsonFlag });
+          case 'ledgers': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            return await contextLedgersCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
 
           case 'graph-waivers':
             return await contextGraphWaiversCommand({

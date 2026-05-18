@@ -9,6 +9,14 @@ import {
 
 describe('getAcoStatus', () => {
   const originalFetch = globalThis.fetch;
+  const contextIntent = {
+    objective: 'Implement native loop',
+    normalizedObjective: 'implement native loop',
+    intentHash: 'intent-123',
+    cwd: '/tmp/project',
+    commitSha: 'abc123',
+    generatedAt: '2026-05-18T12:00:00.000Z',
+  };
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
@@ -19,6 +27,7 @@ describe('getAcoStatus', () => {
       return new Response(
         JSON.stringify({
           cwd: '/tmp/project with space',
+          contextIntent,
           validationStatus: 'passed',
           graphStatus: 'forbidden',
           graphWaivers: 2,
@@ -30,6 +39,7 @@ describe('getAcoStatus', () => {
           approvalRequired: true,
           readiness: 'needs_approval',
           ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+          evidenceBlockers: [],
           ledgerSummary: {
             toolAvailability: { total: 20, counts: {} },
             commands: { total: 19, counts: {} },
@@ -41,12 +51,13 @@ describe('getAcoStatus', () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const status = await getAcoStatus('/tmp/project with space');
+    const status = await getAcoStatus('/tmp/project with space', 'Implement native loop');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/aco/status?cwd=%2Ftmp%2Fproject+with+space',
+      '/api/aco/status?cwd=%2Ftmp%2Fproject+with+space&objective=Implement+native+loop',
       undefined
     );
+    expect(status.contextIntent.intentHash).toBe('intent-123');
     expect(status.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
     expect(status.graphWaiverIds).toContain('graph-waiver.bmad-sample-data');
     expect(status.readiness).toBe('needs_approval');
@@ -56,7 +67,12 @@ describe('getAcoStatus', () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.startsWith('/api/aco/ledgers')) {
-        return jsonResponse({ schemaVersion: 'aco.ledger-bundle.v1', summary: {} });
+        return jsonResponse({
+          schemaVersion: 'aco.ledger-bundle.v1',
+          contextIntent,
+          evidenceBlockers: [],
+          summary: {},
+        });
       }
       if (url === '/api/aco/route') {
         expect(init?.method).toBe('POST');
@@ -71,6 +87,7 @@ describe('getAcoStatus', () => {
         expect(init?.method).toBe('POST');
         return jsonResponse({
           runId: 'run-1',
+          contextIntent,
           archivePath: '/tmp/project/.archon/artifacts/context-orchestrator/run-1',
           files: {},
           route: {
@@ -87,6 +104,7 @@ describe('getAcoStatus', () => {
           readiness: 'needs_approval',
           validationStatus: 'passed',
           ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+          evidenceBlockers: [],
           ledgerSummary: {},
         });
       }

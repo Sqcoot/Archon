@@ -16,8 +16,8 @@ describe('ACO workflow acceptance', () => {
 
     for (const evidence of [
       'name: context-orchestrate',
-      'bun run cli context status --cwd "$PWD" --json',
-      'bun run cli context ledgers --cwd "$PWD" --json',
+      'bun run cli context status --cwd "$PWD" --json "$ARGUMENTS"',
+      'bun run cli context ledgers --cwd "$PWD" --json "$ARGUMENTS"',
       'bun run cli context compile',
       '--archive-root "$ARTIFACTS_DIR/context-orchestrator"',
       'graph-validation-gate',
@@ -25,6 +25,8 @@ describe('ACO workflow acceptance', () => {
       'approval-capsule',
       'context approval-capsule',
       'approval-capsule.md',
+      'Intent:',
+      'Evidence blockers:',
       'approval:',
       'final-summary',
     ]) {

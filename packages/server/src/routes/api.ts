@@ -1017,6 +1017,7 @@ export function registerApiRoutes(
 
   function toAcoCompileResponse(result: PromptPackageResult): {
     runId: string;
+    contextIntent: PromptPackageResult['package']['contextIntent'];
     archivePath: string;
     files: Record<string, string>;
     route: PromptPackageResult['package']['bmadRoute'];
@@ -1029,14 +1030,17 @@ export function registerApiRoutes(
     validationStatus: string;
     ledgerSchemaVersion: string;
     ledgerSummary: PromptPackageResult['package']['ledgerBundle']['summary'];
+    evidenceBlockers: PromptPackageResult['package']['ledgerBundle']['evidenceBlockers'];
   } {
     const promptPackage = result.package;
     const readiness = getContextOrchestratorReadiness(
       promptPackage.graphContext,
-      promptPackage.validationReport
+      promptPackage.validationReport,
+      promptPackage.ledgerBundle.evidenceBlockers
     );
     return {
       runId: promptPackage.runId,
+      contextIntent: promptPackage.contextIntent,
       archivePath: result.archivePath,
       files: result.files,
       route: promptPackage.bmadRoute,
@@ -1049,6 +1053,7 @@ export function registerApiRoutes(
       validationStatus: promptPackage.validationReport.status,
       ledgerSchemaVersion: promptPackage.ledgerBundle.schemaVersion,
       ledgerSummary: promptPackage.ledgerBundle.summary,
+      evidenceBlockers: promptPackage.ledgerBundle.evidenceBlockers,
     };
   }
 
@@ -1301,6 +1306,7 @@ export function registerApiRoutes(
   // GET /api/aco/status - Context Orchestrator status for Web UI
   registerOpenApiRoute(getAcoStatusRoute, async c => {
     const cwd = c.req.query('cwd')?.trim();
+    const objective = c.req.query('objective')?.trim() || undefined;
     if (!cwd) {
       return apiError(c, 400, 'cwd is required');
     }
@@ -1309,7 +1315,7 @@ export function registerApiRoutes(
       if (!registeredCwd) {
         return apiError(c, 404, 'cwd is not registered');
       }
-      const status = await getContextOrchestratorStatus(registeredCwd);
+      const status = await getContextOrchestratorStatus(registeredCwd, { objective });
       return c.json(status);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1320,6 +1326,7 @@ export function registerApiRoutes(
 
   registerOpenApiRoute(getAcoLedgersRoute, async c => {
     const cwd = c.req.query('cwd')?.trim();
+    const objective = c.req.query('objective')?.trim() || undefined;
     if (!cwd) {
       return apiError(c, 400, 'cwd is required');
     }
@@ -1328,7 +1335,7 @@ export function registerApiRoutes(
       if (!registeredCwd) {
         return apiError(c, 404, 'cwd is not registered');
       }
-      const ledgers = await getContextOrchestratorLedgers(registeredCwd);
+      const ledgers = await getContextOrchestratorLedgers(registeredCwd, { objective });
       return c.json(serializeLedgerBundle(ledgers));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

@@ -55,10 +55,12 @@ export function formatAcoEvidenceSummary(status: AcoStatusResponse): string {
   const limitLabel =
     status.graphStatus === 'forbidden' ? 'approval-required graph limits' : 'accepted limits';
   return [
+    `intent ${status.contextIntent.intentHash}`,
     `validation ${status.validationStatus}`,
     `graph ${status.graphStatus}`,
     `${String(status.graphWaivers)} ${limitLabel}`,
     `${String(status.ledgerSummary.combined.total)} ledger rows`,
+    `${String(status.evidenceBlockers.length)} blockers`,
     `${String(unknown)} unknown`,
   ].join(' · ');
 }
@@ -76,12 +78,22 @@ export function formatAcoHandoffNarrative(status: AcoStatusResponse): string {
     status.graphStatus === 'forbidden'
       ? 'Needs approval: failed waiver-required graph evidence remains unresolved; this does not prove full marketplace/plugin graph certainty, sample data completeness, or production CI enforcement.'
       : 'Known limits: graph remains partial when accepted waivers are present; this does not prove full marketplace/plugin graph certainty, sample data completeness, or production CI enforcement.';
+  const blockerLines =
+    status.evidenceBlockers.length > 0
+      ? status.evidenceBlockers
+          .map(blocker => `- ${blocker.id}: ${blocker.nextVerificationAction}`)
+          .join('\n')
+      : '- none';
 
   return [
     `Context Orchestrator Readiness: ${getAcoReadinessLabel(status)}`,
+    `Intent: ${status.contextIntent.intentHash}`,
+    `Objective: ${status.contextIntent.normalizedObjective}`,
     `Validation: ${status.validationStatus}`,
     `Graph: ${status.graphStatus}`,
     `Ledger: ${status.ledgerSchemaVersion}; ${formatAcoLedgerCounts(status)}`,
+    'Evidence blockers:',
+    blockerLines,
     waiverHeading,
     waiverLines,
     limitNarrative,

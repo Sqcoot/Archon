@@ -71,6 +71,7 @@ export function getContextOrchestratorReadiness(
 ): ContextOrchestratorReadiness {
   if (isApprovalRequired(graphContext)) return 'needs_approval';
   if (validationReport.status === 'failed') return 'blocked';
+  // Evidence blockers preserve exact ledger row IDs, for example tool.docs-evidence.
   if (evidenceBlockers.length > 0) return 'blocked';
   if (validationReport.status !== 'passed') return 'unknown';
   if (graphContext.status === 'partial') return 'unknown';

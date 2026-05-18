@@ -21,23 +21,26 @@ import {
 export interface ContextCommandOptions {
   cwd: string;
   json?: boolean;
+  objective?: string;
+  timestamp?: string;
 }
 
 export interface ContextCompileCommandOptions extends ContextCommandOptions {
   archiveRoot?: string;
   runId?: string;
-  timestamp?: string;
   cavemanMode?: CavemanMode;
 }
 
 export interface ContextApprovalCapsuleCommandOptions extends ContextCommandOptions {
   artifactRoot?: string;
   runId: string;
-  timestamp?: string;
 }
 
 export async function contextStatusCommand(options: ContextCommandOptions): Promise<void> {
-  const status = await getContextOrchestratorStatus(options.cwd);
+  const status = await getContextOrchestratorStatus(options.cwd, {
+    objective: options.objective,
+    timestamp: options.timestamp,
+  });
   if (options.json) {
     console.log(JSON.stringify(status, null, 2));
     return;
@@ -45,7 +48,16 @@ export async function contextStatusCommand(options: ContextCommandOptions): Prom
 
   console.log(`Context Orchestrator status: ${status.validationStatus}`);
   console.log(`Readiness: ${status.readiness}`);
+  console.log(`Intent: ${status.contextIntent.intentHash}`);
+  console.log(`Objective: ${status.contextIntent.normalizedObjective}`);
   console.log(`Graph: ${status.graphStatus} (${status.graphWaivers} waiver(s))`);
+  if (status.evidenceBlockers.length > 0) {
+    console.log(
+      `Evidence blockers: ${status.evidenceBlockers
+        .map(blocker => `${blocker.id} -> ${blocker.nextVerificationAction}`)
+        .join('; ')}`
+    );
+  }
 }
 
 export async function contextValidateCommand(options: ContextCommandOptions): Promise<number> {
@@ -64,7 +76,10 @@ export async function contextValidateCommand(options: ContextCommandOptions): Pr
 
 export async function contextLedgersCommand(options: ContextCommandOptions): Promise<number> {
   try {
-    const bundle = await getContextOrchestratorLedgers(options.cwd);
+    const bundle = await getContextOrchestratorLedgers(options.cwd, {
+      objective: options.objective,
+      timestamp: options.timestamp,
+    });
     if (options.json) {
       console.log(JSON.stringify(serializeLedgerBundle(bundle), null, 2));
       return 0;
@@ -178,6 +193,7 @@ export async function contextCompileCommand(
   }
 
   console.log(`Context package: ${result.archivePath}`);
+  console.log(`Intent: ${result.package.contextIntent.intentHash}`);
   console.log(`Route: ${result.package.bmadRoute.id}`);
   console.log(`Graph: ${result.package.graphContext.status}`);
   console.log(`Validation: ${result.package.validationReport.status}`);
@@ -204,10 +220,12 @@ export async function contextRouteCommand(
 function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
   const readiness = getContextOrchestratorReadiness(
     result.package.graphContext,
-    result.package.validationReport
+    result.package.validationReport,
+    result.package.ledgerBundle.evidenceBlockers
   );
   return {
     runId: result.package.runId,
+    contextIntent: result.package.contextIntent,
     archivePath: result.archivePath,
     files: result.files,
     route: result.package.bmadRoute.id,
@@ -223,6 +241,7 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     validationStatus: result.package.validationReport.status,
     ledgerSchemaVersion: result.package.ledgerBundle.schemaVersion,
     ledgerSummary: result.package.ledgerBundle.summary,
+    evidenceBlockers: result.package.ledgerBundle.evidenceBlockers,
     decisionDossierSchemaVersion: result.package.decisionDossier.schemaVersion,
     decisionDossierDecision: result.package.decisionDossier.decision.id,
     decisionDossierReadiness: result.package.decisionDossier.readiness,

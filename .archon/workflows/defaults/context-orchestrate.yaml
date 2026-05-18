@@ -12,14 +12,14 @@ nodes:
     bash: |
       set -euo pipefail
       mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
-      bun run cli context status --cwd "$PWD" --json > "$ARTIFACTS_DIR/context-orchestrator/status.json"
+      bun run cli context status --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/status.json"
       cat "$ARTIFACTS_DIR/context-orchestrator/status.json"
 
   - id: ledgers
     bash: |
       set -euo pipefail
       mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
-      bun run cli context ledgers --cwd "$PWD" --json > "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+      bun run cli context ledgers --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
       cat "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
     depends_on: [status]
 
@@ -105,10 +105,17 @@ nodes:
         const compiled = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
         const readiness = compiled.readiness ?? status.readiness ?? "unknown";
         const capsuleExpected = readiness === "needs_approval" && compiled.graphStatus === "forbidden";
+        const contextIntent = compiled.contextIntent ?? status.contextIntent ?? {};
+        const blockers = compiled.evidenceBlockers ?? status.evidenceBlockers ?? [];
+        const blockerLines = blockers.length > 0
+          ? blockers.map((blocker) => `- ${blocker.id}: ${blocker.nextVerificationAction}`)
+          : ["- none"];
         const lines = [
           "# Context Orchestrator Handoff",
           "",
           `Run ID: ${compiled.runId}`,
+          `Intent: ${contextIntent.intentHash ?? "unknown"}`,
+          `Objective: ${contextIntent.normalizedObjective ?? "unknown"}`,
           `Readiness: ${readiness}`,
           `Approval required: ${compiled.approvalRequired === true ? "yes" : "no"}`,
           `Route: ${compiled.route}`,
@@ -121,6 +128,8 @@ nodes:
           "",
           `Ledger schema: ${compiled.ledgerSchemaVersion}`,
           `Ledger rows: ${compiled.ledgerSummary?.combined?.total ?? "unknown"}`,
+          `Evidence blockers: ${blockers.length}`,
+          ...blockerLines,
           `Waivers: ${(compiled.graphWaiverIds ?? []).join(", ") || "none"}`,
           "",
           "## Next Action",
