@@ -11,6 +11,7 @@
       "AC-P",
       "AC-NONREG",
       "AC-FORBIDDEN-",
+      "ACO-APPROVAL-",
       "ACO-CODEX-003",
       "ACO-EVENTS-"
     ]
@@ -881,6 +882,120 @@
           "ref": "packages/cli/src/commands/aco.test.ts",
           "markers": ["AC-NONREG", "context status", "context ledgers"],
           "summary": "CLI tests verify context commands and ledger behavior do not regress."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-capsule.ts",
+          "markers": ["approvalCapsuleSchema", "aco.approval-capsule.v1"],
+          "summary": "Approval capsule schema declares required fields and schema version."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/context.test.ts",
+          "markers": ["ACO-APPROVAL-002", "contextApprovalCapsuleCommand"],
+          "summary": "CLI tests verify read-only JSON and Markdown rendering without artifact writes."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/approval-capsule.ts",
+          "markers": ["writeApprovalCapsuleArtifacts", "approval-capsule.json", "approval-capsule.md"],
+          "summary": "Artifact writer places approval capsule files beside compiled package artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/context-orchestrate.yaml",
+          "markers": ["id: approval-capsule", "context approval-capsule"],
+          "summary": "Bundled workflow generates an approval capsule before the approval node."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/context-orchestrate.yaml",
+          "markers": ["approval-capsule.md", "Needs approval"],
+          "summary": "Workflow approval and handoff text point at the capsule while preserving Needs approval."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/approval-capsule.test.ts",
+          "markers": ["ACO-APPROVAL-006", "non-forbidden"],
+          "summary": "Approval capsule tests cover active waivers, forbidden/deferred ledger refs, inert commands, and negative non-forbidden state."
         }
       ],
       "status": "enforced"

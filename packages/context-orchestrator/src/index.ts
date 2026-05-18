@@ -1,6 +1,19 @@
 export { createAcceptancePlan } from './acceptance';
 export { routeBmad } from './bmad';
 export { applyCavemanPolicy } from './caveman';
+export {
+  APPROVAL_CAPSULE_JSON,
+  APPROVAL_CAPSULE_MARKDOWN,
+  APPROVAL_CAPSULE_SCHEMA_VERSION,
+  createApprovalCapsule,
+  getApprovalCapsuleArtifactFiles,
+  renderApprovalCapsuleMarkdown,
+  writeApprovalCapsuleArtifacts,
+} from './approval-capsule';
+export type {
+  ApprovalCapsuleArtifactFiles,
+  CreateApprovalCapsuleOptions,
+} from './approval-capsule';
 export { compilePromptPackage } from './compiler';
 export {
   createDecisionDossier,
@@ -55,6 +68,12 @@ export {
 } from './status';
 export type { ContextOrchestratorStatus } from './status';
 export { validateContextOrchestrator } from './validation';
+export type {
+  ApprovalCapsule,
+  ApprovalCapsuleArtifactRef,
+  ApprovalCapsuleCommand,
+  ApprovalCapsuleLedgerRef,
+} from './schemas/approval-capsule';
 export type {
   AcceptancePlan,
   AcceptanceScenario,

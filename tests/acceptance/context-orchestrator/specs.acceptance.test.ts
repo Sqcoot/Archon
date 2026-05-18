@@ -46,6 +46,7 @@ const specs = [
   '021-opa-prompt-package-policy-spec.md',
   '022-sdd-atdd-traceability-gate-spec.md',
   '023-decision-dossier-gate-spec.md',
+  '024-approval-capsule-spec.md',
 ];
 
 interface TraceabilityManifest {
@@ -149,6 +150,12 @@ describe('ACO spec acceptance', () => {
       'AC-DOSSIER-005',
       'AC-DOSSIER-006',
       'AC-DOSSIER-007',
+      'ACO-APPROVAL-001',
+      'ACO-APPROVAL-002',
+      'ACO-APPROVAL-003',
+      'ACO-APPROVAL-004',
+      'ACO-APPROVAL-005',
+      'ACO-APPROVAL-006',
     ]) {
       expect(matrix).toContain(marker);
     }

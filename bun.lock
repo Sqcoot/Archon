@@ -67,7 +67,9 @@
       "name": "@archon/context-orchestrator",
       "version": "0.3.12",
       "dependencies": {
+        "@hono/zod-openapi": "^0.19.6",
         "@opentelemetry/api": "1.9.1",
+        "zod": "^3.25.28",
       },
       "devDependencies": {
         "@opentelemetry/sdk-trace-base": "2.7.1",
@@ -80,6 +82,7 @@
       "name": "@archon/core",
       "version": "0.3.12",
       "dependencies": {
+        "@archon/context-orchestrator": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/isolation": "workspace:*",
         "@archon/paths": "workspace:*",
@@ -162,8 +165,8 @@
       "version": "0.3.12",
       "dependencies": {
         "@archon/adapters": "workspace:*",
-        "@archon/core": "workspace:*",
         "@archon/context-orchestrator": "workspace:*",
+        "@archon/core": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/paths": "workspace:*",
         "@archon/providers": "workspace:*",

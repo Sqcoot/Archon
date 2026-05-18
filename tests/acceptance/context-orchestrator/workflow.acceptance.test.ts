@@ -21,6 +21,10 @@ describe('ACO workflow acceptance', () => {
       'bun run cli context compile',
       '--archive-root "$ARTIFACTS_DIR/context-orchestrator"',
       'graph-validation-gate',
+      'graph-validation-gate.txt',
+      'approval-capsule',
+      'context approval-capsule',
+      'approval-capsule.md',
       'approval:',
       'final-summary',
     ]) {
