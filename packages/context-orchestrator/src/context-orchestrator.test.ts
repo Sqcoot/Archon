@@ -1,14 +1,17 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import {
   applyCavemanPolicy,
   compilePromptPackage,
+  createArchivedPolicyDecision,
   isPathInside,
   redactSecrets,
   routeBmad,
+  stringifyArchivedPolicyDecision,
   validateContextOrchestrator,
+  writeArchivedPolicyDecision,
 } from './index';
 
 const repoRoot = resolve(import.meta.dir, '../../..');
@@ -56,10 +59,12 @@ describe('context orchestrator core', () => {
     ]);
     expect(result.files['manifest.json']).toContain('manifest.json');
     expect(result.files['prompt-package.json']).toContain('prompt-package.json');
+    expect(result.files['policy-decision.json']).toContain('policy-decision.json');
 
     const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
       schema_version: string;
       package_id: string;
+      artifacts: { path: string }[];
       evidence: {
         graph?: unknown;
         docs?: unknown;
@@ -75,6 +80,30 @@ describe('context orchestrator core', () => {
     expect(policyInput.evidence.bmad).toBeDefined();
     expect(policyInput.evidence.acceptance).toBeDefined();
     expect(policyInput.evidence.security).toBeDefined();
+    expect(policyInput.artifacts.map(artifact => artifact.path)).not.toContain(
+      'policy-decision.json'
+    );
+
+    const policyDecision = JSON.parse(
+      await readFile(result.files['policy-decision.json'], 'utf8')
+    ) as {
+      schema_version: string;
+      decision: { allow: boolean; warn: unknown[] };
+      codes: { warn: string[] };
+      counts: { warn: number };
+      input: { path: string; sha256: string };
+      policy: { version: string; sha256: string };
+      opa: { available: boolean; version: string | null };
+    };
+    expect(policyDecision.schema_version).toBe('aco.policy-decision.v1');
+    expect(policyDecision.decision.allow).toBe(true);
+    expect(policyDecision.input.path).toBe('prompt-package.json');
+    expect(policyDecision.input.sha256).toHaveLength(64);
+    expect(policyDecision.policy.version).toBe('aco-prompt-package-v1');
+    expect(policyDecision.policy.sha256).toHaveLength(64);
+    expect(policyDecision.opa.available).toBe(true);
+    expect(policyDecision.codes.warn).toContain('ACO_POLICY_UNRESOLVED_DOCS');
+    expect(policyDecision.counts.warn).toBe(policyDecision.decision.warn.length);
   });
 
   test('rejects unsafe archive run IDs', async () => {
@@ -231,5 +260,150 @@ describe('context orchestrator core', () => {
         process.env.CI = originalCi;
       }
     }
+  });
+
+  test('writes policy decision artifact for denied policy inputs', async () => {
+    const archivePath = await mkdtemp(join(tmpdir(), 'aco-policy-deny-'));
+    const policyDecisionPath = join(archivePath, 'policy-decision.json');
+    await writeArchivedPolicyDecision({
+      archivePath,
+      inputPath: join(
+        repoRoot,
+        'packages/context-orchestrator/policies/prompt-package/fixtures/invalid-missing-acceptance.json'
+      ),
+      outputPath: policyDecisionPath,
+    });
+
+    const decision = JSON.parse(await readFile(policyDecisionPath, 'utf8')) as {
+      decision: { allow: boolean; deny: { code: string }[] };
+      codes: { deny: string[] };
+    };
+    expect(decision.decision.allow).toBe(false);
+    expect(decision.codes.deny).toContain('ACO_POLICY_MISSING_ACCEPTANCE_EVIDENCE');
+  });
+
+  test('does not write policy decision artifact when OPA is unavailable', async () => {
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-policy-missing-opa-'));
+    const originalPath = process.env.PATH;
+    try {
+      process.env.PATH = '';
+      await expect(
+        compilePromptPackage({
+          cwd: process.cwd(),
+          prompt: 'Compile safely.',
+          archiveRoot,
+          runId: 'aco-missing-opa',
+          timestamp: '2026-05-17T12:00:00.000Z',
+        })
+      ).rejects.toThrow('Open Policy Agent CLI `opa` is required');
+    } finally {
+      if (originalPath === undefined) {
+        delete process.env.PATH;
+      } else {
+        process.env.PATH = originalPath;
+      }
+    }
+
+    expect(
+      await Bun.file(join(archiveRoot, 'aco-missing-opa', 'policy-decision.json')).exists()
+    ).toBe(false);
+  });
+
+  test('policy decision output is deterministic and hash-backed', async () => {
+    const fixturePath = join(
+      repoRoot,
+      'packages/context-orchestrator/policies/prompt-package/fixtures/warn-unresolved-docs.json'
+    );
+    const first = await createArchivedPolicyDecision({ inputPath: fixturePath });
+    const second = await createArchivedPolicyDecision({ inputPath: fixturePath });
+
+    expect(stringifyArchivedPolicyDecision(first)).toBe(stringifyArchivedPolicyDecision(second));
+    expect(first.input.sha256).toHaveLength(64);
+    expect(first.policy.sha256).toHaveLength(64);
+    expect(first.codes.warn).toEqual(['ACO_POLICY_UNRESOLVED_DOCS']);
+    expect(first.counts.warn).toBe(1);
+  });
+
+  test('policy decision suppresses duplicate findings deterministically', async () => {
+    const policyDir = await mkdtemp(join(tmpdir(), 'aco-policy-duplicates-'));
+    const inputPath = join(
+      repoRoot,
+      'packages/context-orchestrator/policies/prompt-package/fixtures/valid-minimal.json'
+    );
+    await writeFile(
+      join(policyDir, 'prompt_package.rego'),
+      [
+        'package archon.context_orchestrator.prompt_package',
+        'decision := {',
+        '  "allow": true,',
+        '  "deny": [],',
+        '  "warn": [',
+        '    {"code": "ACO_POLICY_UNRESOLVED_DOCS", "message": "duplicate", "path": "/evidence/docs", "severity": "warn"},',
+        '    {"code": "ACO_POLICY_UNRESOLVED_DOCS", "message": "duplicate", "path": "/evidence/docs", "severity": "warn"}',
+        '  ],',
+        '  "policy_version": "duplicate-test"',
+        '}',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const decision = await createArchivedPolicyDecision({ inputPath, policyDir });
+    expect(decision.counts.warn).toBe(1);
+    expect(decision.duplicates_suppressed).toBe(1);
+  });
+
+  test('policy decision hashes change with input and policy bytes', async () => {
+    const policyDir = await mkdtemp(join(tmpdir(), 'aco-policy-hash-'));
+    const inputDir = await mkdtemp(join(tmpdir(), 'aco-input-hash-'));
+    const inputPath = join(inputDir, 'prompt-package.json');
+    const baseInput = await readFile(
+      join(
+        repoRoot,
+        'packages/context-orchestrator/policies/prompt-package/fixtures/valid-minimal.json'
+      ),
+      'utf8'
+    );
+    await writeFile(inputPath, baseInput, 'utf8');
+    const policyPath = join(policyDir, 'prompt_package.rego');
+    const policy = [
+      'package archon.context_orchestrator.prompt_package',
+      'decision := {"allow": true, "deny": [], "warn": [], "policy_version": "hash-test"}',
+    ].join('\n');
+    await writeFile(policyPath, policy, 'utf8');
+
+    const first = await createArchivedPolicyDecision({ inputPath, policyDir });
+    await writeFile(inputPath, baseInput.replace('aco-policy-valid', 'aco-policy-valid-2'), 'utf8');
+    const changedInput = await createArchivedPolicyDecision({ inputPath, policyDir });
+    await writeFile(
+      policyPath,
+      `${policy}\n# policy hash change without decision behavior change\n`,
+      'utf8'
+    );
+    const changedPolicy = await createArchivedPolicyDecision({ inputPath, policyDir });
+
+    expect(changedInput.input.sha256).not.toBe(first.input.sha256);
+    expect(changedInput.policy.sha256).toBe(first.policy.sha256);
+    expect(changedPolicy.policy.sha256).not.toBe(changedInput.policy.sha256);
+  });
+
+  test('malformed OPA output does not produce an archived policy decision', async () => {
+    const policyDir = await mkdtemp(join(tmpdir(), 'aco-policy-malformed-'));
+    const inputPath = join(
+      repoRoot,
+      'packages/context-orchestrator/policies/prompt-package/fixtures/valid-minimal.json'
+    );
+    await writeFile(
+      join(policyDir, 'prompt_package.rego'),
+      [
+        'package archon.context_orchestrator.prompt_package',
+        'decision := {"allow": true, "deny": [], "warn": []}',
+      ].join('\n'),
+      'utf8'
+    );
+
+    await expect(createArchivedPolicyDecision({ inputPath, policyDir })).rejects.toThrow(
+      'missing policy_version'
+    );
+    await rm(policyDir, { recursive: true, force: true });
   });
 });

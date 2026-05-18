@@ -16,9 +16,13 @@ describe('ACO archive acceptance', () => {
     });
     const manifest = await readFile(result.files['manifest.json'], 'utf8');
     const policyInput = await readFile(result.files['prompt-package.json'], 'utf8');
+    const policyDecision = await readFile(result.files['policy-decision.json'], 'utf8');
     const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
     expect(manifest).toContain('aco-archive-run');
     expect(policyInput).toContain('aco.prompt-package.policy-input.v1');
+    expect(policyInput).not.toContain('policy-decision.json');
+    expect(policyDecision).toContain('aco.policy-decision.v1');
+    expect(policyDecision).toContain('ACO_POLICY_GRAPH_WAIVER');
     expect(finalPackage).not.toContain('super-secret-token-value');
     expect(finalPackage).toContain('[REDACTED]');
   });

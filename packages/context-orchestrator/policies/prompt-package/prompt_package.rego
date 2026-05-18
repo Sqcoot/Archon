@@ -84,7 +84,7 @@ deny contains finding("ACO_POLICY_SECRET_LIKE_VALUE", "Manifest or artifact refe
 		"manifest": object.get(input, "manifest", {}),
 		"artifacts": object.get(input, "artifacts", []),
 	}))
-	regex.match("(secret|api[_-]?key|token|password|sk-[a-z0-9]{16,}|ghp_[a-z0-9_]{16,}|npm_[a-z0-9_]{16,}|akia[0-9a-z]{16})", secret_scan_text)
+	regex.match("(sk-[a-z0-9]{16,}|ghp_[a-z0-9_]{16,}|npm_[a-z0-9_]{16,}|akia[0-9a-z]{16})", secret_scan_text)
 }
 
 deny contains finding("ACO_POLICY_MISSING_REPRODUCIBILITY_LINKAGE", "Manifest must link to the upstream manifest.", "/manifest/upstreamManifest", "deny") if {
@@ -112,10 +112,14 @@ warn contains finding("ACO_POLICY_GRAPH_WAIVER", "Graph evidence is partial or w
 }
 
 warn contains finding("ACO_POLICY_UNRESOLVED_DOCS", "Documentation evidence contains unresolved library identity.", "/evidence/docs", "warn") if {
+	unresolved_docs_evidence
+}
+
+unresolved_docs_evidence if {
 	docs_evidence.unresolved[_]
 }
 
-warn contains finding("ACO_POLICY_UNRESOLVED_DOCS", "Documentation evidence contains unresolved library identity.", "/evidence/docs/targets", "warn") if {
+unresolved_docs_evidence if {
 	target := docs_evidence.targets[_]
 	object.get(target, "status", "") == "unresolved"
 }

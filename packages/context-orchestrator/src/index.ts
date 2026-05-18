@@ -5,6 +5,13 @@ export { compilePromptPackage } from './compiler';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
 export {
+  createArchivedPolicyDecision,
+  evaluatePromptPackagePolicy,
+  PolicyDecisionError,
+  stringifyArchivedPolicyDecision,
+  writeArchivedPolicyDecision,
+} from './policy-decision';
+export {
   assertNoSecretLikeValue,
   assertPathInside,
   assertRealPathInside,
@@ -33,6 +40,9 @@ export type {
   GraphStatus,
   McpReadinessState,
   PromptPackage,
+  ArchivedPolicyDecision,
+  PolicyDecision,
+  PolicyFinding,
   PromptPackageResult,
   ValidationCheck,
   ValidationReport,

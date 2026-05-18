@@ -113,6 +113,51 @@ export interface PromptPackagePolicyInput {
   validation: Record<string, unknown>;
 }
 
+export interface PolicyFinding {
+  code: string;
+  message: string;
+  path?: string;
+  severity: 'deny' | 'warn';
+}
+
+export interface PolicyDecision {
+  allow: boolean;
+  deny: PolicyFinding[];
+  warn: PolicyFinding[];
+  policy_version: string;
+}
+
+export interface ArchivedPolicyDecision {
+  schema_version: 'aco.policy-decision.v1';
+  input: {
+    path: 'prompt-package.json';
+    sha256: string;
+  };
+  policy: {
+    package: 'archon.context_orchestrator.prompt_package';
+    version: string;
+    sha256: string;
+  };
+  opa: {
+    available: true;
+    version: string | null;
+  };
+  decision: {
+    allow: boolean;
+    deny: PolicyFinding[];
+    warn: PolicyFinding[];
+  };
+  counts: {
+    deny: number;
+    warn: number;
+  };
+  codes: {
+    deny: string[];
+    warn: string[];
+  };
+  duplicates_suppressed: number;
+}
+
 export type CavemanMode = 'off' | 'lite' | 'full' | 'ultra';
 
 export interface PromptPackage {

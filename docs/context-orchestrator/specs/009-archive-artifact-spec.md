@@ -6,7 +6,7 @@ Define archive files and path safety.
 
 ## Scope
 
-Archive layout, manifest, deterministic tests, redaction, and workflow artifact paths.
+Archive layout, manifest, deterministic tests, redaction, policy-decision evidence, and workflow artifact paths.
 
 ## Non-Goals
 
@@ -32,6 +32,7 @@ Archive layout, manifest, deterministic tests, redaction, and workflow artifact 
 - archive directory
 - manifest.json
 - prompt-package.json
+- policy-decision.json
 - validation-report.md
 
 ## Known Unknowns
@@ -47,10 +48,13 @@ Archive layout, manifest, deterministic tests, redaction, and workflow artifact 
 
 - Given an archive path containing `..`, when archive writer validates it, then write is blocked.
 - Given a prompt package is archived, when policy validation runs, then OPA evaluates the archived prompt-package.json artifact rather than compiler internals.
+- Given OPA returns a valid decision, when archive writing completes, then policy-decision.json is written beside prompt-package.json.
+- Given OPA denies the archived prompt-package.json, when archive admission runs, then policy-decision.json is written and compile/archive validation fails with stable deny codes.
 
 ## Failure Behavior
 
 - Fail closed on unsafe paths or redaction failures.
+- Fail closed if archive-time OPA admission cannot run, returns malformed output, or returns a denial.
 
 ## Security Constraints
 
@@ -58,4 +62,4 @@ Archive layout, manifest, deterministic tests, redaction, and workflow artifact 
 
 ## Open Questions
 
-- Should archives include hashes for every file in MVP?
+- Should archives include hashes for every file after the policy-decision artifact proves useful?
