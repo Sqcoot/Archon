@@ -36,12 +36,15 @@ describe('approval capsule', () => {
     expect(capsule.approvalCommands.every(command => command.requiresApproval === true)).toBe(true);
     expect(capsule.ledgerRefs.some(ref => ref.status === 'forbidden')).toBe(true);
     expect(capsule.ledgerRefs.some(ref => ref.status === 'deferred')).toBe(true);
+    expect(capsule.evidenceResolution.required).toBe(true);
+    expect(capsule.evidenceResolution.items.some(item => item.resolver === 'approval')).toBe(true);
     expect(capsule.decisionScope).toContain('preserves only these active graph waivers');
     expect(capsule.decisionScope).toContain('for this run only');
 
     const markdown = renderApprovalCapsuleMarkdown(capsule);
     expect(markdown).toContain('# ACO Approval Capsule');
     expect(markdown).toContain('Release readiness: Needs approval while waivers remain.');
+    expect(markdown).toContain('## Evidence Resolution');
     expect(markdown).toContain('willRun=false');
   });
 

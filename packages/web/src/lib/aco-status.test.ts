@@ -40,6 +40,7 @@ describe('getAcoStatus', () => {
           readiness: 'needs_approval',
           ledgerSchemaVersion: 'aco.ledger-bundle.v1',
           evidenceBlockers: [],
+          evidenceResolution: { required: false, items: [] },
           ledgerSummary: {
             toolAvailability: { total: 20, counts: {} },
             commands: { total: 19, counts: {} },
@@ -105,6 +106,7 @@ describe('getAcoStatus', () => {
           validationStatus: 'passed',
           ledgerSchemaVersion: 'aco.ledger-bundle.v1',
           evidenceBlockers: [],
+          evidenceResolution: { required: false, items: [] },
           ledgerSummary: {},
         });
       }

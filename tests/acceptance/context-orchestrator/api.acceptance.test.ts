@@ -32,6 +32,7 @@ describe('ACO API acceptance', () => {
 
     expect(schemaSource).toContain('acoStatusResponseSchema');
     expect(schemaSource).toContain('acoCompileResponseSchema');
+    expect(schemaSource).toContain('acoEvidenceResolutionSchema');
     expect(routeTests).toContain('AC-P1-API returns raw ACO status for a registered cwd');
     expect(routeTests).toContain('AC-P1-API compiles a package for a registered cwd');
     expect(routeTests).toContain('AC-P1-API rejects artifact package traversal run IDs');

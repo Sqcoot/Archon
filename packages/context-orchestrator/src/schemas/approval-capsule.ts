@@ -40,6 +40,24 @@ const evidenceBlockerSchema = z.object({
   nextVerificationAction: z.string().min(1),
 });
 
+const evidenceResolutionItemSchema = z.object({
+  evidenceId: z.string().min(1),
+  capabilityId: z.string().min(1),
+  targetKind: z.enum(['openai', 'third-party', 'unknown', 'graph', 'validation']),
+  targetName: z.string().min(1),
+  resolver: z.enum(['openai-docs-mcp', 'context7', 'manual', 'approval']),
+  reason: z.string().min(1),
+  nextAction: z.string().min(1),
+  requiresApproval: z.boolean(),
+  blockingAcceptanceIds: z.array(z.string().min(1)),
+  expectedSuccessEvidence: z.array(z.string().min(1)),
+});
+
+const evidenceClosurePlanSchema = z.object({
+  required: z.boolean(),
+  items: z.array(evidenceResolutionItemSchema),
+});
+
 export const approvalCapsuleArtifactRefSchema = z.object({
   id: z.enum([
     'status-json',
@@ -100,6 +118,7 @@ export const approvalCapsuleSchema = z.object({
   artifactRefs: z.array(approvalCapsuleArtifactRefSchema),
   activeWaiverIds: z.array(z.string().min(1)),
   evidenceBlockers: z.array(evidenceBlockerSchema),
+  evidenceResolution: evidenceClosurePlanSchema,
   ledgerRefs: z.array(approvalCapsuleLedgerRefSchema),
   approvalCommands: z.array(approvalCapsuleCommandSchema),
   decisionScope: z.string().min(1),

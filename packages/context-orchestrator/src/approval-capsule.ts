@@ -141,6 +141,7 @@ export async function createApprovalCapsule(
     artifactRefs: buildArtifactRefs({ artifactRoot: options.artifactRoot, runId }),
     activeWaiverIds,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
+    evidenceResolution: decisionDossier.evidenceResolution,
     ledgerRefs: buildApprovalLedgerRefs(ledgerBundle),
     approvalCommands: buildApprovalCommands(decisionDossier),
     decisionScope: buildDecisionScope(runId, activeWaiverIds),
@@ -176,6 +177,10 @@ export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string 
     '## Evidence Blockers',
     '',
     ...renderEvidenceBlockers(capsule.evidenceBlockers),
+    '',
+    '## Evidence Resolution',
+    '',
+    ...renderEvidenceResolution(capsule.evidenceResolution),
     '',
     '## Approval Commands',
     '',
@@ -362,6 +367,16 @@ function renderEvidenceBlockers(blockers: EvidenceBlocker[]): string[] {
   return blockers.map(
     blocker =>
       `- ${blocker.id} (${blocker.kind}, ${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+  );
+}
+
+function renderEvidenceResolution(
+  capsuleResolution: ApprovalCapsule['evidenceResolution']
+): string[] {
+  if (capsuleResolution.items.length === 0) return ['- none'];
+  return capsuleResolution.items.map(
+    item =>
+      `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval ? 'yes' : 'no'}; next=${item.nextAction}`
   );
 }
 

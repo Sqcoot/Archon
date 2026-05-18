@@ -27,6 +27,7 @@ describe('ACO workflow acceptance', () => {
       'approval-capsule.md',
       'Intent:',
       'Evidence blockers:',
+      'Evidence resolution required:',
       'approval:',
       'final-summary',
     ]) {

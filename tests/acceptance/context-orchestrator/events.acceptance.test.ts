@@ -12,6 +12,7 @@ describe('ACO events acceptance', () => {
     ]);
 
     expect(workflowSource).toContain('graph-validation-gate');
+    expect(workflowSource).toContain('evidenceResolution');
     expect(workflowSource).toContain('approval:');
     expect(workflowSource).toContain('capture_response: true');
     expect(workflowSource).toContain('trigger_rule: all_done');

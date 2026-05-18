@@ -107,8 +107,12 @@ nodes:
         const capsuleExpected = readiness === "needs_approval" && compiled.graphStatus === "forbidden";
         const contextIntent = compiled.contextIntent ?? status.contextIntent ?? {};
         const blockers = compiled.evidenceBlockers ?? status.evidenceBlockers ?? [];
+        const evidenceResolution = compiled.evidenceResolution ?? status.evidenceResolution ?? { required: false, items: [] };
         const blockerLines = blockers.length > 0
           ? blockers.map((blocker) => `- ${blocker.id}: ${blocker.nextVerificationAction}`)
+          : ["- none"];
+        const resolutionLines = evidenceResolution.items.length > 0
+          ? evidenceResolution.items.map((item) => `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval === true ? "yes" : "no"}; ${item.nextAction}`)
           : ["- none"];
         const lines = [
           "# Context Orchestrator Handoff",
@@ -130,6 +134,8 @@ nodes:
           `Ledger rows: ${compiled.ledgerSummary?.combined?.total ?? "unknown"}`,
           `Evidence blockers: ${blockers.length}`,
           ...blockerLines,
+          `Evidence resolution required: ${evidenceResolution.required === true ? "yes" : "no"}`,
+          ...resolutionLines,
           `Waivers: ${(compiled.graphWaiverIds ?? []).join(", ") || "none"}`,
           "",
           "## Next Action",

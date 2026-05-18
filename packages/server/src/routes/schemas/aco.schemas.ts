@@ -65,6 +65,28 @@ const acoEvidenceBlockerSchema = z
   })
   .openapi('AcoEvidenceBlocker');
 
+const acoEvidenceResolutionItemSchema = z
+  .object({
+    evidenceId: z.string(),
+    capabilityId: z.string(),
+    targetKind: z.enum(['openai', 'third-party', 'unknown', 'graph', 'validation']),
+    targetName: z.string(),
+    resolver: z.enum(['openai-docs-mcp', 'context7', 'manual', 'approval']),
+    reason: z.string(),
+    nextAction: z.string(),
+    requiresApproval: z.boolean(),
+    blockingAcceptanceIds: z.array(z.string()),
+    expectedSuccessEvidence: z.array(z.string()),
+  })
+  .openapi('AcoEvidenceResolutionItem');
+
+const acoEvidenceResolutionSchema = z
+  .object({
+    required: z.boolean(),
+    items: z.array(acoEvidenceResolutionItemSchema),
+  })
+  .openapi('AcoEvidenceResolution');
+
 const acoRouteSchema = z
   .object({
     id: z.string(),
@@ -95,6 +117,7 @@ export const acoStatusResponseSchema = z
     ledgerSchemaVersion: z.string(),
     ledgerSummary: acoLedgerSummarySchema,
     evidenceBlockers: z.array(acoEvidenceBlockerSchema),
+    evidenceResolution: acoEvidenceResolutionSchema,
   })
   .openapi('AcoStatusResponse');
 
@@ -153,6 +176,7 @@ export const acoCompileResponseSchema = z
     ledgerSchemaVersion: z.string(),
     ledgerSummary: acoLedgerSummarySchema,
     evidenceBlockers: z.array(acoEvidenceBlockerSchema),
+    evidenceResolution: acoEvidenceResolutionSchema,
   })
   .openapi('AcoCompileResponse');
 

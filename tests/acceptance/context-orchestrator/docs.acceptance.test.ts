@@ -23,4 +23,14 @@ describe('ACO documentation acceptance', () => {
     expect(plan.unresolved).toEqual([]);
     expect(plan.targets.every(target => target.topic !== 'Implement')).toBe(true);
   });
+
+  test('Spec: 025-goal-bound-evidence-gate-spec.md Acceptance: AC-ACO-EVIDENCE-001 imperative goal words do not create unresolved Context7 targets', () => {
+    const plan = planDocumentation({
+      prompt:
+        'Identify the single next highest-leverage improvement to my Agentic Context Orchestrator.',
+    });
+
+    expect(plan.unresolved).toEqual([]);
+    expect(plan.targets.every(target => target.topic !== 'Identify')).toBe(true);
+  });
 });

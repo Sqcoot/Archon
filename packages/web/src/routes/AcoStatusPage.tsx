@@ -193,6 +193,35 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
 
       <Card>
         <CardHeader>
+          <CardTitle>Evidence Resolution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {status.evidenceResolution.items.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No evidence resolution actions.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {status.evidenceResolution.items.map(item => (
+                <div
+                  key={`${item.evidenceId}-${item.targetName}`}
+                  className="rounded-md border border-border bg-surface p-3 text-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-text-primary">{item.evidenceId}</span>
+                    <Badge variant={item.requiresApproval ? 'destructive' : 'secondary'}>
+                      {item.resolver} · {item.targetKind}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 font-medium text-text-primary">{item.targetName}</div>
+                  <div className="mt-1 text-muted-foreground">{item.nextAction}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{waiverTitle}</CardTitle>
         </CardHeader>
         <CardContent>
@@ -256,6 +285,7 @@ function CompileResult({
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <Metric label="route" value={result.route.label} />
         <Metric label="blockers" value={String(result.evidenceBlockers.length)} />
+        <Metric label="closure actions" value={String(result.evidenceResolution.items.length)} />
         <Metric label="archive" value={result.archivePath} />
       </div>
       <a className="mt-3 inline-flex text-sm text-primary underline" href={packageUrl}>

@@ -1044,6 +1044,12 @@
           "ref": "packages/context-orchestrator/src/ledgers.ts",
           "markers": ["lastVerifiedAt", "verificationSource", "freshness"],
           "summary": "Ledger normalization preserves provenance and freshness fields."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/evidence-closure.test.ts",
+          "markers": ["AC-ACO-EVIDENCE-001", "ctx7@latest library Hono", "OpenAI Docs MCP"],
+          "summary": "Evidence closure tests cover imperative false positives plus Context7 and OpenAI Docs MCP resolver selection."
         }
       ],
       "status": "enforced"
@@ -1063,6 +1069,12 @@
           "ref": "packages/context-orchestrator/src/status.ts",
           "markers": ["evidenceBlockers", "tool.docs-evidence"],
           "summary": "Readiness evidence reports named blockers and next actions for unresolved required evidence."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/evidence-closure.ts",
+          "markers": ["createEvidenceClosurePlan", "EvidenceClosurePlan"],
+          "summary": "Evidence closure planner turns blockers into structured resolution items without executing tools."
         }
       ],
       "status": "enforced"

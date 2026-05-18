@@ -8,9 +8,18 @@ const thirdPartyIgnore = new Set([
   'Build',
   'OpenAI',
   'BMAD',
+  'Agentic',
   'Can',
   'Could',
+  'Context',
   'Create',
+  'Evidence',
+  'Goal',
+  'Identify',
+  'Improve',
+  'Improvement',
+  'Ledgers',
+  'Library',
   'SDD',
   'ATDD',
   'MCP',
@@ -27,8 +36,11 @@ const thirdPartyIgnore = new Set([
   'Resolve',
   'Review',
   'Run',
+  'Single',
   'Should',
+  'SDK',
   'Test',
+  'Tools',
   'Update',
   'Use',
   'Validate',
@@ -37,6 +49,7 @@ const thirdPartyIgnore = new Set([
   'Where',
   'Who',
   'Why',
+  'Workflow',
 ]);
 
 export interface PlanDocumentationOptions {
@@ -95,7 +108,15 @@ export function planDocumentation(options: PlanDocumentationOptions): Documentat
 }
 
 function detectThirdPartyLibrary(prompt: string): string | null {
-  const matches = prompt.match(/\b[A-Z][A-Za-z0-9]*(?:Library|SDK|JS|Js)?\b/g) ?? [];
-  const candidate = matches.find(match => !thirdPartyIgnore.has(match));
-  return candidate ?? null;
+  const targetPattern =
+    /\b(?:[Uu]se|[Uu]sing|[Ww]ith|[Vv]ia|[Ff]or|[Ll]ibrary|[Ff]ramework|[Ss][Dd][Kk]|[Aa][Pp][Ii]|[Cc][Ll][Ii]|[Tt]ool)\s+([A-Z][A-Za-z0-9]*(?:Library|SDK|JS|Js)?)\b/g;
+
+  for (let match = targetPattern.exec(prompt); match !== null; match = targetPattern.exec(prompt)) {
+    const candidate = match[1];
+    if (candidate && !thirdPartyIgnore.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
