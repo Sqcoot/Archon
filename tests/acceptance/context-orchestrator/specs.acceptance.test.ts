@@ -133,6 +133,12 @@ describe('ACO spec acceptance', () => {
       'AC-P2-DEMO',
       'AC-NONREG',
       'AC-FORBIDDEN-GRAPH-001',
+      'AC-GWCL-001',
+      'AC-GWCL-002',
+      'AC-GWCL-003',
+      'AC-GWCL-004',
+      'AC-GWCL-005',
+      'AC-GWCL-006',
       'ACO-CODEX-003',
       'ACO-EVENTS-001',
     ]) {

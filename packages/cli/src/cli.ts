@@ -70,6 +70,7 @@ import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import {
   contextCompileCommand,
+  contextGraphWaiversCommand,
   contextLedgersCommand,
   contextRouteCommand,
   contextStatusCommand,
@@ -121,6 +122,7 @@ Commands:
   aco status                 Show productized ACO status and graph confidence limits
   context route <prompt>     Select an ACO BMAD route
   context compile <prompt>   Compile an ACO Codex-ready prompt package
+  context graph-waivers      Diagnose failed ACO graph waivers
   context ledgers            Show ACO Tool Availability and Commands ledgers
   context status             Show ACO research and validation status
   context validate           Validate ACO research/spec readiness
@@ -159,6 +161,7 @@ Examples:
   archon aco status --cwd /path/to/repo --json
   archon context route --cwd /path/to/repo "Plan this feature"
   archon context compile --cwd /path/to/repo "Plan this feature"
+  archon context graph-waivers --cwd /path/to/repo --json
   archon context ledgers --cwd /path/to/repo --json
   archon context validate --cwd /path/to/repo
   archon skill install
@@ -670,6 +673,13 @@ async function main(): Promise<number> {
           case 'ledgers':
             return await contextLedgersCommand({ cwd: effectiveCwd, json: jsonFlag });
 
+          case 'graph-waivers':
+            return await contextGraphWaiversCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              timestamp: values.timestamp as string | undefined,
+            });
+
           case 'compile': {
             const prompt = positionals.slice(2).join(' ');
             if (!prompt) {
@@ -704,7 +714,7 @@ async function main(): Promise<number> {
             } else {
               console.error(`Unknown context subcommand: ${subcommand}`);
             }
-            console.error('Available: route, compile, ledgers, status, validate');
+            console.error('Available: route, compile, graph-waivers, ledgers, status, validate');
             return 1;
         }
         break;

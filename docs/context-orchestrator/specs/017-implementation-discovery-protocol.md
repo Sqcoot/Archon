@@ -113,6 +113,12 @@ can be observed safely, ACO records the result as evidence rather than leaving
 the row as unexplained `unknown`. Mutating checks remain `forbidden` or
 approval-required even when they would improve confidence.
 
+Graph Waiver Closure is a read-only confidence-closure lane. It may inspect
+the upstream manifest, existing graph artifacts, metadata, graph reports,
+status, and ledgers. It must not regenerate graphs, rewrite manifests, clear
+waivers, or promote readiness. Commands that could repair graph evidence are
+reported as approval-required recommendations.
+
 ## Known Unknowns
 
 - which later phases need correct-course
@@ -133,6 +139,7 @@ approval-required even when they would improve confidence.
 - AC-LEDGER-008: Given ledger-leveraged validation runs, when completion is reported, then validation commands and their pass, partial, blocked, skipped, or failed states are recorded as evidence.
 - AC-CONFIDENCE-003: Given a ledger row remains `unknown`, `partial`, or waived after confidence closure, when completion is reported, then the row includes explicit evidence or a named waiver explaining the confidence limit.
 - AC-CONFIDENCE-005: Given a command writes tracked files or generated artifacts, when confidence closure runs, then the command remains `forbidden` or approval-required instead of being treated as available.
+- AC-GWCL-005: Given Graph Waiver Closure recommends graph repair, when command safety is evaluated, then repair commands remain approval-required recommendations and are not run.
 
 ## Failure Behavior
 
