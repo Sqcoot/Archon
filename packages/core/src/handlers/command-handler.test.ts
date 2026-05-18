@@ -29,8 +29,19 @@ const mockDeleteCodebase = mock(() => Promise.resolve());
 const mockListCodebases = mock(() => Promise.resolve([]));
 const mockGetActiveSession = mock(() => Promise.resolve(null));
 const mockDeactivateSession = mock(() => Promise.resolve());
-const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
+const testContextIntent = {
+  objective: 'Implement native context loop',
+  normalizedObjective: 'implement native context loop',
+  intentHash: 'intent-123',
   cwd: '/workspace/my-repo',
+  commitSha: 'abc123',
+  generatedAt: '2026-05-18T12:00:00.000Z',
+};
+const testEvidenceBlockers: [] = [];
+
+const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: unknown) => ({
+  cwd: '/workspace/my-repo',
+  contextIntent: testContextIntent,
   graphStatus: 'forbidden',
   graphWaivers: 2,
   graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace'],
@@ -39,16 +50,19 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
   readiness: 'needs_approval',
   validationStatus: 'passed',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+  evidenceBlockers: testEvidenceBlockers,
   ledgerSummary: {
     toolAvailability: { total: 0, counts: zeroLedgerCounts() },
     commands: { total: 0, counts: zeroLedgerCounts() },
     combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
   },
 }));
-const mockGetContextOrchestratorLedgers = mock(async (_cwd: string) => ({
+const mockGetContextOrchestratorLedgers = mock(async (_cwd: string, _options?: unknown) => ({
   schemaVersion: 'aco.ledger-bundle.v1',
+  contextIntent: testContextIntent,
   toolAvailability: [],
   commands: [],
+  evidenceBlockers: testEvidenceBlockers,
   summary: {
     toolAvailability: { total: 0, counts: zeroLedgerCounts() },
     commands: { total: 0, counts: zeroLedgerCounts() },
@@ -69,6 +83,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
   },
   package: {
     runId: 'run-1',
+    contextIntent: testContextIntent,
     graphContext: {
       status: 'forbidden',
       waiverCount: 2,
@@ -78,6 +93,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
     bmadRoute: mockRouteBmad({ prompt: 'compile' }),
     ledgerBundle: {
       schemaVersion: 'aco.ledger-bundle.v1',
+      evidenceBlockers: testEvidenceBlockers,
       summary: {
         combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
       },
@@ -1715,7 +1731,9 @@ describe('CommandHandler', () => {
         expect(result.success).toBe(true);
         expect(result.message).toContain('Context Orchestrator Status');
         expect(result.message).toContain('Readiness: Needs approval');
-        expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/workspace/my-repo');
+        expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/workspace/my-repo', {
+          objective: undefined,
+        });
       });
 
       test('AC-P1-SLASH routes a request', async () => {
@@ -1736,7 +1754,9 @@ describe('CommandHandler', () => {
         expect(result.success).toBe(true);
         expect(result.message).toContain('Context Orchestrator Ledgers');
         expect(result.message).toContain('aco.ledger-bundle.v1');
-        expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/workspace/my-repo');
+        expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/workspace/my-repo', {
+          objective: undefined,
+        });
       });
 
       test('AC-P1-SLASH compiles a context package', async () => {

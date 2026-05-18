@@ -5,7 +5,10 @@ import {
 import type { ContextCommandOptions } from './context';
 
 export async function acoStatusCommand(options: ContextCommandOptions): Promise<void> {
-  const status = await getContextOrchestratorStatus(options.cwd);
+  const status = await getContextOrchestratorStatus(options.cwd, {
+    objective: options.objective,
+    timestamp: options.timestamp,
+  });
   if (options.json) {
     console.log(JSON.stringify(status, null, 2));
     return;
@@ -29,11 +32,14 @@ export function formatAcoStatusText(status: ContextOrchestratorStatus): string {
     'Context Orchestrator Status',
     `Readiness: ${readiness}`,
     `cwd: ${status.cwd}`,
+    `intent: ${status.contextIntent.intentHash}`,
+    `objective: ${status.contextIntent.normalizedObjective}`,
     `validation: ${status.validationStatus}`,
     `graph: ${status.graphStatus}`,
     `waivers: ${String(status.graphWaivers)}`,
     `schema: ${status.ledgerSchemaVersion}`,
     `ledger counts: total=${String(combined.total)} available=${String(combined.counts.available)} partial=${String(combined.counts.partial)} deferred=${String(combined.counts.deferred)} forbidden=${String(combined.counts.forbidden)} unknown=${String(combined.counts.unknown)}`,
+    `evidence blockers: ${String(status.evidenceBlockers.length)}`,
     ...waiverLines,
   ].join('\n');
 }

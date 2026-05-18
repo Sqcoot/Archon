@@ -90,6 +90,7 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
         <CardContent>
           <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="validation" value={status.validationStatus} />
+            <Metric label="intent" value={status.contextIntent.intentHash} />
             <Metric label="graph" value={status.graphStatus} />
             <Metric label="waivers" value={String(status.graphWaivers)} />
             <Metric
@@ -164,6 +165,34 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
 
       <Card>
         <CardHeader>
+          <CardTitle>Evidence Blockers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {status.evidenceBlockers.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No evidence blockers.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {status.evidenceBlockers.map(blocker => (
+                <div
+                  key={blocker.id}
+                  className="rounded-md border border-border bg-surface p-3 text-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-text-primary">{blocker.id}</span>
+                    <Badge variant="secondary">
+                      {blocker.status} · {blocker.freshness}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 text-muted-foreground">{blocker.nextVerificationAction}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{waiverTitle}</CardTitle>
         </CardHeader>
         <CardContent>
@@ -216,6 +245,9 @@ function CompileResult({
         <div>
           <div className="font-medium text-text-primary">Context package created</div>
           <div className="mt-1 font-mono text-xs text-muted-foreground">{result.runId}</div>
+          <div className="mt-1 font-mono text-xs text-muted-foreground">
+            {result.contextIntent.intentHash}
+          </div>
         </div>
         <Badge variant={result.approvalRequired ? 'destructive' : 'default'}>
           {result.approvalRequired ? 'Needs approval' : 'Ready'}
@@ -223,6 +255,7 @@ function CompileResult({
       </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <Metric label="route" value={result.route.label} />
+        <Metric label="blockers" value={String(result.evidenceBlockers.length)} />
         <Metric label="archive" value={result.archivePath} />
       </div>
       <a className="mt-3 inline-flex text-sm text-primary underline" href={packageUrl}>

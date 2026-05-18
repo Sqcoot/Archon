@@ -15,8 +15,8 @@ describe('context orchestrator status confidence', () => {
     const prompt = 'implement aco confidence closure';
     const timestamp = '2026-05-18T12:00:00.000Z';
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-status-confidence-'));
-    const status = await getContextOrchestratorStatus(repoRoot);
-    const ledgers = await getContextOrchestratorLedgers(repoRoot, timestamp);
+    const status = await getContextOrchestratorStatus(repoRoot, { objective: prompt, timestamp });
+    const ledgers = await getContextOrchestratorLedgers(repoRoot, { objective: prompt, timestamp });
     const compiled = await compilePromptPackage({
       cwd: repoRoot,
       prompt,

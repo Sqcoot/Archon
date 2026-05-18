@@ -24,6 +24,7 @@ describe('decision dossier', () => {
       selectedCapabilities: selectedCapabilitiesFixture,
       validationReport: validationReportFixture,
       ledgerBundle: ledgerBundleFixture(),
+      contextIntent: contextIntentFixture,
     });
 
     expect(dossier.schemaVersion).toBe('aco.decision-dossier.v1');
@@ -105,6 +106,15 @@ const validationReportFixture: ValidationReport = {
   checks: [{ id: 'aco-traceability', status: 'passed', message: 'passed' }],
 };
 
+const contextIntentFixture = {
+  objective: 'Improve project context UX with SECRET_TOKEN=[REDACTED]',
+  normalizedObjective: 'improve project context ux with secret_token=[redacted]',
+  intentHash: 'intent-test',
+  cwd: '/repo',
+  commitSha: 'abc123',
+  generatedAt: '2026-05-18T12:00:00.000Z',
+};
+
 function graphContextFixture(): GraphContext {
   return {
     status: 'forbidden',
@@ -136,6 +146,7 @@ function ledgerBundleFixture(): LedgerBundle {
   const counts = statusCounts({ available: 1, forbidden: 1 });
   return {
     schemaVersion: 'aco.ledger-bundle.v1',
+    contextIntent: contextIntentFixture,
     toolAvailability: [
       {
         id: 'tool.graph-evidence',
@@ -152,6 +163,12 @@ function ledgerBundleFixture(): LedgerBundle {
         fallback: 'Record waiver.',
         owner: 'context-orchestrator',
         lastVerified: 'unknown',
+        lastVerifiedAt: 'unknown',
+        verificationSource: 'graph=forbidden',
+        verificationMethod: 'command',
+        sourceArtifact: 'getGraphContext({ cwd })',
+        nextVerificationAction: 'Review active graph waivers.',
+        freshness: 'waived',
         notes: 'forbidden',
         confidence: 'observed',
         evidence: [],
@@ -173,6 +190,12 @@ function ledgerBundleFixture(): LedgerBundle {
         fallback: 'Use committed graph evidence.',
         owner: 'context-orchestrator',
         lastVerified: 'unknown',
+        lastVerifiedAt: 'unknown',
+        verificationSource: 'package.json',
+        verificationMethod: 'file',
+        sourceArtifact: 'repo root',
+        nextVerificationAction: 'Use committed graph evidence.',
+        freshness: 'unknown',
         mutatesTrackedFiles: true,
         requiresApproval: true,
         safety: 'writes-tracked-files',
@@ -186,6 +209,7 @@ function ledgerBundleFixture(): LedgerBundle {
       commands: counts,
       combined: statusCounts({ available: 2, forbidden: 2 }),
     },
+    evidenceBlockers: [],
   };
 }
 

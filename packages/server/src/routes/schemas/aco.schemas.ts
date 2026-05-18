@@ -42,6 +42,29 @@ const acoLedgerSummarySchema = z
   })
   .openapi('AcoLedgerSummary');
 
+const acoContextIntentSchema = z
+  .object({
+    objective: z.string(),
+    normalizedObjective: z.string(),
+    intentHash: z.string(),
+    cwd: z.string(),
+    commitSha: z.string(),
+    generatedAt: z.string(),
+  })
+  .openapi('AcoContextIntent');
+
+const acoEvidenceBlockerSchema = z
+  .object({
+    id: z.string(),
+    kind: z.enum(['tool', 'command', 'graph', 'validation', 'docs']),
+    status: z.string(),
+    freshness: z.enum(['fresh', 'stale', 'unknown', 'waived']),
+    reason: z.string(),
+    sourceArtifact: z.string(),
+    nextVerificationAction: z.string(),
+  })
+  .openapi('AcoEvidenceBlocker');
+
 const acoRouteSchema = z
   .object({
     id: z.string(),
@@ -54,12 +77,14 @@ const acoRouteSchema = z
 export const acoStatusQuerySchema = z
   .object({
     cwd: z.string().min(1),
+    objective: z.string().min(1).optional(),
   })
   .openapi('AcoStatusQuery');
 
 export const acoStatusResponseSchema = z
   .object({
     cwd: z.string(),
+    contextIntent: acoContextIntentSchema,
     graphStatus: z.string(),
     graphWaivers: z.number(),
     graphWaiverIds: z.array(z.string()),
@@ -69,12 +94,14 @@ export const acoStatusResponseSchema = z
     validationStatus: z.string(),
     ledgerSchemaVersion: z.string(),
     ledgerSummary: acoLedgerSummarySchema,
+    evidenceBlockers: z.array(acoEvidenceBlockerSchema),
   })
   .openapi('AcoStatusResponse');
 
 export const acoLedgersQuerySchema = z
   .object({
     cwd: z.string().min(1),
+    objective: z.string().min(1).optional(),
   })
   .openapi('AcoLedgersQuery');
 
@@ -82,8 +109,10 @@ export const acoLedgersResponseSchema = z
   .object({
     schemaVersion: z.string(),
     generatedAt: z.string().optional(),
+    contextIntent: acoContextIntentSchema,
     toolAvailability: z.array(z.record(z.unknown())),
     commands: z.array(z.record(z.unknown())),
+    evidenceBlockers: z.array(acoEvidenceBlockerSchema),
     summary: acoLedgerSummarySchema,
   })
   .openapi('AcoLedgersResponse');
@@ -110,6 +139,7 @@ export const acoCompileBodySchema = z
 export const acoCompileResponseSchema = z
   .object({
     runId: z.string(),
+    contextIntent: acoContextIntentSchema,
     archivePath: z.string(),
     files: z.record(z.string()),
     route: acoRouteSchema,
@@ -122,6 +152,7 @@ export const acoCompileResponseSchema = z
     validationStatus: z.string(),
     ledgerSchemaVersion: z.string(),
     ledgerSummary: acoLedgerSummarySchema,
+    evidenceBlockers: z.array(acoEvidenceBlockerSchema),
   })
   .openapi('AcoCompileResponse');
 

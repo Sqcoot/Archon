@@ -11,6 +11,14 @@ const repoRoot = resolve(import.meta.dir, '../../../..');
 
 const fixtureStatus: ContextOrchestratorStatus = {
   cwd: repoRoot,
+  contextIntent: {
+    objective: 'Inspect Context Orchestrator readiness',
+    normalizedObjective: 'inspect context orchestrator readiness',
+    intentHash: 'intent-123',
+    cwd: repoRoot,
+    commitSha: 'abc123',
+    generatedAt: '2026-05-18T12:00:00.000Z',
+  },
   validationStatus: 'passed',
   graphStatus: 'forbidden',
   graphWaivers: 2,
@@ -19,6 +27,7 @@ const fixtureStatus: ContextOrchestratorStatus = {
   approvalRequired: true,
   readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+  evidenceBlockers: [],
   ledgerSummary: {
     toolAvailability: {
       total: 20,
@@ -95,12 +104,13 @@ describe('aco commands', () => {
     logSpy = spyOn(console, 'log').mockImplementation(() => {});
     errorSpy = spyOn(console, 'error').mockImplementation(() => {});
 
-    await acoStatusCommand({ cwd: repoRoot, json: true });
+    const timestamp = '2026-05-18T12:00:00.000Z';
+    await acoStatusCommand({ cwd: repoRoot, json: true, timestamp });
 
     expect(errorSpy).not.toHaveBeenCalled();
     const output = logSpy.mock.calls[0]?.[0] as string;
     const parsed = JSON.parse(output) as ContextOrchestratorStatus;
-    const expected = await getContextOrchestratorStatus(repoRoot);
+    const expected = await getContextOrchestratorStatus(repoRoot, { timestamp });
     expect(parsed).toEqual(expected);
   });
 

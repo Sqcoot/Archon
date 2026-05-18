@@ -252,13 +252,15 @@ export async function listWorkflows(cwd?: string): Promise<WorkflowListEntry[]> 
   return result.workflows;
 }
 
-export async function getAcoStatus(cwd: string): Promise<AcoStatusResponse> {
+export async function getAcoStatus(cwd: string, objective?: string): Promise<AcoStatusResponse> {
   const params = new URLSearchParams({ cwd });
+  if (objective) params.set('objective', objective);
   return fetchJSON<AcoStatusResponse>(`/api/aco/status?${params.toString()}`);
 }
 
-export async function getAcoLedgers(cwd: string): Promise<AcoLedgersResponse> {
+export async function getAcoLedgers(cwd: string, objective?: string): Promise<AcoLedgersResponse> {
   const params = new URLSearchParams({ cwd });
+  if (objective) params.set('objective', objective);
   return fetchJSON<AcoLedgersResponse>(`/api/aco/ledgers?${params.toString()}`);
 }
 

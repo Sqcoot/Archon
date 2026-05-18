@@ -28,6 +28,7 @@ import {
 import type {
   ContextOrchestratorReadiness,
   ContextOrchestratorStatus,
+  EvidenceBlocker,
   LedgerBundleSummary,
   PromptPackageResult,
 } from '@archon/context-orchestrator';
@@ -925,7 +926,8 @@ async function handleContextCommand(
 
   switch (subcommand) {
     case 'status': {
-      const status = await getContextOrchestratorStatus(cwd);
+      const objective = args.slice(1).join(' ').trim() || undefined;
+      const status = await getContextOrchestratorStatus(cwd, { objective });
       return { success: true, message: renderContextStatus(status) };
     }
 
@@ -954,13 +956,17 @@ async function handleContextCommand(
     }
 
     case 'ledgers': {
-      const ledgers = await getContextOrchestratorLedgers(cwd);
+      const objective = args.slice(1).join(' ').trim() || undefined;
+      const ledgers = await getContextOrchestratorLedgers(cwd, { objective });
       return {
         success: true,
         message: [
           '## Context Orchestrator Ledgers',
           '',
           `Schema: ${ledgers.schemaVersion}`,
+          `Intent: ${ledgers.contextIntent.intentHash}`,
+          `Objective: ${ledgers.contextIntent.normalizedObjective}`,
+          renderEvidenceBlockers(ledgers.evidenceBlockers),
           renderLedgerSummary('Tool availability', ledgers.summary.toolAvailability),
           renderLedgerSummary('Commands', ledgers.summary.commands),
           renderLedgerSummary('Combined', ledgers.summary.combined),
@@ -995,7 +1001,7 @@ async function handleContextCommand(
       return {
         success: false,
         message:
-          'Usage:\n  /context status\n  /context route <request>\n  /context ledgers\n  /context compile <request>\n  /context run <request>',
+          'Usage:\n  /context status [request]\n  /context route <request>\n  /context ledgers [request]\n  /context compile <request>\n  /context run <request>',
       };
   }
 }
@@ -1005,6 +1011,8 @@ function renderContextStatus(status: ContextOrchestratorStatus): string {
     '## Context Orchestrator Status',
     '',
     `Readiness: ${formatReadiness(status.readiness)}`,
+    `Intent: ${status.contextIntent.intentHash}`,
+    `Objective: ${status.contextIntent.normalizedObjective}`,
     `Validation: ${status.validationStatus}`,
     `Graph: ${status.graphStatus}`,
     `Approval required: ${status.approvalRequired ? 'yes' : 'no'}`,
@@ -1012,6 +1020,8 @@ function renderContextStatus(status: ContextOrchestratorStatus): string {
     status.graphWaiverIds.length > 0
       ? `Waiver IDs: ${status.graphWaiverIds.join(', ')}`
       : 'Waiver IDs: none',
+    '',
+    renderEvidenceBlockers(status.evidenceBlockers),
     '',
     renderLedgerSummary('Combined ledgers', status.ledgerSummary.combined),
   ].join('\n');
@@ -1021,19 +1031,35 @@ function renderContextCompileSummary(result: PromptPackageResult): string {
   const promptPackage = result.package;
   const readiness = getContextOrchestratorReadiness(
     promptPackage.graphContext,
-    promptPackage.validationReport
+    promptPackage.validationReport,
+    promptPackage.ledgerBundle.evidenceBlockers
   );
   return [
     '## Context Package Created',
     '',
     `Run ID: ${promptPackage.runId}`,
+    `Intent: ${promptPackage.contextIntent.intentHash}`,
+    `Objective: ${promptPackage.contextIntent.normalizedObjective}`,
     `Readiness: ${formatReadiness(readiness)}`,
     `Validation: ${promptPackage.validationReport.status}`,
     `Graph: ${promptPackage.graphContext.status}`,
     `Route: ${promptPackage.bmadRoute.label}`,
     `Package: ${result.archivePath}`,
     '',
+    renderEvidenceBlockers(promptPackage.ledgerBundle.evidenceBlockers),
+    '',
     renderLedgerSummary('Combined ledgers', promptPackage.ledgerBundle.summary.combined),
+  ].join('\n');
+}
+
+function renderEvidenceBlockers(blockers: readonly EvidenceBlocker[]): string {
+  if (blockers.length === 0) return 'Evidence blockers: none';
+  return [
+    'Evidence blockers:',
+    ...blockers.map(
+      blocker =>
+        `- ${blocker.id} (${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+    ),
   ].join('\n');
 }
 
@@ -1091,9 +1117,9 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 - \`/workflow reject <id>\` — Reject a paused run
 
 **Context Orchestrator**
-- \`/context status\` — Show route readiness, ledgers, and approval state
+- \`/context status [request]\` — Show route readiness, ledgers, and approval state
 - \`/context route <request>\` — Pick the BMAD route
-- \`/context ledgers\` — Show tool and command ledger coverage
+- \`/context ledgers [request]\` — Show tool and command ledger coverage
 - \`/context compile <request>\` — Compile the context package
 - \`/context run <request>\` — Run the native context orchestration workflow
 

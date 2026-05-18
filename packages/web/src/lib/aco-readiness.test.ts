@@ -9,6 +9,14 @@ import {
 
 const baseStatus: AcoStatusResponse = {
   cwd: '/repo',
+  contextIntent: {
+    objective: 'Implement native loop',
+    normalizedObjective: 'implement native loop',
+    intentHash: 'intent-123',
+    cwd: '/repo',
+    commitSha: 'abc123',
+    generatedAt: '2026-05-18T12:00:00.000Z',
+  },
   validationStatus: 'passed',
   graphStatus: 'forbidden',
   graphWaivers: 2,
@@ -17,6 +25,7 @@ const baseStatus: AcoStatusResponse = {
   approvalRequired: true,
   readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+  evidenceBlockers: [],
   ledgerSummary: {
     toolAvailability: {
       total: 20,
@@ -61,7 +70,7 @@ describe('ACO readiness display helpers', () => {
   test('AC-P1-WEB AC-FORBIDDEN-GRAPH-001 keeps graph waivers approval-gated', () => {
     expect(getAcoReadinessLabel(baseStatus)).toBe('Needs approval');
     expect(formatAcoEvidenceSummary(baseStatus)).toBe(
-      'validation passed · graph forbidden · 2 approval-required graph limits · 39 ledger rows · 0 unknown'
+      'intent intent-123 · validation passed · graph forbidden · 2 approval-required graph limits · 39 ledger rows · 0 blockers · 0 unknown'
     );
   });
 
@@ -75,11 +84,13 @@ describe('ACO readiness display helpers', () => {
     const narrative = formatAcoHandoffNarrative(baseStatus);
 
     expect(narrative).toContain('Context Orchestrator Readiness: Needs approval');
+    expect(narrative).toContain('Intent: intent-123');
     expect(narrative).toContain('Validation: passed');
     expect(narrative).toContain('Graph: forbidden');
     expect(narrative).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(narrative).toContain('graph-waiver.bmad-sample-data');
     expect(narrative).toContain('Ledger: aco.ledger-bundle.v1; total 39');
+    expect(narrative).toContain('Evidence blockers:\n- none');
     expect(narrative).toContain('Needs approval: failed waiver-required graph evidence');
     expect(narrative).not.toContain('Ready with known limits');
     expect(narrative).not.toContain('complete graph coverage');

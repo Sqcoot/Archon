@@ -342,10 +342,19 @@ function minimalBundle(overrides: {
   return {
     schemaVersion: 'aco.ledger-bundle.v1',
     generatedAt: timestamp,
+    contextIntent: {
+      objective: 'test objective',
+      normalizedObjective: 'test objective',
+      intentHash: 'intent-test',
+      cwd: '/repo',
+      commitSha: 'abc123',
+      generatedAt: timestamp,
+    },
     toolAvailability: (overrides.toolAvailability ?? [
       toolEntry('tool.base'),
     ]) as ToolAvailabilityLedgerEntry[],
     commands: (overrides.commands ?? [commandEntry('cmd.base')]) as CommandLedgerEntry[],
+    evidenceBlockers: [],
   };
 }
 
@@ -365,6 +374,12 @@ function toolEntry(id: string): ToolAvailabilityLedgerEntry {
     fallback: `fallback ${id}`,
     owner: 'test',
     lastVerified: '2026-05-18',
+    lastVerifiedAt: timestamp,
+    verificationSource: `source ${id}`,
+    verificationMethod: 'command',
+    sourceArtifact: `invoke ${id}`,
+    nextVerificationAction: `fallback ${id}`,
+    freshness: 'fresh',
     notes: `notes ${id}`,
     confidence: 'observed',
     evidence: [
@@ -374,6 +389,12 @@ function toolEntry(id: string): ToolAvailabilityLedgerEntry {
         invocationPath: `invoke ${id}`,
         confidence: 'observed',
         reason: `reason ${id}`,
+        lastVerifiedAt: timestamp,
+        verificationSource: `source ${id}`,
+        verificationMethod: 'command',
+        sourceArtifact: `invoke ${id}`,
+        nextVerificationAction: `fallback ${id}`,
+        freshness: 'fresh',
       },
     ],
   };
@@ -395,6 +416,12 @@ function commandEntry(id: string): CommandLedgerEntry {
     fallback: `fallback ${id}`,
     owner: 'test',
     lastVerified: '2026-05-18',
+    lastVerifiedAt: timestamp,
+    verificationSource: `source ${id}`,
+    verificationMethod: 'command',
+    sourceArtifact: `invoke ${id}`,
+    nextVerificationAction: `fallback ${id}`,
+    freshness: 'fresh',
     mutatesTrackedFiles: false,
     requiresApproval: false,
     safety: 'read-only',
@@ -407,6 +434,12 @@ function commandEntry(id: string): CommandLedgerEntry {
         invocationPath: `invoke ${id}`,
         confidence: 'observed',
         reason: `reason ${id}`,
+        lastVerifiedAt: timestamp,
+        verificationSource: `source ${id}`,
+        verificationMethod: 'command',
+        sourceArtifact: `invoke ${id}`,
+        nextVerificationAction: `fallback ${id}`,
+        freshness: 'fresh',
       },
     ],
   };
