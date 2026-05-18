@@ -3,6 +3,7 @@ import { routeBmad } from './bmad';
 import { selectCapabilities } from './capabilities';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
+import { createContextIntent } from './intent';
 import { buildLedgerBundle, ledgerStatusOrder } from './ledgers';
 import { redactSecrets } from './security';
 import { getContextOrchestratorReadiness } from './status';
@@ -12,6 +13,7 @@ import type {
   BmadRoute,
   CapabilityRoute,
   CommandLedgerEntry,
+  ContextIntent,
   DecisionDossier,
   DecisionDossierApprovalCommand,
   DecisionDossierBlockedItem,
@@ -32,6 +34,7 @@ export interface CreateDecisionDossierOptions {
   cwd: string;
   prompt: string;
   timestamp?: string;
+  contextIntent?: ContextIntent;
   graphContext?: GraphContext;
   documentationPlan?: DocumentationPlan;
   bmadRoute?: BmadRoute;
@@ -55,6 +58,13 @@ export async function createDecisionDossier(
   options: CreateDecisionDossierOptions
 ): Promise<DecisionDossier> {
   const redactedPrompt = redactSecrets(options.prompt);
+  const contextIntent =
+    options.contextIntent ??
+    (await createContextIntent({
+      cwd: options.cwd,
+      objective: options.prompt,
+      timestamp: options.timestamp,
+    }));
   const graphContext = options.graphContext ?? (await getGraphContext({ cwd: options.cwd }));
   const documentationPlan =
     options.documentationPlan ?? planDocumentation({ prompt: options.prompt });
@@ -69,7 +79,9 @@ export async function createDecisionDossier(
     options.ledgerBundle ??
     (await buildLedgerBundle({
       cwd: options.cwd,
-      timestamp: options.timestamp,
+      objective: options.prompt,
+      timestamp: contextIntent.generatedAt,
+      contextIntent,
       graphContext,
       documentationPlan,
       bmadRoute,
@@ -77,7 +89,11 @@ export async function createDecisionDossier(
       selectedCapabilities,
       validationReport,
     }));
-  const readiness = getContextOrchestratorReadiness(graphContext, validationReport);
+  const readiness = getContextOrchestratorReadiness(
+    graphContext,
+    validationReport,
+    ledgerBundle.evidenceBlockers
+  );
   const approvalRequired = readiness === 'needs_approval';
   const approvalCommands = buildApprovalCommands(graphContext);
   const blockedItems = buildBlockedItems(graphContext, validationReport, ledgerBundle);
@@ -97,6 +113,7 @@ export async function createDecisionDossier(
   const dossier: DecisionDossier = {
     schemaVersion: DECISION_DOSSIER_SCHEMA_VERSION,
     ...(options.timestamp !== undefined ? { generatedAt: redactSecrets(options.timestamp) } : {}),
+    contextIntent,
     route: bmadRoute,
     decision,
     evidenceUsed: buildEvidenceUsed({
@@ -118,6 +135,7 @@ export async function createDecisionDossier(
       expiryCondition: redactSecrets(waiver.expiryCondition),
     })),
     ledgerSummary: ledgerBundle.summary,
+    evidenceBlockers: ledgerBundle.evidenceBlockers,
     blockedItems,
     approvalRequired,
     approvalCommands,
@@ -131,6 +149,7 @@ export async function createDecisionDossier(
       validationReport,
       approvalCommands,
       nextGoalObjective,
+      contextIntent,
     }),
   };
 
@@ -143,6 +162,7 @@ export function renderDecisionDossierMarkdown(dossier: DecisionDossier): string 
     '',
     `Schema: ${dossier.schemaVersion}`,
     ...(dossier.generatedAt !== undefined ? [`Generated: ${dossier.generatedAt}`] : []),
+    `Intent: ${dossier.contextIntent.intentHash}`,
     `Route: ${dossier.route.id}`,
     `Decision: ${dossier.decision.id}`,
     `Readiness: ${dossier.readiness}`,
@@ -169,6 +189,10 @@ export function renderDecisionDossierMarkdown(dossier: DecisionDossier): string 
     '## Blocked Items',
     '',
     ...renderBlockedItems(dossier.blockedItems),
+    '',
+    '## Evidence Blockers',
+    '',
+    ...renderEvidenceBlockers(dossier.evidenceBlockers),
     '',
     '## Approval Commands',
     '',
@@ -272,8 +296,8 @@ function buildEvidenceUsed(input: {
       id: 'ledgers',
       kind: 'ledger',
       status: input.ledgerBundle.schemaVersion,
-      source: 'buildLedgerBundle(...)',
-      summary: `combined rows=${input.ledgerBundle.summary.combined.total}`,
+      source: `buildLedgerBundle(...); intent=${input.ledgerBundle.contextIntent.intentHash}`,
+      summary: `combined rows=${input.ledgerBundle.summary.combined.total}; blockers=${input.ledgerBundle.evidenceBlockers.length}`,
     },
     {
       id: 'acceptance',
@@ -431,6 +455,7 @@ function buildNextPlanPrompt(input: {
   validationReport: ValidationReport;
   approvalCommands: DecisionDossierApprovalCommand[];
   nextGoalObjective: string;
+  contextIntent: ContextIntent;
 }): string {
   const waiverText =
     input.graphContext.waivers.length > 0
@@ -445,6 +470,7 @@ function buildNextPlanPrompt(input: {
     [
       'Use SDD and ATDD before production code.',
       `Goal: ${input.nextGoalObjective}`,
+      `Intent hash: ${input.contextIntent.intentHash}`,
       `Original request: ${input.prompt}`,
       `Route: ${input.route.id}`,
       `Validation: ${input.validationReport.status}`,
@@ -515,6 +541,14 @@ function renderBlockedItems(blockedItems: DecisionDossierBlockedItem[]): string[
     const command = item.command !== undefined ? `; command=${item.command}` : '';
     return `- ${item.id} (${item.kind}, ${item.status}): ${item.reason}${command}`;
   });
+}
+
+function renderEvidenceBlockers(blockers: DecisionDossier['evidenceBlockers']): string[] {
+  if (blockers.length === 0) return ['- none'];
+  return blockers.map(
+    blocker =>
+      `- ${blocker.id} (${blocker.kind}, ${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+  );
 }
 
 function renderApprovalCommands(commands: DecisionDossierApprovalCommand[]): string[] {

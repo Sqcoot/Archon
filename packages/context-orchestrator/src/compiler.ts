@@ -6,6 +6,7 @@ import { selectCapabilities } from './capabilities';
 import { createDecisionDossier, renderDecisionDossierMarkdown } from './decision-dossier';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
+import { createContextIntent } from './intent';
 import {
   buildLedgerBundle,
   renderCommandsLedgerMarkdown,
@@ -81,6 +82,11 @@ async function compilePromptPackageWithoutTelemetry(
   const archivePath = await prepareArchiveDirectory(archiveRoot, runId);
 
   const redactedPrompt = redactSecrets(options.prompt);
+  const contextIntent = await createContextIntent({
+    cwd: options.cwd,
+    objective: options.prompt,
+    timestamp,
+  });
   const graphContext = await getGraphContext({ cwd: options.cwd });
   const documentationPlan = planDocumentation({ prompt: options.prompt });
   const bmadRoute = routeBmad({ prompt: options.prompt });
@@ -89,7 +95,9 @@ async function compilePromptPackageWithoutTelemetry(
   const validationReport = await validateContextOrchestrator({ cwd: options.cwd });
   const ledgerBundle = await buildLedgerBundle({
     cwd: options.cwd,
+    objective: options.prompt,
     timestamp,
+    contextIntent,
     graphContext,
     documentationPlan,
     bmadRoute,
@@ -108,6 +116,7 @@ async function compilePromptPackageWithoutTelemetry(
     selectedCapabilities,
     validationReport,
     ledgerBundle,
+    contextIntent,
   });
   const intent = inferIntent(options.prompt);
   const securityConstraints = [
@@ -133,6 +142,7 @@ async function compilePromptPackageWithoutTelemetry(
     timestamp,
     originalPrompt: redactedPrompt,
     targetCodebase: options.cwd,
+    contextIntent,
     intent,
     evidenceSummary: graphContext.summary,
     graphContext,
@@ -397,6 +407,8 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     runId: promptPackage.runId,
     timestamp: promptPackage.timestamp,
     targetCodebase: promptPackage.targetCodebase,
+    contextIntent: promptPackage.contextIntent,
+    intentHash: promptPackage.contextIntent.intentHash,
     intent: promptPackage.intent,
     graphStatus: promptPackage.graphContext.status,
     graphWaivers: promptPackage.graphContext.waiverCount,
@@ -431,6 +443,7 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
       schemaVersion: 'aco.prompt-package.policy-input.v1',
       specs: [
         'docs/context-orchestrator/specs/008-prompt-package-spec.md',
+        'docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md',
         'docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md',
       ],
       upstreamManifest: 'docs/context-orchestrator/research/upstream-manifest.json',
@@ -472,6 +485,8 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     '',
     `Run ID: ${promptPackage.runId}`,
     `Target: ${promptPackage.targetCodebase}`,
+    `Intent: ${promptPackage.contextIntent.intentHash}`,
+    `Objective: ${promptPackage.contextIntent.normalizedObjective}`,
     '',
     '## Specs',
     '',
@@ -513,6 +528,7 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     `Readiness: ${promptPackage.decisionDossier.readiness}`,
     `Graph: ${promptPackage.decisionDossier.graphStatus}`,
     `Approval required: ${promptPackage.decisionDossier.approvalRequired ? 'yes' : 'no'}`,
+    `Evidence blockers: ${promptPackage.ledgerBundle.evidenceBlockers.length}`,
     '',
     '## Ledger Guidance',
     '',
