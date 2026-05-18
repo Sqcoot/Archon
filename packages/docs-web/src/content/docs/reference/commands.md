@@ -79,6 +79,61 @@ The following commands exist in the command handler but are **not** deterministi
 
 ---
 
+## Read-Only Solidification Review
+
+Use `solidify-poc` when the current technology choices are accepted and the goal is to make an existing POC more reliable, observable, repeatable, or easier to operate without adding features.
+
+This is a prompt command, not an implementation workflow. It must produce evidence-backed ledgers before recommending any hardening work.
+
+| Command | Description |
+|---------|-------------|
+| `solidify-poc "<goal>"` | Runs a read-only POC stabilization review using a Tool Availability Ledger and Commands Ledger |
+
+### Inputs
+
+| Input | Description |
+|-------|-------------|
+| POC goal | The stabilization goal or concern to review |
+| Current working directory | The repository or project being reviewed |
+| Accepted technology constraint | The assumption that current technology choices should be assessed, not replaced |
+
+### Outputs
+
+| Output | Description |
+|--------|-------------|
+| Tool Availability Ledger | Tool inventory with source, invocation path, status, preconditions, verification check, failure mode, fallback, owner, and last-verified date |
+| Commands Ledger | Command inventory with location, invocation, purpose, inputs, outputs, preconditions, status, validation check, failure mode, owner, and last-verified date |
+| Validation and waiver summary | Explicit pass, partial, blocked, or unknown evidence for relevant gates |
+| Final status | `Blocked`, `Partial`, or `Ready` |
+
+### Failure Modes
+
+| Failure Mode | Required Handling |
+|--------------|-------------------|
+| Missing tool | Mark the related ledger row `blocked` and record the missing prerequisite |
+| Partial graph or waived source | Mark the related ledger row `partial` and limit confidence claims |
+| Stale evidence | Mark the related ledger row `partial` or `unknown` until rechecked |
+| Unsafe mutation request | Stop and ask for explicit approval before writing files, generating artifacts, committing, pushing, or opening a PR |
+
+### Forbidden By Default
+
+These actions are outside a read-only solidification review unless the user explicitly approves them:
+
+- Editing files
+- Running `archon context compile` when it writes artifacts
+- Running graph regeneration such as `bun run research:graph` or `bun run aco:research`
+- Installing dependencies
+- Running migrations
+- Running formatters or linters in write mode, such as `bun run format` or `bun run lint:fix`
+- Running code generation
+- Staging or committing
+- Pushing
+- Opening a PR
+
+See [Solidification Review Ledgers](/book/solidification-review-ledgers/) for the ledger schemas and status rules.
+
+---
+
 ## Example Workflow (Telegram)
 
 ### Ask Questions Directly
