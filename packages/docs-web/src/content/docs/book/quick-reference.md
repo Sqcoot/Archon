@@ -12,6 +12,22 @@ This chapter collects every CLI command, variable, and YAML option in one place.
 
 ---
 
+## Where Am I? What Do I Run?
+
+| Stage | Run these commands |
+|-------|--------------------|
+| Starting a new product | `/bmad-product-brief` -> `/bmad-prd` |
+| Planning tech | `/bmad-create-architecture` -> `/bmad-create-epics-and-stories` -> `/bmad-check-implementation-readiness` |
+| Starting a sprint | `/bmad-sprint-planning` |
+| Each story cycle | `/bmad-create-story` -> `/bmad-dev-story` -> `/bmad-code-review` |
+| Brownfield / existing codebase | `/bmad-generate-project-context` first, then proceed |
+| Solidifying existing POC, no new features | `archon context route` -> `archon context status` -> build [Tool Availability Ledger and Commands Ledger](/book/solidification-review-ledgers/) -> run read-only validation gates -> `/bmad-party-mode` -> `/bmad-review-adversarial-general` -> `/bmad-review-edge-case-hunter` |
+| Quick one-off task | `/bmad-quick-dev` |
+| Something went wrong | `/bmad-correct-course` |
+| Don't know what's next | `/bmad-help` |
+
+---
+
 ## CLI Commands
 
 ### `archon workflow`
