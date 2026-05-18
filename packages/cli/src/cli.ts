@@ -69,6 +69,7 @@ import { validateWorkflowsCommand, validateCommandsCommand } from './commands/va
 import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import {
+  contextApprovalCapsuleCommand,
   contextCompileCommand,
   contextDossierCommand,
   contextGraphWaiversCommand,
@@ -126,6 +127,7 @@ Commands:
   context compile <prompt>   Compile an ACO Codex-ready prompt package
   context graph-waivers      Diagnose failed ACO graph waivers
   context ledgers            Show ACO Tool Availability and Commands ledgers
+  context approval-capsule <prompt> Show/write ACO approval capsule for a run
   context status             Show ACO research and validation status
   context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
@@ -166,6 +168,7 @@ Examples:
   archon context compile --cwd /path/to/repo "Plan this feature"
   archon context graph-waivers --cwd /path/to/repo --json
   archon context ledgers --cwd /path/to/repo --json
+  archon context approval-capsule --cwd /path/to/repo --run-id run-1 --json "Plan this feature"
   archon context validate --cwd /path/to/repo
   archon skill install
   archon skill install /path/to/project
@@ -268,6 +271,7 @@ async function main(): Promise<number> {
         scope: { type: 'string' },
         force: { type: 'boolean' },
         'archive-root': { type: 'string' },
+        'artifact-root': { type: 'string' },
         timestamp: { type: 'string' },
         caveman: { type: 'string' },
       },
@@ -696,6 +700,31 @@ async function main(): Promise<number> {
               timestamp: values.timestamp as string | undefined,
             });
 
+          case 'approval-capsule': {
+            const prompt = positionals.slice(2).join(' ');
+            const runId = values['run-id'] as string | undefined;
+            if (!runId) {
+              console.error(
+                'Usage: archon context approval-capsule [--cwd <repo>] --run-id <id> [--artifact-root <dir>] [--json] <prompt>'
+              );
+              console.error('Error: --run-id is required');
+              return 1;
+            }
+            if (!prompt) {
+              console.error(
+                'Usage: archon context approval-capsule [--cwd <repo>] --run-id <id> [--artifact-root <dir>] [--json] <prompt>'
+              );
+              return 1;
+            }
+            return await contextApprovalCapsuleCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              artifactRoot: values['artifact-root'] as string | undefined,
+              runId,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
           case 'compile': {
             const prompt = positionals.slice(2).join(' ');
             if (!prompt) {
@@ -731,7 +760,7 @@ async function main(): Promise<number> {
               console.error(`Unknown context subcommand: ${subcommand}`);
             }
             console.error(
-              'Available: route, dossier, compile, graph-waivers, ledgers, status, validate'
+              'Available: route, dossier, approval-capsule, compile, graph-waivers, ledgers, status, validate'
             );
             return 1;
         }

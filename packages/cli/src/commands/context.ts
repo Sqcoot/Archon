@@ -1,16 +1,19 @@
 import {
   compilePromptPackage,
+  createApprovalCapsule,
   createDecisionDossier,
   getContextOrchestratorReadiness,
   getGraphWaiverClosureReport,
   getContextOrchestratorLedgers,
   getContextOrchestratorStatus,
+  renderApprovalCapsuleMarkdown,
   renderDecisionDossierMarkdown,
   renderLedgerBundleMarkdown,
   renderGraphWaiverClosureReportMarkdown,
   serializeLedgerBundle,
   routeBmad,
   validateContextOrchestrator,
+  writeApprovalCapsuleArtifacts,
   type CavemanMode,
   type PromptPackageResult,
 } from '@archon/context-orchestrator';
@@ -25,6 +28,12 @@ export interface ContextCompileCommandOptions extends ContextCommandOptions {
   runId?: string;
   timestamp?: string;
   cavemanMode?: CavemanMode;
+}
+
+export interface ContextApprovalCapsuleCommandOptions extends ContextCommandOptions {
+  artifactRoot?: string;
+  runId: string;
+  timestamp?: string;
 }
 
 export async function contextStatusCommand(options: ContextCommandOptions): Promise<void> {
@@ -114,6 +123,39 @@ export async function contextGraphWaiversCommand(
   }
 
   console.log(renderGraphWaiverClosureReportMarkdown(report));
+  return 0;
+}
+
+export async function contextApprovalCapsuleCommand(
+  prompt: string,
+  options: ContextApprovalCapsuleCommandOptions
+): Promise<number> {
+  const capsule = await createApprovalCapsule({
+    cwd: options.cwd,
+    prompt,
+    runId: options.runId,
+    timestamp: options.timestamp,
+    artifactRoot: options.artifactRoot,
+  });
+
+  if (options.artifactRoot !== undefined) {
+    const files = await writeApprovalCapsuleArtifacts(capsule, options.artifactRoot);
+    if (options.json) {
+      console.log(JSON.stringify({ capsule, files }, null, 2));
+      return 0;
+    }
+
+    console.log(`Approval capsule JSON: ${files.json}`);
+    console.log(`Approval capsule Markdown: ${files.markdown}`);
+    return 0;
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(capsule, null, 2));
+    return 0;
+  }
+
+  console.log(renderApprovalCapsuleMarkdown(capsule));
   return 0;
 }
 

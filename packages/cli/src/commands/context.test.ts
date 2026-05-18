@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, spyOn } from 'bun:test';
-import { resolve } from 'path';
+import { mkdtemp, readFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join, resolve } from 'path';
+import { compilePromptPackage } from '@archon/context-orchestrator';
 import {
+  contextApprovalCapsuleCommand,
   contextCompileCommand,
   contextDossierCommand,
   contextGraphWaiversCommand,
@@ -149,12 +153,84 @@ describe('context commands', () => {
     expect(output).toContain('Graph: forbidden');
   });
 
+  it('ACO-APPROVAL-002 contextApprovalCapsuleCommand emits approval capsule JSON without artifact writes', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    const exitCode = await contextApprovalCapsuleCommand('Implement ACO Approval Capsule', {
+      cwd: repoRoot,
+      json: true,
+      runId: 'aco-cli-approval-readonly',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      runId?: string;
+      graphStatus?: string;
+      approvalCommands?: Array<{ willRun?: boolean }>;
+    };
+    expect(parsed.schemaVersion).toBe('aco.approval-capsule.v1');
+    expect(parsed.runId).toBe('aco-cli-approval-readonly');
+    expect(parsed.graphStatus).toBe('forbidden');
+    expect(parsed.approvalCommands?.every(command => command.willRun === false)).toBe(true);
+  });
+
+  it('ACO-APPROVAL-002 renders approval capsule Markdown by default', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    const exitCode = await contextApprovalCapsuleCommand('Implement ACO Approval Capsule', {
+      cwd: repoRoot,
+      runId: 'aco-cli-approval-markdown',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    expect(output).toContain('# ACO Approval Capsule');
+    expect(output).toContain('Readiness: needs_approval');
+    expect(output).toContain('Graph: forbidden');
+  });
+
+  it('ACO-APPROVAL-003 writes approval capsule artifacts when artifact root is provided', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-cli-approval-'));
+    await compilePromptPackage({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      archiveRoot,
+      runId: 'aco-cli-approval-write',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    const exitCode = await contextApprovalCapsuleCommand('Implement ACO Approval Capsule', {
+      cwd: repoRoot,
+      json: true,
+      artifactRoot: archiveRoot,
+      runId: 'aco-cli-approval-write',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as { files?: { json?: string; markdown?: string } };
+    expect(parsed.files?.json).toBe(
+      join(archiveRoot, 'aco-cli-approval-write', 'approval-capsule.json')
+    );
+    expect(parsed.files?.markdown).toBe(
+      join(archiveRoot, 'aco-cli-approval-write', 'approval-capsule.md')
+    );
+    expect(await readFile(parsed.files?.json ?? '', 'utf8')).toContain('"aco.approval-capsule.v1"');
+  });
+
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();
     expect(contextValidateCommand).toBeFunction();
     expect(contextCompileCommand).toBeFunction();
     expect(contextDossierCommand).toBeFunction();
+    expect(contextApprovalCapsuleCommand).toBeFunction();
     expect(contextLedgersCommand).toBeFunction();
     expect(contextGraphWaiversCommand).toBeFunction();
   });
