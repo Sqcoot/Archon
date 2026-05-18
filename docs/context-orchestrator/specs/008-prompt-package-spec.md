@@ -6,7 +6,7 @@ Define the ACO prompt package, first-class ledger artifacts, and its derived pol
 
 ## Scope
 
-Prompt package fields, renderers, traceability, validation report, Tool Availability and Commands ledger evidence, archived OPA policy decision evidence, and Codex handoff.
+Prompt package fields, renderers, traceability, validation report, Tool Availability and Commands ledger evidence, decision dossier evidence, archived OPA policy decision evidence, and Codex handoff.
 
 ## Non-Goals
 
@@ -16,8 +16,9 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 
 ## Generic Behavior
 
-- PromptPackage includes runId, timestamp, original prompt, target codebase, intent, evidence, GraphContext, DocumentationPlan, MCP readiness, BmadRoute, AcceptancePlan, capabilities, CavemanPolicy, security constraints, unknowns, human prompt, Codex prompt, structured next command argv, validation report, and `ledgerBundle`.
+- PromptPackage includes runId, timestamp, original prompt, target codebase, intent, evidence, GraphContext, DocumentationPlan, MCP readiness, BmadRoute, AcceptancePlan, capabilities, CavemanPolicy, security constraints, unknowns, human prompt, Codex prompt, structured next command argv, validation report, `ledgerBundle`, and `decisionDossier`.
 - `ledgerBundle` is a generic, code-level evidence bundle with `schemaVersion: "aco.ledger-bundle.v1"`, deterministic Tool Availability and Commands ledgers, and summaries by exact ledger status.
+- `decisionDossier` is a canonical decision receipt with `schemaVersion: "aco.decision-dossier.v1"` and is the source of truth for Codex Goal Handoff text.
 - Ledger JSON artifacts are source of truth; Markdown ledger artifacts are derived human views.
 - Repeated prompt-package compilation with the same prompt, run ID, timestamp, and unchanged repository state emits byte-stable ledger JSON and Markdown artifacts.
 - Ledger summaries reconcile by fixed status order: the sum of all status counts must equal `total`.
@@ -44,6 +45,8 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 - tool-availability-ledger.md
 - commands-ledger.json
 - commands-ledger.md
+- decision-dossier.json
+- decision-dossier.md
 - final-prompt-package.md
 - codex-prompt.md
 - validation-report.md
@@ -51,6 +54,8 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 `prompt-package.json` is the stable machine-readable policy input for ACO prompt-package validation. It includes `schema_version`, `package_id`, `generated_at`, `source_request`, `manifest`, artifact references, graph/docs/BMAD/acceptance/security evidence, and the validation report.
 
 `prompt-package.json.evidence.ledgers` contains the combined `LedgerBundle`. `tool-availability-ledger.json` and `commands-ledger.json` contain matching per-ledger sections with the same schema version and summary.
+
+`decision-dossier.json` contains the machine-readable decision receipt. `decision-dossier.md` is the deterministic CommonMark rendering of the same facts.
 
 `policy-decision.json` is the deterministic machine-readable OPA decision artifact derived from the archived `prompt-package.json` bytes. It records the normalized allow/deny/warn decision, stable finding codes, counts, duplicate suppression count, SHA-256 hashes for the input and policy files, and OPA CLI version metadata. It must not contain wall-clock evaluation time.
 
@@ -75,6 +80,8 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 - AC-CONFIDENCE-001: Given two prompt-package compiles use the same prompt, run ID, timestamp, and unchanged repository state, when ledger artifacts are compared, then ledger JSON and Markdown bytes are identical.
 - AC-CONFIDENCE-002: Given any ledger summary is produced, when its counts are inspected, then counts for every fixed status add up to `total`.
 - AC-CONFIDENCE-004: Given `context status`, `context ledgers --json`, and compiled prompt-package artifacts are built from the same repository state, when their ledger and graph fields are inspected, then graph status, waiver count, waiver IDs, schema version, and ledger summary are consistent.
+- AC-DOSSIER-002: Given `context compile`, when the archive is written, then `decision-dossier.json` and `decision-dossier.md` exist and match canonical builder output.
+- AC-DOSSIER-004: Given an unrelated prompt compile, when `codex-prompt.md` is inspected, then it contains a dossier-derived `/goal` and does not contain stale `Implement ACO Acceptance Reality Gate` text.
 
 ## Failure Behavior
 

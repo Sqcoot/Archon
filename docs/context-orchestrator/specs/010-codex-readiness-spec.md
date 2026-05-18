@@ -27,7 +27,7 @@ The report must include:
 - unknowns
 - blockers
 - recommended next command
-- optional Codex `/goal` handoff command for long-running implementation prompts
+- optional Codex `/goal` handoff command derived from the current decision dossier for long-running implementation prompts
 
 ## Archon-Specific Behavior
 
@@ -55,7 +55,7 @@ Archon MVP must expose the report through the selected native surface, such as C
 - blocker list
 - warning list
 - recommended next Codex prompt or Archon command
-- `Codex Goal Handoff` section in generated Codex prompt artifacts when a bounded goal objective is useful
+- `Codex Goal Handoff` section in generated Codex prompt artifacts when a bounded dossier-derived goal objective is useful
 
 ## Known Unknowns
 
@@ -91,6 +91,8 @@ When ACO compiles Codex instructions
 Then the prompt includes a bounded optional `/goal <objective>` suggestion in a Codex Goal Handoff section
 And the prompt states that `/goal` is a Codex session control requiring Codex `features.goals`
 And ACO does not require an Archon database migration, config mutation, or stored state to represent Codex goals.
+And the objective is derived from the current decision dossier rather than hard-coded prior work.
+And unrelated prompt compiles do not include stale `Implement ACO Acceptance Reality Gate` goal text.
 
 ## Failure Behavior
 

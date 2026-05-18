@@ -45,6 +45,7 @@ const specs = [
   '020-package-scripts-and-research-corpus-spec.md',
   '021-opa-prompt-package-policy-spec.md',
   '022-sdd-atdd-traceability-gate-spec.md',
+  '023-decision-dossier-gate-spec.md',
 ];
 
 interface TraceabilityManifest {
@@ -141,6 +142,13 @@ describe('ACO spec acceptance', () => {
       'AC-GWCL-006',
       'ACO-CODEX-003',
       'ACO-EVENTS-001',
+      'AC-DOSSIER-001',
+      'AC-DOSSIER-002',
+      'AC-DOSSIER-003',
+      'AC-DOSSIER-004',
+      'AC-DOSSIER-005',
+      'AC-DOSSIER-006',
+      'AC-DOSSIER-007',
     ]) {
       expect(matrix).toContain(marker);
     }

@@ -70,6 +70,7 @@ import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import {
   contextCompileCommand,
+  contextDossierCommand,
   contextGraphWaiversCommand,
   contextLedgersCommand,
   contextRouteCommand,
@@ -121,6 +122,7 @@ Commands:
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
   aco status                 Show productized ACO status and graph confidence limits
   context route <prompt>     Select an ACO BMAD route
+  context dossier <prompt>   Show ACO decision dossier for a prompt
   context compile <prompt>   Compile an ACO Codex-ready prompt package
   context graph-waivers      Diagnose failed ACO graph waivers
   context ledgers            Show ACO Tool Availability and Commands ledgers
@@ -160,6 +162,7 @@ Examples:
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
   archon aco status --cwd /path/to/repo --json
   archon context route --cwd /path/to/repo "Plan this feature"
+  archon context dossier --cwd /path/to/repo "Plan this feature"
   archon context compile --cwd /path/to/repo "Plan this feature"
   archon context graph-waivers --cwd /path/to/repo --json
   archon context ledgers --cwd /path/to/repo --json
@@ -663,6 +666,19 @@ async function main(): Promise<number> {
             break;
           }
 
+          case 'dossier': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context dossier [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            return await contextDossierCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
           case 'status':
             await contextStatusCommand({ cwd: effectiveCwd, json: jsonFlag });
             break;
@@ -714,7 +730,9 @@ async function main(): Promise<number> {
             } else {
               console.error(`Unknown context subcommand: ${subcommand}`);
             }
-            console.error('Available: route, compile, graph-waivers, ledgers, status, validate');
+            console.error(
+              'Available: route, dossier, compile, graph-waivers, ledgers, status, validate'
+            );
             return 1;
         }
         break;

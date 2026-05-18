@@ -3,6 +3,12 @@ export { routeBmad } from './bmad';
 export { applyCavemanPolicy } from './caveman';
 export { compilePromptPackage } from './compiler';
 export {
+  createDecisionDossier,
+  DECISION_DOSSIER_SCHEMA_VERSION,
+  renderDecisionDossierMarkdown,
+} from './decision-dossier';
+export type { CreateDecisionDossierOptions } from './decision-dossier';
+export {
   buildLedgerBundle,
   LEDGER_SCHEMA_VERSION,
   ledgerStatusOrder,
@@ -58,6 +64,12 @@ export type {
   CavemanMode,
   CompilePromptPackageOptions,
   ContextOrchestratorReadiness,
+  DecisionDossier,
+  DecisionDossierApprovalCommand,
+  DecisionDossierBlockedItem,
+  DecisionDossierDecision,
+  DecisionDossierEvidence,
+  DecisionDossierRejectedAlternative,
   DocumentationPlan,
   DocumentationTarget,
   DocumentationTargetStatus,

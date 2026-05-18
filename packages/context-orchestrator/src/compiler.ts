@@ -3,6 +3,7 @@ import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
 import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
+import { createDecisionDossier, renderDecisionDossierMarkdown } from './decision-dossier';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import {
@@ -36,6 +37,8 @@ const archiveFiles = [
   'manifest.json',
   'prompt-package.json',
   'policy-decision.json',
+  'decision-dossier.json',
+  'decision-dossier.md',
   'tool-availability-ledger.json',
   'tool-availability-ledger.md',
   'commands-ledger.json',
@@ -55,10 +58,6 @@ const archiveFiles = [
   'caveman-policy.md',
   'validation-report.md',
 ];
-
-const codexGoalObjective =
-  'Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
-const codexGoalCommand = `/goal ${codexGoalObjective}`;
 
 export async function compilePromptPackage(
   options: CompilePromptPackageOptions
@@ -98,6 +97,18 @@ async function compilePromptPackageWithoutTelemetry(
     selectedCapabilities,
     validationReport,
   });
+  const decisionDossier = await createDecisionDossier({
+    cwd: options.cwd,
+    prompt: options.prompt,
+    timestamp,
+    graphContext,
+    documentationPlan,
+    bmadRoute,
+    acceptancePlan,
+    selectedCapabilities,
+    validationReport,
+    ledgerBundle,
+  });
   const intent = inferIntent(options.prompt);
   const securityConstraints = [
     'Do not read target repo .env files.',
@@ -116,7 +127,7 @@ async function compilePromptPackageWithoutTelemetry(
       : []),
   ];
   const humanPrompt = renderHumanPrompt(redactedPrompt, bmadRoute.steps);
-  const codexPrompt = renderCodexPrompt(redactedPrompt, bmadRoute.steps);
+  const codexPrompt = renderCodexPrompt(redactedPrompt, bmadRoute.steps, decisionDossier);
   const promptPackage: PromptPackage = {
     runId,
     timestamp,
@@ -150,6 +161,7 @@ async function compilePromptPackageWithoutTelemetry(
     ],
     validationReport,
     ledgerBundle,
+    decisionDossier,
   };
 
   const files = Object.fromEntries(archiveFiles.map(file => [file, join(archivePath, file)]));
@@ -219,7 +231,12 @@ function renderHumanPrompt(prompt: string, steps: string[]): string {
   ].join('\n');
 }
 
-function renderCodexPrompt(prompt: string, steps: string[]): string {
+function renderCodexPrompt(
+  prompt: string,
+  steps: string[],
+  decisionDossier: PromptPackage['decisionDossier']
+): string {
+  const codexGoalCommand = `/goal ${decisionDossier.nextGoalObjective}`;
   return [
     '# Codex Prompt',
     '',
@@ -247,6 +264,13 @@ function renderCodexPrompt(prompt: string, steps: string[]): string {
     '- Ask for approval or avoid commands marked approval-required.',
     '- Treat `blocked`, `partial`, and `unknown` rows as confidence constraints.',
     '- Cite ledger evidence when explaining implementation and validation choices.',
+    '',
+    'Decision dossier requirements:',
+    '',
+    '- Read `decision-dossier.json` before implementation.',
+    '- Use `nextPlanPrompt` as the current handoff source.',
+    '- Preserve active graph waivers and approval-required state exactly.',
+    '- Do not run approval commands unless the user explicitly approves them.',
     '',
     'Original request:',
     '',
@@ -278,6 +302,16 @@ async function writeArchiveFiles(
     const denyCodes = policyDecision.codes.deny.join(', ') || 'unknown';
     throw new Error(`ACO prompt-package policy denied archive admission: ${denyCodes}`);
   }
+  await writeFileNoFollow(
+    archivePath,
+    files['decision-dossier.json'],
+    `${JSON.stringify(promptPackage.decisionDossier, null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['decision-dossier.md'],
+    `${renderDecisionDossierMarkdown(promptPackage.decisionDossier)}\n`
+  );
   await writeFileNoFollow(
     archivePath,
     files['tool-availability-ledger.json'],
@@ -378,6 +412,8 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
       'commands-ledger.json',
       'commands-ledger.md',
     ],
+    decisionDossierSchemaVersion: promptPackage.decisionDossier.schemaVersion,
+    decisionDossierArtifacts: ['decision-dossier.json', 'decision-dossier.md'],
     nextArchonCommand: promptPackage.nextArchonCommand,
   };
 }
@@ -414,6 +450,7 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
         string,
         unknown
       >,
+      decisionDossier: promptPackage.decisionDossier as unknown as Record<string, unknown>,
     },
     validation: promptPackage.validationReport as unknown as Record<string, unknown>,
   };
@@ -467,6 +504,15 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     '- tool-availability-ledger.md',
     '- commands-ledger.json',
     '- commands-ledger.md',
+    '- decision-dossier.json',
+    '- decision-dossier.md',
+    '',
+    '## Decision Dossier',
+    '',
+    `Decision: ${promptPackage.decisionDossier.decision.id}`,
+    `Readiness: ${promptPackage.decisionDossier.readiness}`,
+    `Graph: ${promptPackage.decisionDossier.graphStatus}`,
+    `Approval required: ${promptPackage.decisionDossier.approvalRequired ? 'yes' : 'no'}`,
     '',
     '## Ledger Guidance',
     '',
