@@ -1,7 +1,7 @@
 {
   "schema_version": "aco.traceability.v1",
   "scope": {
-    "enforced_prefixes": ["ACO-POLICY-", "ACO-POLICY-DECISION-", "ACO-TRACE-"]
+    "enforced_prefixes": ["ACO-POLICY-", "ACO-POLICY-DECISION-", "ACO-TRACE-", "AC-LEDGER-"]
   },
   "requirements": [
     {
@@ -219,6 +219,158 @@
           "ref": "packages/context-orchestrator/src/validation.ts",
           "markers": ["aco-traceability", "traceabilityCheck"],
           "summary": "Aggregate validation reports the traceability gate."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/017-implementation-discovery-protocol.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-LEDGER-001", ".history"],
+          "summary": "Ledger tests verify generic schema behavior without a `.history` dependency."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-LEDGER-002", "deterministic"],
+          "summary": "Ledger tests verify deterministic ordering and stable serialization."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/017-implementation-discovery-protocol.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-LEDGER-003", "unknown"],
+          "summary": "Ledger tests verify unknown, blocked, and partial statuses are preserved."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/009-archive-artifact-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/compile.acceptance.test.ts",
+        "markers": ["AC-LEDGER-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["AC-LEDGER-004", "tool-availability-ledger.json", "commands-ledger.json"],
+          "summary": "Compiler tests verify the four ledger archive artifacts and manifest references."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/context.test.ts",
+          "markers": ["AC-LEDGER-005", "contextLedgersCommand"],
+          "summary": "CLI tests verify `context ledgers --json` emits the combined ledger bundle contract."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-LEDGER-006", "secret"],
+          "summary": "Ledger tests verify secret-like ledger evidence is redacted."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-007",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/context.test.ts",
+          "markers": ["AC-LEDGER-007", "contextRouteCommand", "contextStatusCommand", "contextValidateCommand", "contextCompileCommand"],
+          "summary": "CLI tests verify existing context commands remain available while ledgers are added."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-LEDGER-008",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/017-implementation-discovery-protocol.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-LEDGER-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["AC-LEDGER-008", "validation"],
+          "summary": "Compiler tests verify ledger bundle evidence records validation command availability and results."
         }
       ],
       "status": "enforced"

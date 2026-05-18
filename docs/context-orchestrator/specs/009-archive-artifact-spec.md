@@ -6,7 +6,7 @@ Define archive files and path safety.
 
 ## Scope
 
-Archive layout, manifest, deterministic tests, redaction, policy-decision evidence, and workflow artifact paths.
+Archive layout, manifest, deterministic tests, redaction, ledger artifacts, policy-decision evidence, and workflow artifact paths.
 
 ## Non-Goals
 
@@ -33,6 +33,10 @@ Archive layout, manifest, deterministic tests, redaction, policy-decision eviden
 - manifest.json
 - prompt-package.json
 - policy-decision.json
+- tool-availability-ledger.json
+- tool-availability-ledger.md
+- commands-ledger.json
+- commands-ledger.md
 - validation-report.md
 
 ## Known Unknowns
@@ -50,10 +54,13 @@ Archive layout, manifest, deterministic tests, redaction, policy-decision eviden
 - Given a prompt package is archived, when policy validation runs, then OPA evaluates the archived prompt-package.json artifact rather than compiler internals.
 - Given OPA returns a valid decision, when archive writing completes, then policy-decision.json is written beside prompt-package.json.
 - ACO-POLICY-DECISION-002: Given OPA denies the archived prompt-package.json, when archive admission runs, then policy-decision.json is written and compile/archive validation fails with stable deny codes.
+- AC-LEDGER-004: Given a prompt package is archived, when archive files are listed, then the archive includes `tool-availability-ledger.json`, `tool-availability-ledger.md`, `commands-ledger.json`, and `commands-ledger.md`.
+- AC-LEDGER-006: Given ledger evidence is archived, when JSON and Markdown ledger files are inspected, then secret-like values are redacted.
 
 ## Failure Behavior
 
 - Fail closed on unsafe paths or redaction failures.
+- Fail closed when ledger rows violate schema invariants; preserve missing evidence as `unknown` when the row is otherwise valid.
 - Fail closed if archive-time OPA admission cannot run, returns malformed output, or returns a denial.
 
 ## Security Constraints

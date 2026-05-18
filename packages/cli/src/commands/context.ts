@@ -1,6 +1,9 @@
 import {
   compilePromptPackage,
+  getContextOrchestratorLedgers,
   getContextOrchestratorStatus,
+  renderLedgerBundleMarkdown,
+  serializeLedgerBundle,
   routeBmad,
   validateContextOrchestrator,
   type CavemanMode,
@@ -42,6 +45,36 @@ export async function contextValidateCommand(options: ContextCommandOptions): Pr
   }
 
   return report.status === 'failed' ? 1 : 0;
+}
+
+export async function contextLedgersCommand(options: ContextCommandOptions): Promise<number> {
+  try {
+    const bundle = await getContextOrchestratorLedgers(options.cwd);
+    if (options.json) {
+      console.log(JSON.stringify(serializeLedgerBundle(bundle), null, 2));
+      return 0;
+    }
+
+    console.log(renderLedgerBundleMarkdown(bundle));
+    return 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.json) {
+      console.log(
+        JSON.stringify(
+          {
+            error: 'aco-ledger-build-failed',
+            message,
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      console.error(`ACO ledgers failed: ${message}`);
+    }
+    return 1;
+  }
 }
 
 export async function contextCompileCommand(
@@ -97,5 +130,7 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     context7Status: result.package.documentationPlan.readiness.context7,
     acceptanceStatus: result.package.acceptancePlan.status,
     validationStatus: result.package.validationReport.status,
+    ledgerSchemaVersion: result.package.ledgerBundle.schemaVersion,
+    ledgerSummary: result.package.ledgerBundle.summary,
   };
 }

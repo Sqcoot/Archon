@@ -88,6 +88,8 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 | Command | Description |
 |---------|-------------|
 | `solidify-poc "<goal>"` | Runs a read-only POC stabilization review using a Tool Availability Ledger and Commands Ledger |
+| `archon context ledgers --cwd .` | Renders ACO Tool Availability and Commands ledgers without archive writes |
+| `archon context ledgers --cwd . --json` | Emits the combined `aco.ledger-bundle.v1` JSON bundle |
 
 ### Inputs
 
@@ -103,6 +105,7 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 |--------|-------------|
 | Tool Availability Ledger | Tool inventory with source, invocation path, status, preconditions, verification check, failure mode, fallback, owner, and last-verified date |
 | Commands Ledger | Command inventory with location, invocation, purpose, inputs, outputs, preconditions, status, validation check, failure mode, owner, and last-verified date |
+| ACO ledger bundle | Code-level JSON bundle with `toolAvailability`, `commands`, and summaries by exact ledger status |
 | Validation and waiver summary | Explicit pass, partial, blocked, or unknown evidence for relevant gates |
 | Final status | `Blocked`, `Partial`, or `Ready` |
 
@@ -121,6 +124,7 @@ These actions are outside a read-only solidification review unless the user expl
 
 - Editing files
 - Running `archon context compile` when it writes artifacts
+- Treating command safety classification as permission to run a command
 - Running graph regeneration such as `bun run research:graph` or `bun run aco:research`
 - Installing dependencies
 - Running migrations

@@ -88,6 +88,84 @@ export interface ValidationReport {
   checks: ValidationCheck[];
 }
 
+export type LedgerStatus =
+  | 'available'
+  | 'partial'
+  | 'blocked'
+  | 'deferred'
+  | 'forbidden'
+  | 'not used'
+  | 'unknown';
+
+export type LedgerConfidence = 'observed' | 'declared' | 'inferred' | 'unknown';
+
+export type CommandSafety =
+  | 'read-only'
+  | 'writes-artifacts'
+  | 'writes-tracked-files'
+  | 'destructive'
+  | 'network'
+  | 'unknown';
+
+export interface LedgerEvidence {
+  sourceType: 'command' | 'file' | 'tool' | 'static' | 'unknown';
+  sourceEvidence: string;
+  invocationPath: string;
+  confidence: LedgerConfidence;
+  reason: string;
+}
+
+export interface LedgerEntryBase {
+  id: string;
+  category: string;
+  status: LedgerStatus;
+  sourceEvidence: string;
+  invocationPath: string;
+  scope: string;
+  preconditions: string;
+  verification: string;
+  primaryUse: string;
+  failureMode: string;
+  fallback: string;
+  owner: string;
+  lastVerified: string;
+  notes: string;
+  confidence: LedgerConfidence;
+  evidence: LedgerEvidence[];
+}
+
+export interface ToolAvailabilityLedgerEntry extends LedgerEntryBase {
+  name: string;
+}
+
+export interface CommandLedgerEntry extends LedgerEntryBase {
+  command: string;
+  mutatesTrackedFiles: boolean;
+  requiresApproval: boolean;
+  safety: CommandSafety;
+}
+
+export type LedgerStatusCounts = Record<LedgerStatus, number>;
+
+export interface LedgerSummary {
+  total: number;
+  counts: LedgerStatusCounts;
+}
+
+export interface LedgerBundleSummary {
+  toolAvailability: LedgerSummary;
+  commands: LedgerSummary;
+  combined: LedgerSummary;
+}
+
+export interface LedgerBundle {
+  schemaVersion: 'aco.ledger-bundle.v1';
+  generatedAt?: string;
+  toolAvailability: ToolAvailabilityLedgerEntry[];
+  commands: CommandLedgerEntry[];
+  summary: LedgerBundleSummary;
+}
+
 export interface PromptPackagePolicyArtifact {
   id: string;
   path: string;
@@ -109,6 +187,7 @@ export interface PromptPackagePolicyInput {
     bmad: Record<string, unknown>;
     acceptance: Record<string, unknown>;
     security: Record<string, unknown>;
+    ledgers: Record<string, unknown>;
   };
   validation: Record<string, unknown>;
 }
@@ -182,6 +261,7 @@ export interface PromptPackage {
   codexPrompt: string;
   nextArchonCommand: string[];
   validationReport: ValidationReport;
+  ledgerBundle: LedgerBundle;
 }
 
 export interface CompilePromptPackageOptions {

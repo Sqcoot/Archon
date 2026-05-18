@@ -10,9 +10,9 @@ const TRACEABILITY_SCRIPT = 'bun scripts/context-orchestrator/validate-traceabil
 const TRACEABILITY_COMMAND = 'bun run aco:traceability';
 const REQUIRED_SCRIPT = 'aco:traceability';
 const VALID_LABELS = new Set(['VERIFIED', 'INFERRED', 'HYPOTHESIS']);
-const VALID_KINDS = new Set(['policy', 'policy-decision', 'traceability-gate']);
+const VALID_KINDS = new Set(['policy', 'policy-decision', 'traceability-gate', 'ledger']);
 const VALID_STATUSES = new Set(['enforced']);
-const ID_PATTERN = /ACO-[A-Z0-9-]+/g;
+const ID_PATTERN = /(?:ACO|AC)-[A-Z0-9-]+/g;
 
 type TraceabilityStatus = 'passed' | 'failed';
 type CheckStatus = TraceabilityStatus;
@@ -46,7 +46,7 @@ interface TraceabilityManifest {
 
 interface TraceabilityRequirement {
   requirement_id: string;
-  kind: 'policy' | 'policy-decision' | 'traceability-gate';
+  kind: 'policy' | 'policy-decision' | 'traceability-gate' | 'ledger';
   spec: string;
   matrix: string;
   acceptance: TraceabilityRef;

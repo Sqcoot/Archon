@@ -70,6 +70,7 @@ import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import {
   contextCompileCommand,
+  contextLedgersCommand,
   contextRouteCommand,
   contextStatusCommand,
   contextValidateCommand,
@@ -118,6 +119,7 @@ Commands:
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
   context route <prompt>     Select an ACO BMAD route
   context compile <prompt>   Compile an ACO Codex-ready prompt package
+  context ledgers            Show ACO Tool Availability and Commands ledgers
   context status             Show ACO research and validation status
   context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
@@ -154,6 +156,7 @@ Examples:
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
   archon context route --cwd /path/to/repo "Plan this feature"
   archon context compile --cwd /path/to/repo "Plan this feature"
+  archon context ledgers --cwd /path/to/repo --json
   archon context validate --cwd /path/to/repo
   archon skill install
   archon skill install /path/to/project
@@ -644,6 +647,9 @@ async function main(): Promise<number> {
           case 'validate':
             return await contextValidateCommand({ cwd: effectiveCwd, json: jsonFlag });
 
+          case 'ledgers':
+            return await contextLedgersCommand({ cwd: effectiveCwd, json: jsonFlag });
+
           case 'compile': {
             const prompt = positionals.slice(2).join(' ');
             if (!prompt) {
@@ -678,7 +684,7 @@ async function main(): Promise<number> {
             } else {
               console.error(`Unknown context subcommand: ${subcommand}`);
             }
-            console.error('Available: route, compile, status, validate');
+            console.error('Available: route, compile, ledgers, status, validate');
             return 1;
         }
         break;
