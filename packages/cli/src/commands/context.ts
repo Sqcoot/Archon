@@ -48,6 +48,8 @@ export async function contextStatusCommand(options: ContextCommandOptions): Prom
 
   console.log(`Context Orchestrator status: ${status.validationStatus}`);
   console.log(`Readiness: ${status.readiness}`);
+  console.log(`Next decision: ${status.nextDecision.kind}`);
+  console.log(`Next action: ${status.nextDecision.primaryAction.label}`);
   console.log(`Intent: ${status.contextIntent.intentHash}`);
   console.log(`Objective: ${status.contextIntent.normalizedObjective}`);
   console.log(`Graph: ${status.graphStatus} (${status.graphWaivers} waiver(s))`);
@@ -204,6 +206,7 @@ export async function contextCompileCommand(
   console.log(`Route: ${result.package.bmadRoute.id}`);
   console.log(`Graph: ${result.package.graphContext.status}`);
   console.log(`Validation: ${result.package.validationReport.status}`);
+  console.log(`Next decision: ${result.package.nextDecision.kind}`);
   console.log(
     `Evidence resolution required: ${result.package.evidenceResolution.required ? 'yes' : 'no'}`
   );
@@ -253,6 +256,7 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     ledgerSummary: result.package.ledgerBundle.summary,
     evidenceBlockers: result.package.ledgerBundle.evidenceBlockers,
     evidenceResolution: result.package.evidenceResolution,
+    nextDecision: result.package.nextDecision,
     decisionDossierSchemaVersion: result.package.decisionDossier.schemaVersion,
     decisionDossierDecision: result.package.decisionDossier.decision.id,
     decisionDossierReadiness: result.package.decisionDossier.readiness,

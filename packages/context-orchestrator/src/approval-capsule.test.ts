@@ -38,6 +38,15 @@ describe('approval capsule', () => {
     expect(capsule.ledgerRefs.some(ref => ref.status === 'deferred')).toBe(true);
     expect(capsule.evidenceResolution.required).toBe(true);
     expect(capsule.evidenceResolution.items.some(item => item.resolver === 'approval')).toBe(true);
+    if (capsule.evidenceBlockers.length > 0) {
+      expect(capsule.nextDecision.kind).toBe('blocked_by_evidence');
+      expect(capsule.nextDecision.evidenceBlockerIds).toEqual(
+        capsule.evidenceBlockers.map(blocker => blocker.id).sort()
+      );
+    } else {
+      expect(capsule.nextDecision.kind).toBe('approval_required');
+    }
+    expect(capsule.nextDecision.primaryAction.willRun).toBe(false);
     expect(capsule.decisionScope).toContain('preserves only these active graph waivers');
     expect(capsule.decisionScope).toContain('for this run only');
 
@@ -45,6 +54,7 @@ describe('approval capsule', () => {
     expect(markdown).toContain('# ACO Approval Capsule');
     expect(markdown).toContain('Release readiness: Needs approval while waivers remain.');
     expect(markdown).toContain('## Evidence Resolution');
+    expect(markdown).toContain('## Next Decision');
     expect(markdown).toContain('willRun=false');
   });
 

@@ -32,6 +32,49 @@ const testEvidenceResolution = {
     },
   ],
 };
+const testNextDecision = {
+  schemaVersion: 'aco.next-decision.v1',
+  kind: 'approval_required',
+  title: 'Approval required',
+  summary: 'Implementation needs explicit graph waiver approval.',
+  primaryAction: {
+    id: 'next.approve-current-graph-waivers',
+    kind: 'approval',
+    label: 'Approve preserving current graph waivers',
+    payload: {
+      waiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+    },
+    requiresApproval: true,
+    willRun: false,
+    successEvidence: ['User approves preserving listed graph waivers.'],
+  },
+  secondaryActions: [],
+  decisionFactors: [
+    {
+      id: 'graph',
+      status: 'forbidden',
+      source: 'graphContext.status',
+      summary: 'Graph waivers remain active.',
+    },
+  ],
+  evidenceSummary: {
+    readiness: 'needs_approval',
+    validationStatus: 'passed',
+    graphStatus: 'forbidden',
+    graphWaivers: 2,
+    evidenceBlockers: 0,
+    evidenceResolutionRequired: true,
+    ledgerSummary: {
+      toolAvailability: { total: 0, counts: zeroLedgerCounts() },
+      commands: { total: 0, counts: zeroLedgerCounts() },
+      combined: { total: 0, counts: zeroLedgerCounts() },
+    },
+  },
+  waiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+  evidenceBlockerIds: [],
+  evidenceResolutionIds: ['graph-waiver.bmad-plugins-marketplace'],
+  nextPrompt: 'Request explicit approval before implementation.',
+};
 
 const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: unknown) => ({
   cwd: '/tmp/project',
@@ -84,6 +127,7 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: un
     },
   },
   evidenceResolution: testEvidenceResolution,
+  nextDecision: testNextDecision,
 }));
 const mockGetContextOrchestratorLedgers = mock(async (_cwd: string, _options?: unknown) => ({
   schemaVersion: 'aco.ledger-bundle.v1',
@@ -128,6 +172,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
       },
     },
     evidenceResolution: testEvidenceResolution,
+    nextDecision: testNextDecision,
   },
 }));
 const mockReadArtifactPackageManifest = mock(async (_cwd: string, _runId: string) => ({
@@ -373,6 +418,7 @@ describe('GET /api/aco/status', () => {
           },
         },
         evidenceResolution: testEvidenceResolution,
+        nextDecision: testNextDecision,
       })
     );
     mockGetContextOrchestratorLedgers.mockClear();
@@ -395,12 +441,15 @@ describe('GET /api/aco/status', () => {
       readiness?: string;
       contextIntent?: { intentHash?: string };
       evidenceResolution?: { required?: boolean };
+      nextDecision?: { kind?: string; primaryAction?: { willRun?: boolean } };
     };
     expect(body.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
     expect(body.contextIntent?.intentHash).toBe('intent-123');
     expect(body.graphStatus).toBe('forbidden');
     expect(body.readiness).toBe('needs_approval');
     expect(body.evidenceResolution?.required).toBe(true);
+    expect(body.nextDecision?.kind).toBe('approval_required');
+    expect(body.nextDecision?.primaryAction?.willRun).toBe(false);
     expect(body.graphWaiverIds).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/tmp/project', {
       objective: 'Implement native loop',
@@ -479,10 +528,12 @@ describe('GET /api/aco/status', () => {
       archivePath?: string;
       readiness?: string;
       evidenceResolution?: { required?: boolean };
+      nextDecision?: { kind?: string };
     };
     expect(body.runId).toBe('run-1');
     expect(body.readiness).toBe('needs_approval');
     expect(body.evidenceResolution?.required).toBe(true);
+    expect(body.nextDecision?.kind).toBe('approval_required');
     expect(body.archivePath).toContain('context-orchestrator');
     expect(mockCompilePromptPackage).toHaveBeenCalledWith({
       cwd: '/tmp/project',

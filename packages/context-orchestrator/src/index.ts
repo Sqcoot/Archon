@@ -25,6 +25,8 @@ export { createEvidenceClosurePlan } from './evidence-closure';
 export type { CreateEvidenceClosurePlanOptions } from './evidence-closure';
 export { createContextIntent, deriveDefaultObjective, normalizeObjective } from './intent';
 export type { CreateContextIntentOptions } from './intent';
+export { buildNextDecision } from './next-decision';
+export type { BuildNextDecisionInput } from './next-decision';
 export {
   buildLedgerBundle,
   LEDGER_SCHEMA_VERSION,
@@ -135,3 +137,10 @@ export type {
   ValidationCheck,
   ValidationReport,
 } from './types';
+export type {
+  NextDecision,
+  NextDecisionAction,
+  NextDecisionEvidenceSummary,
+  NextDecisionFactor,
+  NextDecisionKind,
+} from './schemas/next-decision';

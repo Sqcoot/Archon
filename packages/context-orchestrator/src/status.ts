@@ -6,6 +6,7 @@ import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import { createContextIntent, deriveDefaultObjective } from './intent';
 import { buildLedgerBundle } from './ledgers';
+import { buildNextDecision } from './next-decision';
 import { validateContextOrchestrator } from './validation';
 import type {
   ContextOrchestratorReadiness,
@@ -16,6 +17,7 @@ import type {
   GraphWaiver,
   LedgerBundle,
   LedgerBundleSummary,
+  NextDecision,
   ValidationReport,
 } from './types';
 
@@ -39,14 +41,21 @@ export interface ContextOrchestratorStatus {
   ledgerSummary: LedgerBundleSummary;
   evidenceBlockers: EvidenceBlocker[];
   evidenceResolution: EvidenceClosurePlan;
+  nextDecision: NextDecision;
 }
 
 export async function getContextOrchestratorStatus(
   cwd: string,
   options: ContextEvidenceOptions = {}
 ): Promise<ContextOrchestratorStatus> {
-  const { contextIntent, graphContext, validationReport, ledgerBundle, evidenceResolution } =
-    await buildContextLedgerEvidence(cwd, options);
+  const {
+    contextIntent,
+    graphContext,
+    validationReport,
+    ledgerBundle,
+    evidenceResolution,
+    nextDecision,
+  } = await buildContextLedgerEvidence(cwd, options);
   return {
     cwd,
     contextIntent,
@@ -65,6 +74,7 @@ export async function getContextOrchestratorStatus(
     ledgerSummary: ledgerBundle.summary,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution,
+    nextDecision,
   };
 }
 
@@ -103,6 +113,7 @@ async function buildContextLedgerEvidence(
   validationReport: ValidationReport;
   ledgerBundle: LedgerBundle;
   evidenceResolution: EvidenceClosurePlan;
+  nextDecision: NextDecision;
 }> {
   const contextIntent =
     options.contextIntent ??
@@ -139,8 +150,30 @@ async function buildContextLedgerEvidence(
     validationReport,
     ledgerBundle,
   });
+  const readiness = getContextOrchestratorReadiness(
+    graphContext,
+    validationReport,
+    ledgerBundle.evidenceBlockers
+  );
+  const nextDecision = buildNextDecision({
+    contextIntent,
+    route: bmadRoute,
+    readiness,
+    validationReport,
+    graphContext,
+    ledgerSummary: ledgerBundle.summary,
+    evidenceBlockers: ledgerBundle.evidenceBlockers,
+    evidenceResolution,
+  });
 
-  return { contextIntent, graphContext, validationReport, ledgerBundle, evidenceResolution };
+  return {
+    contextIntent,
+    graphContext,
+    validationReport,
+    ledgerBundle,
+    evidenceResolution,
+    nextDecision,
+  };
 }
 
 function normalizeEvidenceOptions(

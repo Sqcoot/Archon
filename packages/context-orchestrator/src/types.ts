@@ -1,3 +1,6 @@
+import type { NextDecision } from './schemas/next-decision';
+export type { NextDecision } from './schemas/next-decision';
+
 export type McpReadinessState =
   | 'available'
   | 'configured-but-unverified'
@@ -375,6 +378,7 @@ export interface DecisionDossier {
   ledgerSummary: LedgerBundleSummary;
   evidenceBlockers: EvidenceBlocker[];
   evidenceResolution: EvidenceClosurePlan;
+  nextDecision: NextDecision;
   blockedItems: DecisionDossierBlockedItem[];
   approvalRequired: boolean;
   approvalCommands: DecisionDossierApprovalCommand[];
@@ -407,6 +411,7 @@ export interface PromptPackagePolicyInput {
     security: Record<string, unknown>;
     ledgers: Record<string, unknown>;
     decisionDossier?: Record<string, unknown>;
+    nextDecision?: Record<string, unknown>;
   };
   validation: Record<string, unknown>;
 }
@@ -483,6 +488,7 @@ export interface PromptPackage {
   validationReport: ValidationReport;
   ledgerBundle: LedgerBundle;
   evidenceResolution: EvidenceClosurePlan;
+  nextDecision: NextDecision;
   decisionDossier: DecisionDossier;
 }
 

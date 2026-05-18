@@ -1032,6 +1032,7 @@ export function registerApiRoutes(
     ledgerSummary: PromptPackageResult['package']['ledgerBundle']['summary'];
     evidenceBlockers: PromptPackageResult['package']['ledgerBundle']['evidenceBlockers'];
     evidenceResolution: PromptPackageResult['package']['evidenceResolution'];
+    nextDecision: PromptPackageResult['package']['nextDecision'];
   } {
     const promptPackage = result.package;
     const readiness = getContextOrchestratorReadiness(
@@ -1056,6 +1057,7 @@ export function registerApiRoutes(
       ledgerSummary: promptPackage.ledgerBundle.summary,
       evidenceBlockers: promptPackage.ledgerBundle.evidenceBlockers,
       evidenceResolution: promptPackage.evidenceResolution,
+      nextDecision: promptPackage.nextDecision,
     };
   }
 
