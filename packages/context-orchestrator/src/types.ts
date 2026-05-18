@@ -19,10 +19,20 @@ export interface GraphRepositoryStatus {
   edges: number;
 }
 
+export interface GraphWaiver {
+  id: string;
+  repository: string;
+  owner: string;
+  reason: string;
+  evidence: string;
+  expiryCondition: string;
+}
+
 export interface GraphContext {
   status: 'available' | 'partial' | 'unavailable';
   repositories: GraphRepositoryStatus[];
   waiverCount: number;
+  waivers: GraphWaiver[];
   summary: string;
 }
 

@@ -17,6 +17,7 @@ Define CLI contract candidates.
 - CLI exposes route, compile, ledgers, graph, docs, bmad, accept, validate, and status operations.
 - `archon context ledgers --cwd .` builds a read-only `LedgerBundle` without archive writes or unsafe command execution.
 - `archon context ledgers --cwd . --json` emits the combined `LedgerBundle` shape used by compiled prompt-package evidence.
+- `archon context status --cwd . --json` includes graph status, graph waiver count, waiver IDs, validation status, ledger schema version, and ledger summary for confidence comparison with ledger and compile outputs.
 
 ## Archon-Specific Behavior
 
@@ -56,6 +57,7 @@ Define CLI contract candidates.
 - Given `archon context compile --cwd . --json "prompt"`, when CLI surface is selected, then output is valid JSON and includes prompt package paths.
 - AC-LEDGER-005: Given `archon context ledgers --cwd . --json`, when it succeeds, then stdout is a combined `LedgerBundle` with the same contract used by compiled prompt-package evidence.
 - AC-LEDGER-007: Given route/status/compile/validate commands exist, when ledger support is added, then those existing commands keep their current behavior.
+- AC-CONFIDENCE-004: Given status, ledger, and compile commands run against the same repository state, when JSON output is compared, then graph status, waiver count, waiver IDs, ledger schema version, and ledger summary agree.
 
 ## Failure Behavior
 

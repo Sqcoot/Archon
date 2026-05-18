@@ -14,4 +14,13 @@ describe('ACO documentation acceptance', () => {
     expect(target?.libraryId).toBeUndefined();
     expect(target?.status).toBe('unresolved');
   });
+
+  test('Spec: 005-documentation-resolution-spec.md Acceptance: AC-CONFIDENCE-003 task verbs do not create unresolved Context7 targets', () => {
+    const plan = planDocumentation({
+      prompt: 'Implement safely with tests and no external library dependency.',
+    });
+
+    expect(plan.unresolved).toEqual([]);
+    expect(plan.targets.every(target => target.topic !== 'Implement')).toBe(true);
+  });
 });

@@ -52,6 +52,26 @@ describe('context commands', () => {
     expect(output).toContain('# Commands Ledger');
   });
 
+  it('AC-CONFIDENCE-004 includes ledger confidence fields in status JSON', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    await contextStatusCommand({ cwd: repoRoot, json: true });
+
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      graphStatus?: string;
+      graphWaivers?: number;
+      graphWaiverIds?: string[];
+      ledgerSchemaVersion?: string;
+      ledgerSummary?: unknown;
+    };
+    expect(parsed.graphStatus).toBeDefined();
+    expect(typeof parsed.graphWaivers).toBe('number');
+    expect(Array.isArray(parsed.graphWaiverIds)).toBe(true);
+    expect(parsed.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(parsed.ledgerSummary).toBeDefined();
+  });
+
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();

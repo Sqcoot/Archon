@@ -55,7 +55,7 @@ Use these exact lowercase values in both ledgers:
 
 Every ledger row must cite a source: a file path, command output, tool result, or explicit `unknown`.
 
-Generated ledgers use schema version `aco.ledger-bundle.v1`. Missing evidence remains `unknown` unless concrete partial or blocked evidence exists. Command safety classifications are advisory; they do not execute commands or grant permission.
+Generated ledgers use schema version `aco.ledger-bundle.v1`. Missing evidence remains `unknown` unless concrete partial or blocked evidence exists. Cheap read-only evidence such as `git status --short --untracked-files=all` should be observed instead of left as unexplained `unknown`. Command safety classifications are advisory; they do not execute commands or grant permission.
 
 ---
 
@@ -65,7 +65,7 @@ Use this ledger before claiming a tool is available, missing, blocked, or safe t
 
 | Tool / Capability | Source | Invocation Path | Scope | Status | Preconditions | Verification Check | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Archon ACO | `archon context status --cwd .` output | `archon context route --cwd . "<task>"` and `archon context status --cwd .` | route and readiness evidence | `partial` | Archon CLI available | command exits 0 and reports route/status | choose BMAD route and identify readiness caveats | graph partial, waivers, or missing policy tool | record caveat and limit claims | project | `2026-05-18` | Example state: route `brownfield-architecture`; status `failed`; graph partial with 2 waivers. |
+| Archon ACO | `archon context status --cwd .` output | `archon context route --cwd . "<task>"` and `archon context status --cwd .` | route and readiness evidence | `partial` | Archon CLI available | command exits 0 and reports route/status | choose BMAD route and identify readiness caveats | graph partial, waivers, or missing policy tool | record caveat and limit claims | project | `2026-05-18` | Example state: route `brownfield-architecture`; validation passed; graph partial with named waivers such as `graph-waiver.bmad-plugins-marketplace`. |
 | BMAD Party Mode | BMAD skill roster / agent outputs | `/bmad-party-mode` | review consensus | `available` | BMAD skills installed | reviewers produce consensus or objections | challenge scope, evidence, and unsafe certainty | advisory-only output or thread limit | use smaller reviewer set or manual review | project | `unknown` | Consensus does not replace command evidence. |
 | OPA | shell command output | `opa version` | policy validation prerequisite | `unknown` | `opa` on `PATH` | command exits 0 | run policy gates such as `bun run aco:policy` | `opa: command not found` | install/pin OPA or mark policy validation blocked | project | `unknown` | Do not assume OPA availability. |
 
@@ -79,7 +79,7 @@ Use this ledger before running validation or recommending hardening work.
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `git status --short --untracked-files=all` | Git | repo root | detect dirty or untracked work | current worktree | status lines | Git available | Git | `available` | exit 0 | unexpected unrelated changes | project | `unknown` | Classify before editing or staging. |
 | `archon context route --cwd . "<task>"` | Archon CLI | repo root | choose BMAD route | task prompt | route and route steps | Archon CLI available | Archon ACO | `partial` | exit 0 and route returned | route uncertainty | project | `2026-05-18` | Example route: `brownfield-architecture`. |
-| `archon context status --cwd .` | Archon CLI | repo root | report graph/readiness status | repo path | status summary | Archon CLI available | Archon ACO | `partial` | exit 0 and status returned | graph partial or failed status | project | `2026-05-18` | Example status: `failed`; graph partial with 2 waivers. |
+| `archon context status --cwd .` | Archon CLI | repo root | report graph/readiness status | repo path | status summary with waiver IDs and ledger summary | Archon CLI available | Archon ACO | `partial` | exit 0 and status returned | graph partial or failed status | project | `2026-05-18` | Example status: validation passed; graph partial with 2 named waivers. |
 | `bun run aco:policy` | `package.json` | repo root | validate OPA policy gate | policy files and fixtures | pass/fail | OPA available on `PATH` | OPA | `unknown` | exit 0 | missing OPA or policy failure | project | `unknown` | Mark blocked if `opa` is unavailable. |
 | `bun run validate` | `package.json` | repo root | run pre-PR validation suite | repo state | pass/fail | repo dependencies installed and policy prerequisites available | Bun validation | `unknown` | exit 0 | type, lint, format, test, traceability, or policy failure | project | `unknown` | This is the final validation gate, not a substitute for ledger evidence. |
 
@@ -155,4 +155,4 @@ Use one final status:
 | `Partial` | Useful evidence exists, but missing prerequisites, waivers, stale data, or partial graph coverage limit confidence. |
 | `Blocked` | A required tool or validation gate cannot run, or evidence is too incomplete to recommend hardening work. |
 
-Current example status for this repository is `Partial`: Archon routed the task to `brownfield-architecture`, but ACO status reported `failed` with graph partial and 2 waivers.
+Current example status for this repository is `Partial`: Archon routes confidence-sensitive ACO work to `brownfield-architecture`, validation passes, and graph evidence remains partial because named waivers such as `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data` still constrain readiness.

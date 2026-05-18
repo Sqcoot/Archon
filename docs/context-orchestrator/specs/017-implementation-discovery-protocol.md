@@ -107,6 +107,12 @@ broaden permissions, or replace approval policy. Unknown command safety remains
 `unknown`; commands that write tracked files or generated artifacts remain
 `forbidden` or approval-required during read-only discovery.
 
+Confidence closure requires read-only checks to reduce cheap unknowns before a
+broader release. If a check such as `git status --short --untracked-files=all`
+can be observed safely, ACO records the result as evidence rather than leaving
+the row as unexplained `unknown`. Mutating checks remain `forbidden` or
+approval-required even when they would improve confidence.
+
 ## Known Unknowns
 
 - which later phases need correct-course
@@ -125,6 +131,8 @@ broaden permissions, or replace approval policy. Unknown command safety remains
 - AC-LEDGER-002: Given ledger rows are supplied out of order, when they render, then JSON and Markdown output sort rows deterministically by stable row ID.
 - AC-LEDGER-003: Given evidence is missing, blocked, or partial, when rows normalize, then their statuses remain `unknown`, `blocked`, or `partial`.
 - AC-LEDGER-008: Given ledger-leveraged validation runs, when completion is reported, then validation commands and their pass, partial, blocked, skipped, or failed states are recorded as evidence.
+- AC-CONFIDENCE-003: Given a ledger row remains `unknown`, `partial`, or waived after confidence closure, when completion is reported, then the row includes explicit evidence or a named waiver explaining the confidence limit.
+- AC-CONFIDENCE-005: Given a command writes tracked files or generated artifacts, when confidence closure runs, then the command remains `forbidden` or approval-required instead of being treated as available.
 
 ## Failure Behavior
 
