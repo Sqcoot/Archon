@@ -166,6 +166,49 @@ describe('ACO ledgers', () => {
     expect(commandGitStatus?.sourceEvidence).toContain('tracked=0');
   });
 
+  test('records cmd.aco-test-acceptance as read-only validation evidence', async () => {
+    const bundle = await buildLedgerBundle({
+      cwd: '/tmp/aco-ledger-no-history',
+      timestamp,
+      graphContext: graphContext(),
+      documentationPlan: documentationPlan(),
+      bmadRoute: bmadRoute(),
+      acceptancePlan: {
+        status: 'ready',
+        scenarios: [],
+      },
+      selectedCapabilities: { capabilities: [] },
+      validationReport: {
+        status: 'passed',
+        checks: [
+          {
+            id: 'aco-acceptance',
+            status: 'passed',
+            message:
+              'ACO acceptance reality check passed for API, slash command, workflow, and events.',
+          },
+        ],
+      },
+      packageScripts: {
+        'aco:test:acceptance': 'bun test ./tests/acceptance/context-orchestrator/*.test.ts',
+      },
+      repositoryStatus: {
+        status: 'available',
+        sourceEvidence: 'git status exited 0; clean=true; tracked=0; untracked=0.',
+        verification: 'Worktree is clean.',
+        notes: 'No tracked or untracked files reported.',
+        confidence: 'observed',
+      },
+    });
+    const acceptanceCommand = bundle.commands.find(entry => entry.id === 'cmd.aco-test-acceptance');
+
+    expect(acceptanceCommand?.status).toBe('available');
+    expect(acceptanceCommand?.command).toBe('bun run aco:test:acceptance');
+    expect(acceptanceCommand?.safety).toBe('read-only');
+    expect(acceptanceCommand?.mutatesTrackedFiles).toBe(false);
+    expect(acceptanceCommand?.requiresApproval).toBe(false);
+  });
+
   test('AC-CONFIDENCE-003 includes named graph waivers as explicit confidence limits', async () => {
     const bundle = await buildLedgerBundle({
       cwd: '/tmp/aco-ledger-no-history',

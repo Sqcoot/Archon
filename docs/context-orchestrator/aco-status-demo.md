@@ -8,7 +8,7 @@ Show how Context Orchestrator status exposes approval-required graph readiness w
 
 1. Open the Context Orchestrator page for the selected registered project.
 2. Confirm the status says `Needs approval`.
-3. Confirm validation is `passed`, graph is `forbidden`, schema is `aco.ledger-bundle.v1`, and combined ledger totals are total `39` with graph-derived rows counted as `forbidden`, not `partial`.
+3. Confirm validation is `passed`, graph is `forbidden`, schema is `aco.ledger-bundle.v1`, combined ledger totals include `cmd.aco-test-acceptance`, and graph-derived rows are counted as `forbidden`, not `partial`.
 4. Copy or inspect the forbidden graph confidence limits:
    - `graph-waiver.bmad-plugins-marketplace`
    - `graph-waiver.bmad-sample-data`

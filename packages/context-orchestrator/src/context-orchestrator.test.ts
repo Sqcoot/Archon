@@ -130,10 +130,18 @@ describe('context orchestrator core', () => {
 
     const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
     const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
+    const goalCommand =
+      '/goal Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
     expect(finalPackage).toContain('## Ledger Guidance');
     expect(finalPackage).toContain('tool-availability-ledger.json');
     expect(codexPrompt).toContain('Ledger requirements');
     expect(codexPrompt).toContain('Avoid commands marked `forbidden`');
+    expect(finalPackage).toContain('## Codex Goal Handoff');
+    expect(codexPrompt).toContain('## Codex Goal Handoff');
+    expect(codexPrompt).toContain('features.goals');
+    expect(codexPrompt).toContain('Codex session control only');
+    expect(codexPrompt).toContain(goalCommand);
+    expect(goalCommand.length).toBeLessThan(4000);
 
     const policyDecision = JSON.parse(
       await readFile(result.files['policy-decision.json'], 'utf8')
@@ -371,6 +379,78 @@ describe('context orchestrator core', () => {
         delete process.env.CI;
       } else {
         process.env.CI = originalCi;
+      }
+    }
+  });
+
+  test('fails aggregate validation when a selected acceptance surface returns to placeholder text', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'aco-acceptance-placeholder-'));
+    await mkdir(join(cwd, 'docs/context-orchestrator/specs'), { recursive: true });
+    await mkdir(join(cwd, 'docs/context-orchestrator/research'), { recursive: true });
+    await mkdir(join(cwd, 'tests/acceptance/context-orchestrator'), { recursive: true });
+    await writeFile(
+      join(cwd, 'docs/context-orchestrator/specs/000-product-charter.md'),
+      '# Charter\n',
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'docs/context-orchestrator/research/upstream-manifest.json'),
+      '{}\n',
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'package.json'),
+      `${JSON.stringify({
+        scripts: {
+          'research:bootstrap': 'true',
+          'research:update-upstreams': 'true',
+          'research:graph': 'true',
+          'research:merge-graphs': 'true',
+          'research:validate-corpus': 'true',
+          'aco:policy:test': 'true',
+          'aco:policy:fixtures': 'true',
+          'aco:policy': 'true',
+          'aco:traceability': 'true',
+          'aco:test:acceptance': 'true',
+        },
+      })}\n`,
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/api.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest.todo('AC-P1-API placeholder');\n",
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/command.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest('AC-P1-SLASH executable', () => {});\n",
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/workflow.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest('AC-P3-WF executable', () => {});\n",
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/events.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest('ACO-EVENTS-001 executable', () => {});\n",
+      'utf8'
+    );
+
+    const originalSkip = process.env.ARCHON_SKIP_OPA;
+    try {
+      process.env.ARCHON_SKIP_OPA = '1';
+      const report = await validateContextOrchestrator({ cwd });
+      const acceptanceCheck = report.checks.find(check => check.id === 'aco-acceptance');
+      expect(report.status).toBe('failed');
+      expect(acceptanceCheck?.status).toBe('failed');
+      expect(acceptanceCheck?.message).toContain('AC-P1-API API');
+      expect(acceptanceCheck?.message).toContain('still uses test.todo');
+    } finally {
+      if (originalSkip === undefined) {
+        delete process.env.ARCHON_SKIP_OPA;
+      } else {
+        process.env.ARCHON_SKIP_OPA = originalSkip;
       }
     }
   });

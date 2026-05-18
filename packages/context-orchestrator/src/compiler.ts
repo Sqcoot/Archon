@@ -56,6 +56,10 @@ const archiveFiles = [
   'validation-report.md',
 ];
 
+const codexGoalObjective =
+  'Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
+const codexGoalCommand = `/goal ${codexGoalObjective}`;
+
 export async function compilePromptPackage(
   options: CompilePromptPackageOptions
 ): Promise<PromptPackageResult> {
@@ -222,6 +226,14 @@ function renderCodexPrompt(prompt: string, steps: string[]): string {
     'Use SDD and ATDD before production code.',
     '',
     'First create or update specs. Then define acceptance scenarios. Only then implement.',
+    '',
+    '## Codex Goal Handoff',
+    '',
+    'Optional: if Codex `features.goals` is enabled, set this session goal before implementation:',
+    '',
+    codexGoalCommand,
+    '',
+    'This is a Codex session control only; do not store it in Archon state.',
     '',
     'Follow this BMAD route:',
     '',

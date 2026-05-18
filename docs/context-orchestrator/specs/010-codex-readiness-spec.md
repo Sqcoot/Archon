@@ -27,6 +27,7 @@ The report must include:
 - unknowns
 - blockers
 - recommended next command
+- optional Codex `/goal` handoff command for long-running implementation prompts
 
 ## Archon-Specific Behavior
 
@@ -54,6 +55,7 @@ Archon MVP must expose the report through the selected native surface, such as C
 - blocker list
 - warning list
 - recommended next Codex prompt or Archon command
+- `Codex Goal Handoff` section in generated Codex prompt artifacts when a bounded goal objective is useful
 
 ## Known Unknowns
 
@@ -86,8 +88,9 @@ And missing OpenAI Docs MCP is a blocker only if official OpenAI behavior is req
 
 Given a long-running ACO implementation prompt
 When ACO compiles Codex instructions
-Then the prompt may reference `/goal` as a Codex session control
-And ACO does not require an Archon database migration to represent Codex goals.
+Then the prompt includes a bounded optional `/goal <objective>` suggestion in a Codex Goal Handoff section
+And the prompt states that `/goal` is a Codex session control requiring Codex `features.goals`
+And ACO does not require an Archon database migration, config mutation, or stored state to represent Codex goals.
 
 ## Failure Behavior
 
@@ -115,5 +118,4 @@ Readiness warns, but does not fail, if:
 
 ## Open Questions
 
-- Should ACO provide a generated `/goal` suggestion in prompt packages or keep `/goal` only in human-facing setup instructions?
 - Which readiness failures should map to BMAD correct-course automatically?

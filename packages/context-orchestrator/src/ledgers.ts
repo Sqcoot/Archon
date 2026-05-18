@@ -656,6 +656,7 @@ function buildCommandEntries(
 ): CommandLedgerEntry[] {
   const policy = checkById(options.validationReport, 'aco-policy');
   const traceability = checkById(options.validationReport, 'aco-traceability');
+  const acceptance = checkById(options.validationReport, 'aco-acceptance');
   const commands: CommandLedgerEntry[] = [
     commandEntry({
       id: 'cmd.aco-compile',
@@ -698,6 +699,30 @@ function buildCommandEntries(
       safety: 'read-only',
       notes: 'Read-only CLI surface.',
       confidence: 'declared',
+    }),
+    commandEntry({
+      id: 'cmd.aco-test-acceptance',
+      command: 'bun run aco:test:acceptance',
+      category: 'validation',
+      status: validationCheckToLedgerStatus(acceptance),
+      sourceEvidence: acceptance?.message ?? packageScripts['aco:test:acceptance'] ?? 'unknown',
+      invocationPath: 'repo root',
+      scope: 'ACO root acceptance reality gate.',
+      preconditions: 'Selected native-loop acceptance files exist and are executable.',
+      verification: acceptance?.message ?? 'ACO acceptance check not observed.',
+      primaryUse:
+        'Prevent selected native-loop acceptance placeholders from passing release readiness.',
+      failureMode:
+        'Selected API, slash command, workflow, or events acceptance is still placeholder text.',
+      fallback:
+        'Convert selected acceptance placeholders to executable checks and rerun acceptance tests.',
+      owner: 'context-orchestrator',
+      lastVerified,
+      mutatesTrackedFiles: false,
+      requiresApproval: false,
+      safety: 'read-only',
+      notes: acceptance?.status ?? 'unknown',
+      confidence: acceptance ? 'observed' : 'unknown',
     }),
     commandEntry({
       id: 'cmd.aco-policy',

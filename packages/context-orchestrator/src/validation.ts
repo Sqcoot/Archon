@@ -6,6 +6,33 @@ export interface ValidateContextOrchestratorOptions {
   cwd: string;
 }
 
+const selectedAcceptanceSurfaces = [
+  {
+    id: 'AC-P1-API',
+    label: 'API',
+    path: 'tests/acceptance/context-orchestrator/api.acceptance.test.ts',
+    markers: ['AC-P1-API'],
+  },
+  {
+    id: 'AC-P1-SLASH',
+    label: 'slash command',
+    path: 'tests/acceptance/context-orchestrator/command.acceptance.test.ts',
+    markers: ['AC-P1-SLASH'],
+  },
+  {
+    id: 'AC-P3-WF',
+    label: 'workflow',
+    path: 'tests/acceptance/context-orchestrator/workflow.acceptance.test.ts',
+    markers: ['AC-P3-WF'],
+  },
+  {
+    id: 'ACO-EVENTS-001',
+    label: 'events',
+    path: 'tests/acceptance/context-orchestrator/events.acceptance.test.ts',
+    markers: ['ACO-EVENTS-001'],
+  },
+] as const;
+
 export async function validateContextOrchestrator(
   options: ValidateContextOrchestratorOptions
 ): Promise<ValidationReport> {
@@ -34,8 +61,10 @@ export async function validateContextOrchestrator(
       'aco:policy:fixtures',
       'aco:policy',
       'aco:traceability',
+      'aco:test:acceptance',
     ])
   );
+  checks.push(await acceptanceRealityCheck(options.cwd));
   checks.push(await policyCheck(options.cwd));
   checks.push(await traceabilityCheck(options.cwd));
 
@@ -44,6 +73,49 @@ export async function validateContextOrchestrator(
   return {
     status: failed ? 'failed' : warned ? 'warning' : 'passed',
     checks,
+  };
+}
+
+async function acceptanceRealityCheck(cwd: string): Promise<ValidationCheck> {
+  const failures: string[] = [];
+
+  for (const surface of selectedAcceptanceSurfaces) {
+    const absolutePath = join(cwd, surface.path);
+    let content: string;
+    try {
+      content = await readFile(absolutePath, 'utf8');
+    } catch {
+      failures.push(`${surface.id} ${surface.label}: ${surface.path} is missing`);
+      continue;
+    }
+
+    if (content.includes('test.todo')) {
+      failures.push(`${surface.id} ${surface.label}: still uses test.todo`);
+    }
+    if (content.includes('deferred from CLI MVP')) {
+      failures.push(`${surface.id} ${surface.label}: still claims deferred from CLI MVP`);
+    }
+
+    const missingMarkers = surface.markers.filter(marker => !content.includes(marker));
+    if (missingMarkers.length > 0) {
+      failures.push(
+        `${surface.id} ${surface.label}: missing acceptance marker(s) ${missingMarkers.join(', ')}`
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    return {
+      id: 'aco-acceptance',
+      status: 'failed',
+      message: `ACO acceptance reality check failed: ${failures.join('; ')}`,
+    };
+  }
+
+  return {
+    id: 'aco-acceptance',
+    status: 'passed',
+    message: 'ACO acceptance reality check passed for API, slash command, workflow, and events.',
   };
 }
 
@@ -175,7 +247,7 @@ async function packageScriptCheck(cwd: string, scripts: string[]): Promise<Valid
     return {
       id: 'aco-package-scripts',
       status: 'passed',
-      message: 'Required ACO research package scripts exist.',
+      message: 'Required ACO research and validation package scripts exist.',
     };
   } catch {
     return {

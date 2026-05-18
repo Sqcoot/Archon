@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdtemp } from 'fs/promises';
+import { mkdtemp, readFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { compilePromptPackage } from '@archon/context-orchestrator';
@@ -26,5 +26,28 @@ describe('ACO compile acceptance', () => {
     expect(result.files['tool-availability-ledger.md']).toContain('tool-availability-ledger.md');
     expect(result.files['commands-ledger.json']).toContain('commands-ledger.json');
     expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
+  });
+
+  test('Spec: 010-codex-readiness-spec.md Acceptance: ACO-CODEX-003 compiled prompts include optional Codex Goal Handoff', async () => {
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-codex-goal-'));
+    const result = await compilePromptPackage({
+      cwd: process.cwd(),
+      prompt: 'Implement ACO Acceptance Reality Gate with Codex Goal Handoff.',
+      archiveRoot,
+      runId: 'aco-codex-goal',
+      timestamp: '2026-05-18T12:00:00.000Z',
+      json: true,
+    });
+
+    const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
+    const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
+    const goalCommand =
+      '/goal Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
+
+    expect(codexPrompt).toContain('## Codex Goal Handoff');
+    expect(codexPrompt).toContain(goalCommand);
+    expect(finalPackage).toContain('## Codex Goal Handoff');
+    expect(finalPackage).toContain(goalCommand);
+    expect(goalCommand.length).toBeLessThan(4000);
   });
 });
