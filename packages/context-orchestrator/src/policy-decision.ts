@@ -2,6 +2,8 @@ import { createHash } from 'crypto';
 import { readdir, readFile } from 'fs/promises';
 import { join, relative, resolve, sep } from 'path';
 import { writeFileNoFollow } from './security';
+import { withAcoSpan } from './telemetry';
+import type { AcoSpanAttributes } from './telemetry';
 import type { ArchivedPolicyDecision, PolicyDecision, PolicyFinding } from './types';
 
 const POLICY_DIR = resolve(import.meta.dir, '..', 'policies', 'prompt-package');
@@ -108,17 +110,39 @@ export async function createArchivedPolicyDecision(
 export async function writeArchivedPolicyDecision(
   options: WriteArchivedPolicyDecisionOptions
 ): Promise<ArchivedPolicyDecision> {
-  const decision = await createArchivedPolicyDecision(options);
-  await writeFileNoFollow(
-    options.archivePath,
-    options.outputPath,
-    stringifyArchivedPolicyDecision(decision)
+  return withAcoSpan(
+    'archon.aco.policy.archive',
+    {
+      'archon.aco.operation': 'policy.archive',
+      'archon.aco.policy.gate': 'prompt-package',
+    },
+    async span => {
+      const decision = await createArchivedPolicyDecision(options);
+      span.setAttributes(toPolicyArchiveSpanAttributes(decision));
+      await writeFileNoFollow(
+        options.archivePath,
+        options.outputPath,
+        stringifyArchivedPolicyDecision(decision)
+      );
+      return decision;
+    }
   );
-  return decision;
 }
 
 export function stringifyArchivedPolicyDecision(decision: ArchivedPolicyDecision): string {
   return `${JSON.stringify(decision, null, 2)}\n`;
+}
+
+function toPolicyArchiveSpanAttributes(decision: ArchivedPolicyDecision): AcoSpanAttributes {
+  return {
+    'archon.aco.policy.allowed': decision.decision.allow,
+    'archon.aco.policy.deny.count': decision.counts.deny,
+    'archon.aco.policy.warn.count': decision.counts.warn,
+    'archon.aco.policy.duplicates_suppressed.count': decision.duplicates_suppressed,
+    'archon.aco.policy.version': decision.policy.version,
+    'archon.aco.opa.available': decision.opa.available,
+    'archon.aco.opa.version': decision.opa.version,
+  };
 }
 
 function extractOpaDecisionValue(parsed: unknown): unknown {
