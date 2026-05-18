@@ -1,4 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { mkdir, mkdtemp, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { getGraphContext } from './graph';
 import {
   buildLedgerBundle,
   ledgerStatusOrder,
@@ -191,6 +195,47 @@ describe('ACO ledgers', () => {
     expect(graphEntry?.notes).toContain('owner=context-orchestrator');
     expect(graphEntry?.notes).toContain('expiry=');
     expect(graphEntry?.sourceEvidence).toContain('graph-waiver.sample-upstream');
+  });
+
+  test('AC-FORBIDDEN-GRAPH-001 marks failed waiver-required graph evidence as forbidden graph waivers', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'aco-forbidden-graph-'));
+    const manifestDir = join(cwd, 'docs/context-orchestrator/research');
+    await mkdir(manifestDir, { recursive: true });
+    await writeFile(
+      join(manifestDir, 'upstream-manifest.json'),
+      JSON.stringify(
+        {
+          repositories: [
+            {
+              name: 'bmad-plugins-marketplace',
+              cloneStatus: 'fetched',
+              graphStatus: 'failed',
+              waiverRequired: true,
+              error: 'Graphify failed for marketplace repository.',
+            },
+            {
+              name: 'bmad-sample-data',
+              cloneStatus: 'fetched',
+              graphStatus: 'failed',
+              waiverRequired: true,
+              error: 'Graphify failed for sample data repository.',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const context = await getGraphContext({ cwd });
+
+    expect(context.status).toBe('forbidden');
+    expect(context.waivers.map(waiver => waiver.id)).toEqual([
+      'graph-waiver.bmad-plugins-marketplace',
+      'graph-waiver.bmad-sample-data',
+    ]);
+    expect(context.summary).toContain('failed graph waiver(s) forbidden');
   });
 
   test('AC-LEDGER-006 redacts secret-like values from JSON and Markdown', () => {

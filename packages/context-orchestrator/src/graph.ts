@@ -66,14 +66,20 @@ export async function getGraphContext(options: GetGraphContextOptions): Promise<
   const waivers = manifest.repositories
     .filter(repo => repo.waiverRequired)
     .map(repo => graphWaiverFromManifest(repo));
+  const failedWaiverCount = repositories.filter(
+    repo => repo.waiverRequired && repo.graphStatus === 'failed'
+  ).length;
   const waiverSummary =
     waivers.length > 0 ? `: ${waivers.map(waiver => waiver.id).join(', ')}` : '';
   return {
-    status: waiverCount > 0 ? 'partial' : 'available',
+    status: failedWaiverCount > 0 ? 'forbidden' : waiverCount > 0 ? 'partial' : 'available',
     repositories,
     waiverCount,
     waivers,
-    summary: `${repositories.length} repositories indexed; ${waiverCount} graph waiver(s)${waiverSummary}.`,
+    summary:
+      failedWaiverCount > 0
+        ? `${repositories.length} repositories indexed; ${failedWaiverCount} failed graph waiver(s) forbidden${waiverSummary}.`
+        : `${repositories.length} repositories indexed; ${waiverCount} graph waiver(s)${waiverSummary}.`,
   };
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   Globe,
   Terminal,
@@ -16,10 +17,13 @@ import {
   CheckCircle,
   AlertTriangle,
   Pause,
+  ShieldCheck,
 } from 'lucide-react';
-import type { DashboardRunResponse } from '@/lib/api';
+import { getAcoStatus, type DashboardRunResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/format';
+import { formatAcoEvidenceSummary, getAcoReadinessLabel } from '@/lib/aco-readiness';
+import { useProject } from '@/contexts/ProjectContext';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import type { WorkflowState } from '@/lib/types';
 import { ConfirmRunActionDialog } from './ConfirmRunActionDialog';
@@ -145,10 +149,19 @@ export function WorkflowRunCard({
   onReject,
 }: WorkflowRunCardProps): React.ReactElement {
   const navigate = useNavigate();
+  const { codebases } = useProject();
   const [elapsed, setElapsed] = useState(() => formatDuration(run.started_at, run.completed_at));
 
   // Live SSE state from Zustand store — overrides REST-polled data when present
   const liveState = useWorkflowStore(state => state.workflows.get(run.id));
+  const codebaseCwd = codebases?.find(codebase => codebase.id === run.codebase_id)?.default_cwd;
+  const { data: acoStatus } = useQuery({
+    queryKey: ['aco-status', codebaseCwd],
+    queryFn: () => getAcoStatus(codebaseCwd ?? ''),
+    enabled: Boolean(codebaseCwd),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
 
   useEffect(() => {
     if (run.status !== 'running' && run.status !== 'paused') return;
@@ -232,6 +245,17 @@ export function WorkflowRunCard({
           </button>
         )}
       </div>
+
+      {/* AC-P3-WF: workflow dashboard cards show read-only ACO readiness from registered codebase cwd. */}
+      {acoStatus && (
+        <div className="rounded-md border border-border bg-surface-elevated px-3 py-2 text-xs">
+          <div className="flex items-center gap-1.5 text-text-primary">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span className="font-medium">ACO {getAcoReadinessLabel(acoStatus)}</span>
+          </div>
+          <div className="mt-1 text-text-secondary">{formatAcoEvidenceSummary(acoStatus)}</div>
+        </div>
+      )}
 
       {/* User message — expandable */}
       {displayMessage && (

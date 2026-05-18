@@ -1,12 +1,13 @@
 import { NavLink, Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { LayoutDashboard, MessageSquare, Workflow, Settings } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Workflow, Settings, ShieldCheck } from 'lucide-react';
 import { listDashboardRuns, getUpdateCheck } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const tabs = [
   { to: '/chat', end: false, icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', end: true, icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/aco/status', end: true, icon: ShieldCheck, label: 'ACO Status' },
   { to: '/workflows', end: false, icon: Workflow, label: 'Workflows' },
   { to: '/settings', end: false, icon: Settings, label: 'Settings' },
 ] as const;

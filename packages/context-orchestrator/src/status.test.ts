@@ -35,6 +35,17 @@ describe('context orchestrator status confidence', () => {
       expect(graphEntry?.sourceEvidence).toContain(waiverId);
       expect(graphEntry?.notes).toContain(waiverId);
     }
+    expect(status.graphStatus).toBe('forbidden');
+    expect(graphEntry?.status).toBe('forbidden');
+    const waiverBackedRows = [...ledgers.toolAvailability, ...ledgers.commands].filter(entry =>
+      status.graphWaiverIds.some(
+        waiverId => entry.sourceEvidence.includes(waiverId) || entry.notes.includes(waiverId)
+      )
+    );
+    expect(waiverBackedRows.length).toBeGreaterThan(0);
+    for (const entry of waiverBackedRows) {
+      expect(entry.status).not.toBe('partial');
+    }
     expect(status.ledgerSchemaVersion).toBe(ledgers.schemaVersion);
     expect(status.ledgerSchemaVersion).toBe(compiled.package.ledgerBundle.schemaVersion);
     expect(status.ledgerSummary).toEqual(ledgers.summary);

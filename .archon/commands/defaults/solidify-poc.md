@@ -42,8 +42,9 @@ archon context ledgers --cwd . --json
 ```
 
 If `archon` is unavailable, mark Archon ACO as `blocked` and record the fallback.
-If ACO status is `failed`, graph evidence is partial, or waivers exist, record
-that as a confidence limit instead of treating the review as green.
+If ACO status is `failed`, graph evidence is partial or forbidden, or waivers
+exist, record that as a confidence limit instead of treating the review as
+green.
 
 ## Tool Availability Ledger
 
@@ -105,7 +106,8 @@ Return these sections:
 7. Evidence limits and unresolved unknowns
 
 Use `Ready` only when required tools are available, required validations pass,
-and graph/docs waivers are accepted with known impact. Use `Partial` when useful
+and graph/docs waivers do not block readiness. Use `Partial` when useful
 evidence exists but waivers, missing prerequisites, stale data, or partial graph
 coverage limit confidence. Use `Blocked` when required tools or evidence are not
-available.
+available. Use `Forbidden` when failed waiver-required graph evidence or unsafe
+command evidence blocks readiness claims.

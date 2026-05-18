@@ -55,6 +55,7 @@ import {
 } from '@archon/workflows/schemas/workflow-run';
 import type { ApprovalContext, WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import { findMarkdownFilesRecursive } from '@archon/core/utils/commands';
+import { getContextOrchestratorStatus } from '@archon/context-orchestrator';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -122,6 +123,7 @@ import {
   codebaseEnvironmentsResponseSchema,
 } from './schemas/config.schemas';
 import { providerListResponseSchema } from './schemas/provider.schemas';
+import { acoStatusQuerySchema, acoStatusResponseSchema } from './schemas/aco.schemas';
 import { getProviderInfoList, isRegisteredProvider } from '@archon/providers';
 
 // Read app version: use build-time constant in binary, package.json in dev
@@ -158,6 +160,23 @@ function jsonError(description: string): {
 const cwdQuerySchema = z.object({ cwd: z.string().optional() });
 const workflowTargetQuerySchema = cwdQuerySchema.extend({
   source: z.enum(['project', 'global']).optional(),
+});
+
+const getAcoStatusRoute = createRoute({
+  method: 'get',
+  path: '/api/aco/status',
+  tags: ['ACO'],
+  summary: 'Show ACO status',
+  request: { query: acoStatusQuerySchema },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoStatusResponseSchema } },
+      description: 'Raw ACO status contract',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd is not registered'),
+    500: jsonError('ACO status read failed'),
+  },
 });
 
 const getWorkflowsRoute = createRoute({
@@ -1127,6 +1146,25 @@ export function registerApiRoutes(
       return false;
     }
   }
+
+  // GET /api/aco/status - Productized read-only ACO status for Web UI
+  registerOpenApiRoute(getAcoStatusRoute, async c => {
+    const cwd = c.req.query('cwd')?.trim();
+    if (!cwd) {
+      return apiError(c, 400, 'cwd is required');
+    }
+    try {
+      if (!(await validateCwd(cwd))) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      const status = await getContextOrchestratorStatus(cwd);
+      return c.json(status);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      getLog().error({ err: error, cwd }, 'aco_status_failed');
+      return apiError(c, 500, 'ACO status read failed', message);
+    }
+  });
 
   // GET /api/conversations - List conversations
   registerOpenApiRoute(getConversationsRoute, async c => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { MessageSquare } from 'lucide-react';
+import { Check, Copy, MessageSquare, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { DagNodeProgress } from './DagNodeProgress';
@@ -12,9 +12,21 @@ import { ChatInterface } from '@/components/chat/ChatInterface';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useWorkflowStore } from '@/stores/workflow-store';
-import { getWorkflowRun, getWorkflowRunByWorker, getCodebase, getWorkflow } from '@/lib/api';
+import {
+  getAcoStatus,
+  getWorkflowRun,
+  getWorkflowRunByWorker,
+  getCodebase,
+  getWorkflow,
+} from '@/lib/api';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
 import { selectInitialNode } from '@/lib/select-initial-node';
+import {
+  formatAcoEvidenceSummary,
+  formatAcoHandoffNarrative,
+  formatAcoLedgerCounts,
+  getAcoReadinessLabel,
+} from '@/lib/aco-readiness';
 import type {
   WorkflowState,
   ArtifactType,
@@ -24,7 +36,7 @@ import type {
   LoopIterationInfo,
 } from '@/lib/types';
 
-import type { WorkflowEventResponse } from '@/lib/api';
+import type { AcoStatusResponse, WorkflowEventResponse } from '@/lib/api';
 
 /** Tool call event extracted from workflow_events for display in WorkflowLogs. */
 export interface ToolEvent {
@@ -82,6 +94,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   const [codebaseCwd, setCodebaseCwd] = useState<string | null>(null);
   const [workerRunId, setWorkerRunId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'graph' | 'logs' | 'chat'>('graph');
+  const [acoHandoffCopied, setAcoHandoffCopied] = useState(false);
   // Increments on every user-initiated node click to trigger scroll in WorkflowLogs
   const [nodeScrollTrigger, setNodeScrollTrigger] = useState(0);
   // Track which codebaseId we've already fetched to avoid stale re-fetches during runId transitions
@@ -301,6 +314,14 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   // Use workflow definition when available, fall back to dagNodes from run state.
   const isDag = dagDefinitionNodes !== null || (initialData?.dagNodes.length ?? 0) > 0;
 
+  const { data: acoStatus } = useQuery({
+    queryKey: ['aco-status', codebaseCwd],
+    queryFn: () => getAcoStatus(codebaseCwd ?? ''),
+    enabled: Boolean(codebaseCwd),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+
   // When SSE reports a terminal status but React Query data is still stale,
   // invalidate the cache to trigger an immediate re-fetch with correct data.
   const liveStatus = liveWorkflow?.status;
@@ -517,6 +538,16 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   // Pick the platform ID for logs: worker takes precedence over conversation.
   const logsPlatformId = workerPlatformId ?? conversationPlatformId;
 
+  function copyAcoHandoff(): void {
+    if (!acoStatus) return;
+    void navigator.clipboard.writeText(formatAcoHandoffNarrative(acoStatus)).then(() => {
+      setAcoHandoffCopied(true);
+      setTimeout(() => {
+        setAcoHandoffCopied(false);
+      }, 1500);
+    });
+  }
+
   // Logs panel — detect whether the selected node has any DB events so we can show an empty-state
   const logsPanel = (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 h-full">
@@ -664,6 +695,14 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
         </div>
       </div>
 
+      {acoStatus && (
+        <AcoRunDetailSnapshot
+          status={acoStatus}
+          copied={acoHandoffCopied}
+          onCopy={copyAcoHandoff}
+        />
+      )}
+
       {/* View tabs — only for DAG workflows */}
       {isDag && (
         <div className="flex items-center px-4 py-1.5 border-b border-border">
@@ -689,6 +728,61 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
 
       {/* Body — content depends on activeView for DAG, or default layout for sequential */}
       {renderBody()}
+    </div>
+  );
+}
+
+// AC-P3-WF and AC-P3-PR: workflow run detail shows full read-only ACO status evidence and copyable handoff text.
+function AcoRunDetailSnapshot({
+  status,
+  copied,
+  onCopy,
+}: {
+  status: AcoStatusResponse;
+  copied: boolean;
+  onCopy: () => void;
+}): React.ReactElement {
+  return (
+    <div className="border-b border-border bg-surface px-4 py-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm text-text-primary">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span className="font-medium">ACO {getAcoReadinessLabel(status)}</span>
+          </div>
+          <div className="mt-1 text-xs text-text-secondary">{formatAcoEvidenceSummary(status)}</div>
+        </div>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          Handoff
+        </button>
+      </div>
+      <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
+        <div className="rounded-md border border-border bg-surface-elevated px-2 py-1.5">
+          <span className="text-text-tertiary">schema</span>
+          <span className="ml-2 font-mono text-text-primary">{status.ledgerSchemaVersion}</span>
+        </div>
+        <div className="rounded-md border border-border bg-surface-elevated px-2 py-1.5">
+          <span className="text-text-tertiary">ledger</span>
+          <span className="ml-2 font-mono text-text-primary">{formatAcoLedgerCounts(status)}</span>
+        </div>
+      </div>
+      {status.graphWaiverIds.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+          {status.graphWaiverIds.map(waiverId => (
+            <span
+              key={waiverId}
+              className="rounded border border-border bg-surface-elevated px-1.5 py-0.5 font-mono text-text-secondary"
+            >
+              {waiverId}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

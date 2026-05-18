@@ -24,6 +24,7 @@ Workflow events, stage names, redaction, runId, and failure reporting.
 ## Archon-Specific Behavior
 
 - If workflow integration is selected, use existing workflow event tables and event emitter patterns.
+- ACO Status workflow visibility is read-only UI context sourced from the canonical status endpoint. It must not create new workflow events, persist readiness snapshots, or reinterpret workflow status.
 
 ## Inputs
 
@@ -37,6 +38,7 @@ Workflow events, stage names, redaction, runId, and failure reporting.
 - workflow events
 - log entries
 - validation report entries
+- read-only readiness display in workflow UI and PR/handoff text
 - OpenTelemetry API spans:
   - `archon.aco.compile`
   - `archon.aco.policy.archive`
@@ -71,6 +73,7 @@ attribute names are not allowed.
 ## Acceptance Scenarios
 
 - Given workflow integration is included, when route, graph, docs, BMAD, compile, and archive stages complete, then events contain runId and stage and no raw secrets.
+- AC-P3-WF: Given ACO readiness is shown on workflow surfaces, when the dashboard or run detail renders it, then no workflow event or persisted run metadata is added for the status snapshot.
 - Given no OpenTelemetry tracer provider is installed, when ACO compiles a prompt package, then
   functional output is unchanged and telemetry remains no-op.
 - Given an OpenTelemetry tracer provider is installed by the host runtime, when ACO compiles a

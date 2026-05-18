@@ -75,6 +75,7 @@ import {
   contextStatusCommand,
   contextValidateCommand,
 } from './commands/context';
+import { acoStatusCommand } from './commands/aco';
 import { closeDatabase } from '@archon/core';
 import {
   setLogLevel,
@@ -117,6 +118,7 @@ Commands:
   isolation cleanup --merged Remove environments with branches merged into main
   continue <branch> [msg]    Continue work on an existing worktree with prior context
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
+  aco status                 Show productized ACO status and graph confidence limits
   context route <prompt>     Select an ACO BMAD route
   context compile <prompt>   Compile an ACO Codex-ready prompt package
   context ledgers            Show ACO Tool Availability and Commands ledgers
@@ -154,6 +156,7 @@ Examples:
   archon workflow run implement --branch feature-auth "Implement auth"
   archon workflow run quick-fix --no-worktree "Fix typo"
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
+  archon aco status --cwd /path/to/repo --json
   archon context route --cwd /path/to/repo "Plan this feature"
   archon context compile --cwd /path/to/repo "Plan this feature"
   archon context ledgers --cwd /path/to/repo --json
@@ -627,6 +630,23 @@ async function main(): Promise<number> {
             console.error('Available: workflows, commands');
             return 1;
         }
+
+      case 'aco':
+        switch (subcommand) {
+          case 'status':
+            await acoStatusCommand({ cwd: effectiveCwd, json: jsonFlag });
+            break;
+
+          default:
+            if (subcommand === undefined) {
+              console.error('Missing aco subcommand');
+            } else {
+              console.error(`Unknown aco subcommand: ${subcommand}`);
+            }
+            console.error('Available: status');
+            return 1;
+        }
+        break;
 
       case 'context':
         switch (subcommand) {
