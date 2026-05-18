@@ -21,6 +21,8 @@ export {
   renderDecisionDossierMarkdown,
 } from './decision-dossier';
 export type { CreateDecisionDossierOptions } from './decision-dossier';
+export { createContextIntent, deriveDefaultObjective, normalizeObjective } from './intent';
+export type { CreateContextIntentOptions } from './intent';
 export {
   buildLedgerBundle,
   LEDGER_SCHEMA_VERSION,
@@ -105,7 +107,9 @@ export type {
   GraphWaiverClosureReport,
   CommandLedgerEntry,
   CommandSafety,
+  ContextIntent,
   McpReadinessState,
+  EvidenceBlocker,
   PromptPackage,
   ArchivedPolicyDecision,
   LedgerBundle,
@@ -113,6 +117,8 @@ export type {
   LedgerConfidence,
   LedgerEntryBase,
   LedgerEvidence,
+  LedgerFreshness,
+  LedgerVerificationMethod,
   LedgerStatus,
   LedgerStatusCounts,
   LedgerSummary,

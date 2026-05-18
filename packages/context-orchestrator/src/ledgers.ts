@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { createContextIntent } from './intent';
 import { redactSecrets } from './security';
 import type {
   AcceptancePlan,
@@ -7,13 +8,17 @@ import type {
   CapabilityRoute,
   CommandLedgerEntry,
   CommandSafety,
+  ContextIntent,
   DocumentationPlan,
+  EvidenceBlocker,
   GraphContext,
   LedgerBundle,
   LedgerBundleSummary,
   LedgerConfidence,
   LedgerEntryBase,
   LedgerEvidence,
+  LedgerFreshness,
+  LedgerVerificationMethod,
   LedgerStatus,
   LedgerStatusCounts,
   LedgerSummary,
@@ -45,9 +50,37 @@ const commandSafetyValues = new Set<CommandSafety>([
   'unknown',
 ]);
 
+const ledgerFreshnessValues = new Set<LedgerFreshness>(['fresh', 'stale', 'unknown', 'waived']);
+
+const ledgerVerificationMethods = new Set<LedgerVerificationMethod>([
+  'command',
+  'file',
+  'tool',
+  'static',
+  'policy',
+  'manual',
+  'unknown',
+]);
+
+const requiredEvidenceIds = new Set([
+  'tool.aco-route',
+  'tool.docs-evidence',
+  'tool.graph-evidence',
+  'tool.aco-validate',
+  'tool.git-status',
+  'tool.package-scripts',
+  'cmd.aco-ledgers',
+  'cmd.aco-validate',
+  'cmd.git-status',
+]);
+
+const blockerStatuses = new Set<LedgerStatus>(['partial', 'blocked', 'unknown']);
+
 export interface BuildLedgerBundleOptions {
   cwd: string;
+  objective?: string;
   timestamp?: string;
+  contextIntent?: ContextIntent;
   graphContext: GraphContext;
   documentationPlan: DocumentationPlan;
   bmadRoute: BmadRoute;
@@ -66,36 +99,86 @@ export interface RepositoryStatusEvidence {
   confidence: LedgerConfidence;
 }
 
-type LedgerBundleDraft = Omit<LedgerBundle, 'summary'> & {
+type LedgerBundleDraft = Omit<LedgerBundle, 'summary' | 'contextIntent' | 'evidenceBlockers'> & {
+  contextIntent?: ContextIntent;
+  evidenceBlockers?: EvidenceBlocker[];
   summary?: LedgerBundleSummary;
 };
 
-type ToolEntryDraft = Omit<ToolAvailabilityLedgerEntry, 'evidence' | 'confidence'> & {
+type ToolEntryDraft = Omit<
+  ToolAvailabilityLedgerEntry,
+  | 'evidence'
+  | 'confidence'
+  | 'lastVerifiedAt'
+  | 'verificationSource'
+  | 'verificationMethod'
+  | 'sourceArtifact'
+  | 'nextVerificationAction'
+  | 'freshness'
+> & {
   confidence?: LedgerConfidence;
   evidence?: LedgerEvidence[];
+  lastVerifiedAt?: string;
+  verificationSource?: string;
+  verificationMethod?: LedgerVerificationMethod;
+  sourceArtifact?: string;
+  nextVerificationAction?: string;
+  freshness?: LedgerFreshness;
 };
 
-type CommandEntryDraft = Omit<CommandLedgerEntry, 'evidence' | 'confidence'> & {
+type CommandEntryDraft = Omit<
+  CommandLedgerEntry,
+  | 'evidence'
+  | 'confidence'
+  | 'lastVerifiedAt'
+  | 'verificationSource'
+  | 'verificationMethod'
+  | 'sourceArtifact'
+  | 'nextVerificationAction'
+  | 'freshness'
+> & {
   confidence?: LedgerConfidence;
   evidence?: LedgerEvidence[];
+  lastVerifiedAt?: string;
+  verificationSource?: string;
+  verificationMethod?: LedgerVerificationMethod;
+  sourceArtifact?: string;
+  nextVerificationAction?: string;
+  freshness?: LedgerFreshness;
 };
 
 export async function buildLedgerBundle(options: BuildLedgerBundleOptions): Promise<LedgerBundle> {
+  const contextIntent =
+    options.contextIntent ??
+    (await createContextIntent({
+      cwd: options.cwd,
+      objective: options.objective,
+      timestamp: options.timestamp,
+    }));
   const packageScripts = options.packageScripts ?? (await readPackageScripts(options.cwd));
   const repositoryStatus =
     options.repositoryStatus ?? (await getRepositoryStatusEvidence(options.cwd));
-  const lastVerified = toLastVerified(options.timestamp);
+  const lastVerified = toLastVerified(contextIntent.generatedAt);
+  const lastVerifiedAt = contextIntent.generatedAt;
   const toolAvailability = buildToolAvailabilityEntries(
     options,
     packageScripts,
     repositoryStatus,
-    lastVerified
+    lastVerified,
+    lastVerifiedAt
   );
-  const commands = buildCommandEntries(options, packageScripts, repositoryStatus, lastVerified);
+  const commands = buildCommandEntries(
+    options,
+    packageScripts,
+    repositoryStatus,
+    lastVerified,
+    lastVerifiedAt
+  );
 
   return normalizeLedgerBundle({
     schemaVersion: LEDGER_SCHEMA_VERSION,
-    generatedAt: options.timestamp,
+    generatedAt: contextIntent.generatedAt,
+    contextIntent,
     toolAvailability,
     commands,
   });
@@ -113,8 +196,15 @@ export function normalizeLedgerBundle(bundle: LedgerBundleDraft): LedgerBundle {
   const normalized: Omit<LedgerBundle, 'summary'> = {
     schemaVersion: LEDGER_SCHEMA_VERSION,
     ...(bundle.generatedAt !== undefined ? { generatedAt: redactSecrets(bundle.generatedAt) } : {}),
+    contextIntent: normalizeContextIntent(
+      bundle.contextIntent ?? unknownContextIntent(bundle.generatedAt)
+    ),
     toolAvailability,
     commands,
+    evidenceBlockers:
+      bundle.evidenceBlockers !== undefined
+        ? bundle.evidenceBlockers.map(normalizeEvidenceBlocker).sort(compareById)
+        : buildEvidenceBlockers(toolAvailability, commands),
   };
 
   return {
@@ -141,12 +231,18 @@ export function serializeLedgerBundle(bundle: LedgerBundle): LedgerBundle {
 
 export function serializeToolAvailabilityLedger(bundle: LedgerBundle): {
   schemaVersion: LedgerBundle['schemaVersion'];
+  generatedAt?: string;
+  contextIntent: ContextIntent;
+  evidenceBlockers: EvidenceBlocker[];
   summary: LedgerSummary;
   toolAvailability: ToolAvailabilityLedgerEntry[];
 } {
   const normalized = normalizeLedgerBundle(bundle);
   return {
     schemaVersion: normalized.schemaVersion,
+    ...(normalized.generatedAt !== undefined ? { generatedAt: normalized.generatedAt } : {}),
+    contextIntent: normalized.contextIntent,
+    evidenceBlockers: normalized.evidenceBlockers,
     summary: normalized.summary.toolAvailability,
     toolAvailability: normalized.toolAvailability,
   };
@@ -154,12 +250,18 @@ export function serializeToolAvailabilityLedger(bundle: LedgerBundle): {
 
 export function serializeCommandsLedger(bundle: LedgerBundle): {
   schemaVersion: LedgerBundle['schemaVersion'];
+  generatedAt?: string;
+  contextIntent: ContextIntent;
+  evidenceBlockers: EvidenceBlocker[];
   summary: LedgerSummary;
   commands: CommandLedgerEntry[];
 } {
   const normalized = normalizeLedgerBundle(bundle);
   return {
     schemaVersion: normalized.schemaVersion,
+    ...(normalized.generatedAt !== undefined ? { generatedAt: normalized.generatedAt } : {}),
+    contextIntent: normalized.contextIntent,
+    evidenceBlockers: normalized.evidenceBlockers,
     summary: normalized.summary.commands,
     commands: normalized.commands,
   };
@@ -172,7 +274,12 @@ export function renderLedgerBundleMarkdown(bundle: LedgerBundle): string {
     '',
     `Schema: ${normalized.schemaVersion}`,
     '',
+    `Intent: ${normalized.contextIntent.intentHash}`,
+    `Objective: ${normalized.contextIntent.normalizedObjective}`,
+    '',
     renderSummaryMarkdown(normalized.summary.combined),
+    '',
+    renderEvidenceBlockersMarkdown(normalized.evidenceBlockers),
     '',
     renderToolAvailabilityLedgerMarkdown(normalized.toolAvailability),
     '',
@@ -187,8 +294,8 @@ export function renderToolAvailabilityLedgerMarkdown(
   return [
     '# Tool Availability Ledger',
     '',
-    '| ID | Name | Category | Status | Source Evidence | Invocation Path | Scope | Preconditions | Verification | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Confidence | Notes |',
-    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+    '| ID | Name | Category | Status | Source Evidence | Invocation Path | Scope | Preconditions | Verification | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Last Verified At | Verification Source | Verification Method | Source Artifact | Next Verification Action | Freshness | Confidence | Notes |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
     ...normalized
       .map(entry =>
         [
@@ -206,6 +313,12 @@ export function renderToolAvailabilityLedgerMarkdown(
           entry.fallback,
           entry.owner,
           entry.lastVerified,
+          entry.lastVerifiedAt,
+          entry.verificationSource,
+          entry.verificationMethod,
+          entry.sourceArtifact,
+          entry.nextVerificationAction,
+          entry.freshness,
           entry.confidence,
           entry.notes,
         ]
@@ -221,8 +334,8 @@ export function renderCommandsLedgerMarkdown(entries: CommandLedgerEntry[]): str
   return [
     '# Commands Ledger',
     '',
-    '| ID | Command | Category | Status | Source Evidence | Invocation Path | Scope | Preconditions | Verification | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Mutates Tracked Files | Requires Approval | Safety | Confidence | Notes |',
-    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+    '| ID | Command | Category | Status | Source Evidence | Invocation Path | Scope | Preconditions | Verification | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Last Verified At | Verification Source | Verification Method | Source Artifact | Next Verification Action | Freshness | Mutates Tracked Files | Requires Approval | Safety | Confidence | Notes |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
     ...normalized
       .map(entry =>
         [
@@ -240,6 +353,12 @@ export function renderCommandsLedgerMarkdown(entries: CommandLedgerEntry[]): str
           entry.fallback,
           entry.owner,
           entry.lastVerified,
+          entry.lastVerifiedAt,
+          entry.verificationSource,
+          entry.verificationMethod,
+          entry.sourceArtifact,
+          entry.nextVerificationAction,
+          entry.freshness,
           String(entry.mutatesTrackedFiles),
           String(entry.requiresApproval),
           entry.safety,
@@ -257,7 +376,8 @@ function buildToolAvailabilityEntries(
   options: BuildLedgerBundleOptions,
   packageScripts: Record<string, string>,
   repositoryStatus: RepositoryStatusEvidence,
-  lastVerified: string
+  lastVerified: string,
+  lastVerifiedAt: string
 ): ToolAvailabilityLedgerEntry[] {
   const policy = checkById(options.validationReport, 'aco-policy');
   const traceability = checkById(options.validationReport, 'aco-traceability');
@@ -282,6 +402,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Create acceptance plan before implementation.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Acceptance evidence is included in prompt package policy input.',
       confidence: 'observed',
     }),
@@ -301,6 +422,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Use context ledgers/status output and record archive generation as blocked.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Declared capability; compile writes archive artifacts.',
       confidence: 'declared',
     }),
@@ -319,6 +441,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Use bmad-help guidance and mark route confidence partial.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: options.bmadRoute.rationale,
       confidence: 'observed',
     }),
@@ -342,6 +465,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Inspect graph-summary.md and validation-report.md artifacts.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: options.graphContext.summary,
       confidence: 'observed',
     }),
@@ -360,6 +484,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Run individual aco:policy and aco:traceability checks.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Observed through validation report.',
       confidence: 'observed',
     }),
@@ -381,6 +506,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Regenerate during implementation, then re-run check.',
       owner: 'workflows',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Generation writes tracked output; check mode is read-only.',
       confidence: 'declared',
     }),
@@ -399,6 +525,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Use context-orchestrator package helpers directly.',
       owner: 'cli',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Static CLI integration evidence.',
       confidence: 'declared',
     }),
@@ -417,6 +544,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Use graph, docs, BMAD, acceptance, and prompt-package defaults.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: options.selectedCapabilities.capabilities.map(capability => capability.id).join(', '),
       confidence: options.selectedCapabilities.capabilities.length > 0 ? 'observed' : 'unknown',
     }),
@@ -435,6 +563,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Run bun run generate:bundled during implementation.',
       owner: 'workflows',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Use check mode during validation; generation mutates tracked file.',
       confidence: 'declared',
     }),
@@ -453,6 +582,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Resolve docs before implementation choices depend on external APIs.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes:
         options.documentationPlan.unresolved.length > 0
           ? `Unresolved: ${options.documentationPlan.unresolved.join(', ')}`
@@ -474,6 +604,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Review formatting diff; do not run write formatter during discovery.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Check-only command.',
       confidence: packageScripts['format:check'] ? 'declared' : 'unknown',
     }),
@@ -492,6 +623,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Stop and inspect changes before editing.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: repositoryStatus.notes,
       confidence: repositoryStatus.confidence,
     }),
@@ -510,6 +642,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Record waiver and limit confidence.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes:
         options.graphContext.waiverCount > 0
           ? graphWaiverNotes(options.graphContext)
@@ -531,6 +664,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Install OPA or mark policy validation blocked.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: policy?.status ?? 'unknown',
       confidence: policy ? 'observed' : 'unknown',
     }),
@@ -549,6 +683,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Install supported Bun version.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Detected from Bun runtime when bundle is built.',
       confidence: typeof Bun === 'undefined' ? 'unknown' : 'observed',
     }),
@@ -570,6 +705,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Record commands as unknown.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Static package script evidence.',
       confidence: Object.keys(packageScripts).length > 0 ? 'observed' : 'unknown',
     }),
@@ -588,6 +724,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Use read-only context ledgers output without archive.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Compile mutates archive output, not tracked source by default.',
       confidence: 'declared',
     }),
@@ -606,6 +743,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Run targeted package tests in isolated processes.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Use targeted tests before broad validation.',
       confidence: packageScripts.test ? 'declared' : 'unknown',
     }),
@@ -624,6 +762,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Update traceability manifest and tests before implementation completion.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       notes: traceability?.status ?? 'unknown',
       confidence: traceability ? 'observed' : 'unknown',
     }),
@@ -642,6 +781,7 @@ function buildToolAvailabilityEntries(
       fallback: 'Run package-local type-check to isolate failures.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       notes: 'Check-only command.',
       confidence: packageScripts['type-check'] ? 'declared' : 'unknown',
     }),
@@ -652,7 +792,8 @@ function buildCommandEntries(
   options: BuildLedgerBundleOptions,
   packageScripts: Record<string, string>,
   repositoryStatus: RepositoryStatusEvidence,
-  lastVerified: string
+  lastVerified: string,
+  lastVerifiedAt: string
 ): CommandLedgerEntry[] {
   const policy = checkById(options.validationReport, 'aco-policy');
   const traceability = checkById(options.validationReport, 'aco-traceability');
@@ -673,6 +814,7 @@ function buildCommandEntries(
       fallback: 'Use `bun run cli context ledgers --cwd . --json` for read-only evidence.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: true,
       safety: 'writes-artifacts',
@@ -694,6 +836,7 @@ function buildCommandEntries(
       fallback: 'Use package helper buildLedgerBundle in tests.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -718,6 +861,7 @@ function buildCommandEntries(
         'Convert selected acceptance placeholders to executable checks and rerun acceptance tests.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -739,6 +883,7 @@ function buildCommandEntries(
       fallback: 'Install OPA or mark policy validation blocked.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -786,6 +931,7 @@ function buildCommandEntries(
       fallback: 'Inspect graph and validation artifacts directly.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -812,6 +958,7 @@ function buildCommandEntries(
       fallback: 'Repair manifest or tests.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -833,6 +980,7 @@ function buildCommandEntries(
       fallback: 'Run individual failed checks.',
       owner: 'context-orchestrator',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -854,6 +1002,7 @@ function buildCommandEntries(
       fallback: 'Run bun run generate:bundled during implementation.',
       owner: 'workflows',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -897,6 +1046,7 @@ function buildCommandEntries(
       fallback: 'Inspect formatting output; do not run write formatter in read-only discovery.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -939,6 +1089,7 @@ function buildCommandEntries(
       fallback: 'Inspect git state manually.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -984,6 +1135,7 @@ function buildCommandEntries(
       fallback: 'Record commands as unknown.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -1048,6 +1200,7 @@ function buildCommandEntries(
       fallback: 'Run package-local type-check.',
       owner: 'repo',
       lastVerified,
+      lastVerifiedAt,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
@@ -1094,6 +1247,7 @@ function buildCommandEntries(
         fallback: 'Inspect failing corpus file.',
         owner: 'context-orchestrator',
         lastVerified,
+        lastVerifiedAt,
         mutatesTrackedFiles: false,
         requiresApproval: false,
         safety: 'read-only',
@@ -1107,23 +1261,80 @@ function buildCommandEntries(
 }
 
 function toolEntry(entry: ToolEntryDraft): ToolAvailabilityLedgerEntry {
+  const confidence = entry.confidence ?? statusToConfidence(entry.status);
+  const enriched = enrichEntry(entry, confidence);
   return {
     ...entry,
-    confidence: entry.confidence ?? statusToConfidence(entry.status),
-    evidence: entry.evidence ?? [evidenceFromEntry(entry, entry.confidence)],
+    ...enriched,
+    confidence,
+    evidence: entry.evidence ?? [evidenceFromEntry({ ...entry, ...enriched }, confidence)],
   };
 }
 
 function commandEntry(entry: CommandEntryDraft): CommandLedgerEntry {
+  const confidence = entry.confidence ?? statusToConfidence(entry.status);
+  const enriched = enrichEntry(entry, confidence);
   return {
     ...entry,
-    confidence: entry.confidence ?? statusToConfidence(entry.status),
-    evidence: entry.evidence ?? [evidenceFromEntry(entry, entry.confidence)],
+    ...enriched,
+    confidence,
+    evidence: entry.evidence ?? [evidenceFromEntry({ ...entry, ...enriched }, confidence)],
+  };
+}
+
+function enrichEntry(
+  entry: Pick<
+    LedgerEntryBase,
+    'id' | 'status' | 'sourceEvidence' | 'invocationPath' | 'fallback' | 'lastVerified' | 'notes'
+  > & {
+    lastVerifiedAt?: string;
+    verificationSource?: string;
+    verificationMethod?: LedgerVerificationMethod;
+    sourceArtifact?: string;
+    nextVerificationAction?: string;
+    freshness?: LedgerFreshness;
+  },
+  confidence: LedgerConfidence
+): Pick<
+  LedgerEntryBase,
+  | 'lastVerifiedAt'
+  | 'verificationSource'
+  | 'verificationMethod'
+  | 'sourceArtifact'
+  | 'nextVerificationAction'
+  | 'freshness'
+> {
+  const lastVerifiedAt =
+    entry.lastVerifiedAt ??
+    (entry.lastVerified === 'unknown' ? 'unknown' : `${entry.lastVerified}T00:00:00.000Z`);
+  const verificationMethod =
+    entry.verificationMethod ?? verificationMethodFromConfidence(confidence);
+  const freshness = entry.freshness ?? inferFreshness(entry, lastVerifiedAt);
+  return {
+    lastVerifiedAt,
+    verificationSource: entry.verificationSource ?? entry.sourceEvidence,
+    verificationMethod,
+    sourceArtifact: entry.sourceArtifact ?? entry.invocationPath,
+    nextVerificationAction:
+      entry.nextVerificationAction ?? defaultNextVerificationAction(entry.id, entry.fallback),
+    freshness,
   };
 }
 
 function evidenceFromEntry(
-  entry: Pick<LedgerEntryBase, 'sourceEvidence' | 'invocationPath' | 'verification' | 'status'>,
+  entry: Pick<
+    LedgerEntryBase,
+    | 'sourceEvidence'
+    | 'invocationPath'
+    | 'verification'
+    | 'status'
+    | 'lastVerifiedAt'
+    | 'verificationSource'
+    | 'verificationMethod'
+    | 'sourceArtifact'
+    | 'nextVerificationAction'
+    | 'freshness'
+  >,
   confidence?: LedgerConfidence
 ): LedgerEvidence {
   return {
@@ -1132,6 +1343,12 @@ function evidenceFromEntry(
     invocationPath: entry.invocationPath,
     confidence: confidence ?? statusToConfidence(entry.status),
     reason: entry.verification,
+    lastVerifiedAt: entry.lastVerifiedAt,
+    verificationSource: entry.verificationSource,
+    verificationMethod: entry.verificationMethod,
+    sourceArtifact: entry.sourceArtifact,
+    nextVerificationAction: entry.nextVerificationAction,
+    freshness: entry.freshness,
   };
 }
 
@@ -1164,6 +1381,14 @@ function normalizeEntryBase<T extends LedgerEntryBase>(entry: T): T {
   if (!ledgerStatuses.has(entry.status)) {
     throw new Error(`Invalid ledger status for ${entry.id}: ${entry.status}`);
   }
+  if (!ledgerFreshnessValues.has(entry.freshness)) {
+    throw new Error(`Invalid ledger freshness for ${entry.id}: ${entry.freshness}`);
+  }
+  if (!ledgerVerificationMethods.has(entry.verificationMethod)) {
+    throw new Error(
+      `Invalid ledger verificationMethod for ${entry.id}: ${entry.verificationMethod}`
+    );
+  }
   const evidence = entry.evidence.map(item => normalizeEvidence(item, entry.id));
   if (entry.status !== 'unknown' && evidence.length === 0) {
     throw new Error(`Ledger entry ${entry.id} must include evidence for status ${entry.status}.`);
@@ -1187,6 +1412,18 @@ function normalizeEntryBase<T extends LedgerEntryBase>(entry: T): T {
     fallback: redactAndRequire(entry.fallback, `${entry.id}.fallback`),
     owner: redactAndRequire(entry.owner, `${entry.id}.owner`),
     lastVerified: redactAndRequire(entry.lastVerified, `${entry.id}.lastVerified`),
+    lastVerifiedAt: redactAndRequire(entry.lastVerifiedAt, `${entry.id}.lastVerifiedAt`),
+    verificationSource: redactAndRequire(
+      entry.verificationSource,
+      `${entry.id}.verificationSource`
+    ),
+    verificationMethod: entry.verificationMethod,
+    sourceArtifact: redactAndRequire(entry.sourceArtifact, `${entry.id}.sourceArtifact`),
+    nextVerificationAction: redactAndRequire(
+      entry.nextVerificationAction,
+      `${entry.id}.nextVerificationAction`
+    ),
+    freshness: entry.freshness,
     notes: redactText(entry.notes),
     confidence: entry.confidence,
     evidence,
@@ -1194,13 +1431,110 @@ function normalizeEntryBase<T extends LedgerEntryBase>(entry: T): T {
 }
 
 function normalizeEvidence(evidence: LedgerEvidence, entryId: string): LedgerEvidence {
+  if (!ledgerFreshnessValues.has(evidence.freshness)) {
+    throw new Error(`Invalid evidence freshness for ${entryId}: ${evidence.freshness}`);
+  }
+  if (!ledgerVerificationMethods.has(evidence.verificationMethod)) {
+    throw new Error(
+      `Invalid evidence verificationMethod for ${entryId}: ${evidence.verificationMethod}`
+    );
+  }
   return {
     sourceType: evidence.sourceType,
     sourceEvidence: redactAndRequire(evidence.sourceEvidence, `${entryId}.evidence.sourceEvidence`),
     invocationPath: redactAndRequire(evidence.invocationPath, `${entryId}.evidence.invocationPath`),
     confidence: evidence.confidence,
     reason: redactAndRequire(evidence.reason, `${entryId}.evidence.reason`),
+    lastVerifiedAt: redactAndRequire(evidence.lastVerifiedAt, `${entryId}.evidence.lastVerifiedAt`),
+    verificationSource: redactAndRequire(
+      evidence.verificationSource,
+      `${entryId}.evidence.verificationSource`
+    ),
+    verificationMethod: evidence.verificationMethod,
+    sourceArtifact: redactAndRequire(evidence.sourceArtifact, `${entryId}.evidence.sourceArtifact`),
+    nextVerificationAction: redactAndRequire(
+      evidence.nextVerificationAction,
+      `${entryId}.evidence.nextVerificationAction`
+    ),
+    freshness: evidence.freshness,
   };
+}
+
+export function buildEvidenceBlockers(
+  toolAvailability: ToolAvailabilityLedgerEntry[],
+  commands: CommandLedgerEntry[]
+): EvidenceBlocker[] {
+  return [...toolAvailability, ...commands]
+    .filter(entry => requiredEvidenceIds.has(entry.id))
+    .filter(
+      entry =>
+        blockerStatuses.has(entry.status) ||
+        entry.freshness === 'stale' ||
+        entry.freshness === 'unknown'
+    )
+    .map(entry =>
+      normalizeEvidenceBlocker({
+        id: entry.id,
+        kind: evidenceBlockerKind(entry.id),
+        status: entry.status,
+        freshness: entry.freshness,
+        reason: `${entry.id} is ${entry.status} with ${entry.freshness} evidence: ${entry.failureMode}`,
+        sourceArtifact: entry.sourceArtifact,
+        nextVerificationAction: entry.nextVerificationAction,
+      })
+    )
+    .sort(compareById);
+}
+
+function normalizeContextIntent(intent: ContextIntent): ContextIntent {
+  return {
+    objective: redactAndRequire(intent.objective, 'contextIntent.objective'),
+    normalizedObjective: redactAndRequire(
+      intent.normalizedObjective,
+      'contextIntent.normalizedObjective'
+    ),
+    intentHash: redactAndRequire(intent.intentHash, 'contextIntent.intentHash'),
+    cwd: redactAndRequire(intent.cwd, 'contextIntent.cwd'),
+    commitSha: redactAndRequire(intent.commitSha, 'contextIntent.commitSha'),
+    generatedAt: redactAndRequire(intent.generatedAt, 'contextIntent.generatedAt'),
+  };
+}
+
+function unknownContextIntent(generatedAt: string | undefined): ContextIntent {
+  return {
+    objective: 'unknown',
+    normalizedObjective: 'unknown',
+    intentHash: 'unknown',
+    cwd: 'unknown',
+    commitSha: 'unknown',
+    generatedAt: generatedAt ?? 'unknown',
+  };
+}
+
+function normalizeEvidenceBlocker(blocker: EvidenceBlocker): EvidenceBlocker {
+  if (!ledgerFreshnessValues.has(blocker.freshness)) {
+    throw new Error(`Invalid evidence blocker freshness for ${blocker.id}: ${blocker.freshness}`);
+  }
+  return {
+    id: redactAndRequire(blocker.id, 'evidenceBlocker.id'),
+    kind: blocker.kind,
+    status: redactAndRequire(blocker.status, `${blocker.id}.status`),
+    freshness: blocker.freshness,
+    reason: redactAndRequire(blocker.reason, `${blocker.id}.reason`),
+    sourceArtifact: redactAndRequire(blocker.sourceArtifact, `${blocker.id}.sourceArtifact`),
+    nextVerificationAction: redactAndRequire(
+      blocker.nextVerificationAction,
+      `${blocker.id}.nextVerificationAction`
+    ),
+  };
+}
+
+function evidenceBlockerKind(id: string): EvidenceBlocker['kind'] {
+  if (id === 'tool.docs-evidence') return 'docs';
+  if (id === 'tool.graph-evidence') return 'graph';
+  if (id.startsWith('cmd.')) return 'command';
+  if (id.includes('validate')) return 'validation';
+  return 'tool';
 }
 
 function summarizeEntries(entries: { status: LedgerStatus }[]): LedgerSummary {
@@ -1351,6 +1685,48 @@ function sourceTypeFromConfidence(confidence: LedgerConfidence): LedgerEvidence[
   return 'unknown';
 }
 
+function verificationMethodFromConfidence(confidence: LedgerConfidence): LedgerVerificationMethod {
+  if (confidence === 'observed') return 'command';
+  if (confidence === 'declared') return 'file';
+  if (confidence === 'inferred') return 'static';
+  return 'unknown';
+}
+
+function inferFreshness(
+  entry: Pick<LedgerEntryBase, 'id' | 'status' | 'sourceEvidence' | 'notes'>,
+  lastVerifiedAt: string
+): LedgerFreshness {
+  if (
+    entry.status === 'forbidden' &&
+    (entry.id === 'tool.graph-evidence' ||
+      entry.sourceEvidence.includes('graph-waiver.') ||
+      entry.notes.includes('graph-waiver.'))
+  ) {
+    return 'waived';
+  }
+  if (lastVerifiedAt === 'unknown' || entry.status === 'unknown') return 'unknown';
+  return 'fresh';
+}
+
+function defaultNextVerificationAction(id: string, fallback: string): string {
+  if (id === 'tool.docs-evidence') {
+    return 'Resolve docs targets with OpenAI Docs MCP or Context7, then re-run ACO status or compile.';
+  }
+  if (id === 'tool.graph-evidence') {
+    return 'Review active graph waivers; request approval before graph refresh commands.';
+  }
+  if (id === 'tool.aco-route') {
+    return 'Re-run `bun run cli context route --cwd . "<prompt>"` for the current objective.';
+  }
+  if (id === 'tool.aco-validate' || id === 'cmd.aco-validate') {
+    return 'Re-run `bun run cli context validate --cwd . --json` and inspect failed checks.';
+  }
+  if (id === 'tool.git-status' || id === 'cmd.git-status') {
+    return 'Re-run `git status --short --untracked-files=all` and inspect worktree state.';
+  }
+  return fallback;
+}
+
 function hasScripts(packageScripts: Record<string, string>, scriptNames: string[]): boolean {
   return scriptNames.every(scriptName => packageScripts[scriptName] !== undefined);
 }
@@ -1374,6 +1750,21 @@ function renderSummaryMarkdown(summary: LedgerSummary): string {
     '| Status | Count |',
     '|---|---|',
     ...ledgerStatusOrder.map(status => `| ${status} | ${summary.counts[status]} |`),
+  ].join('\n');
+}
+
+function renderEvidenceBlockersMarkdown(blockers: EvidenceBlocker[]): string {
+  return [
+    '## Evidence Blockers',
+    '',
+    blockers.length === 0
+      ? '- none'
+      : blockers
+          .map(
+            blocker =>
+              `- ${blocker.id} (${blocker.kind}, ${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+          )
+          .join('\n'),
   ].join('\n');
 }
 

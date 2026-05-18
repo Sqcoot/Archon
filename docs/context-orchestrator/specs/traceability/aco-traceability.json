@@ -11,6 +11,10 @@
       "AC-P",
       "AC-NONREG",
       "AC-FORBIDDEN-",
+      "AC-ACO-INTENT-",
+      "AC-ACO-EVIDENCE-",
+      "AC-ACO-BLOCKER-",
+      "AC-ACO-WAIVER-",
       "ACO-APPROVAL-",
       "ACO-CODEX-003",
       "ACO-EVENTS-"
@@ -996,6 +1000,88 @@
           "ref": "packages/context-orchestrator/src/approval-capsule.test.ts",
           "markers": ["ACO-APPROVAL-006", "non-forbidden"],
           "summary": "Approval capsule tests cover active waivers, forbidden/deferred ledger refs, inert commands, and negative non-forbidden state."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-INTENT-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/goal-bound-evidence.acceptance.test.ts",
+        "markers": ["AC-ACO-INTENT-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/status.ts",
+          "markers": ["contextIntent", "objective"],
+          "summary": "Status and ledger builders carry caller intent into canonical evidence."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["contextIntent", "intentHash"],
+          "summary": "Compile embeds the same context intent in prompt package artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-EVIDENCE-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/goal-bound-evidence.acceptance.test.ts",
+        "markers": ["AC-ACO-EVIDENCE-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.ts",
+          "markers": ["lastVerifiedAt", "verificationSource", "freshness"],
+          "summary": "Ledger normalization preserves provenance and freshness fields."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-BLOCKER-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/goal-bound-evidence.acceptance.test.ts",
+        "markers": ["AC-ACO-BLOCKER-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/status.ts",
+          "markers": ["evidenceBlockers", "tool.docs-evidence"],
+          "summary": "Readiness evidence reports named blockers and next actions for unresolved required evidence."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-WAIVER-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/goal-bound-evidence.acceptance.test.ts",
+        "markers": ["AC-ACO-WAIVER-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/status.ts",
+          "markers": ["needs_approval", "graphWaiverIds"],
+          "summary": "Intent-bound status keeps forbidden graph waivers approval-gated and visible."
         }
       ],
       "status": "enforced"

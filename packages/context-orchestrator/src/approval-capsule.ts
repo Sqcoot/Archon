@@ -6,6 +6,7 @@ import { selectCapabilities } from './capabilities';
 import { createDecisionDossier } from './decision-dossier';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
+import { createContextIntent } from './intent';
 import { buildLedgerBundle } from './ledgers';
 import { getContextOrchestratorReadiness } from './status';
 import { validateContextOrchestrator } from './validation';
@@ -27,7 +28,9 @@ import type {
   AcceptancePlan,
   BmadRoute,
   CapabilityRoute,
+  ContextIntent,
   DecisionDossier,
+  EvidenceBlocker,
   DocumentationPlan,
   GraphContext,
   LedgerBundle,
@@ -52,6 +55,7 @@ export interface CreateApprovalCapsuleOptions {
   validationReport?: ValidationReport;
   ledgerBundle?: LedgerBundle;
   decisionDossier?: DecisionDossier;
+  contextIntent?: ContextIntent;
 }
 
 export interface ApprovalCapsuleArtifactFiles {
@@ -65,12 +69,20 @@ export async function createApprovalCapsule(
   options: CreateApprovalCapsuleOptions
 ): Promise<ApprovalCapsule> {
   const runId = validateSafeRunId(options.runId);
+  const contextIntent =
+    options.contextIntent ??
+    (await createContextIntent({
+      cwd: options.cwd,
+      objective: options.prompt,
+      timestamp: options.timestamp,
+    }));
   const graphContext = options.graphContext ?? (await getGraphContext({ cwd: options.cwd }));
   const documentationPlan =
-    options.documentationPlan ?? planDocumentation({ prompt: options.prompt });
-  const bmadRoute = options.bmadRoute ?? routeBmad({ prompt: options.prompt });
+    options.documentationPlan ?? planDocumentation({ prompt: contextIntent.objective });
+  const bmadRoute = options.bmadRoute ?? routeBmad({ prompt: contextIntent.objective });
   const acceptancePlan =
-    options.acceptancePlan ?? createAcceptancePlan({ prompt: options.prompt, route: bmadRoute });
+    options.acceptancePlan ??
+    createAcceptancePlan({ prompt: contextIntent.objective, route: bmadRoute });
   const selectedCapabilities =
     options.selectedCapabilities ?? selectCapabilities({ graphContext, documentationPlan });
   const validationReport =
@@ -79,7 +91,9 @@ export async function createApprovalCapsule(
     options.ledgerBundle ??
     (await buildLedgerBundle({
       cwd: options.cwd,
-      timestamp: options.timestamp,
+      objective: contextIntent.objective,
+      timestamp: contextIntent.generatedAt,
+      contextIntent,
       graphContext,
       documentationPlan,
       bmadRoute,
@@ -91,8 +105,8 @@ export async function createApprovalCapsule(
     options.decisionDossier ??
     (await createDecisionDossier({
       cwd: options.cwd,
-      prompt: options.prompt,
-      timestamp: options.timestamp,
+      prompt: contextIntent.objective,
+      timestamp: contextIntent.generatedAt,
       graphContext,
       documentationPlan,
       bmadRoute,
@@ -100,8 +114,13 @@ export async function createApprovalCapsule(
       selectedCapabilities,
       validationReport,
       ledgerBundle,
+      contextIntent,
     }));
-  const readiness = getContextOrchestratorReadiness(graphContext, validationReport);
+  const readiness = getContextOrchestratorReadiness(
+    graphContext,
+    validationReport,
+    ledgerBundle.evidenceBlockers
+  );
   if (readiness !== 'needs_approval' || graphContext.status !== 'forbidden') {
     throw new Error(
       `ACO approval capsule requires readiness=needs_approval and graphStatus=forbidden; got readiness=${readiness} graphStatus=${graphContext.status}`
@@ -111,8 +130,9 @@ export async function createApprovalCapsule(
   const activeWaiverIds = graphContext.waivers.map(waiver => redactSecrets(waiver.id));
   const capsule: ApprovalCapsule = {
     schemaVersion: APPROVAL_CAPSULE_SCHEMA_VERSION,
-    ...(options.timestamp !== undefined ? { generatedAt: redactSecrets(options.timestamp) } : {}),
+    generatedAt: contextIntent.generatedAt,
     runId,
+    contextIntent,
     route: bmadRoute,
     readiness,
     graphStatus: graphContext.status,
@@ -120,6 +140,7 @@ export async function createApprovalCapsule(
     ledgerSummary: ledgerBundle.summary,
     artifactRefs: buildArtifactRefs({ artifactRoot: options.artifactRoot, runId }),
     activeWaiverIds,
+    evidenceBlockers: ledgerBundle.evidenceBlockers,
     ledgerRefs: buildApprovalLedgerRefs(ledgerBundle),
     approvalCommands: buildApprovalCommands(decisionDossier),
     decisionScope: buildDecisionScope(runId, activeWaiverIds),
@@ -136,6 +157,8 @@ export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string 
     `Schema: ${capsule.schemaVersion}`,
     ...(capsule.generatedAt !== undefined ? [`Generated: ${capsule.generatedAt}`] : []),
     `Run ID: ${capsule.runId}`,
+    `Intent: ${capsule.contextIntent.intentHash}`,
+    `Objective: ${capsule.contextIntent.normalizedObjective}`,
     `Route: ${capsule.route.id}`,
     `Readiness: ${capsule.readiness}`,
     `Graph: ${capsule.graphStatus}`,
@@ -149,6 +172,10 @@ export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string 
     '## Active Waivers',
     '',
     ...renderList(capsule.activeWaiverIds),
+    '',
+    '## Evidence Blockers',
+    '',
+    ...renderEvidenceBlockers(capsule.evidenceBlockers),
     '',
     '## Approval Commands',
     '',
@@ -327,6 +354,14 @@ function renderApprovalCommands(commands: ApprovalCapsuleCommand[]): string[] {
   return commands.map(
     command =>
       `- ${command.id}: \`${command.command}\` (${command.safety}, approval required, willRun=false) - ${command.reason}`
+  );
+}
+
+function renderEvidenceBlockers(blockers: EvidenceBlocker[]): string[] {
+  if (blockers.length === 0) return ['- none'];
+  return blockers.map(
+    blocker =>
+      `- ${blocker.id} (${blocker.kind}, ${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
   );
 }
 

@@ -171,6 +171,36 @@ export interface ValidationReport {
   checks: ValidationCheck[];
 }
 
+export interface ContextIntent {
+  objective: string;
+  normalizedObjective: string;
+  intentHash: string;
+  cwd: string;
+  commitSha: string;
+  generatedAt: string;
+}
+
+export type LedgerFreshness = 'fresh' | 'stale' | 'unknown' | 'waived';
+
+export type LedgerVerificationMethod =
+  | 'command'
+  | 'file'
+  | 'tool'
+  | 'static'
+  | 'policy'
+  | 'manual'
+  | 'unknown';
+
+export interface EvidenceBlocker {
+  id: string;
+  kind: 'tool' | 'command' | 'graph' | 'validation' | 'docs';
+  status: string;
+  freshness: LedgerFreshness;
+  reason: string;
+  sourceArtifact: string;
+  nextVerificationAction: string;
+}
+
 export type LedgerStatus =
   | 'available'
   | 'partial'
@@ -196,6 +226,12 @@ export interface LedgerEvidence {
   invocationPath: string;
   confidence: LedgerConfidence;
   reason: string;
+  lastVerifiedAt: string;
+  verificationSource: string;
+  verificationMethod: LedgerVerificationMethod;
+  sourceArtifact: string;
+  nextVerificationAction: string;
+  freshness: LedgerFreshness;
 }
 
 export interface LedgerEntryBase {
@@ -212,6 +248,12 @@ export interface LedgerEntryBase {
   fallback: string;
   owner: string;
   lastVerified: string;
+  lastVerifiedAt: string;
+  verificationSource: string;
+  verificationMethod: LedgerVerificationMethod;
+  sourceArtifact: string;
+  nextVerificationAction: string;
+  freshness: LedgerFreshness;
   notes: string;
   confidence: LedgerConfidence;
   evidence: LedgerEvidence[];
@@ -244,8 +286,10 @@ export interface LedgerBundleSummary {
 export interface LedgerBundle {
   schemaVersion: 'aco.ledger-bundle.v1';
   generatedAt?: string;
+  contextIntent: ContextIntent;
   toolAvailability: ToolAvailabilityLedgerEntry[];
   commands: CommandLedgerEntry[];
+  evidenceBlockers: EvidenceBlocker[];
   summary: LedgerBundleSummary;
 }
 
@@ -293,6 +337,7 @@ export interface DecisionDossierDecision {
 export interface DecisionDossier {
   schemaVersion: 'aco.decision-dossier.v1';
   generatedAt?: string;
+  contextIntent: ContextIntent;
   route: BmadRoute;
   decision: DecisionDossierDecision;
   evidenceUsed: DecisionDossierEvidence[];
@@ -301,6 +346,7 @@ export interface DecisionDossier {
   graphStatus: GraphContext['status'];
   waivers: GraphWaiver[];
   ledgerSummary: LedgerBundleSummary;
+  evidenceBlockers: EvidenceBlocker[];
   blockedItems: DecisionDossierBlockedItem[];
   approvalRequired: boolean;
   approvalCommands: DecisionDossierApprovalCommand[];
@@ -388,6 +434,7 @@ export interface PromptPackage {
   timestamp: string;
   originalPrompt: string;
   targetCodebase: string;
+  contextIntent: ContextIntent;
   intent: string;
   evidenceSummary: string;
   graphContext: GraphContext;

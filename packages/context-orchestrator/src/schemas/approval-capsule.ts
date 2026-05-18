@@ -21,6 +21,25 @@ const ledgerBundleSummarySchema = z.object({
   combined: ledgerSummarySchema,
 });
 
+const contextIntentSchema = z.object({
+  objective: z.string().min(1),
+  normalizedObjective: z.string().min(1),
+  intentHash: z.string().min(1),
+  cwd: z.string().min(1),
+  commitSha: z.string().min(1),
+  generatedAt: z.string().min(1),
+});
+
+const evidenceBlockerSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['tool', 'command', 'graph', 'validation', 'docs']),
+  status: z.string().min(1),
+  freshness: z.enum(['fresh', 'stale', 'unknown', 'waived']),
+  reason: z.string().min(1),
+  sourceArtifact: z.string().min(1),
+  nextVerificationAction: z.string().min(1),
+});
+
 export const approvalCapsuleArtifactRefSchema = z.object({
   id: z.enum([
     'status-json',
@@ -67,6 +86,7 @@ export const approvalCapsuleSchema = z.object({
   schemaVersion: z.literal('aco.approval-capsule.v1'),
   generatedAt: z.string().min(1).optional(),
   runId: z.string().min(1),
+  contextIntent: contextIntentSchema,
   route: z.object({
     id: z.enum(['brownfield-architecture', 'quick-contained', 'correct-course', 'unknown-help']),
     label: z.string().min(1),
@@ -79,6 +99,7 @@ export const approvalCapsuleSchema = z.object({
   ledgerSummary: ledgerBundleSummarySchema,
   artifactRefs: z.array(approvalCapsuleArtifactRefSchema),
   activeWaiverIds: z.array(z.string().min(1)),
+  evidenceBlockers: z.array(evidenceBlockerSchema),
   ledgerRefs: z.array(approvalCapsuleLedgerRefSchema),
   approvalCommands: z.array(approvalCapsuleCommandSchema),
   decisionScope: z.string().min(1),
