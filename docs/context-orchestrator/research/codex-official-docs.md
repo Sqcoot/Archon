@@ -43,6 +43,8 @@ goals = true
 
 The docs also define `/goal <objective>`, `/goal`, `/goal pause`, `/goal resume`, and `/goal clear`.
 
+Goal objectives must be non-empty and at most 4,000 characters. Longer instructions should live in a file and the goal should point to that file.
+
 For ACO, this means persistent goals are a Codex runtime capability, not an Archon data-model requirement for the first MVP.
 
 ## Docs MCP Findings

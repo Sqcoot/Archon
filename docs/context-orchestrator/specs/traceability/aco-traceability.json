@@ -10,7 +10,9 @@
       "AC-ACO-STATUS-",
       "AC-P",
       "AC-NONREG",
-      "AC-FORBIDDEN-"
+      "AC-FORBIDDEN-",
+      "ACO-CODEX-003",
+      "ACO-EVENTS-"
     ]
   },
   "requirements": [
@@ -227,8 +229,33 @@
         {
           "label": "VERIFIED",
           "ref": "packages/context-orchestrator/src/validation.ts",
-          "markers": ["aco-traceability", "traceabilityCheck"],
-          "summary": "Aggregate validation reports the traceability gate."
+          "markers": ["aco-traceability", "traceabilityCheck", "aco-acceptance"],
+          "summary": "Aggregate validation reports the traceability and acceptance reality gates."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/010-codex-readiness-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/compile.acceptance.test.ts",
+        "markers": ["ACO-CODEX-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["Codex Goal Handoff", "/goal"],
+          "summary": "Compiler renders an optional Codex Goal Handoff into generated Codex prompt artifacts."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "docs/context-orchestrator/research/codex-official-docs.md",
+          "markers": ["features.goals", "/goal <objective>", "4,000"],
+          "summary": "Codex official-docs research keeps goal behavior bounded to Codex session control."
         }
       ],
       "status": "enforced"
@@ -644,10 +671,16 @@
       "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
       "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
       "acceptance": {
-        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "ref": "tests/acceptance/context-orchestrator/command.acceptance.test.ts",
         "markers": ["AC-P1-SLASH"]
       },
       "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/command.acceptance.test.ts",
+          "markers": ["AC-P1-SLASH", "context-orchestrate"],
+          "summary": "Root slash-command acceptance verifies selected /context evidence is executable."
+        },
         {
           "label": "VERIFIED",
           "ref": "packages/core/src/handlers/command-handler.test.ts",
@@ -682,10 +715,16 @@
       "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
       "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
       "acceptance": {
-        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "ref": "tests/acceptance/context-orchestrator/api.acceptance.test.ts",
         "markers": ["AC-P1-API"]
       },
       "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/api.acceptance.test.ts",
+          "markers": ["AC-P1-API", "/api/aco/status", "/api/aco/compile"],
+          "summary": "Root API acceptance verifies selected ACO API endpoints and OpenAPI handlers."
+        },
         {
           "label": "VERIFIED",
           "ref": "packages/server/src/routes/api.aco.test.ts",
@@ -720,15 +759,46 @@
       "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",
       "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
       "acceptance": {
-        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "ref": "tests/acceptance/context-orchestrator/workflow.acceptance.test.ts",
         "markers": ["AC-P3-WF"]
       },
       "evidence": [
         {
           "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/workflow.acceptance.test.ts",
+          "markers": ["AC-P3-WF", "validateContextWorkflow"],
+          "summary": "Root workflow acceptance executes validation for the context-orchestrate workflow."
+        },
+        {
+          "label": "VERIFIED",
           "ref": "packages/web/src/lib/aco-readiness.test.ts",
           "markers": ["AC-P3-WF", "workflow dashboard"],
           "summary": "Web helper tests verify workflow cards and run detail can use the same canonical ACO status evidence."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-EVENTS-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/019-observability-and-events-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/events.acceptance.test.ts",
+        "markers": ["ACO-EVENTS-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/events.acceptance.test.ts",
+          "markers": ["ACO-EVENTS-001", "approval_requested", "workflow_artifact"],
+          "summary": "Root events acceptance verifies ACO uses existing workflow event and approval flow."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/workflows/src/dag-executor.ts",
+          "markers": ["approval_requested", "pauseWorkflowRun"],
+          "summary": "DAG executor emits approval events and pauses workflow runs for approval nodes."
         }
       ],
       "status": "enforced"

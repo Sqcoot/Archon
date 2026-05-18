@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Define the deterministic SDD and ATDD traceability gate for ACO policy evidence.
+Define the deterministic SDD and ATDD traceability gate for ACO policy and selected native-loop acceptance evidence.
 
 ## Scope
 
-Static traceability validation for selected ACO OPA policy and policy-decision requirements, their specs, acceptance evidence, fixtures, scripts, and CI wiring.
+Static traceability validation for selected ACO OPA policy, policy-decision, ledger, confidence, status, native-loop, and traceability requirements, their specs, acceptance evidence, fixtures, scripts, and CI wiring.
 
 ## Non-Goals
 
@@ -31,8 +31,8 @@ Static traceability validation for selected ACO OPA policy and policy-decision r
 - Local validation runs `bun run aco:traceability`.
 - `bun run validate` runs `bun run aco:traceability` before type checking.
 - CI runs `bun run aco:traceability` after `bun run aco:policy`.
-- `validateContextOrchestrator()` reports an `aco-traceability` check.
-- The first enforced scope is limited to `ACO-POLICY-*`, `ACO-POLICY-DECISION-*`, and `ACO-TRACE-*` requirements recorded in the manifest.
+- `validateContextOrchestrator()` reports `aco-traceability` and `aco-acceptance` checks.
+- The enforced scope is recorded in the manifest and includes the selected native-loop acceptance surfaces.
 
 ## Inputs
 
@@ -48,6 +48,7 @@ Static traceability validation for selected ACO OPA policy and policy-decision r
 
 - `aco:traceability` validation result
 - `aco-traceability` aggregate validation check
+- `aco-acceptance` aggregate validation check
 - CI traceability gate result
 
 ## Known Unknowns
@@ -64,7 +65,7 @@ Static traceability validation for selected ACO OPA policy and policy-decision r
 
 - ACO-TRACE-001: Given the committed ACO traceability manifest, when `bun run aco:traceability` runs, then every enforced OPA and policy-decision requirement maps to its spec, matrix entry, acceptance evidence, and declared evidence markers.
 - ACO-TRACE-002: Given a manifest entry references a missing evidence marker, when the validator runs with `--manifest <path>`, then validation fails with the requirement ID, evidence path, and missing marker without mutating the committed manifest.
-- ACO-TRACE-003: Given aggregate ACO validation runs, when traceability validation succeeds, then `validateContextOrchestrator()` reports an `aco-traceability` check.
+- ACO-TRACE-003: Given aggregate ACO validation runs, when traceability and selected native-loop acceptance validation succeeds, then `validateContextOrchestrator()` reports `aco-traceability` and `aco-acceptance` checks.
 
 ## Failure Behavior
 

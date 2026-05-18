@@ -72,7 +72,7 @@ attribute names are not allowed.
 
 ## Acceptance Scenarios
 
-- Given workflow integration is included, when route, graph, docs, BMAD, compile, and archive stages complete, then events contain runId and stage and no raw secrets.
+- ACO-EVENTS-001: Given workflow integration is included, when `context-orchestrate` runs through status, ledgers, compile, graph-validation, approval, handoff, and summary stages, then it uses existing workflow event and approval observability instead of adding a separate ACO event store.
 - AC-P3-WF: Given ACO readiness is shown on workflow surfaces, when the dashboard or run detail renders it, then no workflow event or persisted run metadata is added for the status snapshot.
 - Given no OpenTelemetry tracer provider is installed, when ACO compiles a prompt package, then
   functional output is unchanged and telemetry remains no-op.
