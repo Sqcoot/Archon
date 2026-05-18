@@ -18,6 +18,19 @@ import {
 } from '../services/cleanup-service';
 import { getArchonWorkspacesPath } from '@archon/paths';
 import { loadConfig } from '../config/config-loader';
+import {
+  compilePromptPackage,
+  getContextOrchestratorLedgers,
+  getContextOrchestratorReadiness,
+  getContextOrchestratorStatus,
+  routeBmad,
+} from '@archon/context-orchestrator';
+import type {
+  ContextOrchestratorReadiness,
+  ContextOrchestratorStatus,
+  LedgerBundleSummary,
+  PromptPackageResult,
+} from '@archon/context-orchestrator';
 import { discoverWorkflowsWithConfig } from '@archon/workflows/workflow-discovery';
 import { resolveWorkflowName } from '@archon/workflows/router';
 import type {
@@ -887,6 +900,165 @@ async function handleWorkflowCommand(
   }
 }
 
+async function handleContextCommand(
+  conversation: Conversation,
+  args: string[]
+): Promise<CommandResult> {
+  const subcommand = args[0];
+
+  if (!conversation.codebase_id) {
+    return {
+      success: false,
+      message: 'No project configured. Register a project first with /register-project.',
+    };
+  }
+
+  const codebase = await codebaseDb.getCodebase(conversation.codebase_id);
+  if (!codebase) {
+    return {
+      success: false,
+      message: 'Configured project was not found. Register a project first with /register-project.',
+    };
+  }
+
+  const cwd = codebase.default_cwd;
+
+  switch (subcommand) {
+    case 'status': {
+      const status = await getContextOrchestratorStatus(cwd);
+      return { success: true, message: renderContextStatus(status) };
+    }
+
+    case 'route': {
+      const prompt = args.slice(1).join(' ').trim();
+      if (!prompt) {
+        return {
+          success: false,
+          message: 'Usage: /context route <request>',
+        };
+      }
+      const route = routeBmad({ prompt });
+      return {
+        success: true,
+        message: [
+          '## Context Orchestrator Route',
+          '',
+          `Route: ${route.label}`,
+          '',
+          route.rationale,
+          '',
+          'Steps:',
+          ...route.steps.map(step => `- ${step}`),
+        ].join('\n'),
+      };
+    }
+
+    case 'ledgers': {
+      const ledgers = await getContextOrchestratorLedgers(cwd);
+      return {
+        success: true,
+        message: [
+          '## Context Orchestrator Ledgers',
+          '',
+          `Schema: ${ledgers.schemaVersion}`,
+          renderLedgerSummary('Tool availability', ledgers.summary.toolAvailability),
+          renderLedgerSummary('Commands', ledgers.summary.commands),
+          renderLedgerSummary('Combined', ledgers.summary.combined),
+        ].join('\n\n'),
+      };
+    }
+
+    case 'compile': {
+      const prompt = args.slice(1).join(' ').trim();
+      if (!prompt) {
+        return {
+          success: false,
+          message: 'Usage: /context compile <request>',
+        };
+      }
+      const result = await compilePromptPackage({ cwd, prompt });
+      return { success: true, message: renderContextCompileSummary(result) };
+    }
+
+    case 'run': {
+      const promptArgs = args.slice(1);
+      if (promptArgs.length === 0) {
+        return {
+          success: false,
+          message: 'Usage: /context run <request>',
+        };
+      }
+      return handleWorkflowCommand(conversation, ['run', 'context-orchestrate', ...promptArgs]);
+    }
+
+    default:
+      return {
+        success: false,
+        message:
+          'Usage:\n  /context status\n  /context route <request>\n  /context ledgers\n  /context compile <request>\n  /context run <request>',
+      };
+  }
+}
+
+function renderContextStatus(status: ContextOrchestratorStatus): string {
+  return [
+    '## Context Orchestrator Status',
+    '',
+    `Readiness: ${formatReadiness(status.readiness)}`,
+    `Validation: ${status.validationStatus}`,
+    `Graph: ${status.graphStatus}`,
+    `Approval required: ${status.approvalRequired ? 'yes' : 'no'}`,
+    `Waivers: ${String(status.graphWaivers)}`,
+    status.graphWaiverIds.length > 0
+      ? `Waiver IDs: ${status.graphWaiverIds.join(', ')}`
+      : 'Waiver IDs: none',
+    '',
+    renderLedgerSummary('Combined ledgers', status.ledgerSummary.combined),
+  ].join('\n');
+}
+
+function renderContextCompileSummary(result: PromptPackageResult): string {
+  const promptPackage = result.package;
+  const readiness = getContextOrchestratorReadiness(
+    promptPackage.graphContext,
+    promptPackage.validationReport
+  );
+  return [
+    '## Context Package Created',
+    '',
+    `Run ID: ${promptPackage.runId}`,
+    `Readiness: ${formatReadiness(readiness)}`,
+    `Validation: ${promptPackage.validationReport.status}`,
+    `Graph: ${promptPackage.graphContext.status}`,
+    `Route: ${promptPackage.bmadRoute.label}`,
+    `Package: ${result.archivePath}`,
+    '',
+    renderLedgerSummary('Combined ledgers', promptPackage.ledgerBundle.summary.combined),
+  ].join('\n');
+}
+
+function renderLedgerSummary(label: string, summary: LedgerBundleSummary['combined']): string {
+  const counts = summary.counts;
+  return `${label}: total ${String(summary.total)}; available ${String(
+    counts.available
+  )}; partial ${String(counts.partial)}; deferred ${String(counts.deferred)}; forbidden ${String(
+    counts.forbidden
+  )}; unknown ${String(counts.unknown)}`;
+}
+
+function formatReadiness(readiness: ContextOrchestratorReadiness): string {
+  switch (readiness) {
+    case 'ready':
+      return 'Ready';
+    case 'blocked':
+      return 'Blocked';
+    case 'needs_approval':
+      return 'Needs approval';
+    case 'unknown':
+      return 'Unknown';
+  }
+}
+
 export async function handleCommand(
   conversation: Conversation,
   message: string
@@ -917,6 +1089,13 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 - \`/workflow abandon <id>\` — Discard a failed run
 - \`/workflow approve <id>\` — Approve a paused run
 - \`/workflow reject <id>\` — Reject a paused run
+
+**Context Orchestrator**
+- \`/context status\` — Show route readiness, ledgers, and approval state
+- \`/context route <request>\` — Pick the BMAD route
+- \`/context ledgers\` — Show tool and command ledger coverage
+- \`/context compile <request>\` — Compile the context package
+- \`/context run <request>\` — Run the native context orchestration workflow
 
 **Projects**
 - \`/register-project <name> <path>\` — Register a local project
@@ -1064,6 +1243,9 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 
     case 'workflow':
       return handleWorkflowCommand(conversation, args);
+
+    case 'context':
+      return handleContextCommand(conversation, args);
 
     case 'init': {
       // Create .archon structure in current repo

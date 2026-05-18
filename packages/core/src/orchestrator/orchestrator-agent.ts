@@ -802,6 +802,7 @@ export async function handleMessage(
         'update-project',
         'remove-project',
         'commands',
+        'context',
         'init',
         'worktree',
       ];

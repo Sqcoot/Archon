@@ -9,6 +9,10 @@ import type { components } from '@/lib/api.generated';
 export type WorkflowDefinition = components['schemas']['WorkflowDefinition'];
 export type DagNode = components['schemas']['DagNode'];
 export type AcoStatusResponse = components['schemas']['AcoStatusResponse'];
+export type AcoLedgersResponse = components['schemas']['AcoLedgersResponse'];
+export type AcoRouteResponse = components['schemas']['AcoRouteResponse'];
+export type AcoCompileResponse = components['schemas']['AcoCompileResponse'];
+export type AcoArtifactPackageResponse = components['schemas']['AcoArtifactPackageResponse'];
 
 /**
  * Base URL for SSE streams. In dev, bypasses Vite proxy by connecting directly
@@ -251,6 +255,37 @@ export async function listWorkflows(cwd?: string): Promise<WorkflowListEntry[]> 
 export async function getAcoStatus(cwd: string): Promise<AcoStatusResponse> {
   const params = new URLSearchParams({ cwd });
   return fetchJSON<AcoStatusResponse>(`/api/aco/status?${params.toString()}`);
+}
+
+export async function getAcoLedgers(cwd: string): Promise<AcoLedgersResponse> {
+  const params = new URLSearchParams({ cwd });
+  return fetchJSON<AcoLedgersResponse>(`/api/aco/ledgers?${params.toString()}`);
+}
+
+export async function getAcoRoute(cwd: string, prompt: string): Promise<AcoRouteResponse> {
+  return fetchJSON<AcoRouteResponse>('/api/aco/route', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cwd, prompt }),
+  });
+}
+
+export async function compileAcoPackage(cwd: string, prompt: string): Promise<AcoCompileResponse> {
+  return fetchJSON<AcoCompileResponse>('/api/aco/compile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cwd, prompt }),
+  });
+}
+
+export async function getAcoArtifactPackage(
+  cwd: string,
+  runId: string
+): Promise<AcoArtifactPackageResponse> {
+  const params = new URLSearchParams({ cwd });
+  return fetchJSON<AcoArtifactPackageResponse>(
+    `/api/aco/artifact-packages/${encodeURIComponent(runId)}?${params.toString()}`
+  );
 }
 
 export async function runWorkflow(

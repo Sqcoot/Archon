@@ -16,6 +16,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 
 - Acceptance tests define done; unit tests support implementation details only.
 - Enforced traceability requirements must map specs, acceptance evidence, and executable checks before implementation is considered complete.
+- Native loop acceptance must cover slash command, API, workflow, Web, artifact package, ledger, policy, and validation baseline behavior by AC ID.
 
 ## Archon-Specific Behavior
 
@@ -31,6 +32,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 ## Outputs
 
 - tests/acceptance/context-orchestrator/*
+- package-local command/API/Web/workflow tests with AC IDs
 - traceability matrix
 - docs/context-orchestrator/specs/traceability/aco-traceability.json
 
@@ -46,7 +48,12 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 
 ## Acceptance Scenarios
 
-- Given a production ACO feature, when acceptance tests are searched, then at least one acceptance scenario maps to its spec ID.
+- Given `/context status|route|ledgers|compile|run` is used, when command handler tests run, then each subcommand has an AC-P1-SLASH assertion and unknown subcommands return help.
+- Given `/api/aco/status`, `/api/aco/ledgers`, `/api/aco/route`, `/api/aco/compile`, and `/api/aco/artifact-packages/{runId}` are used, when server tests run, then registered-cwd resolution, unregistered-cwd rejection, and traversal runId rejection are asserted.
+- Given `context-orchestrate` is bundled, when workflow validation runs, then the workflow is valid and the only optional MCP notification baseline is downgraded by an explicit guard.
+- Given Web renders Context Orchestrator status, when Web tests run, then status, route, compile, package link, and Needs approval state are visible through API helpers/readiness helpers.
+- Given a context package is compiled, when package tests run, then no secrets are archived, manifest output is deterministic, OPA policy decision exists, and ledger JSON/Markdown files are present.
+- Given a production Context Orchestrator feature, when acceptance tests are searched, then at least one acceptance scenario maps to its spec ID.
 
 ## Failure Behavior
 

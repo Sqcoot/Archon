@@ -13,6 +13,9 @@ const baseStatus: AcoStatusResponse = {
   graphStatus: 'forbidden',
   graphWaivers: 2,
   graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+  waivers: [],
+  approvalRequired: true,
+  readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
   ledgerSummary: {
     toolAvailability: {
@@ -55,10 +58,10 @@ const baseStatus: AcoStatusResponse = {
 };
 
 describe('ACO readiness display helpers', () => {
-  test('AC-P1-WEB AC-FORBIDDEN-GRAPH-001 keeps forbidden graph waivers blocked', () => {
-    expect(getAcoReadinessLabel(baseStatus)).toBe('Blocked by forbidden graph limits');
+  test('AC-P1-WEB AC-FORBIDDEN-GRAPH-001 keeps graph waivers approval-gated', () => {
+    expect(getAcoReadinessLabel(baseStatus)).toBe('Needs approval');
     expect(formatAcoEvidenceSummary(baseStatus)).toBe(
-      'validation passed · graph forbidden · 2 forbidden graph limits · 39 ledger rows · 0 unknown'
+      'validation passed · graph forbidden · 2 approval-required graph limits · 39 ledger rows · 0 unknown'
     );
   });
 
@@ -71,13 +74,13 @@ describe('ACO readiness display helpers', () => {
   test('AC-P3-PR creates PR/handoff text with forbidden graph waivers and no ready claim', () => {
     const narrative = formatAcoHandoffNarrative(baseStatus);
 
-    expect(narrative).toContain('ACO Readiness: Blocked by forbidden graph limits');
+    expect(narrative).toContain('Context Orchestrator Readiness: Needs approval');
     expect(narrative).toContain('Validation: passed');
     expect(narrative).toContain('Graph: forbidden');
     expect(narrative).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(narrative).toContain('graph-waiver.bmad-sample-data');
     expect(narrative).toContain('Ledger: aco.ledger-bundle.v1; total 39');
-    expect(narrative).toContain('Forbidden graph limits: failed waiver-required graph evidence');
+    expect(narrative).toContain('Needs approval: failed waiver-required graph evidence');
     expect(narrative).not.toContain('Ready with known limits');
     expect(narrative).not.toContain('complete graph coverage');
   });
@@ -88,6 +91,9 @@ describe('ACO readiness display helpers', () => {
       graphStatus: 'available',
       graphWaivers: 0,
       graphWaiverIds: [],
+      waivers: [],
+      approvalRequired: false,
+      readiness: 'ready',
       ledgerSummary: {
         ...baseStatus.ledgerSummary,
         combined: {
@@ -100,7 +106,7 @@ describe('ACO readiness display helpers', () => {
       },
     };
 
-    expect(getAcoReadinessLabel(status)).toBe('Ready with known limits');
+    expect(getAcoReadinessLabel(status)).toBe('Ready');
     expect(formatAcoEvidenceSummary(status)).toContain('2 unknown');
   });
 });

@@ -1,21 +1,22 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Check, Copy, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Check, Copy, FileArchive, GitBranch, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useProject } from '@/contexts/ProjectContext';
-import { getAcoStatus } from '@/lib/api';
-import type { AcoStatusResponse } from '@/lib/api';
+import { compileAcoPackage, getAcoRoute, getAcoStatus } from '@/lib/api';
+import type { AcoCompileResponse, AcoRouteResponse, AcoStatusResponse } from '@/lib/api';
 import {
   acoLedgerCountOrder,
   formatAcoHandoffNarrative,
   getAcoReadinessLabel,
 } from '@/lib/aco-readiness';
 
-// AC-ACO-STATUS-004: the page uses selectedProject.default_cwd and has a no-project empty state.
-// AC-ACO-STATUS-005: ACO Status is the primary label; Context Readiness is supporting copy.
+// AC-ACO-STATUS-004: selectedProject.default_cwd is the only cwd sent to status, route, and compile APIs.
+// AC-ACO-STATUS-005: User-facing labels say Context Orchestrator and Needs approval.
 export function AcoStatusPage(): React.ReactElement {
   const { selectedProjectId, codebases, isLoadingCodebases } = useProject();
   const selectedProject = useMemo(
@@ -32,7 +33,7 @@ export function AcoStatusPage(): React.ReactElement {
 
   return (
     <>
-      <Header title="ACO Status" subtitle={selectedProject?.default_cwd} />
+      <Header title="Context Orchestrator" subtitle={selectedProject?.default_cwd} />
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-4">
           {!selectedProject && !isLoadingCodebases ? (
@@ -51,14 +52,23 @@ export function AcoStatusPage(): React.ReactElement {
 }
 
 function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.ReactElement {
+  const [prompt, setPrompt] = useState('');
+  const routeMutation = useMutation({
+    mutationFn: () => getAcoRoute(status.cwd, prompt),
+  });
+  const compileMutation = useMutation({
+    mutationFn: () => compileAcoPackage(status.cwd, prompt),
+  });
   const readiness = getAcoReadinessLabel(status);
-  const badgeVariant = readiness.startsWith('Blocked') ? 'destructive' : 'default';
-  const graphLimitLabel =
-    status.graphStatus === 'forbidden' ? 'forbidden graph limits' : 'accepted graph limits';
-  const waiverTitle =
-    status.graphStatus === 'forbidden'
-      ? 'Forbidden Graph Confidence Limits'
-      : 'Accepted Confidence Limits';
+  const badgeVariant =
+    readiness === 'Blocked' || readiness === 'Needs approval' ? 'destructive' : 'default';
+  const graphLimitLabel = status.approvalRequired
+    ? 'approval-required graph limits'
+    : 'accepted graph limits';
+  const waiverTitle = status.approvalRequired ? 'Approval Required' : 'Accepted Confidence Limits';
+  const trimmedPrompt = prompt.trim();
+  const canSubmit =
+    trimmedPrompt.length > 0 && !routeMutation.isPending && !compileMutation.isPending;
 
   return (
     <>
@@ -82,8 +92,57 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
             <Metric label="validation" value={status.validationStatus} />
             <Metric label="graph" value={status.graphStatus} />
             <Metric label="waivers" value={String(status.graphWaivers)} />
+            <Metric
+              label="approval"
+              value={status.approvalRequired ? 'required' : 'not required'}
+            />
             <Metric label="schema" value={status.ledgerSchemaVersion} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Route and Compile</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Textarea
+            value={prompt}
+            onChange={event => {
+              setPrompt(event.target.value);
+            }}
+            rows={4}
+            placeholder="Describe the implementation or review request"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canSubmit}
+              onClick={() => {
+                routeMutation.mutate();
+              }}
+            >
+              <GitBranch className="mr-2 h-4 w-4" />
+              Route
+            </Button>
+            <Button
+              type="button"
+              disabled={!canSubmit}
+              onClick={() => {
+                compileMutation.mutate();
+              }}
+            >
+              <FileArchive className="mr-2 h-4 w-4" />
+              Compile
+            </Button>
+          </div>
+          {routeMutation.error ? <InlineError message={routeMutation.error.message} /> : null}
+          {compileMutation.error ? <InlineError message={compileMutation.error.message} /> : null}
+          {routeMutation.data ? <RouteResult route={routeMutation.data} /> : null}
+          {compileMutation.data ? (
+            <CompileResult result={compileMutation.data} cwd={status.cwd} />
+          ) : null}
         </CardContent>
       </Card>
 
@@ -125,6 +184,58 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
   );
 }
 
+function RouteResult({ route }: { route: AcoRouteResponse }): React.ReactElement {
+  return (
+    <div className="rounded-md border border-border bg-surface p-3 text-sm">
+      <div className="font-medium text-text-primary">{route.label}</div>
+      <div className="mt-1 text-muted-foreground">{route.rationale}</div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {route.steps.map(step => (
+          <Badge key={step} variant="secondary">
+            {step}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CompileResult({
+  result,
+  cwd,
+}: {
+  result: AcoCompileResponse;
+  cwd: string;
+}): React.ReactElement {
+  const packageUrl = `/api/aco/artifact-packages/${encodeURIComponent(
+    result.runId
+  )}?cwd=${encodeURIComponent(cwd)}`;
+  return (
+    <div className="rounded-md border border-border bg-surface p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="font-medium text-text-primary">Context package created</div>
+          <div className="mt-1 font-mono text-xs text-muted-foreground">{result.runId}</div>
+        </div>
+        <Badge variant={result.approvalRequired ? 'destructive' : 'default'}>
+          {result.approvalRequired ? 'Needs approval' : 'Ready'}
+        </Badge>
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <Metric label="route" value={result.route.label} />
+        <Metric label="archive" value={result.archivePath} />
+      </div>
+      <a className="mt-3 inline-flex text-sm text-primary underline" href={packageUrl}>
+        Artifact package
+      </a>
+    </div>
+  );
+}
+
+function InlineError({ message }: { message: string }): React.ReactElement {
+  return <div className="text-sm text-destructive">{message}</div>;
+}
+
 function LedgerSection({
   title,
   section,
@@ -147,7 +258,7 @@ function LedgerSection({
         ))}
       </div>
       <div className="mt-2 text-xs text-muted-foreground">
-        forbidden rows are confidence or approval guardrails
+        approval rows are confidence guardrails
       </div>
     </div>
   );
@@ -188,7 +299,6 @@ function WaiverRow({ waiverId }: { waiverId: string }): React.ReactElement {
   );
 }
 
-// AC-P3-PR: PR/handoff narrative reuses the same ACO status evidence and known-limits copy.
 function HandoffNarrative({ status }: { status: AcoStatusResponse }): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const narrative = formatAcoHandoffNarrative(status);
@@ -206,7 +316,7 @@ function HandoffNarrative({ status }: { status: AcoStatusResponse }): React.Reac
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>PR/Handoff Narrative</CardTitle>
+          <CardTitle>Handoff</CardTitle>
           <Button variant="ghost" size="sm" className="h-8 px-2" onClick={copyNarrative}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
@@ -228,7 +338,7 @@ function EmptyState(): React.ReactElement {
         <ShieldCheck className="h-10 w-10 text-muted-foreground" />
         <div className="text-sm font-medium text-text-primary">No project selected</div>
         <div className="max-w-md text-sm text-muted-foreground">
-          Select a registered project to view ACO Status.
+          Select a registered project to view Context Orchestrator status.
         </div>
       </CardContent>
     </Card>
@@ -240,7 +350,9 @@ function ErrorState({ message }: { message: string }): React.ReactElement {
     <Card>
       <CardContent className="flex min-h-48 flex-col items-center justify-center gap-2 text-center">
         <TriangleAlert className="h-10 w-10 text-destructive" />
-        <div className="text-sm font-medium text-text-primary">ACO Status unavailable</div>
+        <div className="text-sm font-medium text-text-primary">
+          Context Orchestrator unavailable
+        </div>
         <div className="max-w-xl text-sm text-muted-foreground">{message}</div>
       </CardContent>
     </Card>

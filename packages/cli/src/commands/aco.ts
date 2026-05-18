@@ -17,18 +17,17 @@ export async function acoStatusCommand(options: ContextCommandOptions): Promise<
 export function formatAcoStatusText(status: ContextOrchestratorStatus): string {
   const combined = status.ledgerSummary.combined;
   const readiness = toReadinessLabel(status);
-  const waiverHeading =
-    status.graphStatus === 'forbidden'
-      ? 'Forbidden graph confidence limits:'
-      : 'Accepted confidence limits:';
+  const waiverHeading = status.approvalRequired
+    ? 'Approval-required graph confidence limits:'
+    : 'Accepted confidence limits:';
   const waiverLines =
     status.graphWaiverIds.length > 0
       ? [waiverHeading, ...status.graphWaiverIds.map(waiverId => `- ${waiverId}`)]
       : [`${waiverHeading} none`];
 
   return [
-    'ACO Status',
-    `Context Readiness: ${readiness}`,
+    'Context Orchestrator Status',
+    `Readiness: ${readiness}`,
     `cwd: ${status.cwd}`,
     `validation: ${status.validationStatus}`,
     `graph: ${status.graphStatus}`,
@@ -40,17 +39,14 @@ export function formatAcoStatusText(status: ContextOrchestratorStatus): string {
 }
 
 function toReadinessLabel(status: ContextOrchestratorStatus): string {
-  if (status.graphStatus === 'forbidden') {
-    return 'Blocked by forbidden graph limits';
+  switch (status.readiness) {
+    case 'ready':
+      return 'Ready';
+    case 'needs_approval':
+      return 'Needs approval';
+    case 'unknown':
+      return 'Unknown';
+    case 'blocked':
+      return 'Blocked';
   }
-  if (status.validationStatus === 'passed' && status.graphStatus === 'available') {
-    return 'Ready';
-  }
-  if (status.validationStatus === 'passed' && status.graphWaivers > 0) {
-    return 'Ready with known limits';
-  }
-  if (status.validationStatus === 'passed') {
-    return 'Ready with partial evidence';
-  }
-  return 'Blocked';
 }

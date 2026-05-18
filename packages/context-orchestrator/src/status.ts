@@ -5,7 +5,14 @@ import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import { buildLedgerBundle } from './ledgers';
 import { validateContextOrchestrator } from './validation';
-import type { GraphContext, LedgerBundle, LedgerBundleSummary, ValidationReport } from './types';
+import type {
+  ContextOrchestratorReadiness,
+  GraphContext,
+  GraphWaiver,
+  LedgerBundle,
+  LedgerBundleSummary,
+  ValidationReport,
+} from './types';
 
 const contextLedgerPrompt = 'implement aco confidence closure';
 
@@ -14,6 +21,9 @@ export interface ContextOrchestratorStatus {
   graphStatus: GraphContext['status'];
   graphWaivers: number;
   graphWaiverIds: string[];
+  waivers: GraphWaiver[];
+  approvalRequired: boolean;
+  readiness: ContextOrchestratorReadiness;
   validationStatus: string;
   ledgerSchemaVersion: LedgerBundle['schemaVersion'];
   ledgerSummary: LedgerBundleSummary;
@@ -28,10 +38,28 @@ export async function getContextOrchestratorStatus(
     graphStatus: graphContext.status,
     graphWaivers: graphContext.waiverCount,
     graphWaiverIds: graphContext.waivers.map(waiver => waiver.id),
+    waivers: graphContext.waivers,
+    approvalRequired: isApprovalRequired(graphContext),
+    readiness: getContextOrchestratorReadiness(graphContext, validationReport),
     validationStatus: validationReport.status,
     ledgerSchemaVersion: ledgerBundle.schemaVersion,
     ledgerSummary: ledgerBundle.summary,
   };
+}
+
+export function getContextOrchestratorReadiness(
+  graphContext: Pick<GraphContext, 'status'>,
+  validationReport: Pick<ValidationReport, 'status'>
+): ContextOrchestratorReadiness {
+  if (validationReport.status === 'failed') return 'blocked';
+  if (isApprovalRequired(graphContext)) return 'needs_approval';
+  if (validationReport.status !== 'passed') return 'unknown';
+  if (graphContext.status === 'partial') return 'unknown';
+  return 'ready';
+}
+
+function isApprovalRequired(graphContext: Pick<GraphContext, 'status'>): boolean {
+  return graphContext.status === 'forbidden' || graphContext.status === 'unavailable';
 }
 
 export async function getContextOrchestratorLedgers(

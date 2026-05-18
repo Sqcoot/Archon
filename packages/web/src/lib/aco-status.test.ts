@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { getAcoStatus } from './api';
+import {
+  compileAcoPackage,
+  getAcoArtifactPackage,
+  getAcoLedgers,
+  getAcoRoute,
+  getAcoStatus,
+} from './api';
 
 describe('getAcoStatus', () => {
   const originalFetch = globalThis.fetch;
@@ -20,6 +26,9 @@ describe('getAcoStatus', () => {
             'graph-waiver.bmad-plugins-marketplace',
             'graph-waiver.bmad-sample-data',
           ],
+          waivers: [],
+          approvalRequired: true,
+          readiness: 'needs_approval',
           ledgerSchemaVersion: 'aco.ledger-bundle.v1',
           ledgerSummary: {
             toolAvailability: { total: 20, counts: {} },
@@ -40,5 +49,71 @@ describe('getAcoStatus', () => {
     );
     expect(status.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
     expect(status.graphWaiverIds).toContain('graph-waiver.bmad-sample-data');
+    expect(status.readiness).toBe('needs_approval');
+  });
+
+  test('AC-P1-WEB calls route, ledgers, compile, and artifact package endpoints', async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith('/api/aco/ledgers')) {
+        return jsonResponse({ schemaVersion: 'aco.ledger-bundle.v1', summary: {} });
+      }
+      if (url === '/api/aco/route') {
+        expect(init?.method).toBe('POST');
+        return jsonResponse({
+          id: 'brownfield-architecture',
+          label: 'Brownfield Architecture',
+          steps: ['bmad-investigate'],
+          rationale: 'Architecture-sensitive request.',
+        });
+      }
+      if (url === '/api/aco/compile') {
+        expect(init?.method).toBe('POST');
+        return jsonResponse({
+          runId: 'run-1',
+          archivePath: '/tmp/project/.archon/artifacts/context-orchestrator/run-1',
+          files: {},
+          route: {
+            id: 'brownfield-architecture',
+            label: 'Brownfield Architecture',
+            steps: ['bmad-investigate'],
+            rationale: 'Architecture-sensitive request.',
+          },
+          graphStatus: 'forbidden',
+          graphWaivers: 2,
+          graphWaiverIds: [],
+          waivers: [],
+          approvalRequired: true,
+          readiness: 'needs_approval',
+          validationStatus: 'passed',
+          ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+          ledgerSummary: {},
+        });
+      }
+      if (url.startsWith('/api/aco/artifact-packages/run-1')) {
+        return jsonResponse({
+          runId: 'run-1',
+          archivePath: '/tmp/package',
+          manifest: {},
+          files: [],
+        });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await getAcoLedgers('/tmp/project');
+    await getAcoRoute('/tmp/project', 'Implement native loop');
+    await compileAcoPackage('/tmp/project', 'Implement native loop');
+    await getAcoArtifactPackage('/tmp/project', 'run-1');
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}

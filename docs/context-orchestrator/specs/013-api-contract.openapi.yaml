@@ -3,22 +3,25 @@ info:
   title: Archon Context Orchestrator API Contract
   version: 0.0.0
   description: >-
-    Candidate ACO REST API contract. Purpose: define API shape before implementation.
-    Scope: status, route, compile, graph, docs, bmad, accept, validate, and package retrieval.
-    Non-goals: no API implementation before ADR selection. Generic behavior: expose prompt package orchestration
-    through request/response contracts. Archon-specific behavior: use registerOpenApiRoute(createRoute({...}), handler)
-    if API surface is selected. Inputs: JSON request bodies. Outputs: JSON response bodies and archive paths.
-    Known unknowns: whether API is MVP. Evidence references: docs/context-orchestrator/specs/008-prompt-package-spec.md.
-    Acceptance scenarios: API returns redacted JSON and validates required fields. Failure behavior: explicit 4xx/5xx errors.
-    Security constraints: no secrets in responses. Open questions: whether package retrieval streams files or returns paths.
+    Native Context Orchestrator REST API contract. Purpose: define implemented API shape.
+    Scope: status, ledgers, BMAD route, prompt-package compile, and manifest-backed
+    artifact package lookup. Non-goals: no policy engine in Web and no DB migration.
+    Generic behavior: expose prompt package orchestration through request/response
+    contracts. Archon-specific behavior: all routes use registerOpenApiRoute(createRoute({...}), handler).
+    Inputs: registered codebase cwd plus JSON request bodies. Outputs: JSON response
+    bodies and archive paths. Evidence references: docs/context-orchestrator/specs/008-prompt-package-spec.md.
+    Acceptance scenarios: API rejects unregistered cwd, rejects traversal run IDs,
+    and returns redacted JSON. Failure behavior: explicit 4xx/5xx errors. Security
+    constraints: no secrets in responses and no arbitrary cwd reads.
 paths:
   /api/aco/status:
     get:
-      summary: ACO Status visibility endpoint
+      summary: Context Orchestrator status endpoint
       description: >-
         Read-only Web UI status surface over the canonical Context Orchestrator
-        status contract. The endpoint requires a registered cwd and does not
-        write archives, regenerate graph evidence, or repair waivers.
+        status contract. The endpoint requires a cwd that resolves to a registered
+        codebase cwd and does not write archives, regenerate graph evidence, or
+        repair waivers.
       parameters:
         - name: cwd
           in: query
@@ -27,30 +30,55 @@ paths:
             type: string
       responses:
         "200":
-          description: Raw ACO status contract with graph, waiver, validation, and ledger summary fields.
+          description: >-
+            Raw status contract with graphStatus, validationStatus, waivers,
+            approvalRequired, readiness, ledgerSchemaVersion, and ledgerSummary.
         "400":
           description: Missing or malformed cwd.
         "404":
           description: cwd is not registered as an Archon codebase path.
         "500":
-          description: ACO status read failed.
-  /api/context/status:
+          description: Context Orchestrator status read failed.
+  /api/aco/ledgers:
     get:
-      summary: Candidate ACO status endpoint
+      summary: Context Orchestrator ledger endpoint
+      parameters:
+        - name: cwd
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
-          description: ACO readiness status
-  /api/context/compile:
+          description: Combined LedgerBundle with toolAvailability, commands, and summary.
+        "404":
+          description: cwd is not registered as an Archon codebase path.
+  /api/aco/route:
     post:
-      summary: Candidate ACO prompt package compile endpoint
+      summary: Context Orchestrator BMAD route endpoint
       responses:
         "200":
-          description: Compiled prompt package summary
+          description: BMAD route id, label, steps, and rationale.
         "400":
-          description: Invalid request or readiness blocker
-  /api/context/packages/{runId}:
+          description: Invalid request.
+        "404":
+          description: cwd is not registered as an Archon codebase path.
+  /api/aco/compile:
+    post:
+      summary: Context Orchestrator compile endpoint
+      responses:
+        "200":
+          description: >-
+            Compiled prompt package summary with runId, archivePath, files, route,
+            graph status, waiver IDs, approvalRequired, readiness, validation status,
+            ledger schema, and ledger summary.
+        "400":
+          description: Invalid request or runId.
+        "404":
+          description: cwd is not registered as an Archon codebase path.
+  /api/aco/artifact-packages/{runId}:
     get:
-      summary: Candidate prompt package lookup endpoint
+      summary: Manifest-backed Context Orchestrator artifact package lookup
       parameters:
         - name: runId
           in: path
@@ -59,14 +87,17 @@ paths:
             type: string
       responses:
         "200":
-          description: Prompt package manifest or archive reference
+          description: Artifact package manifest, archivePath, and file list.
+        "400":
+          description: Invalid or traversal-like runId.
         "404":
-          description: Prompt package not found
+          description: cwd or artifact package not found.
 
 x-aco-acceptance:
   - AC-ACO-STATUS-003: GET /api/aco/status rejects missing or unregistered cwd before reading repository state.
   - AC-ACO-STATUS-004: The Web page calls this endpoint with the selected project default_cwd and shows a no-project empty state.
-  - AC-ACO-STATUS-005: The Web page labels the primary route ACO Status and may use Context Readiness as supporting copy.
-  - AC-P1-API: GET /api/aco/status remains the canonical ACO readiness evidence source for validation, graph, waiver, schema, and ledger summary fields.
+  - AC-ACO-STATUS-005: User-facing API and Web text says Context Orchestrator and Needs approval.
+  - AC-P1-API: GET /api/aco/status, GET /api/aco/ledgers, POST /api/aco/route, POST /api/aco/compile, and GET /api/aco/artifact-packages/{runId} remain the canonical native loop API surfaces.
   - AC-P1-WEB: Web surfaces render this evidence without stronger readiness claims.
-  - AC-P3-WF: Workflow dashboard and run detail surfaces consume this endpoint for read-only readiness display.
+  - AC-P3-WF: context-orchestrate writes package artifacts under $ARTIFACTS_DIR/context-orchestrator/<WORKFLOW_ID> and pauses when approvalRequired is true.
+  - AC-NONREG: API cwd inputs resolve to registered codebase cwd before repository or artifact reads.
