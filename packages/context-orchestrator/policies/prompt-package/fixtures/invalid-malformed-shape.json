@@ -1,0 +1,14 @@
+{
+  "schema_version": "aco.prompt-package.policy-input.v1",
+  "package_id": "",
+  "generated_at": "2026-05-18T12:00:00.000Z",
+  "source_request": {},
+  "manifest": {
+    "runId": "aco-policy-malformed"
+  },
+  "artifacts": "not-an-array",
+  "evidence": "not-an-object",
+  "validation": {
+    "status": "passed"
+  }
+}

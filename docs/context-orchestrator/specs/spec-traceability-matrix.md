@@ -12,3 +12,4 @@
 | 012-cli-contract.md | ACO-CLI-001, ACO-CLI-002, ACO-CLI-003 | CLI acceptance tests | route, compile, status, and validate CLI MVP implemented |
 | 015-security-threat-model.md | ACO-SECURITY-001, ACO-SECURITY-002, ACO-SECURITY-003, ACO-SECURITY-004 | security acceptance tests and context-orchestrator unit tests | partial hardening implemented for CLI MVP; API/workflow redaction remains deferred with those surfaces |
 | 020-package-scripts-and-research-corpus-spec.md | ACO-RESEARCH-001 | upstream-manifest.json, validate-corpus output | scripts complete |
+| 021-opa-prompt-package-policy-spec.md | ACO-POLICY-001, ACO-POLICY-002, ACO-POLICY-003 | Rego policy tests, fixture validation, ACO acceptance tests, `bun run validate` | package-local OPA prompt-package policy gate implemented for archived evidence validation |

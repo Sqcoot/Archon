@@ -1,0 +1,52 @@
+{
+  "schema_version": "aco.prompt-package.policy-input.v1",
+  "package_id": "aco-policy-warn-graph",
+  "generated_at": "2026-05-18T12:00:00.000Z",
+  "source_request": {
+    "text": "Implement the ACO policy gate."
+  },
+  "manifest": {
+    "runId": "aco-policy-warn-graph",
+    "upstreamManifest": "docs/context-orchestrator/research/upstream-manifest.json",
+    "specs": [
+      "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md"
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "manifest",
+      "path": "manifest.json",
+      "kind": "json"
+    }
+  ],
+  "evidence": {
+    "graph": {
+      "status": "partial",
+      "waiverCount": 1
+    },
+    "docs": {
+      "unresolved": [],
+      "targets": []
+    },
+    "bmad": {
+      "id": "brownfield-architecture",
+      "steps": ["bmad-technical-research"]
+    },
+    "acceptance": {
+      "status": "ready",
+      "scenarios": [
+        {
+          "id": "ACO-POLICY-001"
+        }
+      ]
+    },
+    "security": {
+      "constraints": ["Do not archive secrets."],
+      "redaction": "applied"
+    }
+  },
+  "validation": {
+    "status": "passed"
+  }
+}

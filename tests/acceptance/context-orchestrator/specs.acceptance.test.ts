@@ -40,6 +40,7 @@ const specs = [
   '018-release-readiness-spec.md',
   '019-observability-and-events-spec.md',
   '020-package-scripts-and-research-corpus-spec.md',
+  '021-opa-prompt-package-policy-spec.md',
 ];
 
 describe('ACO spec acceptance', () => {
