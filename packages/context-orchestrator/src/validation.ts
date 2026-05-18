@@ -33,9 +33,11 @@ export async function validateContextOrchestrator(
       'aco:policy:test',
       'aco:policy:fixtures',
       'aco:policy',
+      'aco:traceability',
     ])
   );
   checks.push(await policyCheck(options.cwd));
+  checks.push(await traceabilityCheck(options.cwd));
 
   const failed = checks.some(check => check.status === 'failed');
   const warned = checks.some(check => check.status === 'warning');
@@ -110,6 +112,43 @@ async function policyCheck(cwd: string): Promise<ValidationCheck> {
       id: 'aco-policy',
       status: 'failed',
       message: `OPA prompt-package policy validation could not run: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+async function traceabilityCheck(cwd: string): Promise<ValidationCheck> {
+  try {
+    const proc = Bun.spawn(['bun', 'run', 'aco:traceability'], {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env,
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    const output = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
+
+    if (exitCode === 0) {
+      return {
+        id: 'aco-traceability',
+        status: 'passed',
+        message: summarizeOutput(output, 'ACO traceability validation passed.'),
+      };
+    }
+
+    return {
+      id: 'aco-traceability',
+      status: 'failed',
+      message: summarizeOutput(output, `ACO traceability validation failed (${exitCode}).`),
+    };
+  } catch (error) {
+    return {
+      id: 'aco-traceability',
+      status: 'failed',
+      message: `ACO traceability validation could not run: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }

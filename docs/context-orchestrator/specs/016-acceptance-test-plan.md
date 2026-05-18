@@ -15,6 +15,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 ## Generic Behavior
 
 - Acceptance tests define done; unit tests support implementation details only.
+- Enforced traceability requirements must map specs, acceptance evidence, and executable checks before implementation is considered complete.
 
 ## Archon-Specific Behavior
 
@@ -31,6 +32,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 
 - tests/acceptance/context-orchestrator/*
 - traceability matrix
+- docs/context-orchestrator/specs/traceability/aco-traceability.json
 
 ## Known Unknowns
 
@@ -40,6 +42,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 ## Evidence References
 
 - docs/context-orchestrator/research/bootstrap-acceptance-scenarios.md
+- docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md
 
 ## Acceptance Scenarios
 
@@ -48,6 +51,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 ## Failure Behavior
 
 - Implementation readiness fails if acceptance tests are missing for selected MVP surface.
+- `bun run aco:traceability` fails when an enforced acceptance ID is not linked to its spec, traceability matrix row, acceptance evidence, and declared evidence markers.
 
 ## Security Constraints
 

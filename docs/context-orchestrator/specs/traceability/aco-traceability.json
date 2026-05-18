@@ -1,0 +1,227 @@
+{
+  "schema_version": "aco.traceability.v1",
+  "scope": {
+    "enforced_prefixes": ["ACO-POLICY-", "ACO-POLICY-DECISION-", "ACO-TRACE-"]
+  },
+  "requirements": [
+    {
+      "requirement_id": "ACO-POLICY-001",
+      "kind": "policy",
+      "spec": "docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/fixtures/valid-minimal.json",
+          "markers": ["ACO-POLICY-001"],
+          "summary": "Valid prompt-package fixture allows with no denials."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/prompt_package_test.rego",
+          "markers": ["test_valid_prompt_package_allows"],
+          "summary": "Rego test verifies valid prompt packages allow."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-POLICY-002",
+      "kind": "policy",
+      "spec": "docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/fixtures/invalid-missing-acceptance.json",
+          "markers": ["aco-policy-missing-acceptance"],
+          "summary": "Fixture proves missing acceptance evidence denies."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/fixtures/invalid-missing-security.json",
+          "markers": ["aco-policy-missing-security"],
+          "summary": "Fixture proves missing security evidence denies."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/prompt_package_test.rego",
+          "markers": ["test_missing_acceptance_denies", "test_missing_security_denies"],
+          "summary": "Rego tests verify required evidence denials."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-POLICY-003",
+      "kind": "policy",
+      "spec": "docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/fixtures/warn-graph-waiver.json",
+          "markers": ["aco-policy-warn-graph"],
+          "summary": "Fixture proves graph waiver warnings allow."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/fixtures/warn-unresolved-docs.json",
+          "markers": ["aco-policy-warn-docs"],
+          "summary": "Fixture proves unresolved docs warnings allow."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/policies/prompt-package/prompt_package_test.rego",
+          "markers": ["test_unresolved_docs_warns_but_allows", "test_graph_waiver_warns_but_allows"],
+          "summary": "Rego tests verify warning-only policy findings allow."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-POLICY-DECISION-001",
+      "kind": "policy-decision",
+      "spec": "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-DECISION-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["writeArchivedPolicyDecision", "prompt-package.json", "policy-decision.json"],
+          "summary": "Compiler writes prompt-package.json before policy-decision.json."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["ACO-POLICY-DECISION-001", "policy-decision.json"],
+          "summary": "Tests verify compiled archives include deterministic policy-decision evidence."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-POLICY-DECISION-002",
+      "kind": "policy-decision",
+      "spec": "docs/context-orchestrator/specs/009-archive-artifact-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-DECISION-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["ACO prompt-package policy denied archive admission"],
+          "summary": "Compiler fails archive admission after denied decisions."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["ACO-POLICY-DECISION-002", "writes policy decision artifact for denied policy inputs"],
+          "summary": "Tests verify denied policy inputs still write decision artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-POLICY-DECISION-003",
+      "kind": "policy-decision",
+      "spec": "docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-POLICY-DECISION-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/policy-decision.ts",
+          "markers": ["missing policy_version", "duplicates_suppressed"],
+          "summary": "Policy-decision helper rejects malformed output and records duplicate suppression."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["ACO-POLICY-DECISION-003", "does not write policy decision artifact when OPA is unavailable", "malformed OPA output"],
+          "summary": "Tests verify missing OPA and malformed OPA output do not create fake pass artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-001",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-TRACE-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/validate-traceability.ts",
+          "markers": ["aco.traceability.v1", "validateTraceability"],
+          "summary": "Traceability validator checks the committed manifest."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-002",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-TRACE-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/validate-traceability.ts",
+          "markers": ["--manifest", "missing marker"],
+          "summary": "Traceability validator supports alternate manifests and reports missing markers."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-003",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-TRACE-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/validation.ts",
+          "markers": ["aco-traceability", "traceabilityCheck"],
+          "summary": "Aggregate validation reports the traceability gate."
+        }
+      ],
+      "status": "enforced"
+    }
+  ]
+}
