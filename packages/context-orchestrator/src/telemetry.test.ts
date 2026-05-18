@@ -180,7 +180,7 @@ describe('context orchestrator telemetry', () => {
     expect(compileSpan?.attributes).toMatchObject({
       'archon.aco.operation': 'compile',
       'archon.aco.result': 'success',
-      'archon.aco.archive.files.count': 21,
+      'archon.aco.archive.files.count': 23,
       'archon.aco.docs.unresolved.count': 0,
     });
     expect(policySpan?.attributes).toMatchObject({

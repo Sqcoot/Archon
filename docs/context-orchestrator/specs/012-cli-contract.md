@@ -17,6 +17,8 @@ Define CLI contract candidates.
 - CLI exposes route, compile, ledgers, graph, docs, bmad, accept, validate, and status operations.
 - `archon context ledgers --cwd .` builds a read-only `LedgerBundle` without archive writes or unsafe command execution.
 - `archon context ledgers --cwd . --json` emits the combined `LedgerBundle` shape used by compiled prompt-package evidence.
+- `archon context dossier --cwd . "<prompt>"` emits a read-only human decision dossier without archive writes or unsafe command execution.
+- `archon context dossier --cwd . --json "<prompt>"` emits the same canonical machine `DecisionDossier` used by compiled prompt-package evidence.
 - `archon context graph-waivers --cwd . --json` emits a read-only graph waiver closure report that diagnoses waiver-required graph failures and recommends approval-bounded follow-up commands without running them.
 - `archon context status --cwd . --json` includes graph status, graph waiver count, waiver IDs, waiver details, approvalRequired, readiness, validation status, ledger schema version, and ledger summary for confidence comparison with ledger and compile outputs.
 - `archon context status --cwd .` is the Context Orchestrator status visibility surface over the same `getContextOrchestratorStatus()` data. It is read-only and must not create archives, repair graph evidence, or hide graph confidence limits.
@@ -48,6 +50,7 @@ Define CLI contract candidates.
 - ledger summary
 - ledger bundle JSON
 - graph waiver closure report JSON/Markdown
+- decision dossier JSON/Markdown
 - ACO Status summary
 - exit code
 
@@ -74,6 +77,8 @@ Define CLI contract candidates.
 - AC-P1-CLI: Given the ACO Status trust surface is preserved, when CLI status runs, then it reports validation, graph, waiver IDs, ledger schema, and ledger counts from the canonical status contract.
 - AC-GWCL-005: Given Graph Waiver Closure recommends a repair command that writes graph or manifest output, when CLI JSON is inspected, then the command is marked approval-required and is not executed by the report command.
 - AC-GWCL-006: Given `archon context graph-waivers --cwd . --json` runs, when existing context status, ledgers, compile, route, and validate commands are run, then their contracts remain unchanged.
+- AC-DOSSIER-003: Given `context dossier`, when run with and without `--json`, then JSON and Markdown outputs report the same facts.
+- AC-DOSSIER-006: Given approval-required state, when the dossier is built, then approval commands are listed with `willRun=false` and are not executed.
 - AC-P1-SLASH: Given a chat, Web, or CLI conversation has a registered project, when `/context status|route|ledgers|compile|run` is used, then deterministic slash commands call the Context Orchestrator package or bundled `context-orchestrate` workflow without reading arbitrary cwd inputs.
 - AC-NONREG: Given workflow and handoff visibility is added, when existing context commands run, then context status, context ledgers, cwd handling, and ledger schema behavior do not regress.
 

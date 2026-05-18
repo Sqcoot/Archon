@@ -251,6 +251,64 @@ export interface LedgerBundle {
 
 export type ContextOrchestratorReadiness = 'ready' | 'blocked' | 'needs_approval' | 'unknown';
 
+export interface DecisionDossierEvidence {
+  id: string;
+  kind: 'route' | 'graph' | 'validation' | 'ledger' | 'waiver' | 'acceptance';
+  status: string;
+  source: string;
+  summary: string;
+}
+
+export interface DecisionDossierBlockedItem {
+  id: string;
+  kind: 'graph' | 'validation' | 'tool' | 'command';
+  status: string;
+  reason: string;
+  sourceEvidence: string;
+  command?: string;
+}
+
+export interface DecisionDossierApprovalCommand {
+  id: string;
+  command: string;
+  safety: CommandSafety;
+  requiresApproval: true;
+  willRun: false;
+  reason: string;
+}
+
+export interface DecisionDossierRejectedAlternative {
+  id: string;
+  label: string;
+  reason: string;
+}
+
+export interface DecisionDossierDecision {
+  id: 'ready-for-implementation' | 'approval-required' | 'blocked' | 'needs-correct-course';
+  summary: string;
+  allowedNextStep: string;
+  rationale: string;
+}
+
+export interface DecisionDossier {
+  schemaVersion: 'aco.decision-dossier.v1';
+  generatedAt?: string;
+  route: BmadRoute;
+  decision: DecisionDossierDecision;
+  evidenceUsed: DecisionDossierEvidence[];
+  readiness: ContextOrchestratorReadiness;
+  validationStatus: ValidationReport['status'];
+  graphStatus: GraphContext['status'];
+  waivers: GraphWaiver[];
+  ledgerSummary: LedgerBundleSummary;
+  blockedItems: DecisionDossierBlockedItem[];
+  approvalRequired: boolean;
+  approvalCommands: DecisionDossierApprovalCommand[];
+  rejectedAlternatives: DecisionDossierRejectedAlternative[];
+  nextGoalObjective: string;
+  nextPlanPrompt: string;
+}
+
 export interface PromptPackagePolicyArtifact {
   id: string;
   path: string;
@@ -273,6 +331,7 @@ export interface PromptPackagePolicyInput {
     acceptance: Record<string, unknown>;
     security: Record<string, unknown>;
     ledgers: Record<string, unknown>;
+    decisionDossier?: Record<string, unknown>;
   };
   validation: Record<string, unknown>;
 }
@@ -347,6 +406,7 @@ export interface PromptPackage {
   nextArchonCommand: string[];
   validationReport: ValidationReport;
   ledgerBundle: LedgerBundle;
+  decisionDossier: DecisionDossier;
 }
 
 export interface CompilePromptPackageOptions {

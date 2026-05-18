@@ -1,9 +1,11 @@
 import {
   compilePromptPackage,
+  createDecisionDossier,
   getContextOrchestratorReadiness,
   getGraphWaiverClosureReport,
   getContextOrchestratorLedgers,
   getContextOrchestratorStatus,
+  renderDecisionDossierMarkdown,
   renderLedgerBundleMarkdown,
   renderGraphWaiverClosureReportMarkdown,
   serializeLedgerBundle,
@@ -79,6 +81,24 @@ export async function contextLedgersCommand(options: ContextCommandOptions): Pro
     }
     return 1;
   }
+}
+
+export async function contextDossierCommand(
+  prompt: string,
+  options: ContextCommandOptions & { timestamp?: string }
+): Promise<number> {
+  const dossier = await createDecisionDossier({
+    cwd: options.cwd,
+    prompt,
+    timestamp: options.timestamp,
+  });
+  if (options.json) {
+    console.log(JSON.stringify(dossier, null, 2));
+    return 0;
+  }
+
+  console.log(renderDecisionDossierMarkdown(dossier));
+  return 0;
 }
 
 export async function contextGraphWaiversCommand(
@@ -161,5 +181,8 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     validationStatus: result.package.validationReport.status,
     ledgerSchemaVersion: result.package.ledgerBundle.schemaVersion,
     ledgerSummary: result.package.ledgerBundle.summary,
+    decisionDossierSchemaVersion: result.package.decisionDossier.schemaVersion,
+    decisionDossierDecision: result.package.decisionDossier.decision.id,
+    decisionDossierReadiness: result.package.decisionDossier.readiness,
   };
 }

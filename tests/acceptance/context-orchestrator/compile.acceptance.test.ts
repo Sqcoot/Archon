@@ -20,6 +20,8 @@ describe('ACO compile acceptance', () => {
     expect(result.package.acceptancePlan.scenarios.length).toBeGreaterThan(0);
     expect(result.package.validationReport.status).toBe('passed');
     expect(result.files['codex-prompt.md']).toContain('codex-prompt.md');
+    expect(result.files['decision-dossier.json']).toContain('decision-dossier.json');
+    expect(result.files['decision-dossier.md']).toContain('decision-dossier.md');
     expect(result.files['tool-availability-ledger.json']).toContain(
       'tool-availability-ledger.json'
     );
@@ -28,11 +30,11 @@ describe('ACO compile acceptance', () => {
     expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
   });
 
-  test('Spec: 010-codex-readiness-spec.md Acceptance: ACO-CODEX-003 compiled prompts include optional Codex Goal Handoff', async () => {
+  test('Spec: 010-codex-readiness-spec.md Acceptance: ACO-CODEX-003 AC-DOSSIER-004 compiled prompts include dossier-derived Codex Goal Handoff', async () => {
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-codex-goal-'));
     const result = await compilePromptPackage({
       cwd: process.cwd(),
-      prompt: 'Implement ACO Acceptance Reality Gate with Codex Goal Handoff.',
+      prompt: 'Improve ACO decision handoff with Codex Goal Handoff.',
       archiveRoot,
       runId: 'aco-codex-goal',
       timestamp: '2026-05-18T12:00:00.000Z',
@@ -41,12 +43,17 @@ describe('ACO compile acceptance', () => {
 
     const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
     const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
-    const goalCommand =
-      '/goal Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
+    const decisionDossier = JSON.parse(
+      await readFile(result.files['decision-dossier.json'], 'utf8')
+    ) as { nextGoalObjective?: string };
+    const goalCommand = `/goal ${decisionDossier.nextGoalObjective ?? ''}`;
 
     expect(codexPrompt).toContain('## Codex Goal Handoff');
     expect(codexPrompt).toContain(goalCommand);
+    expect(codexPrompt).toContain('Decision dossier requirements');
+    expect(codexPrompt).not.toContain('Implement ACO Acceptance Reality Gate');
     expect(finalPackage).toContain('## Codex Goal Handoff');
+    expect(finalPackage).toContain('## Decision Dossier');
     expect(finalPackage).toContain(goalCommand);
     expect(goalCommand.length).toBeLessThan(4000);
   });

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, spyOn } from 'bun:test';
 import { resolve } from 'path';
 import {
   contextCompileCommand,
+  contextDossierCommand,
   contextGraphWaiversCommand,
   contextLedgersCommand,
   contextRouteCommand,
@@ -100,11 +101,60 @@ describe('context commands', () => {
     }
   });
 
+  it('AC-DOSSIER-003 emits decision dossier JSON', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    const exitCode = await contextDossierCommand('Implement ACO Decision Dossier Gate', {
+      cwd: repoRoot,
+      json: true,
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      route?: { id?: string };
+      readiness?: string;
+      graphStatus?: string;
+      approvalRequired?: boolean;
+      waivers?: Array<{ id?: string }>;
+    };
+    expect(parsed.schemaVersion).toBe('aco.decision-dossier.v1');
+    expect(parsed.route?.id).toBe('brownfield-architecture');
+    expect(parsed.readiness).toBe('needs_approval');
+    expect(parsed.graphStatus).toBe('forbidden');
+    expect(parsed.approvalRequired).toBe(true);
+    expect(parsed.waivers?.map(waiver => waiver.id)).toEqual(
+      expect.arrayContaining([
+        'graph-waiver.bmad-plugins-marketplace',
+        'graph-waiver.bmad-sample-data',
+      ])
+    );
+  });
+
+  it('AC-DOSSIER-003 renders decision dossier Markdown by default', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    const exitCode = await contextDossierCommand('Implement ACO Decision Dossier Gate', {
+      cwd: repoRoot,
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    expect(output).toContain('# ACO Decision Dossier');
+    expect(output).toContain('Route: brownfield-architecture');
+    expect(output).toContain('Readiness: needs_approval');
+    expect(output).toContain('Graph: forbidden');
+  });
+
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();
     expect(contextValidateCommand).toBeFunction();
     expect(contextCompileCommand).toBeFunction();
+    expect(contextDossierCommand).toBeFunction();
     expect(contextLedgersCommand).toBeFunction();
     expect(contextGraphWaiversCommand).toBeFunction();
   });

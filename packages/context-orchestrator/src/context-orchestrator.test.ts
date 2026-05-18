@@ -61,13 +61,15 @@ describe('context orchestrator core', () => {
     expect(result.files['manifest.json']).toContain('manifest.json');
     expect(result.files['prompt-package.json']).toContain('prompt-package.json');
     expect(result.files['policy-decision.json']).toContain('policy-decision.json');
+    expect(result.files['decision-dossier.json']).toContain('decision-dossier.json');
+    expect(result.files['decision-dossier.md']).toContain('decision-dossier.md');
     expect(result.files['tool-availability-ledger.json']).toContain(
       'tool-availability-ledger.json'
     );
     expect(result.files['tool-availability-ledger.md']).toContain('tool-availability-ledger.md');
     expect(result.files['commands-ledger.json']).toContain('commands-ledger.json');
     expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
-    expect(Object.keys(result.files)).toHaveLength(21);
+    expect(Object.keys(result.files)).toHaveLength(23);
 
     const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
       schema_version: string;
@@ -103,6 +105,8 @@ describe('context orchestrator core', () => {
     const manifest = JSON.parse(await readFile(result.files['manifest.json'], 'utf8')) as {
       ledgerSchemaVersion?: string;
       ledgerArtifacts?: string[];
+      decisionDossierSchemaVersion?: string;
+      decisionDossierArtifacts?: string[];
       ledgerSummary?: unknown;
     };
     expect(manifest.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
@@ -111,6 +115,11 @@ describe('context orchestrator core', () => {
       'tool-availability-ledger.md',
       'commands-ledger.json',
       'commands-ledger.md',
+    ]);
+    expect(manifest.decisionDossierSchemaVersion).toBe('aco.decision-dossier.v1');
+    expect(manifest.decisionDossierArtifacts).toEqual([
+      'decision-dossier.json',
+      'decision-dossier.md',
     ]);
     expect(manifest.ledgerSummary).toBeDefined();
 
@@ -130,17 +139,28 @@ describe('context orchestrator core', () => {
 
     const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
     const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
-    const goalCommand =
-      '/goal Implement ACO Acceptance Reality Gate: convert selected native-loop acceptance todos to executable checks, add aco-acceptance validation, add ledger evidence, sync traceability, and keep graph waivers visible.';
+    const decisionDossier = JSON.parse(
+      await readFile(result.files['decision-dossier.json'], 'utf8')
+    ) as { schemaVersion?: string; nextGoalObjective?: string; approvalRequired?: boolean };
+    const decisionDossierMarkdown = await readFile(result.files['decision-dossier.md'], 'utf8');
+    const goalCommand = `/goal ${decisionDossier.nextGoalObjective ?? ''}`;
+    expect(decisionDossier.schemaVersion).toBe('aco.decision-dossier.v1');
+    expect(typeof decisionDossier.nextGoalObjective).toBe('string');
+    expect(decisionDossier.approvalRequired).toBe(true);
+    expect(decisionDossierMarkdown).toContain('# ACO Decision Dossier');
     expect(finalPackage).toContain('## Ledger Guidance');
     expect(finalPackage).toContain('tool-availability-ledger.json');
+    expect(finalPackage).toContain('## Decision Dossier');
+    expect(finalPackage).toContain('decision-dossier.json');
     expect(codexPrompt).toContain('Ledger requirements');
     expect(codexPrompt).toContain('Avoid commands marked `forbidden`');
+    expect(codexPrompt).toContain('Decision dossier requirements');
     expect(finalPackage).toContain('## Codex Goal Handoff');
     expect(codexPrompt).toContain('## Codex Goal Handoff');
     expect(codexPrompt).toContain('features.goals');
     expect(codexPrompt).toContain('Codex session control only');
     expect(codexPrompt).toContain(goalCommand);
+    expect(codexPrompt).not.toContain('Implement ACO Acceptance Reality Gate');
     expect(goalCommand.length).toBeLessThan(4000);
 
     const policyDecision = JSON.parse(
