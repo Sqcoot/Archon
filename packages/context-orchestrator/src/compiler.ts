@@ -12,7 +12,9 @@ import {
   validateSafeRunId,
   writeFileNoFollow,
 } from './security';
+import { withAcoSpan } from './telemetry';
 import { validateContextOrchestrator } from './validation';
+import type { AcoSpanAttributes } from './telemetry';
 import type {
   CavemanMode,
   CompilePromptPackageOptions,
@@ -43,6 +45,16 @@ const archiveFiles = [
 ];
 
 export async function compilePromptPackage(
+  options: CompilePromptPackageOptions
+): Promise<PromptPackageResult> {
+  return withAcoSpan('archon.aco.compile', { 'archon.aco.operation': 'compile' }, async span => {
+    const result = await compilePromptPackageWithoutTelemetry(options);
+    span.setAttributes(toCompileSpanAttributes(result));
+    return result;
+  });
+}
+
+async function compilePromptPackageWithoutTelemetry(
   options: CompilePromptPackageOptions
 ): Promise<PromptPackageResult> {
   const runId = validateSafeRunId(options.runId ?? `aco-${crypto.randomUUID()}`);
@@ -115,6 +127,40 @@ export async function compilePromptPackage(
     package: promptPackage,
     archivePath,
     files,
+  };
+}
+
+function toCompileSpanAttributes(result: PromptPackageResult): AcoSpanAttributes {
+  const promptPackage = result.package;
+  const validationChecks = promptPackage.validationReport.checks;
+  return {
+    'archon.aco.bmad.route': promptPackage.bmadRoute.id,
+    'archon.aco.graph.repositories.count': promptPackage.graphContext.repositories.length,
+    'archon.aco.graph.waivers.count': promptPackage.graphContext.waiverCount,
+    'archon.aco.graph.nodes.count': promptPackage.graphContext.repositories.reduce(
+      (total, repository) => total + repository.nodes,
+      0
+    ),
+    'archon.aco.graph.edges.count': promptPackage.graphContext.repositories.reduce(
+      (total, repository) => total + repository.edges,
+      0
+    ),
+    'archon.aco.docs.targets.count': promptPackage.documentationPlan.targets.length,
+    'archon.aco.docs.unresolved.count': promptPackage.documentationPlan.unresolved.length,
+    'archon.aco.capabilities.selected.count':
+      promptPackage.selectedCapabilities.capabilities.length,
+    'archon.aco.acceptance.scenarios.count': promptPackage.acceptancePlan.scenarios.length,
+    'archon.aco.validation.passed': promptPackage.validationReport.status === 'passed',
+    'archon.aco.validation.failed.count': validationChecks.filter(
+      check => check.status === 'failed'
+    ).length,
+    'archon.aco.policy.passed': validationChecks.some(
+      check => check.id === 'aco-policy' && check.status === 'passed'
+    ),
+    'archon.aco.traceability.passed': validationChecks.some(
+      check => check.id === 'aco-traceability' && check.status === 'passed'
+    ),
+    'archon.aco.archive.files.count': Object.keys(result.files).length,
   };
 }
 
