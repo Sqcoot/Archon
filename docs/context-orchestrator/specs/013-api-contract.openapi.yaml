@@ -12,6 +12,28 @@ info:
     Acceptance scenarios: API returns redacted JSON and validates required fields. Failure behavior: explicit 4xx/5xx errors.
     Security constraints: no secrets in responses. Open questions: whether package retrieval streams files or returns paths.
 paths:
+  /api/aco/status:
+    get:
+      summary: ACO Status visibility endpoint
+      description: >-
+        Read-only Web UI status surface over the canonical Context Orchestrator
+        status contract. The endpoint requires a registered cwd and does not
+        write archives, regenerate graph evidence, or repair waivers.
+      parameters:
+        - name: cwd
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Raw ACO status contract with graph, waiver, validation, and ledger summary fields.
+        "400":
+          description: Missing or malformed cwd.
+        "404":
+          description: cwd is not registered as an Archon codebase path.
+        "500":
+          description: ACO status read failed.
   /api/context/status:
     get:
       summary: Candidate ACO status endpoint
@@ -40,3 +62,11 @@ paths:
           description: Prompt package manifest or archive reference
         "404":
           description: Prompt package not found
+
+x-aco-acceptance:
+  - AC-ACO-STATUS-003: GET /api/aco/status rejects missing or unregistered cwd before reading repository state.
+  - AC-ACO-STATUS-004: The Web page calls this endpoint with the selected project default_cwd and shows a no-project empty state.
+  - AC-ACO-STATUS-005: The Web page labels the primary route ACO Status and may use Context Readiness as supporting copy.
+  - AC-P1-API: GET /api/aco/status remains the canonical ACO readiness evidence source for validation, graph, waiver, schema, and ledger summary fields.
+  - AC-P1-WEB: Web surfaces render this evidence without stronger readiness claims.
+  - AC-P3-WF: Workflow dashboard and run detail surfaces consume this endpoint for read-only readiness display.

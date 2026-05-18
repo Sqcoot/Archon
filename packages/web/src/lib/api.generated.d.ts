@@ -1868,6 +1868,71 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/aco/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Show ACO status */
+    get: {
+      parameters: {
+        query: {
+          cwd: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Raw ACO status contract */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoStatusResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd is not registered */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description ACO status read failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/health': {
     parameters: {
       query?: never;
@@ -2566,6 +2631,32 @@ export interface components {
       version?: string;
       is_docker: boolean;
       activePlatforms?: string[];
+    };
+    AcoLedgerStatusCounts: {
+      available: number;
+      partial: number;
+      blocked: number;
+      deferred: number;
+      forbidden: number;
+      'not used': number;
+      unknown: number;
+    };
+    AcoLedgerSummarySection: {
+      total: number;
+      counts: components['schemas']['AcoLedgerStatusCounts'];
+    };
+    AcoStatusResponse: {
+      cwd: string;
+      graphStatus: string;
+      graphWaivers: number;
+      graphWaiverIds: string[];
+      validationStatus: string;
+      ledgerSchemaVersion: string;
+      ledgerSummary: {
+        toolAvailability: components['schemas']['AcoLedgerSummarySection'];
+        commands: components['schemas']['AcoLedgerSummarySection'];
+        combined: components['schemas']['AcoLedgerSummarySection'];
+      };
     };
     UpdateCheckResponse: {
       updateAvailable: boolean;

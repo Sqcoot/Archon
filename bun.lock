@@ -163,6 +163,7 @@
       "dependencies": {
         "@archon/adapters": "workspace:*",
         "@archon/core": "workspace:*",
+        "@archon/context-orchestrator": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/paths": "workspace:*",
         "@archon/providers": "workspace:*",

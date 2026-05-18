@@ -327,9 +327,11 @@ function buildToolAvailabilityEntries(
       name: 'ACO status',
       category: 'aco',
       status:
-        graphStatus === 'available' && options.validationReport.status === 'passed'
-          ? 'available'
-          : 'partial',
+        graphStatus === 'forbidden'
+          ? 'forbidden'
+          : graphStatus === 'available' && options.validationReport.status === 'passed'
+            ? 'available'
+            : 'partial',
       sourceEvidence: `graph=${options.graphContext.status}; validation=${options.validationReport.status}.`,
       invocationPath: 'bun run cli context status --cwd .',
       scope: 'Aggregate ACO readiness signal.',
@@ -743,7 +745,12 @@ function buildCommandEntries(
       id: 'cmd.aco-status',
       command: 'bun run cli context status --cwd .',
       category: 'aco',
-      status: options.graphContext.status === 'partial' ? 'partial' : 'available',
+      status:
+        options.graphContext.status === 'forbidden'
+          ? 'forbidden'
+          : options.graphContext.status === 'partial'
+            ? 'partial'
+            : 'available',
       sourceEvidence: `graph=${options.graphContext.status}; validation=${options.validationReport.status}.`,
       invocationPath: 'repo root',
       scope: 'ACO status summary.',
@@ -1289,6 +1296,7 @@ function validationSummary(report: ValidationReport): string {
 function graphToLedgerStatus(status: GraphContext['status']): LedgerStatus {
   if (status === 'available') return 'available';
   if (status === 'partial') return 'partial';
+  if (status === 'forbidden') return 'forbidden';
   return 'blocked';
 }
 

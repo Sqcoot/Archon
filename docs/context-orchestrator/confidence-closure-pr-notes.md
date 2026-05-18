@@ -8,7 +8,7 @@ This PR narrative supports AC-CONFIDENCE-006. It frames the confidence-closure p
 
 - Harden deterministic ledger evidence for the committed code-level ledger engine.
 - Align `context status`, `context ledgers --json`, and prompt-package compile evidence.
-- Name and explain remaining graph waivers instead of treating partial graph status as green readiness.
+- Name and explain remaining graph waivers instead of treating forbidden graph status as green readiness.
 - Keep command guardrails explicit for commands that write artifacts or tracked files.
 
 ## Validation
@@ -31,7 +31,7 @@ Any remaining graph waiver must be listed with its stable waiver ID, owner, reas
 
 ## Release Risk
 
-Release remains constrained while graph evidence is partial, validation is skipped or failed, ledger output is nondeterministic, or unknown rows lack explicit evidence.
+Release remains constrained while graph evidence is partial or forbidden, validation is skipped or failed, ledger output is nondeterministic, or unknown rows lack explicit evidence.
 
 ## Rollback
 

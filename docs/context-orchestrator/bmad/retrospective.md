@@ -21,7 +21,7 @@ Date: 2026-05-17
 
 - ADR 0009 kept the MVP CLI-first instead of implementing all candidate surfaces.
 - ADR 0011 rejected a DB migration for the first milestone; artifacts and CLI validation are sufficient.
-- Graph failures in `bmad-plugins-marketplace` and `bmad-sample-data` forced explicit waivers and partial graph status.
+- Graph failures in `bmad-plugins-marketplace` and `bmad-sample-data` forced explicit waivers and forbidden graph status.
 
 ## Wrong Or Risky Assumptions
 

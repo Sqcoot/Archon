@@ -6,7 +6,11 @@
       "ACO-POLICY-DECISION-",
       "ACO-TRACE-",
       "AC-LEDGER-",
-      "AC-CONFIDENCE-"
+      "AC-CONFIDENCE-",
+      "AC-ACO-STATUS-",
+      "AC-P",
+      "AC-NONREG",
+      "AC-FORBIDDEN-"
     ]
   },
   "requirements": [
@@ -497,6 +501,297 @@
           "ref": "docs/context-orchestrator/confidence-closure-pr-notes.md",
           "markers": ["AC-CONFIDENCE-006", "Rollback"],
           "summary": "PR notes describe scope, validation, remaining waivers, release risk, and rollback."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-ACO-STATUS-001", "validation", "ledger counts"],
+          "summary": "CLI tests verify text ACO Status output includes validation, graph, waiver, schema, and ledger count fields."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-ACO-STATUS-002", "getContextOrchestratorStatus"],
+          "summary": "CLI tests verify JSON ACO Status output emits the raw context-orchestrator status contract."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/server/src/routes/api.aco.test.ts",
+          "markers": ["AC-ACO-STATUS-003", "rejects unregistered cwd"],
+          "summary": "Server tests verify the ACO Status endpoint rejects unregistered cwd values before building status."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/routes/AcoStatusPage.tsx",
+          "markers": ["AC-ACO-STATUS-004", "selectedProject.default_cwd"],
+          "summary": "Web route uses the selected project's default cwd and renders a no-project empty state."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/routes/AcoStatusPage.tsx",
+          "markers": ["AC-ACO-STATUS-005", "ACO Status", "Context Readiness"],
+          "summary": "Web route uses ACO Status as the primary label and Context Readiness as supporting copy."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-ACO-STATUS-006", "context status", "context ledgers"],
+          "summary": "CLI tests verify ACO Status does not change existing context status or ledger command exports."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-ACO-STATUS-007",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/018-release-readiness-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-ACO-STATUS-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-ACO-STATUS-007", "graph-waiver.bmad-plugins-marketplace", "graph-waiver.bmad-sample-data"],
+          "summary": "CLI tests verify forbidden graph waiver IDs remain visible in ACO Status output."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P1-CLI",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P1-CLI"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-P1-CLI", "ledger counts"],
+          "summary": "CLI tests verify ACO Status reports validation, graph, waiver IDs, schema, and ledger counts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P1-API",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P1-API"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/server/src/routes/api.aco.test.ts",
+          "markers": ["AC-P1-API", "ledgerSummary"],
+          "summary": "Server tests verify the API returns the canonical readiness evidence."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P1-WEB",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P1-WEB"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/lib/aco-readiness.test.ts",
+          "markers": ["AC-P1-WEB", "Blocked by forbidden graph limits"],
+          "summary": "Web helper tests verify status rendering keeps claims bounded."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P3-WF",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P3-WF"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/lib/aco-readiness.test.ts",
+          "markers": ["AC-P3-WF", "workflow dashboard"],
+          "summary": "Web helper tests verify workflow cards and run detail can use the same canonical ACO status evidence."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P3-PR",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/018-release-readiness-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P3-PR"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/lib/aco-readiness.test.ts",
+          "markers": ["AC-P3-PR", "PR/handoff"],
+          "summary": "Web helper tests verify handoff narrative text includes readiness evidence and known limits."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P2-DEMO",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/018-release-readiness-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-P2-DEMO"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "docs/context-orchestrator/aco-status-demo.md",
+          "markers": ["AC-P2-DEMO", "Blocked by forbidden graph limits"],
+          "summary": "Demo script traces ACO Status to workflow detail and PR/handoff output without claiming complete coverage."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-FORBIDDEN-GRAPH-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/004-graph-context-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-FORBIDDEN-GRAPH-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-FORBIDDEN-GRAPH-001", "forbidden graph waivers"],
+          "summary": "Ledger tests verify failed waiver-required graph evidence is forbidden and remains visible."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/lib/aco-readiness.test.ts",
+          "markers": ["AC-FORBIDDEN-GRAPH-001", "Blocked by forbidden graph limits"],
+          "summary": "Web readiness tests verify forbidden graph status does not render as ready."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NONREG",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-NONREG"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/aco.test.ts",
+          "markers": ["AC-NONREG", "context status", "context ledgers"],
+          "summary": "CLI tests verify context commands and ledger behavior do not regress."
         }
       ],
       "status": "enforced"

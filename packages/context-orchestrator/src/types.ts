@@ -29,7 +29,7 @@ export interface GraphWaiver {
 }
 
 export interface GraphContext {
-  status: 'available' | 'partial' | 'unavailable';
+  status: 'available' | 'partial' | 'forbidden' | 'unavailable';
   repositories: GraphRepositoryStatus[];
   waiverCount: number;
   waivers: GraphWaiver[];

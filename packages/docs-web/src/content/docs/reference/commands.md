@@ -88,6 +88,8 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 | Command | Description |
 |---------|-------------|
 | `solidify-poc "<goal>"` | Runs a read-only POC stabilization review using a Tool Availability Ledger and Commands Ledger |
+| `archon aco status --cwd .` | Shows ACO Status: validation state, graph state, graph confidence limits, schema version, and ledger counts |
+| `archon aco status --cwd . --json` | Emits the raw ACO status contract used by the CLI, API, and Web UI |
 | `archon context status --cwd . --json` | Emits graph status, named graph waiver IDs, validation status, and ledger summary |
 | `archon context ledgers --cwd .` | Renders ACO Tool Availability and Commands ledgers without archive writes |
 | `archon context ledgers --cwd . --json` | Emits the combined `aco.ledger-bundle.v1` JSON bundle |
@@ -108,6 +110,7 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 | Commands Ledger | Command inventory with location, invocation, purpose, inputs, outputs, preconditions, status, validation check, failure mode, owner, and last-verified date |
 | ACO ledger bundle | Code-level JSON bundle with `toolAvailability`, `commands`, and summaries by exact ledger status |
 | Validation and waiver summary | Explicit pass, partial, blocked, or unknown evidence for relevant gates, including named graph waiver IDs when present |
+| ACO Status | In-repo visibility layer that presents the canonical ACO status contract in CLI and Web UI surfaces |
 | Final status | `Blocked`, `Partial`, or `Ready` |
 
 ### Failure Modes
@@ -116,6 +119,7 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 |--------------|-------------------|
 | Missing tool | Mark the related ledger row `blocked` and record the missing prerequisite |
 | Partial graph or waived source | Mark the related ledger row `partial` and limit confidence claims |
+| Accepted low-priority graph waiver | Show the waiver ID as an accepted confidence limit; do not hide it or regenerate graph evidence from a status surface |
 | Stale evidence | Mark the related ledger row `partial` or `unknown` until rechecked |
 | Unsafe mutation request | Stop and ask for explicit approval before writing files, generating artifacts, committing, pushing, or opening a PR |
 

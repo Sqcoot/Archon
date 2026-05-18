@@ -8,6 +8,7 @@ import type { components } from '@/lib/api.generated';
 
 export type WorkflowDefinition = components['schemas']['WorkflowDefinition'];
 export type DagNode = components['schemas']['DagNode'];
+export type AcoStatusResponse = components['schemas']['AcoStatusResponse'];
 
 /**
  * Base URL for SSE streams. In dev, bypasses Vite proxy by connecting directly
@@ -245,6 +246,11 @@ export async function listWorkflows(cwd?: string): Promise<WorkflowListEntry[]> 
   const params = cwd ? `?cwd=${encodeURIComponent(cwd)}` : '';
   const result = await fetchJSON<{ workflows: WorkflowListEntry[] }>(`/api/workflows${params}`);
   return result.workflows;
+}
+
+export async function getAcoStatus(cwd: string): Promise<AcoStatusResponse> {
+  const params = new URLSearchParams({ cwd });
+  return fetchJSON<AcoStatusResponse>(`/api/aco/status?${params.toString()}`);
 }
 
 export async function runWorkflow(

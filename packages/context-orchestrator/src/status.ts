@@ -11,7 +11,7 @@ const contextLedgerPrompt = 'implement aco confidence closure';
 
 export interface ContextOrchestratorStatus {
   cwd: string;
-  graphStatus: string;
+  graphStatus: GraphContext['status'];
   graphWaivers: number;
   graphWaiverIds: string[];
   validationStatus: string;

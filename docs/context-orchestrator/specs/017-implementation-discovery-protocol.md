@@ -94,10 +94,10 @@ The Commands Ledger records:
 during the review.
 
 Unknown capability must remain `unknown`, `blocked`, or `partial`; it must not
-be inferred as available. Waived or partial graph evidence limits confidence and
-must be recorded separately from implementation readiness. For example, an ACO
-status of `failed` with graph partial and 2 waivers can still provide route
-evidence, but cannot support a green readiness claim.
+be inferred as available. Waived, partial, or forbidden graph evidence limits
+confidence and must be recorded separately from implementation readiness. For
+example, an ACO status of `passed` with graph forbidden and 2 waivers can still
+provide route evidence, but cannot support a green readiness claim.
 
 When a tool is unavailable, the ledger records the fallback behavior before any
 hardening recommendation is made.
@@ -125,7 +125,7 @@ approval-required even when they would improve confidence.
 
 - Given bootstrap evidence is incomplete, when implementation protocol runs, then it stops and completes bootstrap first.
 - Given a POC solidification review begins, when tool availability is unknown, then the review records `unknown`, `blocked`, or `partial` instead of inventing availability.
-- Given graph evidence is partial or waived, when the review reports readiness, then it marks the confidence limit and separates degraded ACO state from implementation readiness.
+- Given graph evidence is partial, forbidden, or waived, when the review reports readiness, then it marks the confidence limit and separates degraded ACO state from implementation readiness.
 - Given a command can write tracked files or artifacts, when the review is read-only, then the command is marked `forbidden` or approval-required before it is run.
 - AC-LEDGER-001: Given a ledger bundle is built, when `.history/` is absent, then the bundle still renders from ACO code-level evidence.
 - AC-LEDGER-002: Given ledger rows are supplied out of order, when they render, then JSON and Markdown output sort rows deterministically by stable row ID.
