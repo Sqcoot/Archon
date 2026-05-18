@@ -19,6 +19,8 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 - PromptPackage includes runId, timestamp, original prompt, target codebase, intent, evidence, GraphContext, DocumentationPlan, MCP readiness, BmadRoute, AcceptancePlan, capabilities, CavemanPolicy, security constraints, unknowns, human prompt, Codex prompt, structured next command argv, validation report, and `ledgerBundle`.
 - `ledgerBundle` is a generic, code-level evidence bundle with `schemaVersion: "aco.ledger-bundle.v1"`, deterministic Tool Availability and Commands ledgers, and summaries by exact ledger status.
 - Ledger JSON artifacts are source of truth; Markdown ledger artifacts are derived human views.
+- Repeated prompt-package compilation with the same prompt, run ID, timestamp, and unchanged repository state emits byte-stable ledger JSON and Markdown artifacts.
+- Ledger summaries reconcile by fixed status order: the sum of all status counts must equal `total`.
 
 ## Archon-Specific Behavior
 
@@ -70,6 +72,9 @@ Prompt package fields, renderers, traceability, validation report, Tool Availabi
 - AC-LEDGER-003: Given evidence is missing, blocked, or partial, when ledgers are normalized, then `unknown`, `blocked`, and `partial` are preserved rather than collapsed to `available`.
 - AC-LEDGER-004: Given `context compile` succeeds, when the archive is inspected, then exactly four new ledger artifacts are present in the prompt-package archive contract.
 - AC-LEDGER-006: Given source evidence contains secret-like values, when ledgers serialize, then secrets are redacted from JSON and Markdown artifacts.
+- AC-CONFIDENCE-001: Given two prompt-package compiles use the same prompt, run ID, timestamp, and unchanged repository state, when ledger artifacts are compared, then ledger JSON and Markdown bytes are identical.
+- AC-CONFIDENCE-002: Given any ledger summary is produced, when its counts are inspected, then counts for every fixed status add up to `total`.
+- AC-CONFIDENCE-004: Given `context status`, `context ledgers --json`, and compiled prompt-package artifacts are built from the same repository state, when their ledger and graph fields are inspected, then graph status, waiver count, waiver IDs, schema version, and ledger summary are consistent.
 
 ## Failure Behavior
 

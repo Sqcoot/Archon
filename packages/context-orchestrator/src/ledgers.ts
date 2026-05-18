@@ -55,6 +55,15 @@ export interface BuildLedgerBundleOptions {
   selectedCapabilities: CapabilityRoute;
   validationReport: ValidationReport;
   packageScripts?: Record<string, string>;
+  repositoryStatus?: RepositoryStatusEvidence;
+}
+
+export interface RepositoryStatusEvidence {
+  status: Extract<LedgerStatus, 'available' | 'partial' | 'blocked' | 'unknown'>;
+  sourceEvidence: string;
+  verification: string;
+  notes: string;
+  confidence: LedgerConfidence;
 }
 
 type LedgerBundleDraft = Omit<LedgerBundle, 'summary'> & {
@@ -73,9 +82,16 @@ type CommandEntryDraft = Omit<CommandLedgerEntry, 'evidence' | 'confidence'> & {
 
 export async function buildLedgerBundle(options: BuildLedgerBundleOptions): Promise<LedgerBundle> {
   const packageScripts = options.packageScripts ?? (await readPackageScripts(options.cwd));
+  const repositoryStatus =
+    options.repositoryStatus ?? (await getRepositoryStatusEvidence(options.cwd));
   const lastVerified = toLastVerified(options.timestamp);
-  const toolAvailability = buildToolAvailabilityEntries(options, packageScripts, lastVerified);
-  const commands = buildCommandEntries(options, packageScripts, lastVerified);
+  const toolAvailability = buildToolAvailabilityEntries(
+    options,
+    packageScripts,
+    repositoryStatus,
+    lastVerified
+  );
+  const commands = buildCommandEntries(options, packageScripts, repositoryStatus, lastVerified);
 
   return normalizeLedgerBundle({
     schemaVersion: LEDGER_SCHEMA_VERSION,
@@ -240,6 +256,7 @@ export function renderCommandsLedgerMarkdown(entries: CommandLedgerEntry[]): str
 function buildToolAvailabilityEntries(
   options: BuildLedgerBundleOptions,
   packageScripts: Record<string, string>,
+  repositoryStatus: RepositoryStatusEvidence,
   lastVerified: string
 ): ToolAvailabilityLedgerEntry[] {
   const policy = checkById(options.validationReport, 'aco-policy');
@@ -462,26 +479,26 @@ function buildToolAvailabilityEntries(
       id: 'tool.git-status',
       name: 'Current repository cleanliness/status',
       category: 'git',
-      status: 'unknown',
-      sourceEvidence: 'unknown',
+      status: repositoryStatus.status,
+      sourceEvidence: repositoryStatus.sourceEvidence,
       invocationPath: 'git status --short --untracked-files=all',
       scope: 'Worktree cleanliness.',
       preconditions: 'Git repository available.',
-      verification: 'Command exits 0 and output is reviewed.',
+      verification: repositoryStatus.verification,
       primaryUse: 'Avoid overwriting unrelated user changes.',
       failureMode: 'Dirty worktree, untracked files, or not a git repository.',
       fallback: 'Stop and inspect changes before editing.',
       owner: 'repo',
-      lastVerified: 'unknown',
-      notes: 'Ledger builder does not execute git status.',
-      confidence: 'unknown',
+      lastVerified,
+      notes: repositoryStatus.notes,
+      confidence: repositoryStatus.confidence,
     }),
     toolEntry({
       id: 'tool.graph-evidence',
       name: 'Graph evidence',
       category: 'evidence',
       status: graphStatus,
-      sourceEvidence: options.graphContext.summary,
+      sourceEvidence: graphSourceEvidence(options.graphContext),
       invocationPath: 'getGraphContext({ cwd })',
       scope: 'Repository graph evidence.',
       preconditions: 'upstream-manifest.json and graph metadata available.',
@@ -493,7 +510,7 @@ function buildToolAvailabilityEntries(
       lastVerified,
       notes:
         options.graphContext.waiverCount > 0
-          ? 'Graph waivers constrain readiness.'
+          ? graphWaiverNotes(options.graphContext)
           : 'No graph waivers.',
       confidence: 'observed',
     }),
@@ -632,6 +649,7 @@ function buildToolAvailabilityEntries(
 function buildCommandEntries(
   options: BuildLedgerBundleOptions,
   packageScripts: Record<string, string>,
+  repositoryStatus: RepositoryStatusEvidence,
   lastVerified: string
 ): CommandLedgerEntry[] {
   const policy = checkById(options.validationReport, 'aco-policy');
@@ -739,7 +757,12 @@ function buildCommandEntries(
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
-      notes: options.graphContext.summary,
+      notes:
+        options.graphContext.waivers.length > 0
+          ? `${options.graphContext.summary} Waivers: ${options.graphContext.waivers
+              .map(waiver => waiver.id)
+              .join(', ')}.`
+          : options.graphContext.summary,
       confidence: 'observed',
     }),
     commandEntry({
@@ -873,22 +896,22 @@ function buildCommandEntries(
       id: 'cmd.git-status',
       command: 'git status --short --untracked-files=all',
       category: 'git',
-      status: 'unknown',
-      sourceEvidence: 'unknown',
+      status: repositoryStatus.status,
+      sourceEvidence: repositoryStatus.sourceEvidence,
       invocationPath: 'repo root',
       scope: 'Worktree cleanliness.',
       preconditions: 'Git repository available.',
-      verification: 'Exit 0 and output reviewed.',
+      verification: repositoryStatus.verification,
       primaryUse: 'Protect user changes before edits.',
       failureMode: 'Dirty worktree or not a git repository.',
       fallback: 'Inspect git state manually.',
       owner: 'repo',
-      lastVerified: 'unknown',
+      lastVerified,
       mutatesTrackedFiles: false,
       requiresApproval: false,
       safety: 'read-only',
-      notes: 'Ledger builder does not execute git status.',
-      confidence: 'unknown',
+      notes: repositoryStatus.notes,
+      confidence: repositoryStatus.confidence,
     }),
     commandEntry({
       id: 'cmd.lint-fix',
@@ -1183,6 +1206,75 @@ async function readPackageScripts(cwd: string): Promise<Record<string, string>> 
   } catch {
     return {};
   }
+}
+
+async function getRepositoryStatusEvidence(cwd: string): Promise<RepositoryStatusEvidence> {
+  try {
+    const proc = Bun.spawn(['git', 'status', '--short', '--untracked-files=all'], {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    const lines = stdout.split(/\r?\n/).filter(line => line.trim().length > 0);
+    const tracked = lines.filter(line => !line.startsWith('??')).length;
+    const untracked = lines.length - tracked;
+
+    if (exitCode === 0) {
+      const clean = lines.length === 0;
+      return {
+        status: clean ? 'available' : 'partial',
+        sourceEvidence: `git status exited 0; clean=${String(clean)}; tracked=${tracked}; untracked=${untracked}.`,
+        verification: clean ? 'Worktree is clean.' : `Worktree has ${lines.length} status row(s).`,
+        notes: clean
+          ? 'No tracked or untracked files reported.'
+          : 'Worktree has tracked or untracked changes; inspect git status before editing.',
+        confidence: 'observed',
+      };
+    }
+
+    return {
+      status: 'blocked',
+      sourceEvidence: `git status failed with exit ${exitCode}: ${compactCommandOutput(stderr || stdout)}`,
+      verification: 'Git status command failed.',
+      notes: 'Repository status could not be observed with git status.',
+      confidence: 'observed',
+    };
+  } catch (error) {
+    return {
+      status: 'blocked',
+      sourceEvidence: `git status could not be executed: ${error instanceof Error ? error.message : String(error)}`,
+      verification: 'Git status command could not be executed.',
+      notes: 'Repository status could not be observed with git status.',
+      confidence: 'observed',
+    };
+  }
+}
+
+function graphSourceEvidence(graphContext: GraphContext): string {
+  if (graphContext.waivers.length === 0) return graphContext.summary;
+  return `${graphContext.summary} Waiver evidence: ${graphContext.waivers
+    .map(waiver => `${waiver.id}(${waiver.repository})`)
+    .join(', ')}.`;
+}
+
+function graphWaiverNotes(graphContext: GraphContext): string {
+  return graphContext.waivers
+    .map(
+      waiver =>
+        `${waiver.id}: owner=${waiver.owner}; reason=${waiver.reason}; evidence=${waiver.evidence}; expiry=${waiver.expiryCondition}`
+    )
+    .join(' | ');
+}
+
+function compactCommandOutput(output: string): string {
+  const compact = output.replace(/\s+/g, ' ').trim();
+  if (compact.length === 0) return 'no output';
+  return compact.length > 240 ? `${compact.slice(0, 237)}...` : compact;
 }
 
 function checkById(report: ValidationReport, id: string): ValidationCheck | undefined {

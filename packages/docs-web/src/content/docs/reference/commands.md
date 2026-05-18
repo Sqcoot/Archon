@@ -88,6 +88,7 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 | Command | Description |
 |---------|-------------|
 | `solidify-poc "<goal>"` | Runs a read-only POC stabilization review using a Tool Availability Ledger and Commands Ledger |
+| `archon context status --cwd . --json` | Emits graph status, named graph waiver IDs, validation status, and ledger summary |
 | `archon context ledgers --cwd .` | Renders ACO Tool Availability and Commands ledgers without archive writes |
 | `archon context ledgers --cwd . --json` | Emits the combined `aco.ledger-bundle.v1` JSON bundle |
 
@@ -106,7 +107,7 @@ This is a prompt command, not an implementation workflow. It must produce eviden
 | Tool Availability Ledger | Tool inventory with source, invocation path, status, preconditions, verification check, failure mode, fallback, owner, and last-verified date |
 | Commands Ledger | Command inventory with location, invocation, purpose, inputs, outputs, preconditions, status, validation check, failure mode, owner, and last-verified date |
 | ACO ledger bundle | Code-level JSON bundle with `toolAvailability`, `commands`, and summaries by exact ledger status |
-| Validation and waiver summary | Explicit pass, partial, blocked, or unknown evidence for relevant gates |
+| Validation and waiver summary | Explicit pass, partial, blocked, or unknown evidence for relevant gates, including named graph waiver IDs when present |
 | Final status | `Blocked`, `Partial`, or `Ready` |
 
 ### Failure Modes

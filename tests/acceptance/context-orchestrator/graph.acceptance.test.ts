@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { getGraphContext } from '@archon/context-orchestrator';
 
 describe('ACO graph acceptance', () => {
-  test('Spec: 004-graph-context-spec.md Acceptance: ACO-GRAPH-001 graph context includes complete and waived repos', async () => {
+  test('Spec: 004-graph-context-spec.md Acceptance: ACO-GRAPH-001 AC-CONFIDENCE-003 graph context includes complete repos and named waivers', async () => {
     const context = await getGraphContext({ cwd: process.cwd() });
     expect(context.repositories.length).toBeGreaterThanOrEqual(13);
     expect(
@@ -11,5 +11,13 @@ describe('ACO graph acceptance', () => {
     expect(
       context.repositories.some(repo => repo.graphStatus === 'failed' && repo.waiverRequired)
     ).toBe(true);
+    expect(context.waivers.length).toBe(context.waiverCount);
+    for (const waiver of context.waivers) {
+      expect(waiver.id.startsWith('graph-waiver.')).toBe(true);
+      expect(waiver.owner).toBe('context-orchestrator');
+      expect(waiver.reason.length).toBeGreaterThan(0);
+      expect(waiver.evidence).toContain('upstream-manifest.json');
+      expect(waiver.expiryCondition.length).toBeGreaterThan(0);
+    }
   });
 });

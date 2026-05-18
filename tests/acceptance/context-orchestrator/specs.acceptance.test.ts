@@ -96,7 +96,7 @@ describe('ACO spec acceptance', () => {
     expect(traceabilityCheck?.status).toBe('passed');
   });
 
-  test('Spec: 008-prompt-package-spec.md Acceptance: AC-LEDGER-001 AC-LEDGER-002 AC-LEDGER-003 AC-LEDGER-005 AC-LEDGER-006 AC-LEDGER-007 AC-LEDGER-008 ledger requirements are traceable', async () => {
+  test('Spec: 008-prompt-package-spec.md Acceptance: AC-LEDGER-001 AC-LEDGER-002 AC-LEDGER-003 AC-LEDGER-005 AC-LEDGER-006 AC-LEDGER-007 AC-LEDGER-008 AC-CONFIDENCE-001 AC-CONFIDENCE-002 AC-CONFIDENCE-003 AC-CONFIDENCE-004 AC-CONFIDENCE-005 AC-CONFIDENCE-006 ledger confidence requirements are traceable', async () => {
     const matrix = await readFile(
       join(process.cwd(), 'docs/context-orchestrator/specs/spec-traceability-matrix.md'),
       'utf8'
@@ -109,6 +109,12 @@ describe('ACO spec acceptance', () => {
       'AC-LEDGER-006',
       'AC-LEDGER-007',
       'AC-LEDGER-008',
+      'AC-CONFIDENCE-001',
+      'AC-CONFIDENCE-002',
+      'AC-CONFIDENCE-003',
+      'AC-CONFIDENCE-004',
+      'AC-CONFIDENCE-005',
+      'AC-CONFIDENCE-006',
     ]) {
       expect(matrix).toContain(marker);
     }

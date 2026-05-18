@@ -37,7 +37,7 @@ describe('context orchestrator core', () => {
   test('ACO-POLICY-DECISION-001 AC-LEDGER-004 AC-LEDGER-008 compiles a deterministic redacted archive', async () => {
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-core-'));
     const result = await compilePromptPackage({
-      cwd: process.cwd(),
+      cwd: repoRoot,
       prompt: 'Implement safely with SECRET_TOKEN=hidden-value.',
       archiveRoot,
       runId: 'aco-core-test',
@@ -53,7 +53,7 @@ describe('context orchestrator core', () => {
       'context',
       'compile',
       '--cwd',
-      process.cwd(),
+      repoRoot,
       '--',
       'Implement safely with SECRET_TOKEN=[REDACTED]',
     ]);
@@ -152,8 +152,42 @@ describe('context orchestrator core', () => {
     expect(policyDecision.policy.version).toBe('aco-prompt-package-v1');
     expect(policyDecision.policy.sha256).toHaveLength(64);
     expect(policyDecision.opa.available).toBe(true);
-    expect(policyDecision.codes.warn).toContain('ACO_POLICY_UNRESOLVED_DOCS');
+    expect(policyDecision.codes.warn).toContain('ACO_POLICY_GRAPH_WAIVER');
+    expect(policyDecision.codes.warn).not.toContain('ACO_POLICY_UNRESOLVED_DOCS');
     expect(policyDecision.counts.warn).toBe(policyDecision.decision.warn.length);
+  });
+
+  test('AC-CONFIDENCE-001 emits byte-stable ledger artifacts for repeated compiles', async () => {
+    const prompt = 'aco confidence closure';
+    const timestamp = '2026-05-18T12:00:00.000Z';
+    const firstArchiveRoot = await mkdtemp(join(tmpdir(), 'aco-confidence-a-'));
+    const secondArchiveRoot = await mkdtemp(join(tmpdir(), 'aco-confidence-b-'));
+
+    const first = await compilePromptPackage({
+      cwd: repoRoot,
+      prompt,
+      archiveRoot: firstArchiveRoot,
+      runId: 'aco-confidence',
+      timestamp,
+    });
+    const second = await compilePromptPackage({
+      cwd: repoRoot,
+      prompt,
+      archiveRoot: secondArchiveRoot,
+      runId: 'aco-confidence',
+      timestamp,
+    });
+
+    for (const artifact of [
+      'tool-availability-ledger.json',
+      'tool-availability-ledger.md',
+      'commands-ledger.json',
+      'commands-ledger.md',
+    ]) {
+      expect(await readFile(first.files[artifact], 'utf8')).toBe(
+        await readFile(second.files[artifact], 'utf8')
+      );
+    }
   });
 
   test('rejects unsafe archive run IDs', async () => {

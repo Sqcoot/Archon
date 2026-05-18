@@ -103,7 +103,13 @@ async function compilePromptPackageWithoutTelemetry(
   ];
   const unknowns = [
     ...documentationPlan.unresolved.map(item => `Unresolved Context7 library ID: ${item}`),
-    ...(graphContext.waiverCount > 0 ? [`Graph waivers: ${graphContext.waiverCount}`] : []),
+    ...(graphContext.waiverCount > 0
+      ? [
+          `Graph waivers: ${graphContext.waiverCount} (${graphContext.waivers
+            .map(waiver => waiver.id)
+            .join(', ')})`,
+        ]
+      : []),
   ];
   const humanPrompt = renderHumanPrompt(redactedPrompt, bmadRoute.steps);
   const codexPrompt = renderCodexPrompt(redactedPrompt, bmadRoute.steps);
@@ -347,6 +353,8 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     targetCodebase: promptPackage.targetCodebase,
     intent: promptPackage.intent,
     graphStatus: promptPackage.graphContext.status,
+    graphWaivers: promptPackage.graphContext.waiverCount,
+    graphWaiverIds: promptPackage.graphContext.waivers.map(waiver => waiver.id),
     bmadRoute: promptPackage.bmadRoute.id,
     acceptanceStatus: promptPackage.acceptancePlan.status,
     validationStatus: promptPackage.validationReport.status,
@@ -496,6 +504,17 @@ function renderGraphSummary(promptPackage: PromptPackage): string {
     '# Graph Summary',
     '',
     promptPackage.graphContext.summary,
+    '',
+    '## Waivers',
+    '',
+    promptPackage.graphContext.waivers.length > 0
+      ? promptPackage.graphContext.waivers
+          .map(
+            waiver =>
+              `- ${waiver.id}: ${waiver.repository}; owner=${waiver.owner}; reason=${waiver.reason}; expiry=${waiver.expiryCondition}`
+          )
+          .join('\n')
+      : '- none',
     '',
     ...promptPackage.graphContext.repositories.map(
       repo => `- ${repo.name}: ${repo.graphStatus}, ${repo.nodes} nodes, ${repo.edges} edges`

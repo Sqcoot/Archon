@@ -16,6 +16,7 @@ Graphify modes, normalized graph summaries, merge behavior, waivers, and path sa
 ## Generic Behavior
 
 - GraphContext summarizes repository graphs, graph status, node/edge counts, waivers, and open questions.
+- GraphContext includes named waiver records for every waived repository. Each waiver record has a stable ID, owner, reason, source evidence, and expiry condition so partial graph confidence is explainable instead of only counted.
 - Graph modes are auto, required, off, and fixture.
 
 ## Archon-Specific Behavior
@@ -34,6 +35,7 @@ Graphify modes, normalized graph summaries, merge behavior, waivers, and path sa
 
 - GraphContext
 - graph evidence summary
+- graph waiver records
 - merged ecosystem report
 
 ## Known Unknowns
@@ -48,6 +50,7 @@ Graphify modes, normalized graph summaries, merge behavior, waivers, and path sa
 ## Acceptance Scenarios
 
 - Given Graphify fails for a non-controlling repo, when GraphContext is created, then status includes failed and waiverRequired=true.
+- AC-CONFIDENCE-003: Given graph evidence is partial, when GraphContext is created, then every waiver has a stable ID, owner, reason, evidence, and expiry condition.
 
 ## Failure Behavior
 

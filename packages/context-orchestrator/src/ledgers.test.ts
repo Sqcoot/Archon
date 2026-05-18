@@ -60,6 +60,28 @@ describe('ACO ledgers', () => {
     ]);
   });
 
+  test('AC-CONFIDENCE-002 summary counts reconcile for every ledger section', () => {
+    const bundle = normalizeLedgerBundle(
+      minimalBundle({
+        toolAvailability: [
+          { ...toolEntry('tool.available'), status: 'available' },
+          { ...toolEntry('tool.partial'), status: 'partial' },
+          { ...toolEntry('tool.deferred'), status: 'deferred' },
+          { ...toolEntry('tool.unknown'), status: 'unknown', sourceEvidence: 'unknown' },
+        ],
+        commands: [
+          { ...commandEntry('cmd.available'), status: 'available' },
+          { ...commandEntry('cmd.forbidden'), status: 'forbidden' },
+          { ...commandEntry('cmd.blocked'), status: 'blocked' },
+        ],
+      })
+    );
+
+    expectSummaryCountsReconcile(bundle.summary.toolAvailability);
+    expectSummaryCountsReconcile(bundle.summary.commands);
+    expectSummaryCountsReconcile(bundle.summary.combined);
+  });
+
   test('AC-LEDGER-003 preserves unknown blocked and partial statuses', () => {
     const normalized = normalizeLedgerBundle(
       minimalBundle({
@@ -91,7 +113,7 @@ describe('ACO ledgers', () => {
     expect(markdown).toContain('cmd.base');
   });
 
-  test('represents mutating commands as forbidden and approval-required', () => {
+  test('AC-CONFIDENCE-005 represents mutating commands as forbidden and approval-required guardrails', () => {
     const markdown = renderCommandsLedgerMarkdown([
       {
         ...commandEntry('cmd.mutating'),
@@ -106,6 +128,69 @@ describe('ACO ledgers', () => {
     expect(markdown).toContain('forbidden');
     expect(markdown).toContain('writes-tracked-files');
     expect(markdown).toContain('true');
+  });
+
+  test('AC-CONFIDENCE-003 records observed git status evidence instead of unexplained unknown', async () => {
+    const bundle = await buildLedgerBundle({
+      cwd: '/tmp/aco-ledger-no-history',
+      timestamp,
+      graphContext: graphContext(),
+      documentationPlan: documentationPlan(),
+      bmadRoute: bmadRoute(),
+      acceptancePlan: {
+        status: 'ready',
+        scenarios: [],
+      },
+      selectedCapabilities: { capabilities: [] },
+      validationReport: { status: 'warning', checks: [] },
+      packageScripts: {},
+      repositoryStatus: {
+        status: 'available',
+        sourceEvidence: 'git status exited 0; clean=true; tracked=0; untracked=0.',
+        verification: 'Worktree is clean.',
+        notes: 'No tracked or untracked files reported.',
+        confidence: 'observed',
+      },
+    });
+    const toolGitStatus = bundle.toolAvailability.find(entry => entry.id === 'tool.git-status');
+    const commandGitStatus = bundle.commands.find(entry => entry.id === 'cmd.git-status');
+
+    expect(toolGitStatus?.status).toBe('available');
+    expect(toolGitStatus?.sourceEvidence).toContain('clean=true');
+    expect(toolGitStatus?.confidence).toBe('observed');
+    expect(commandGitStatus?.status).toBe('available');
+    expect(commandGitStatus?.sourceEvidence).toContain('tracked=0');
+  });
+
+  test('AC-CONFIDENCE-003 includes named graph waivers as explicit confidence limits', async () => {
+    const bundle = await buildLedgerBundle({
+      cwd: '/tmp/aco-ledger-no-history',
+      timestamp,
+      graphContext: graphContext(),
+      documentationPlan: documentationPlan(),
+      bmadRoute: bmadRoute(),
+      acceptancePlan: {
+        status: 'ready',
+        scenarios: [],
+      },
+      selectedCapabilities: { capabilities: [] },
+      validationReport: { status: 'warning', checks: [] },
+      packageScripts: {},
+      repositoryStatus: {
+        status: 'blocked',
+        sourceEvidence: 'git status failed: not a git repository.',
+        verification: 'Git repository unavailable.',
+        notes: 'Repository status could not be observed.',
+        confidence: 'observed',
+      },
+    });
+    const graphEntry = bundle.toolAvailability.find(entry => entry.id === 'tool.graph-evidence');
+
+    expect(graphEntry?.status).toBe('partial');
+    expect(graphEntry?.notes).toContain('graph-waiver.sample-upstream');
+    expect(graphEntry?.notes).toContain('owner=context-orchestrator');
+    expect(graphEntry?.notes).toContain('expiry=');
+    expect(graphEntry?.sourceEvidence).toContain('graph-waiver.sample-upstream');
   });
 
   test('AC-LEDGER-006 redacts secret-like values from JSON and Markdown', () => {
@@ -244,7 +329,18 @@ function graphContext(): GraphContext {
     status: 'partial',
     repositories: [],
     waiverCount: 1,
-    summary: 'Graph evidence partial.',
+    waivers: [
+      {
+        id: 'graph-waiver.sample-upstream',
+        repository: 'sample-upstream',
+        owner: 'context-orchestrator',
+        reason: 'Graphify failed for non-controlling sample upstream.',
+        evidence: 'upstream-manifest.json sample-upstream waiverRequired=true.',
+        expiryCondition:
+          'Regenerate graph evidence successfully or remove sample-upstream dependency.',
+      },
+    ],
+    summary: 'Graph evidence partial; waivers=graph-waiver.sample-upstream.',
   };
 }
 
@@ -266,4 +362,9 @@ function bmadRoute(): BmadRoute {
     steps: ['bmad-index-docs'],
     rationale: 'Test route.',
   };
+}
+
+function expectSummaryCountsReconcile(summary: LedgerBundle['summary']['combined']): void {
+  const counted = ledgerStatusOrder.reduce((total, status) => total + summary.counts[status], 0);
+  expect(counted).toBe(summary.total);
 }

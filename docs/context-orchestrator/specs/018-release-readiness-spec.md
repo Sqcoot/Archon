@@ -15,6 +15,7 @@ Validation commands, reports, unknowns, waivers, limitations, next BMAD command.
 ## Generic Behavior
 
 - ReleaseReadinessReport aggregates spec, acceptance, contract, golden, integration, security, build, and waiver status.
+- Confidence-closure PRs must explain scope, validation, remaining waivers, release risk, and rollback before broader release is claimed.
 
 ## Archon-Specific Behavior
 
@@ -31,6 +32,7 @@ Validation commands, reports, unknowns, waivers, limitations, next BMAD command.
 ## Outputs
 
 - docs/context-orchestrator/final-validation-report.md
+- PR confidence-closure narrative
 
 ## Known Unknowns
 
@@ -44,6 +46,7 @@ Validation commands, reports, unknowns, waivers, limitations, next BMAD command.
 ## Acceptance Scenarios
 
 - Given one required acceptance suite fails, when release readiness is checked, then release readiness fails and report lists blocker plus next BMAD command.
+- AC-CONFIDENCE-006: Given the ACO confidence-closure PR narrative is prepared, when reviewers inspect it, then it lists scope, validation commands, remaining waivers, release risk, and rollback path.
 
 ## Failure Behavior
 

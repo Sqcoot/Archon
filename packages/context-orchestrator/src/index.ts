@@ -14,6 +14,7 @@ export {
   serializeLedgerBundle,
   serializeToolAvailabilityLedger,
 } from './ledgers';
+export type { BuildLedgerBundleOptions, RepositoryStatusEvidence } from './ledgers';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
 export {
@@ -35,6 +36,7 @@ export {
   writeFileNoFollow,
 } from './security';
 export { getContextOrchestratorLedgers, getContextOrchestratorStatus } from './status';
+export type { ContextOrchestratorStatus } from './status';
 export { validateContextOrchestrator } from './validation';
 export type {
   AcceptancePlan,
@@ -50,6 +52,7 @@ export type {
   GraphContext,
   GraphRepositoryStatus,
   GraphStatus,
+  GraphWaiver,
   CommandLedgerEntry,
   CommandSafety,
   McpReadinessState,

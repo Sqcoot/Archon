@@ -181,7 +181,7 @@ describe('context orchestrator telemetry', () => {
       'archon.aco.operation': 'compile',
       'archon.aco.result': 'success',
       'archon.aco.archive.files.count': 21,
-      'archon.aco.docs.unresolved.count': 1,
+      'archon.aco.docs.unresolved.count': 0,
     });
     expect(policySpan?.attributes).toMatchObject({
       'archon.aco.operation': 'policy.archive',

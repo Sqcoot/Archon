@@ -18,6 +18,8 @@ This spec covers documentation target discovery, MCP readiness, source priority,
 
 ACO produces a `DocumentationPlan` containing documentation targets, source priority, readiness state, unresolved IDs, evidence references, and failure notes.
 
+ACO only marks Context7 targets when the prompt contains credible third-party library evidence. Capitalized task verbs such as `Implement`, `Build`, `Fix`, `Plan`, or `Validate` are not library evidence and must not create unresolved documentation targets by themselves.
+
 Documentation targets can be:
 
 - official vendor documentation
@@ -99,6 +101,13 @@ And Context7 is unavailable
 When ACO builds a documentation plan
 Then Context7 is marked `optional-skipped`
 And ACO continues if no required documentation target depends on Context7.
+
+### AC-CONFIDENCE-003: Task verbs are not unresolved library evidence
+
+Given a prompt starts with a capitalized task verb
+And the prompt has no third-party library dependency
+When ACO builds a documentation plan
+Then the plan does not create an unresolved Context7 target for the task verb.
 
 ## Failure Behavior
 

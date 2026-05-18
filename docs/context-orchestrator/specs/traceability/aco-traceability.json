@@ -1,7 +1,13 @@
 {
   "schema_version": "aco.traceability.v1",
   "scope": {
-    "enforced_prefixes": ["ACO-POLICY-", "ACO-POLICY-DECISION-", "ACO-TRACE-", "AC-LEDGER-"]
+    "enforced_prefixes": [
+      "ACO-POLICY-",
+      "ACO-POLICY-DECISION-",
+      "ACO-TRACE-",
+      "AC-LEDGER-",
+      "AC-CONFIDENCE-"
+    ]
   },
   "requirements": [
     {
@@ -371,6 +377,126 @@
           "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
           "markers": ["AC-LEDGER-008", "validation"],
           "summary": "Compiler tests verify ledger bundle evidence records validation command availability and results."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/context-orchestrator.test.ts",
+          "markers": ["AC-CONFIDENCE-001", "byte-stable ledger artifacts"],
+          "summary": "Compiler tests compare repeated ledger JSON and Markdown artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/008-prompt-package-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-CONFIDENCE-002", "summary counts reconcile"],
+          "summary": "Ledger tests verify every summary count set adds up to total."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/017-implementation-discovery-protocol.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-CONFIDENCE-003", "named graph waivers"],
+          "summary": "Ledger tests verify graph waivers and confidence limits carry explicit evidence."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/docs.acceptance.test.ts",
+          "markers": ["AC-CONFIDENCE-003", "task verbs"],
+          "summary": "Documentation acceptance tests verify task verbs do not create unresolved Context7 targets."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/status.test.ts",
+          "markers": ["AC-CONFIDENCE-004", "status ledgers compile agree"],
+          "summary": "Status tests verify status, ledger, and compile graph/summary fields agree."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/017-implementation-discovery-protocol.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/ledgers.test.ts",
+          "markers": ["AC-CONFIDENCE-005", "approval-required guardrails"],
+          "summary": "Ledger tests verify mutating/generated commands remain forbidden or approval-required."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-CONFIDENCE-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/018-release-readiness-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["AC-CONFIDENCE-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "docs/context-orchestrator/confidence-closure-pr-notes.md",
+          "markers": ["AC-CONFIDENCE-006", "Rollback"],
+          "summary": "PR notes describe scope, validation, remaining waivers, release risk, and rollback."
         }
       ],
       "status": "enforced"

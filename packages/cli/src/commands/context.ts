@@ -126,6 +126,8 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     files: result.files,
     route: result.package.bmadRoute.id,
     graphStatus: result.package.graphContext.status,
+    graphWaivers: result.package.graphContext.waiverCount,
+    graphWaiverIds: result.package.graphContext.waivers.map(waiver => waiver.id),
     openaiDocsMcpStatus: result.package.documentationPlan.readiness.openaiDocsMcp,
     context7Status: result.package.documentationPlan.readiness.context7,
     acceptanceStatus: result.package.acceptancePlan.status,

@@ -1,14 +1,17 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import type { GraphContext, GraphRepositoryStatus, GraphStatus } from './types';
+import type { GraphContext, GraphRepositoryStatus, GraphStatus, GraphWaiver } from './types';
 
 interface ManifestRepository {
   name: string;
+  role?: string;
+  localPath?: string;
   cloneStatus?: string;
   branch?: string | null;
   commitSha?: string | null;
   graphStatus?: GraphStatus;
   waiverRequired?: boolean;
+  error?: string;
 }
 
 interface UpstreamManifest {
@@ -39,6 +42,7 @@ export async function getGraphContext(options: GetGraphContextOptions): Promise<
       status: 'unavailable',
       repositories: [],
       waiverCount: 0,
+      waivers: [],
       summary: 'Graph evidence is unavailable for this codebase.',
     };
   }
@@ -59,12 +63,42 @@ export async function getGraphContext(options: GetGraphContextOptions): Promise<
   }
 
   const waiverCount = repositories.filter(repo => repo.waiverRequired).length;
+  const waivers = manifest.repositories
+    .filter(repo => repo.waiverRequired)
+    .map(repo => graphWaiverFromManifest(repo));
+  const waiverSummary =
+    waivers.length > 0 ? `: ${waivers.map(waiver => waiver.id).join(', ')}` : '';
   return {
     status: waiverCount > 0 ? 'partial' : 'available',
     repositories,
     waiverCount,
-    summary: `${repositories.length} repositories indexed; ${waiverCount} graph waiver(s).`,
+    waivers,
+    summary: `${repositories.length} repositories indexed; ${waiverCount} graph waiver(s)${waiverSummary}.`,
   };
+}
+
+function graphWaiverFromManifest(repo: ManifestRepository): GraphWaiver {
+  return {
+    id: `graph-waiver.${slugify(repo.name)}`,
+    repository: repo.name,
+    owner: 'context-orchestrator',
+    reason: repo.error ?? `Graph evidence requires a waiver for ${repo.name}.`,
+    evidence: [
+      'docs/context-orchestrator/research/upstream-manifest.json',
+      `repository=${repo.name}`,
+      `graphStatus=${repo.graphStatus ?? 'not-started'}`,
+      `waiverRequired=${String(repo.waiverRequired ?? false)}`,
+      ...(repo.localPath ? [`localPath=${repo.localPath}`] : []),
+    ].join('; '),
+    expiryCondition: `Regenerate graph evidence successfully for ${repo.name} or remove it from the required ACO evidence set.`,
+  };
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 async function readGraphMetadata(
