@@ -1,9 +1,11 @@
 import {
   compilePromptPackage,
   getContextOrchestratorReadiness,
+  getGraphWaiverClosureReport,
   getContextOrchestratorLedgers,
   getContextOrchestratorStatus,
   renderLedgerBundleMarkdown,
+  renderGraphWaiverClosureReportMarkdown,
   serializeLedgerBundle,
   routeBmad,
   validateContextOrchestrator,
@@ -77,6 +79,22 @@ export async function contextLedgersCommand(options: ContextCommandOptions): Pro
     }
     return 1;
   }
+}
+
+export async function contextGraphWaiversCommand(
+  options: ContextCommandOptions & { timestamp?: string }
+): Promise<number> {
+  const report = await getGraphWaiverClosureReport({
+    cwd: options.cwd,
+    timestamp: options.timestamp,
+  });
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return 0;
+  }
+
+  console.log(renderGraphWaiverClosureReportMarkdown(report));
+  return 0;
 }
 
 export async function contextCompileCommand(

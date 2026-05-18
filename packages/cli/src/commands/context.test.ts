@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, spyOn } from 'bun:test';
 import { resolve } from 'path';
 import {
   contextCompileCommand,
+  contextGraphWaiversCommand,
   contextLedgersCommand,
   contextRouteCommand,
   contextStatusCommand,
@@ -72,11 +73,39 @@ describe('context commands', () => {
     expect(parsed.ledgerSummary).toBeDefined();
   });
 
+  it('AC-GWCL-005 emits graph waiver closure JSON with approval-required recommendations', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    const exitCode = await contextGraphWaiversCommand({ cwd: repoRoot, json: true });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      diagnostics?: Array<{
+        approvalStatus?: string;
+        recommendedCommands?: Array<{ requiresApproval?: boolean; willRun?: boolean }>;
+      }>;
+    };
+    expect(parsed.schemaVersion).toBe('aco.graph-waiver-closure.v1');
+    expect(parsed.diagnostics?.length).toBeGreaterThan(0);
+    for (const diagnostic of parsed.diagnostics ?? []) {
+      expect(diagnostic.approvalStatus).toBe('approval_required');
+      expect(diagnostic.recommendedCommands?.every(command => command.willRun === false)).toBe(
+        true
+      );
+      expect(
+        diagnostic.recommendedCommands?.every(command => command.requiresApproval === true)
+      ).toBe(true);
+    }
+  });
+
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();
     expect(contextValidateCommand).toBeFunction();
     expect(contextCompileCommand).toBeFunction();
     expect(contextLedgersCommand).toBeFunction();
+    expect(contextGraphWaiversCommand).toBeFunction();
   });
 });

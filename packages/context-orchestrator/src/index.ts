@@ -17,6 +17,11 @@ export {
 export type { BuildLedgerBundleOptions, RepositoryStatusEvidence } from './ledgers';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
+export {
+  getGraphWaiverClosureReport,
+  GRAPH_WAIVER_CLOSURE_SCHEMA_VERSION,
+  renderGraphWaiverClosureReportMarkdown,
+} from './graph-waiver-closure';
 export { readArtifactPackageManifest } from './artifact-package';
 export type { ArtifactPackageLookup } from './artifact-package';
 export {
@@ -60,6 +65,13 @@ export type {
   GraphRepositoryStatus,
   GraphStatus,
   GraphWaiver,
+  GraphWaiverArtifactDiagnostic,
+  GraphWaiverArtifactStatus,
+  GraphWaiverClosureApprovalStatus,
+  GraphWaiverClosureCommand,
+  GraphWaiverClosureDecision,
+  GraphWaiverClosureDiagnostic,
+  GraphWaiverClosureReport,
   CommandLedgerEntry,
   CommandSafety,
   McpReadinessState,

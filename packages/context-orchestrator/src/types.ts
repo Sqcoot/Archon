@@ -36,6 +36,79 @@ export interface GraphContext {
   summary: string;
 }
 
+export type GraphWaiverClosureDecision =
+  | 'unresolved'
+  | 'rebuild_available'
+  | 'manual_action_required'
+  | 'justified_waiver'
+  | 'cleared';
+
+export type GraphWaiverArtifactStatus =
+  | 'valid'
+  | 'empty-waiver'
+  | 'empty-complete'
+  | 'missing'
+  | 'malformed';
+
+export type GraphWaiverClosureApprovalStatus = 'approval_required' | 'not_required';
+
+export interface GraphWaiverClosureCommand {
+  command: string;
+  safety: CommandSafety;
+  requiresApproval: boolean;
+  willRun: boolean;
+  reason: string;
+}
+
+export interface GraphWaiverArtifactDiagnostic {
+  path: string;
+  metadataPath: string;
+  reportPath: string;
+  status: GraphWaiverArtifactStatus;
+  graphStatus: string;
+  nodes: number;
+  edges: number;
+  message: string;
+}
+
+export interface GraphWaiverClosureDiagnostic {
+  waiverId: string;
+  repository: string;
+  owner: string;
+  graphStatus: GraphStatus | 'unknown';
+  cloneStatus: string;
+  waiverRequired: boolean;
+  reason: string;
+  evidence: string;
+  expiryCondition: string;
+  graphArtifact: GraphWaiverArtifactDiagnostic;
+  failureSummary: string;
+  affectedLedgerRows: string[];
+  decision: GraphWaiverClosureDecision;
+  diagnosis: string;
+  recommendedAction: string;
+  recommendedCommands: GraphWaiverClosureCommand[];
+  expectedSuccessEvidence: string[];
+  approvalStatus: GraphWaiverClosureApprovalStatus;
+}
+
+export interface GraphWaiverClosureReport {
+  schemaVersion: 'aco.graph-waiver-closure.v1';
+  generatedAt?: string;
+  cwd: string;
+  readiness: ContextOrchestratorReadiness;
+  graphStatus: GraphContext['status'];
+  validationStatus: string;
+  approvalRequired: boolean;
+  waiverCount: number;
+  diagnostics: GraphWaiverClosureDiagnostic[];
+  summary: {
+    total: number;
+    byDecision: Record<GraphWaiverClosureDecision, number>;
+    approvalRequired: boolean;
+  };
+}
+
 export type DocumentationSource = 'openai-docs-mcp' | 'context7' | 'generic';
 export type DocumentationTargetStatus = 'resolved' | 'unresolved' | 'not-required';
 
