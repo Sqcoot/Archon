@@ -201,6 +201,33 @@ export interface EvidenceBlocker {
   nextVerificationAction: string;
 }
 
+export type EvidenceResolutionTargetKind =
+  | 'openai'
+  | 'third-party'
+  | 'unknown'
+  | 'graph'
+  | 'validation';
+
+export type EvidenceResolutionResolver = 'openai-docs-mcp' | 'context7' | 'manual' | 'approval';
+
+export interface EvidenceResolutionItem {
+  evidenceId: string;
+  capabilityId: string;
+  targetKind: EvidenceResolutionTargetKind;
+  targetName: string;
+  resolver: EvidenceResolutionResolver;
+  reason: string;
+  nextAction: string;
+  requiresApproval: boolean;
+  blockingAcceptanceIds: string[];
+  expectedSuccessEvidence: string[];
+}
+
+export interface EvidenceClosurePlan {
+  required: boolean;
+  items: EvidenceResolutionItem[];
+}
+
 export type LedgerStatus =
   | 'available'
   | 'partial'
@@ -347,6 +374,7 @@ export interface DecisionDossier {
   waivers: GraphWaiver[];
   ledgerSummary: LedgerBundleSummary;
   evidenceBlockers: EvidenceBlocker[];
+  evidenceResolution: EvidenceClosurePlan;
   blockedItems: DecisionDossierBlockedItem[];
   approvalRequired: boolean;
   approvalCommands: DecisionDossierApprovalCommand[];
@@ -373,6 +401,7 @@ export interface PromptPackagePolicyInput {
   evidence: {
     graph: Record<string, unknown>;
     docs: Record<string, unknown>;
+    evidenceResolution?: Record<string, unknown>;
     bmad: Record<string, unknown>;
     acceptance: Record<string, unknown>;
     security: Record<string, unknown>;
@@ -453,6 +482,7 @@ export interface PromptPackage {
   nextArchonCommand: string[];
   validationReport: ValidationReport;
   ledgerBundle: LedgerBundle;
+  evidenceResolution: EvidenceClosurePlan;
   decisionDossier: DecisionDossier;
 }
 

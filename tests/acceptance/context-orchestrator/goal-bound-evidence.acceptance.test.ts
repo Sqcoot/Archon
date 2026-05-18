@@ -46,14 +46,15 @@ describe('Goal-Bound Evidence Gate acceptance', () => {
   });
 
   test('AC-ACO-BLOCKER-001 unresolved required docs evidence names exact row and next action', async () => {
-    const identifyObjective =
-      'Identify the single next highest-leverage improvement to my Agentic Context Orchestrator.';
+    const identifyObjective = 'Use Hono for an ACO API route.';
     const status = await getContextOrchestratorStatus(repoRoot, {
       objective: identifyObjective,
       timestamp,
     });
 
     expect(status.evidenceBlockers.some(blocker => blocker.id === 'tool.docs-evidence')).toBe(true);
+    expect(status.evidenceResolution.items.some(item => item.targetName === 'Hono')).toBe(true);
+    expect(status.evidenceResolution.items.some(item => item.resolver === 'context7')).toBe(true);
     expect(
       status.evidenceBlockers.some(blocker =>
         blocker.nextVerificationAction.includes('Resolve docs')

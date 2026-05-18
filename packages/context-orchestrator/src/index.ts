@@ -21,6 +21,8 @@ export {
   renderDecisionDossierMarkdown,
 } from './decision-dossier';
 export type { CreateDecisionDossierOptions } from './decision-dossier';
+export { createEvidenceClosurePlan } from './evidence-closure';
+export type { CreateEvidenceClosurePlanOptions } from './evidence-closure';
 export { createContextIntent, deriveDefaultObjective, normalizeObjective } from './intent';
 export type { CreateContextIntentOptions } from './intent';
 export {
@@ -110,6 +112,10 @@ export type {
   ContextIntent,
   McpReadinessState,
   EvidenceBlocker,
+  EvidenceClosurePlan,
+  EvidenceResolutionItem,
+  EvidenceResolutionResolver,
+  EvidenceResolutionTargetKind,
   PromptPackage,
   ArchivedPolicyDecision,
   LedgerBundle,

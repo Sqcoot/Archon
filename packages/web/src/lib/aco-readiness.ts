@@ -61,6 +61,7 @@ export function formatAcoEvidenceSummary(status: AcoStatusResponse): string {
     `${String(status.graphWaivers)} ${limitLabel}`,
     `${String(status.ledgerSummary.combined.total)} ledger rows`,
     `${String(status.evidenceBlockers.length)} blockers`,
+    `${String(status.evidenceResolution.items.length)} closure actions`,
     `${String(unknown)} unknown`,
   ].join(' · ');
 }
@@ -84,6 +85,15 @@ export function formatAcoHandoffNarrative(status: AcoStatusResponse): string {
           .map(blocker => `- ${blocker.id}: ${blocker.nextVerificationAction}`)
           .join('\n')
       : '- none';
+  const resolutionLines =
+    status.evidenceResolution.items.length > 0
+      ? status.evidenceResolution.items
+          .map(
+            item =>
+              `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; ${item.nextAction}`
+          )
+          .join('\n')
+      : '- none';
 
   return [
     `Context Orchestrator Readiness: ${getAcoReadinessLabel(status)}`,
@@ -94,6 +104,8 @@ export function formatAcoHandoffNarrative(status: AcoStatusResponse): string {
     `Ledger: ${status.ledgerSchemaVersion}; ${formatAcoLedgerCounts(status)}`,
     'Evidence blockers:',
     blockerLines,
+    'Evidence resolution:',
+    resolutionLines,
     waiverHeading,
     waiverLines,
     limitNarrative,

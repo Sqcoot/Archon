@@ -2326,6 +2326,24 @@ export interface components {
       sourceArtifact: string;
       nextVerificationAction: string;
     };
+    AcoEvidenceResolutionItem: {
+      evidenceId: string;
+      capabilityId: string;
+      /** @enum {string} */
+      targetKind: 'openai' | 'third-party' | 'unknown' | 'graph' | 'validation';
+      targetName: string;
+      /** @enum {string} */
+      resolver: 'openai-docs-mcp' | 'context7' | 'manual' | 'approval';
+      reason: string;
+      nextAction: string;
+      requiresApproval: boolean;
+      blockingAcceptanceIds: string[];
+      expectedSuccessEvidence: string[];
+    };
+    AcoEvidenceResolution: {
+      required: boolean;
+      items: components['schemas']['AcoEvidenceResolutionItem'][];
+    };
     AcoStatusResponse: {
       cwd: string;
       contextIntent: components['schemas']['AcoContextIntent'];
@@ -2339,6 +2357,7 @@ export interface components {
       ledgerSchemaVersion: string;
       ledgerSummary: components['schemas']['AcoLedgerSummary'];
       evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
+      evidenceResolution: components['schemas']['AcoEvidenceResolution'];
     };
     Error: {
       error: string;
@@ -2390,6 +2409,7 @@ export interface components {
       ledgerSchemaVersion: string;
       ledgerSummary: components['schemas']['AcoLedgerSummary'];
       evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
+      evidenceResolution: components['schemas']['AcoEvidenceResolution'];
     };
     AcoCompileRequest: {
       cwd: string;

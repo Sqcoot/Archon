@@ -5,6 +5,7 @@ import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
 import { createDecisionDossier, renderDecisionDossierMarkdown } from './decision-dossier';
 import { planDocumentation } from './docs';
+import { createEvidenceClosurePlan } from './evidence-closure';
 import { getGraphContext } from './graph';
 import { createContextIntent } from './intent';
 import {
@@ -105,6 +106,14 @@ async function compilePromptPackageWithoutTelemetry(
     selectedCapabilities,
     validationReport,
   });
+  const evidenceResolution = createEvidenceClosurePlan({
+    contextIntent,
+    graphContext,
+    documentationPlan,
+    selectedCapabilities,
+    validationReport,
+    ledgerBundle,
+  });
   const decisionDossier = await createDecisionDossier({
     cwd: options.cwd,
     prompt: options.prompt,
@@ -116,6 +125,7 @@ async function compilePromptPackageWithoutTelemetry(
     selectedCapabilities,
     validationReport,
     ledgerBundle,
+    evidenceResolution,
     contextIntent,
   });
   const intent = inferIntent(options.prompt);
@@ -171,6 +181,7 @@ async function compilePromptPackageWithoutTelemetry(
     ],
     validationReport,
     ledgerBundle,
+    evidenceResolution,
     decisionDossier,
   };
 
@@ -281,6 +292,17 @@ function renderCodexPrompt(
     '- Use `nextPlanPrompt` as the current handoff source.',
     '- Preserve active graph waivers and approval-required state exactly.',
     '- Do not run approval commands unless the user explicitly approves them.',
+    '',
+    'Evidence resolution requirements:',
+    '',
+    decisionDossier.evidenceResolution.items.length > 0
+      ? decisionDossier.evidenceResolution.items
+          .map(
+            item =>
+              `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; ${item.nextAction}`
+          )
+          .join('\n')
+      : '- none',
     '',
     'Original request:',
     '',
@@ -418,6 +440,7 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     validationStatus: promptPackage.validationReport.status,
     ledgerSchemaVersion: promptPackage.ledgerBundle.schemaVersion,
     ledgerSummary: promptPackage.ledgerBundle.summary,
+    evidenceResolution: promptPackage.evidenceResolution,
     ledgerArtifacts: [
       'tool-availability-ledger.json',
       'tool-availability-ledger.md',
@@ -452,6 +475,7 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
     evidence: {
       graph: promptPackage.graphContext as unknown as Record<string, unknown>,
       docs: promptPackage.documentationPlan as unknown as Record<string, unknown>,
+      evidenceResolution: promptPackage.evidenceResolution as unknown as Record<string, unknown>,
       bmad: promptPackage.bmadRoute as unknown as Record<string, unknown>,
       acceptance: promptPackage.acceptancePlan as unknown as Record<string, unknown>,
       security: {
@@ -529,6 +553,11 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     `Graph: ${promptPackage.decisionDossier.graphStatus}`,
     `Approval required: ${promptPackage.decisionDossier.approvalRequired ? 'yes' : 'no'}`,
     `Evidence blockers: ${promptPackage.ledgerBundle.evidenceBlockers.length}`,
+    `Evidence resolution required: ${promptPackage.evidenceResolution.required ? 'yes' : 'no'}`,
+    '',
+    '## Evidence Resolution',
+    '',
+    renderEvidenceResolution(promptPackage),
     '',
     '## Ledger Guidance',
     '',
@@ -561,6 +590,16 @@ function renderLedgerSummary(promptPackage: PromptPackage): string {
     `Total rows: ${summary.total}`,
     ...Object.entries(summary.counts).map(([status, count]) => `- ${status}: ${count}`),
   ].join('\n');
+}
+
+function renderEvidenceResolution(promptPackage: PromptPackage): string {
+  if (promptPackage.evidenceResolution.items.length === 0) return '- none';
+  return promptPackage.evidenceResolution.items
+    .map(
+      item =>
+        `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval ? 'yes' : 'no'}; next=${item.nextAction}`
+    )
+    .join('\n');
 }
 
 function renderRouteReport(promptPackage: PromptPackage): string {
@@ -603,6 +642,10 @@ function renderDocsPlan(promptPackage: PromptPackage): string {
     ...promptPackage.documentationPlan.targets.map(
       target => `- ${target.source}: ${target.topic} (${target.status})`
     ),
+    '',
+    '## Evidence Resolution',
+    '',
+    renderEvidenceResolution(promptPackage),
   ].join('\n');
 }
 

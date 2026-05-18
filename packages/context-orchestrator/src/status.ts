@@ -1,6 +1,7 @@
 import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
 import { selectCapabilities } from './capabilities';
+import { createEvidenceClosurePlan } from './evidence-closure';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import { createContextIntent, deriveDefaultObjective } from './intent';
@@ -9,6 +10,7 @@ import { validateContextOrchestrator } from './validation';
 import type {
   ContextOrchestratorReadiness,
   ContextIntent,
+  EvidenceClosurePlan,
   EvidenceBlocker,
   GraphContext,
   GraphWaiver,
@@ -36,13 +38,14 @@ export interface ContextOrchestratorStatus {
   ledgerSchemaVersion: LedgerBundle['schemaVersion'];
   ledgerSummary: LedgerBundleSummary;
   evidenceBlockers: EvidenceBlocker[];
+  evidenceResolution: EvidenceClosurePlan;
 }
 
 export async function getContextOrchestratorStatus(
   cwd: string,
   options: ContextEvidenceOptions = {}
 ): Promise<ContextOrchestratorStatus> {
-  const { contextIntent, graphContext, validationReport, ledgerBundle } =
+  const { contextIntent, graphContext, validationReport, ledgerBundle, evidenceResolution } =
     await buildContextLedgerEvidence(cwd, options);
   return {
     cwd,
@@ -61,6 +64,7 @@ export async function getContextOrchestratorStatus(
     ledgerSchemaVersion: ledgerBundle.schemaVersion,
     ledgerSummary: ledgerBundle.summary,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
+    evidenceResolution,
   };
 }
 
@@ -98,6 +102,7 @@ async function buildContextLedgerEvidence(
   graphContext: GraphContext;
   validationReport: ValidationReport;
   ledgerBundle: LedgerBundle;
+  evidenceResolution: EvidenceClosurePlan;
 }> {
   const contextIntent =
     options.contextIntent ??
@@ -126,8 +131,16 @@ async function buildContextLedgerEvidence(
     selectedCapabilities,
     validationReport,
   });
+  const evidenceResolution = createEvidenceClosurePlan({
+    contextIntent,
+    graphContext,
+    documentationPlan,
+    selectedCapabilities,
+    validationReport,
+    ledgerBundle,
+  });
 
-  return { contextIntent, graphContext, validationReport, ledgerBundle };
+  return { contextIntent, graphContext, validationReport, ledgerBundle, evidenceResolution };
 }
 
 function normalizeEvidenceOptions(

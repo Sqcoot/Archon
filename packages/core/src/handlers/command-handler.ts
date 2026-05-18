@@ -28,6 +28,7 @@ import {
 import type {
   ContextOrchestratorReadiness,
   ContextOrchestratorStatus,
+  EvidenceClosurePlan,
   EvidenceBlocker,
   LedgerBundleSummary,
   PromptPackageResult,
@@ -1023,6 +1024,8 @@ function renderContextStatus(status: ContextOrchestratorStatus): string {
     '',
     renderEvidenceBlockers(status.evidenceBlockers),
     '',
+    renderEvidenceResolution(status.evidenceResolution),
+    '',
     renderLedgerSummary('Combined ledgers', status.ledgerSummary.combined),
   ].join('\n');
 }
@@ -1048,6 +1051,8 @@ function renderContextCompileSummary(result: PromptPackageResult): string {
     '',
     renderEvidenceBlockers(promptPackage.ledgerBundle.evidenceBlockers),
     '',
+    renderEvidenceResolution(promptPackage.evidenceResolution),
+    '',
     renderLedgerSummary('Combined ledgers', promptPackage.ledgerBundle.summary.combined),
   ].join('\n');
 }
@@ -1059,6 +1064,16 @@ function renderEvidenceBlockers(blockers: readonly EvidenceBlocker[]): string {
     ...blockers.map(
       blocker =>
         `- ${blocker.id} (${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+    ),
+  ].join('\n');
+}
+
+function renderEvidenceResolution(plan: EvidenceClosurePlan): string {
+  if (plan.items.length === 0) return 'Evidence resolution: none';
+  return [
+    `Evidence resolution required: ${plan.required ? 'yes' : 'no'}`,
+    ...plan.items.map(
+      item => `- ${item.evidenceId} (${item.resolver}, ${item.targetKind}): ${item.nextAction}`
     ),
   ].join('\n');
 }

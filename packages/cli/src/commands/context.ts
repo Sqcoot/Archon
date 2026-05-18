@@ -58,6 +58,13 @@ export async function contextStatusCommand(options: ContextCommandOptions): Prom
         .join('; ')}`
     );
   }
+  console.log(`Evidence resolution required: ${status.evidenceResolution.required ? 'yes' : 'no'}`);
+  for (const item of status.evidenceResolution.items) {
+    console.log(
+      `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval ? 'yes' : 'no'}`
+    );
+    console.log(`  Next: ${item.nextAction}`);
+  }
 }
 
 export async function contextValidateCommand(options: ContextCommandOptions): Promise<number> {
@@ -197,6 +204,9 @@ export async function contextCompileCommand(
   console.log(`Route: ${result.package.bmadRoute.id}`);
   console.log(`Graph: ${result.package.graphContext.status}`);
   console.log(`Validation: ${result.package.validationReport.status}`);
+  console.log(
+    `Evidence resolution required: ${result.package.evidenceResolution.required ? 'yes' : 'no'}`
+  );
   console.log(`Codex prompt: ${result.files['codex-prompt.md']}`);
 }
 
@@ -242,6 +252,7 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     ledgerSchemaVersion: result.package.ledgerBundle.schemaVersion,
     ledgerSummary: result.package.ledgerBundle.summary,
     evidenceBlockers: result.package.ledgerBundle.evidenceBlockers,
+    evidenceResolution: result.package.evidenceResolution,
     decisionDossierSchemaVersion: result.package.decisionDossier.schemaVersion,
     decisionDossierDecision: result.package.decisionDossier.decision.id,
     decisionDossierReadiness: result.package.decisionDossier.readiness,

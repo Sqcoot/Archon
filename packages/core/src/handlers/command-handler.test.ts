@@ -38,6 +38,23 @@ const testContextIntent = {
   generatedAt: '2026-05-18T12:00:00.000Z',
 };
 const testEvidenceBlockers: [] = [];
+const testEvidenceResolution = {
+  required: true,
+  items: [
+    {
+      evidenceId: 'graph-waiver.bmad-plugins-marketplace',
+      capabilityId: 'graph-context',
+      targetKind: 'graph',
+      targetName: 'bmad-plugins-marketplace',
+      resolver: 'approval',
+      reason: 'Graph evidence failed.',
+      nextAction: 'Keep waiver explicit or request graph refresh approval.',
+      requiresApproval: true,
+      blockingAcceptanceIds: ['AC-ACO-WAIVER-001'],
+      expectedSuccessEvidence: ['Graph waiver remains visible.'],
+    },
+  ],
+};
 
 const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: unknown) => ({
   cwd: '/workspace/my-repo',
@@ -56,6 +73,7 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string, _options?: un
     commands: { total: 0, counts: zeroLedgerCounts() },
     combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
   },
+  evidenceResolution: testEvidenceResolution,
 }));
 const mockGetContextOrchestratorLedgers = mock(async (_cwd: string, _options?: unknown) => ({
   schemaVersion: 'aco.ledger-bundle.v1',
@@ -98,6 +116,7 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
         combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
       },
     },
+    evidenceResolution: testEvidenceResolution,
   },
 }));
 

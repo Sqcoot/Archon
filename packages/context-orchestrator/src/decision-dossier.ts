@@ -1,6 +1,7 @@
 import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
 import { selectCapabilities } from './capabilities';
+import { createEvidenceClosurePlan } from './evidence-closure';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import { createContextIntent } from './intent';
@@ -21,6 +22,7 @@ import type {
   DecisionDossierEvidence,
   DecisionDossierRejectedAlternative,
   DocumentationPlan,
+  EvidenceClosurePlan,
   GraphContext,
   LedgerBundle,
   LedgerStatus,
@@ -42,6 +44,7 @@ export interface CreateDecisionDossierOptions {
   selectedCapabilities?: CapabilityRoute;
   validationReport?: ValidationReport;
   ledgerBundle?: LedgerBundle;
+  evidenceResolution?: EvidenceClosurePlan;
 }
 
 const nonGreenLedgerStatuses = new Set<LedgerStatus>([
@@ -94,6 +97,16 @@ export async function createDecisionDossier(
     validationReport,
     ledgerBundle.evidenceBlockers
   );
+  const evidenceResolution =
+    options.evidenceResolution ??
+    createEvidenceClosurePlan({
+      contextIntent,
+      documentationPlan,
+      selectedCapabilities,
+      graphContext,
+      validationReport,
+      ledgerBundle,
+    });
   const approvalRequired = readiness === 'needs_approval';
   const approvalCommands = buildApprovalCommands(graphContext);
   const blockedItems = buildBlockedItems(graphContext, validationReport, ledgerBundle);
@@ -136,6 +149,7 @@ export async function createDecisionDossier(
     })),
     ledgerSummary: ledgerBundle.summary,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
+    evidenceResolution,
     blockedItems,
     approvalRequired,
     approvalCommands,
@@ -150,6 +164,7 @@ export async function createDecisionDossier(
       approvalCommands,
       nextGoalObjective,
       contextIntent,
+      evidenceResolution,
     }),
   };
 
@@ -193,6 +208,10 @@ export function renderDecisionDossierMarkdown(dossier: DecisionDossier): string 
     '## Evidence Blockers',
     '',
     ...renderEvidenceBlockers(dossier.evidenceBlockers),
+    '',
+    '## Evidence Resolution',
+    '',
+    ...renderEvidenceResolution(dossier.evidenceResolution),
     '',
     '## Approval Commands',
     '',
@@ -456,6 +475,7 @@ function buildNextPlanPrompt(input: {
   approvalCommands: DecisionDossierApprovalCommand[];
   nextGoalObjective: string;
   contextIntent: ContextIntent;
+  evidenceResolution: EvidenceClosurePlan;
 }): string {
   const waiverText =
     input.graphContext.waivers.length > 0
@@ -478,6 +498,9 @@ function buildNextPlanPrompt(input: {
       `Graph: ${input.graphContext.status}`,
       `Waivers: ${waiverText}`,
       `Approval commands: ${approvalText}`,
+      `Evidence resolution required: ${input.evidenceResolution.required ? 'yes' : 'no'}`,
+      'Evidence resolution:',
+      ...renderEvidenceResolution(input.evidenceResolution),
       'Do not run approval-required commands without explicit user approval.',
       'Keep graph waivers explicit if implementation proceeds before evidence refresh.',
       'Follow BMAD route steps:',
@@ -548,6 +571,13 @@ function renderEvidenceBlockers(blockers: DecisionDossier['evidenceBlockers']): 
   return blockers.map(
     blocker =>
       `- ${blocker.id} (${blocker.kind}, ${blocker.status}, ${blocker.freshness}): ${blocker.nextVerificationAction}`
+  );
+}
+
+function renderEvidenceResolution(plan: EvidenceClosurePlan): string[] {
+  if (plan.items.length === 0) return ['- none'];
+  return plan.items.map(
+    item => `- ${item.evidenceId} (${item.targetKind}, ${item.resolver}): ${item.nextAction}`
   );
 }
 

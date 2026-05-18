@@ -26,6 +26,23 @@ const baseStatus: AcoStatusResponse = {
   readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
   evidenceBlockers: [],
+  evidenceResolution: {
+    required: true,
+    items: [
+      {
+        evidenceId: 'graph-waiver.bmad-plugins-marketplace',
+        capabilityId: 'graph-context',
+        targetKind: 'graph',
+        targetName: 'bmad-plugins-marketplace',
+        resolver: 'approval',
+        reason: 'Graph evidence failed.',
+        nextAction: 'Keep waiver explicit or request graph refresh approval.',
+        requiresApproval: true,
+        blockingAcceptanceIds: ['AC-ACO-WAIVER-001'],
+        expectedSuccessEvidence: ['Graph waiver remains visible.'],
+      },
+    ],
+  },
   ledgerSummary: {
     toolAvailability: {
       total: 20,
@@ -70,7 +87,7 @@ describe('ACO readiness display helpers', () => {
   test('AC-P1-WEB AC-FORBIDDEN-GRAPH-001 keeps graph waivers approval-gated', () => {
     expect(getAcoReadinessLabel(baseStatus)).toBe('Needs approval');
     expect(formatAcoEvidenceSummary(baseStatus)).toBe(
-      'intent intent-123 · validation passed · graph forbidden · 2 approval-required graph limits · 39 ledger rows · 0 blockers · 0 unknown'
+      'intent intent-123 · validation passed · graph forbidden · 2 approval-required graph limits · 39 ledger rows · 0 blockers · 1 closure actions · 0 unknown'
     );
   });
 
@@ -91,6 +108,7 @@ describe('ACO readiness display helpers', () => {
     expect(narrative).toContain('graph-waiver.bmad-sample-data');
     expect(narrative).toContain('Ledger: aco.ledger-bundle.v1; total 39');
     expect(narrative).toContain('Evidence blockers:\n- none');
+    expect(narrative).toContain('Evidence resolution:\n- graph-waiver.bmad-plugins-marketplace');
     expect(narrative).toContain('Needs approval: failed waiver-required graph evidence');
     expect(narrative).not.toContain('Ready with known limits');
     expect(narrative).not.toContain('complete graph coverage');

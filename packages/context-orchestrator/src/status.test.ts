@@ -51,4 +51,26 @@ describe('context orchestrator status confidence', () => {
     expect(status.ledgerSummary).toEqual(ledgers.summary);
     expect(status.ledgerSummary).toEqual(compiled.package.ledgerBundle.summary);
   });
+
+  test('AC-ACO-BLOCKER-001 status and compile expose matching evidence resolution', async () => {
+    const prompt = 'Use Hono for an ACO API route.';
+    const timestamp = '2026-05-18T12:00:00.000Z';
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-status-resolution-'));
+    const status = await getContextOrchestratorStatus(repoRoot, { objective: prompt, timestamp });
+    const compiled = await compilePromptPackage({
+      cwd: repoRoot,
+      prompt,
+      archiveRoot,
+      runId: 'aco-status-resolution',
+      timestamp,
+    });
+
+    expect(status.evidenceResolution.required).toBe(true);
+    expect(compiled.package.evidenceResolution).toEqual(status.evidenceResolution);
+    expect(
+      status.evidenceResolution.items.some(
+        item => item.evidenceId === 'tool.docs-evidence' && item.targetName === 'Hono'
+      )
+    ).toBe(true);
+  });
 });
