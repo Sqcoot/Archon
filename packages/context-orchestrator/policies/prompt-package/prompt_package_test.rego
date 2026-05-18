@@ -113,6 +113,13 @@ test_unresolved_docs_warns_but_allows if {
 	decision.warn[_].code == "ACO_POLICY_UNRESOLVED_DOCS"
 }
 
+test_unresolved_docs_warning_is_unique if {
+	warn_input := object.union(valid_input, {"evidence": object.union(base_evidence, {"docs": {"unresolved": ["Open Policy Agent"], "targets": [{"source": "context7", "topic": "Open Policy Agent", "status": "unresolved"}]}})})
+	decision := prompt_package.decision with input as warn_input
+	warnings := [finding | finding := decision.warn[_]; finding.code == "ACO_POLICY_UNRESOLVED_DOCS"]
+	count(warnings) == 1
+}
+
 test_graph_waiver_warns_but_allows if {
 	warn_input := object.union(valid_input, {"evidence": object.union(base_evidence, {"graph": {"status": "partial", "waiverCount": 1}})})
 	decision := prompt_package.decision with input as warn_input

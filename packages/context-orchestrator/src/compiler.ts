@@ -5,6 +5,7 @@ import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
+import { writeArchivedPolicyDecision } from './policy-decision';
 import {
   prepareArchiveDirectory,
   redactSecrets,
@@ -24,6 +25,7 @@ import type {
 const archiveFiles = [
   'manifest.json',
   'prompt-package.json',
+  'policy-decision.json',
   'original-prompt.md',
   'user-prompt.md',
   'codex-prompt.md',
@@ -171,6 +173,15 @@ async function writeArchiveFiles(
     files['prompt-package.json'],
     `${JSON.stringify(toPolicyInput(promptPackage), null, 2)}\n`
   );
+  const policyDecision = await writeArchivedPolicyDecision({
+    archivePath,
+    inputPath: files['prompt-package.json'],
+    outputPath: files['policy-decision.json'],
+  });
+  if (!policyDecision.decision.allow) {
+    const denyCodes = policyDecision.codes.deny.join(', ') || 'unknown';
+    throw new Error(`ACO prompt-package policy denied archive admission: ${denyCodes}`);
+  }
   await writeFileNoFollow(
     archivePath,
     files['original-prompt.md'],
@@ -279,11 +290,13 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
 }
 
 function toPolicyArtifacts(): PromptPackagePolicyArtifact[] {
-  return archiveFiles.map(file => ({
-    id: file.replace(/\.[^.]+$/, ''),
-    path: file,
-    kind: file.endsWith('.json') ? 'json' : 'markdown',
-  }));
+  return archiveFiles
+    .filter(file => file !== 'policy-decision.json')
+    .map(file => ({
+      id: file.replace(/\.[^.]+$/, ''),
+      path: file,
+      kind: file.endsWith('.json') ? 'json' : 'markdown',
+    }));
 }
 
 function renderFinalPackage(promptPackage: PromptPackage): string {
