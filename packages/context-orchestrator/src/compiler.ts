@@ -5,6 +5,14 @@ import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
 import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
+import {
+  buildLedgerBundle,
+  renderCommandsLedgerMarkdown,
+  renderToolAvailabilityLedgerMarkdown,
+  serializeCommandsLedger,
+  serializeLedgerBundle,
+  serializeToolAvailabilityLedger,
+} from './ledgers';
 import { writeArchivedPolicyDecision } from './policy-decision';
 import {
   prepareArchiveDirectory,
@@ -28,6 +36,10 @@ const archiveFiles = [
   'manifest.json',
   'prompt-package.json',
   'policy-decision.json',
+  'tool-availability-ledger.json',
+  'tool-availability-ledger.md',
+  'commands-ledger.json',
+  'commands-ledger.md',
   'original-prompt.md',
   'user-prompt.md',
   'codex-prompt.md',
@@ -72,6 +84,16 @@ async function compilePromptPackageWithoutTelemetry(
   const acceptancePlan = createAcceptancePlan({ prompt: options.prompt, route: bmadRoute });
   const selectedCapabilities = selectCapabilities({ graphContext, documentationPlan });
   const validationReport = await validateContextOrchestrator({ cwd: options.cwd });
+  const ledgerBundle = await buildLedgerBundle({
+    cwd: options.cwd,
+    timestamp,
+    graphContext,
+    documentationPlan,
+    bmadRoute,
+    acceptancePlan,
+    selectedCapabilities,
+    validationReport,
+  });
   const intent = inferIntent(options.prompt);
   const securityConstraints = [
     'Do not read target repo .env files.',
@@ -117,6 +139,7 @@ async function compilePromptPackageWithoutTelemetry(
       redactedPrompt,
     ],
     validationReport,
+    ledgerBundle,
   };
 
   const files = Object.fromEntries(archiveFiles.map(file => [file, join(archivePath, file)]));
@@ -198,6 +221,15 @@ function renderCodexPrompt(prompt: string, steps: string[]): string {
     '',
     steps.map(step => `- ${step}`).join('\n'),
     '',
+    'Ledger requirements:',
+    '',
+    '- Read `tool-availability-ledger.json` and `commands-ledger.json` before implementation.',
+    '- Use ledger statuses to select validation gates.',
+    '- Avoid commands marked `forbidden`.',
+    '- Ask for approval or avoid commands marked approval-required.',
+    '- Treat `blocked`, `partial`, and `unknown` rows as confidence constraints.',
+    '- Cite ledger evidence when explaining implementation and validation choices.',
+    '',
     'Original request:',
     '',
     prompt,
@@ -228,6 +260,26 @@ async function writeArchiveFiles(
     const denyCodes = policyDecision.codes.deny.join(', ') || 'unknown';
     throw new Error(`ACO prompt-package policy denied archive admission: ${denyCodes}`);
   }
+  await writeFileNoFollow(
+    archivePath,
+    files['tool-availability-ledger.json'],
+    `${JSON.stringify(serializeToolAvailabilityLedger(promptPackage.ledgerBundle), null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['tool-availability-ledger.md'],
+    `${renderToolAvailabilityLedgerMarkdown(promptPackage.ledgerBundle.toolAvailability)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['commands-ledger.json'],
+    `${JSON.stringify(serializeCommandsLedger(promptPackage.ledgerBundle), null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['commands-ledger.md'],
+    `${renderCommandsLedgerMarkdown(promptPackage.ledgerBundle.commands)}\n`
+  );
   await writeFileNoFollow(
     archivePath,
     files['original-prompt.md'],
@@ -298,6 +350,14 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     bmadRoute: promptPackage.bmadRoute.id,
     acceptanceStatus: promptPackage.acceptancePlan.status,
     validationStatus: promptPackage.validationReport.status,
+    ledgerSchemaVersion: promptPackage.ledgerBundle.schemaVersion,
+    ledgerSummary: promptPackage.ledgerBundle.summary,
+    ledgerArtifacts: [
+      'tool-availability-ledger.json',
+      'tool-availability-ledger.md',
+      'commands-ledger.json',
+      'commands-ledger.md',
+    ],
     nextArchonCommand: promptPackage.nextArchonCommand,
   };
 }
@@ -330,6 +390,10 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
         cavemanPolicy: promptPackage.cavemanPolicy,
         redaction: 'applied',
       },
+      ledgers: serializeLedgerBundle(promptPackage.ledgerBundle) as unknown as Record<
+        string,
+        unknown
+      >,
     },
     validation: promptPackage.validationReport as unknown as Record<string, unknown>,
   };
@@ -377,6 +441,26 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
       .map(scenario => `- ${scenario.id}: ${scenario.then}`)
       .join('\n'),
     '',
+    '## Ledger Artifacts',
+    '',
+    '- tool-availability-ledger.json',
+    '- tool-availability-ledger.md',
+    '- commands-ledger.json',
+    '- commands-ledger.md',
+    '',
+    '## Ledger Guidance',
+    '',
+    '- Read ledger JSON before implementing; Markdown is a derived human view.',
+    '- Use ledger statuses to select validation gates.',
+    '- Avoid commands marked `forbidden`.',
+    '- Ask for approval or avoid commands marked approval-required.',
+    '- Treat `blocked`, `partial`, and `unknown` as confidence constraints.',
+    '- Cite ledger evidence when explaining implementation and validation choices.',
+    '',
+    '## Ledger Summary',
+    '',
+    renderLedgerSummary(promptPackage),
+    '',
     '## Unknowns',
     '',
     promptPackage.unknowns.length > 0
@@ -386,6 +470,14 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     '## Codex Prompt',
     '',
     promptPackage.codexPrompt,
+  ].join('\n');
+}
+
+function renderLedgerSummary(promptPackage: PromptPackage): string {
+  const summary = promptPackage.ledgerBundle.summary.combined;
+  return [
+    `Total rows: ${summary.total}`,
+    ...Object.entries(summary.counts).map(([status, count]) => `- ${status}: ${count}`),
   ].join('\n');
 }
 

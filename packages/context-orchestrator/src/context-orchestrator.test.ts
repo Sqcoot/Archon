@@ -34,7 +34,7 @@ describe('context orchestrator core', () => {
     expect(isPathInside('/tmp/aco-root', '/tmp/not-aco-root/package')).toBe(false);
   });
 
-  test('ACO-POLICY-DECISION-001 compiles a deterministic redacted archive', async () => {
+  test('ACO-POLICY-DECISION-001 AC-LEDGER-004 AC-LEDGER-008 compiles a deterministic redacted archive', async () => {
     const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-core-'));
     const result = await compilePromptPackage({
       cwd: process.cwd(),
@@ -60,6 +60,13 @@ describe('context orchestrator core', () => {
     expect(result.files['manifest.json']).toContain('manifest.json');
     expect(result.files['prompt-package.json']).toContain('prompt-package.json');
     expect(result.files['policy-decision.json']).toContain('policy-decision.json');
+    expect(result.files['tool-availability-ledger.json']).toContain(
+      'tool-availability-ledger.json'
+    );
+    expect(result.files['tool-availability-ledger.md']).toContain('tool-availability-ledger.md');
+    expect(result.files['commands-ledger.json']).toContain('commands-ledger.json');
+    expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
+    expect(Object.keys(result.files)).toHaveLength(21);
 
     const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
       schema_version: string;
@@ -71,6 +78,7 @@ describe('context orchestrator core', () => {
         bmad?: unknown;
         acceptance?: unknown;
         security?: unknown;
+        ledgers?: { schemaVersion?: string; toolAvailability?: unknown[]; commands?: unknown[] };
       };
     };
     expect(policyInput.schema_version).toBe('aco.prompt-package.policy-input.v1');
@@ -80,9 +88,51 @@ describe('context orchestrator core', () => {
     expect(policyInput.evidence.bmad).toBeDefined();
     expect(policyInput.evidence.acceptance).toBeDefined();
     expect(policyInput.evidence.security).toBeDefined();
+    expect(policyInput.evidence.ledgers?.schemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(policyInput.evidence.ledgers?.toolAvailability?.length).toBeGreaterThan(0);
+    expect(policyInput.evidence.ledgers?.commands?.length).toBeGreaterThan(0);
     expect(policyInput.artifacts.map(artifact => artifact.path)).not.toContain(
       'policy-decision.json'
     );
+    expect(policyInput.artifacts.map(artifact => artifact.path)).toContain(
+      'tool-availability-ledger.json'
+    );
+    expect(policyInput.artifacts.map(artifact => artifact.path)).toContain('commands-ledger.json');
+
+    const manifest = JSON.parse(await readFile(result.files['manifest.json'], 'utf8')) as {
+      ledgerSchemaVersion?: string;
+      ledgerArtifacts?: string[];
+      ledgerSummary?: unknown;
+    };
+    expect(manifest.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(manifest.ledgerArtifacts).toEqual([
+      'tool-availability-ledger.json',
+      'tool-availability-ledger.md',
+      'commands-ledger.json',
+      'commands-ledger.md',
+    ]);
+    expect(manifest.ledgerSummary).toBeDefined();
+
+    const toolLedger = JSON.parse(
+      await readFile(result.files['tool-availability-ledger.json'], 'utf8')
+    ) as { schemaVersion?: string; toolAvailability?: unknown[] };
+    const commandLedger = JSON.parse(
+      await readFile(result.files['commands-ledger.json'], 'utf8')
+    ) as {
+      schemaVersion?: string;
+      commands?: unknown[];
+    };
+    expect(toolLedger.schemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(commandLedger.schemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(toolLedger.toolAvailability?.length).toBeGreaterThan(0);
+    expect(commandLedger.commands?.length).toBeGreaterThan(0);
+
+    const finalPackage = await readFile(result.files['final-prompt-package.md'], 'utf8');
+    const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
+    expect(finalPackage).toContain('## Ledger Guidance');
+    expect(finalPackage).toContain('tool-availability-ledger.json');
+    expect(codexPrompt).toContain('Ledger requirements');
+    expect(codexPrompt).toContain('Avoid commands marked `forbidden`');
 
     const policyDecision = JSON.parse(
       await readFile(result.files['policy-decision.json'], 'utf8')

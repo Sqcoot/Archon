@@ -12,11 +12,13 @@ Use this guide when you believe a proof of concept already uses the right techno
 
 This is a brownfield stabilization review. It starts by proving what tools and commands are available, what evidence they produce, what is blocked, and what should not be run without approval.
 
+ACO also supports these ledgers as first-class code-level artifacts. `archon context ledgers` renders the current Tool Availability and Commands ledgers without writing an archive. `archon context compile` embeds the same ledger bundle into prompt-package evidence and exports JSON plus Markdown ledger artifacts.
+
 ---
 
 ## Scope
 
-The ledgers are a POC discovery snapshot. They are not a canonical capability registry, a product roadmap, or proof that the POC is ready.
+The ledgers are a discovery snapshot. They are not a canonical capability registry, a product roadmap, or proof that the POC is ready. JSON output is the source of truth; Markdown tables are derived human-readable views.
 
 Use them to:
 
@@ -52,6 +54,8 @@ Use these exact lowercase values in both ledgers:
 `Last Verified` must be an ISO date such as `2026-05-18`, or `unknown` when it was not checked during the review.
 
 Every ledger row must cite a source: a file path, command output, tool result, or explicit `unknown`.
+
+Generated ledgers use schema version `aco.ledger-bundle.v1`. Missing evidence remains `unknown` unless concrete partial or blocked evidence exists. Command safety classifications are advisory; they do not execute commands or grant permission.
 
 ---
 
@@ -89,6 +93,7 @@ If you are solidifying an existing POC, start with evidence rather than feature 
 git status --short --untracked-files=all
 archon context route --cwd . "<POC solidification task>"
 archon context status --cwd .
+archon context ledgers --cwd . --json
 ```
 
 Then fill the Tool Availability Ledger and Commands Ledger. Run validation gates only after you know their prerequisites and mutation risk.
@@ -102,6 +107,13 @@ Use BMAD review commands when you need critique:
 ```
 
 Commands that write files or artifacts require explicit approval in a read-only stabilization review. Examples include `archon context compile`, `bun run research:graph`, `bun run aco:research`, `bun run format`, `bun run lint:fix`, code generation, migrations, commits, pushes, and PR creation.
+
+When you compile a prompt package, expect these ledger artifacts in the archive:
+
+- `tool-availability-ledger.json`
+- `tool-availability-ledger.md`
+- `commands-ledger.json`
+- `commands-ledger.md`
 
 ---
 

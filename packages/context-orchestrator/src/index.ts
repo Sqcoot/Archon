@@ -2,6 +2,18 @@ export { createAcceptancePlan } from './acceptance';
 export { routeBmad } from './bmad';
 export { applyCavemanPolicy } from './caveman';
 export { compilePromptPackage } from './compiler';
+export {
+  buildLedgerBundle,
+  LEDGER_SCHEMA_VERSION,
+  ledgerStatusOrder,
+  normalizeLedgerBundle,
+  renderCommandsLedgerMarkdown,
+  renderLedgerBundleMarkdown,
+  renderToolAvailabilityLedgerMarkdown,
+  serializeCommandsLedger,
+  serializeLedgerBundle,
+  serializeToolAvailabilityLedger,
+} from './ledgers';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
 export {
@@ -22,7 +34,7 @@ export {
   validateSafeRunId,
   writeFileNoFollow,
 } from './security';
-export { getContextOrchestratorStatus } from './status';
+export { getContextOrchestratorLedgers, getContextOrchestratorStatus } from './status';
 export { validateContextOrchestrator } from './validation';
 export type {
   AcceptancePlan,
@@ -38,12 +50,23 @@ export type {
   GraphContext,
   GraphRepositoryStatus,
   GraphStatus,
+  CommandLedgerEntry,
+  CommandSafety,
   McpReadinessState,
   PromptPackage,
   ArchivedPolicyDecision,
+  LedgerBundle,
+  LedgerBundleSummary,
+  LedgerConfidence,
+  LedgerEntryBase,
+  LedgerEvidence,
+  LedgerStatus,
+  LedgerStatusCounts,
+  LedgerSummary,
   PolicyDecision,
   PolicyFinding,
   PromptPackageResult,
+  ToolAvailabilityLedgerEntry,
   ValidationCheck,
   ValidationReport,
 } from './types';

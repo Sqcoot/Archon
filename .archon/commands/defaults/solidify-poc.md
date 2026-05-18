@@ -38,6 +38,7 @@ Recommended starting commands:
 git status --short --untracked-files=all
 archon context route --cwd . "$ARGUMENTS"
 archon context status --cwd .
+archon context ledgers --cwd . --json
 ```
 
 If `archon` is unavailable, mark Archon ACO as `blocked` and record the fallback.
@@ -46,7 +47,9 @@ that as a confidence limit instead of treating the review as green.
 
 ## Tool Availability Ledger
 
-Create this table before making hardening recommendations:
+Create this table before making hardening recommendations. Prefer the
+code-level ACO ledger bundle from `archon context ledgers --cwd . --json` when
+available; otherwise create the table manually.
 
 | Tool / Capability | Source | Invocation Path | Scope | Status | Preconditions | Verification Check | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -67,7 +70,9 @@ explicit `unknown`.
 
 ## Commands Ledger
 
-Create this table before running validation gates:
+Create this table before running validation gates. Prefer the code-level ACO
+ledger bundle from `archon context ledgers --cwd . --json` when available;
+otherwise create the table manually.
 
 | Command | File / Location | Invocation | Purpose | Inputs | Outputs | Preconditions | Related Tool | Status | Validation Check | Failure Mode | Owner | Last Verified | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -83,6 +88,9 @@ approval-required in this read-only review. Examples include:
 - code generation
 - migrations
 - git staging and commits
+
+Command safety classifications are advisory evidence. They do not grant
+permission to run a command.
 
 ## Review Output
 
