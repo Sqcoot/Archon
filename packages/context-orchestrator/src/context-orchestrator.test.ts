@@ -82,6 +82,7 @@ describe('context orchestrator core', () => {
         acceptance?: unknown;
         security?: unknown;
         ledgers?: { schemaVersion?: string; toolAvailability?: unknown[]; commands?: unknown[] };
+        nextDecision?: { schemaVersion?: string; kind?: string; evidenceBlockerIds?: string[] };
       };
     };
     expect(policyInput.schema_version).toBe('aco.prompt-package.policy-input.v1');
@@ -92,6 +93,8 @@ describe('context orchestrator core', () => {
     expect(policyInput.evidence.acceptance).toBeDefined();
     expect(policyInput.evidence.security).toBeDefined();
     expect(policyInput.evidence.ledgers?.schemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(policyInput.evidence.nextDecision?.schemaVersion).toBe('aco.next-decision.v1');
+    expectCurrentCompileNextDecisionKind(policyInput.evidence.nextDecision);
     expect(policyInput.evidence.ledgers?.toolAvailability?.length).toBeGreaterThan(0);
     expect(policyInput.evidence.ledgers?.commands?.length).toBeGreaterThan(0);
     expect(policyInput.artifacts.map(artifact => artifact.path)).not.toContain(
@@ -107,6 +110,7 @@ describe('context orchestrator core', () => {
       ledgerArtifacts?: string[];
       decisionDossierSchemaVersion?: string;
       decisionDossierArtifacts?: string[];
+      nextDecision?: { schemaVersion?: string; kind?: string; evidenceBlockerIds?: string[] };
       ledgerSummary?: unknown;
     };
     expect(manifest.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
@@ -121,6 +125,8 @@ describe('context orchestrator core', () => {
       'decision-dossier.json',
       'decision-dossier.md',
     ]);
+    expect(manifest.nextDecision?.schemaVersion).toBe('aco.next-decision.v1');
+    expectCurrentCompileNextDecisionKind(manifest.nextDecision);
     expect(manifest.ledgerSummary).toBeDefined();
 
     const toolLedger = JSON.parse(
@@ -141,16 +147,23 @@ describe('context orchestrator core', () => {
     const codexPrompt = await readFile(result.files['codex-prompt.md'], 'utf8');
     const decisionDossier = JSON.parse(
       await readFile(result.files['decision-dossier.json'], 'utf8')
-    ) as { schemaVersion?: string; nextGoalObjective?: string; approvalRequired?: boolean };
+    ) as {
+      schemaVersion?: string;
+      nextGoalObjective?: string;
+      approvalRequired?: boolean;
+      nextDecision?: { kind?: string; evidenceBlockerIds?: string[] };
+    };
     const decisionDossierMarkdown = await readFile(result.files['decision-dossier.md'], 'utf8');
     const goalCommand = `/goal ${decisionDossier.nextGoalObjective ?? ''}`;
     expect(decisionDossier.schemaVersion).toBe('aco.decision-dossier.v1');
     expect(typeof decisionDossier.nextGoalObjective).toBe('string');
     expect(decisionDossier.approvalRequired).toBe(true);
+    expectCurrentCompileNextDecisionKind(decisionDossier.nextDecision);
     expect(decisionDossierMarkdown).toContain('# ACO Decision Dossier');
     expect(finalPackage).toContain('## Ledger Guidance');
     expect(finalPackage).toContain('tool-availability-ledger.json');
     expect(finalPackage).toContain('## Decision Dossier');
+    expect(finalPackage).toContain('## Next Decision');
     expect(finalPackage).toContain('decision-dossier.json');
     expect(codexPrompt).toContain('Ledger requirements');
     expect(codexPrompt).toContain('Avoid commands marked `forbidden`');
@@ -620,3 +633,14 @@ describe('context orchestrator core', () => {
     await rm(policyDir, { recursive: true, force: true });
   });
 });
+
+function expectCurrentCompileNextDecisionKind(
+  nextDecision: { kind?: string; evidenceBlockerIds?: string[] } | undefined
+): void {
+  expect(nextDecision).toBeDefined();
+  if ((nextDecision?.evidenceBlockerIds ?? []).length > 0) {
+    expect(nextDecision?.kind).toBe('blocked_by_evidence');
+    return;
+  }
+  expect(nextDecision?.kind).toBe('approval_required');
+}

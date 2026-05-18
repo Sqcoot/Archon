@@ -1097,6 +1097,126 @@
         }
       ],
       "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.ts",
+          "markers": ["approval_required", "willRun: false"],
+          "summary": "Next decision builder maps current waived graph evidence to approval_required with inert actions."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.test.ts",
+          "markers": ["blocked_by_validation", "approval_required"],
+          "summary": "Branch precedence tests verify failed validation wins over graph approval."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.ts",
+          "markers": ["blocked_by_evidence", "evidenceBlockerIds"],
+          "summary": "Next decision builder reports non-graph evidence blockers with sorted IDs."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.ts",
+          "markers": ["blocked_by_graph", "hasValidGraphApproval"],
+          "summary": "Graph-forbidden states without valid explicit waivers become blocked_by_graph."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/status.ts",
+          "markers": ["nextDecision", "buildNextDecision"],
+          "summary": "Status computes the canonical next decision object for downstream surfaces."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/routes/AcoStatusPage.tsx",
+          "markers": ["NextDecisionPanel", "status.nextDecision"],
+          "summary": "Web renders the API next decision without recomputing priority locally."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.test.ts",
+          "markers": ["same input", "does not mutate input"],
+          "summary": "Purity tests verify deterministic output and no input mutation."
+        }
+      ],
+      "status": "enforced"
     }
   ]
 }

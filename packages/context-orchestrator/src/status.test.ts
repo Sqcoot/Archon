@@ -50,6 +50,15 @@ describe('context orchestrator status confidence', () => {
     expect(status.ledgerSchemaVersion).toBe(compiled.package.ledgerBundle.schemaVersion);
     expect(status.ledgerSummary).toEqual(ledgers.summary);
     expect(status.ledgerSummary).toEqual(compiled.package.ledgerBundle.summary);
+    expect(status.nextDecision).toEqual(compiled.package.nextDecision);
+    if (status.evidenceBlockers.length > 0) {
+      expect(status.nextDecision.kind).toBe('blocked_by_evidence');
+      expect(status.nextDecision.evidenceBlockerIds).toEqual(
+        status.evidenceBlockers.map(blocker => blocker.id).sort()
+      );
+    } else {
+      expect(status.nextDecision.kind).toBe('approval_required');
+    }
   });
 
   test('AC-ACO-BLOCKER-001 status and compile expose matching evidence resolution', async () => {
@@ -67,6 +76,7 @@ describe('context orchestrator status confidence', () => {
 
     expect(status.evidenceResolution.required).toBe(true);
     expect(compiled.package.evidenceResolution).toEqual(status.evidenceResolution);
+    expect(compiled.package.nextDecision).toEqual(status.nextDecision);
     expect(
       status.evidenceResolution.items.some(
         item => item.evidenceId === 'tool.docs-evidence' && item.targetName === 'Hono'

@@ -7,6 +7,45 @@ import {
   getAcoReadinessLabel,
 } from './aco-readiness';
 
+const baseLedgerSummary: AcoStatusResponse['ledgerSummary'] = {
+  toolAvailability: {
+    total: 20,
+    counts: {
+      available: 17,
+      partial: 1,
+      blocked: 0,
+      deferred: 0,
+      forbidden: 2,
+      'not used': 0,
+      unknown: 0,
+    },
+  },
+  commands: {
+    total: 19,
+    counts: {
+      available: 9,
+      partial: 1,
+      blocked: 0,
+      deferred: 3,
+      forbidden: 6,
+      'not used': 0,
+      unknown: 0,
+    },
+  },
+  combined: {
+    total: 39,
+    counts: {
+      available: 26,
+      partial: 2,
+      blocked: 0,
+      deferred: 3,
+      forbidden: 8,
+      'not used': 0,
+      unknown: 0,
+    },
+  },
+};
+
 const baseStatus: AcoStatusResponse = {
   cwd: '/repo',
   contextIntent: {
@@ -43,43 +82,35 @@ const baseStatus: AcoStatusResponse = {
       },
     ],
   },
-  ledgerSummary: {
-    toolAvailability: {
-      total: 20,
-      counts: {
-        available: 17,
-        partial: 1,
-        blocked: 0,
-        deferred: 0,
-        forbidden: 2,
-        'not used': 0,
-        unknown: 0,
-      },
+  ledgerSummary: baseLedgerSummary,
+  nextDecision: {
+    schemaVersion: 'aco.next-decision.v1',
+    kind: 'approval_required',
+    title: 'Approval required',
+    summary: 'Implementation needs explicit graph waiver approval.',
+    primaryAction: {
+      id: 'next.approve-current-graph-waivers',
+      kind: 'approval',
+      label: 'Approve preserving current graph waivers',
+      requiresApproval: true,
+      willRun: false,
+      successEvidence: ['User approves preserving listed graph waivers.'],
     },
-    commands: {
-      total: 19,
-      counts: {
-        available: 9,
-        partial: 1,
-        blocked: 0,
-        deferred: 3,
-        forbidden: 6,
-        'not used': 0,
-        unknown: 0,
-      },
+    secondaryActions: [],
+    decisionFactors: [],
+    evidenceSummary: {
+      readiness: 'needs_approval',
+      validationStatus: 'passed',
+      graphStatus: 'forbidden',
+      graphWaivers: 2,
+      evidenceBlockers: 0,
+      evidenceResolutionRequired: true,
+      ledgerSummary: baseLedgerSummary,
     },
-    combined: {
-      total: 39,
-      counts: {
-        available: 26,
-        partial: 2,
-        blocked: 0,
-        deferred: 3,
-        forbidden: 8,
-        'not used': 0,
-        unknown: 0,
-      },
-    },
+    waiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+    evidenceBlockerIds: [],
+    evidenceResolutionIds: ['graph-waiver.bmad-plugins-marketplace'],
+    nextPrompt: 'Request explicit approval before implementation.',
   },
 };
 

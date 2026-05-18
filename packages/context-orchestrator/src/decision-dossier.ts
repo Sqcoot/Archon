@@ -6,6 +6,7 @@ import { planDocumentation } from './docs';
 import { getGraphContext } from './graph';
 import { createContextIntent } from './intent';
 import { buildLedgerBundle, ledgerStatusOrder } from './ledgers';
+import { buildNextDecision } from './next-decision';
 import { redactSecrets } from './security';
 import { getContextOrchestratorReadiness } from './status';
 import { validateContextOrchestrator } from './validation';
@@ -26,6 +27,7 @@ import type {
   GraphContext,
   LedgerBundle,
   LedgerStatus,
+  NextDecision,
   ToolAvailabilityLedgerEntry,
   ValidationReport,
 } from './types';
@@ -45,6 +47,7 @@ export interface CreateDecisionDossierOptions {
   validationReport?: ValidationReport;
   ledgerBundle?: LedgerBundle;
   evidenceResolution?: EvidenceClosurePlan;
+  nextDecision?: NextDecision;
 }
 
 const nonGreenLedgerStatuses = new Set<LedgerStatus>([
@@ -107,6 +110,18 @@ export async function createDecisionDossier(
       validationReport,
       ledgerBundle,
     });
+  const nextDecision =
+    options.nextDecision ??
+    buildNextDecision({
+      contextIntent,
+      route: bmadRoute,
+      readiness,
+      validationReport,
+      graphContext,
+      ledgerSummary: ledgerBundle.summary,
+      evidenceBlockers: ledgerBundle.evidenceBlockers,
+      evidenceResolution,
+    });
   const approvalRequired = readiness === 'needs_approval';
   const approvalCommands = buildApprovalCommands(graphContext);
   const blockedItems = buildBlockedItems(graphContext, validationReport, ledgerBundle);
@@ -150,6 +165,7 @@ export async function createDecisionDossier(
     ledgerSummary: ledgerBundle.summary,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution,
+    nextDecision,
     blockedItems,
     approvalRequired,
     approvalCommands,
@@ -212,6 +228,10 @@ export function renderDecisionDossierMarkdown(dossier: DecisionDossier): string 
     '## Evidence Resolution',
     '',
     ...renderEvidenceResolution(dossier.evidenceResolution),
+    '',
+    '## Next Decision',
+    '',
+    ...renderNextDecision(dossier.nextDecision),
     '',
     '## Approval Commands',
     '',
@@ -579,6 +599,18 @@ function renderEvidenceResolution(plan: EvidenceClosurePlan): string[] {
   return plan.items.map(
     item => `- ${item.evidenceId} (${item.targetKind}, ${item.resolver}): ${item.nextAction}`
   );
+}
+
+function renderNextDecision(nextDecision: NextDecision): string[] {
+  return [
+    `- Schema: ${nextDecision.schemaVersion}`,
+    `- Kind: ${nextDecision.kind}`,
+    `- Title: ${nextDecision.title}`,
+    `- Summary: ${nextDecision.summary}`,
+    `- Primary action: ${nextDecision.primaryAction.label} (${nextDecision.primaryAction.kind}, willRun=false, approval=${nextDecision.primaryAction.requiresApproval ? 'yes' : 'no'})`,
+    `- Waivers: ${nextDecision.waiverIds.length > 0 ? nextDecision.waiverIds.join(', ') : 'none'}`,
+    `- Evidence blockers: ${nextDecision.evidenceBlockerIds.length > 0 ? nextDecision.evidenceBlockerIds.join(', ') : 'none'}`,
+  ];
 }
 
 function renderApprovalCommands(commands: DecisionDossierApprovalCommand[]): string[] {

@@ -142,6 +142,7 @@ export async function createApprovalCapsule(
     activeWaiverIds,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution: decisionDossier.evidenceResolution,
+    nextDecision: decisionDossier.nextDecision,
     ledgerRefs: buildApprovalLedgerRefs(ledgerBundle),
     approvalCommands: buildApprovalCommands(decisionDossier),
     decisionScope: buildDecisionScope(runId, activeWaiverIds),
@@ -181,6 +182,10 @@ export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string 
     '## Evidence Resolution',
     '',
     ...renderEvidenceResolution(capsule.evidenceResolution),
+    '',
+    '## Next Decision',
+    '',
+    ...renderNextDecision(capsule.nextDecision),
     '',
     '## Approval Commands',
     '',
@@ -378,6 +383,16 @@ function renderEvidenceResolution(
     item =>
       `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval ? 'yes' : 'no'}; next=${item.nextAction}`
   );
+}
+
+function renderNextDecision(nextDecision: ApprovalCapsule['nextDecision']): string[] {
+  return [
+    `- Schema: ${nextDecision.schemaVersion}`,
+    `- Kind: ${nextDecision.kind}`,
+    `- Title: ${nextDecision.title}`,
+    `- Summary: ${nextDecision.summary}`,
+    `- Primary action: ${nextDecision.primaryAction.label} (${nextDecision.primaryAction.kind}, willRun=false, approval=${nextDecision.primaryAction.requiresApproval ? 'yes' : 'no'})`,
+  ];
 }
 
 function renderLedgerRefs(refs: ApprovalCapsuleLedgerRef[]): string[] {

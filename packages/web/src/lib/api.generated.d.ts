@@ -2344,6 +2344,57 @@ export interface components {
       required: boolean;
       items: components['schemas']['AcoEvidenceResolutionItem'][];
     };
+    AcoNextDecisionAction: {
+      id: string;
+      /** @enum {string} */
+      kind: 'approval' | 'manual' | 'validation' | 'correct_course' | 'implementation';
+      label: string;
+      command?: string[];
+      payload?: {
+        [key: string]: unknown;
+      };
+      requiresApproval: boolean;
+      willRun: false;
+      successEvidence: string[];
+    };
+    AcoNextDecisionFactor: {
+      id: string;
+      status: string;
+      source: string;
+      summary: string;
+    };
+    AcoNextDecisionEvidenceSummary: {
+      readiness: components['schemas']['AcoReadiness'];
+      /** @enum {string} */
+      validationStatus: 'passed' | 'warning' | 'failed';
+      /** @enum {string} */
+      graphStatus: 'available' | 'partial' | 'forbidden' | 'unavailable';
+      graphWaivers: number;
+      evidenceBlockers: number;
+      evidenceResolutionRequired: boolean;
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoNextDecision: {
+      schemaVersion: 'aco.next-decision.v1';
+      /** @enum {string} */
+      kind:
+        | 'blocked_by_validation'
+        | 'blocked_by_evidence'
+        | 'blocked_by_graph'
+        | 'approval_required'
+        | 'needs_correct_course'
+        | 'ready_for_implementation';
+      title: string;
+      summary: string;
+      primaryAction: components['schemas']['AcoNextDecisionAction'];
+      secondaryActions: components['schemas']['AcoNextDecisionAction'][];
+      decisionFactors: components['schemas']['AcoNextDecisionFactor'][];
+      evidenceSummary: components['schemas']['AcoNextDecisionEvidenceSummary'];
+      waiverIds: string[];
+      evidenceBlockerIds: string[];
+      evidenceResolutionIds: string[];
+      nextPrompt: string;
+    };
     AcoStatusResponse: {
       cwd: string;
       contextIntent: components['schemas']['AcoContextIntent'];
@@ -2358,6 +2409,7 @@ export interface components {
       ledgerSummary: components['schemas']['AcoLedgerSummary'];
       evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
       evidenceResolution: components['schemas']['AcoEvidenceResolution'];
+      nextDecision: components['schemas']['AcoNextDecision'];
     };
     Error: {
       error: string;
@@ -2410,6 +2462,7 @@ export interface components {
       ledgerSummary: components['schemas']['AcoLedgerSummary'];
       evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
       evidenceResolution: components['schemas']['AcoEvidenceResolution'];
+      nextDecision: components['schemas']['AcoNextDecision'];
     };
     AcoCompileRequest: {
       cwd: string;

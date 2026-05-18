@@ -182,6 +182,7 @@ async function compilePromptPackageWithoutTelemetry(
     validationReport,
     ledgerBundle,
     evidenceResolution,
+    nextDecision: decisionDossier.nextDecision,
     decisionDossier,
   };
 
@@ -290,6 +291,7 @@ function renderCodexPrompt(
     '',
     '- Read `decision-dossier.json` before implementation.',
     '- Use `nextPlanPrompt` as the current handoff source.',
+    '- Use `nextDecision` as the current next-action source.',
     '- Preserve active graph waivers and approval-required state exactly.',
     '- Do not run approval commands unless the user explicitly approves them.',
     '',
@@ -441,6 +443,7 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     ledgerSchemaVersion: promptPackage.ledgerBundle.schemaVersion,
     ledgerSummary: promptPackage.ledgerBundle.summary,
     evidenceResolution: promptPackage.evidenceResolution,
+    nextDecision: promptPackage.nextDecision,
     ledgerArtifacts: [
       'tool-availability-ledger.json',
       'tool-availability-ledger.md',
@@ -467,6 +470,7 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
       specs: [
         'docs/context-orchestrator/specs/008-prompt-package-spec.md',
         'docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md',
+        'docs/context-orchestrator/specs/026-next-decision-engine-spec.md',
         'docs/context-orchestrator/specs/021-opa-prompt-package-policy-spec.md',
       ],
       upstreamManifest: 'docs/context-orchestrator/research/upstream-manifest.json',
@@ -476,6 +480,7 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
       graph: promptPackage.graphContext as unknown as Record<string, unknown>,
       docs: promptPackage.documentationPlan as unknown as Record<string, unknown>,
       evidenceResolution: promptPackage.evidenceResolution as unknown as Record<string, unknown>,
+      nextDecision: promptPackage.nextDecision as unknown as Record<string, unknown>,
       bmad: promptPackage.bmadRoute as unknown as Record<string, unknown>,
       acceptance: promptPackage.acceptancePlan as unknown as Record<string, unknown>,
       security: {
@@ -554,6 +559,13 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     `Approval required: ${promptPackage.decisionDossier.approvalRequired ? 'yes' : 'no'}`,
     `Evidence blockers: ${promptPackage.ledgerBundle.evidenceBlockers.length}`,
     `Evidence resolution required: ${promptPackage.evidenceResolution.required ? 'yes' : 'no'}`,
+    '',
+    '## Next Decision',
+    '',
+    `Kind: ${promptPackage.nextDecision.kind}`,
+    `Title: ${promptPackage.nextDecision.title}`,
+    `Primary action: ${promptPackage.nextDecision.primaryAction.label}`,
+    `Will run: ${promptPackage.nextDecision.primaryAction.willRun ? 'yes' : 'no'}`,
     '',
     '## Evidence Resolution',
     '',

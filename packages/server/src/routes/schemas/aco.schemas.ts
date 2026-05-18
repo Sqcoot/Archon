@@ -87,6 +87,64 @@ const acoEvidenceResolutionSchema = z
   })
   .openapi('AcoEvidenceResolution');
 
+const acoNextDecisionActionSchema = z
+  .object({
+    id: z.string(),
+    kind: z.enum(['approval', 'manual', 'validation', 'correct_course', 'implementation']),
+    label: z.string(),
+    command: z.array(z.string()).optional(),
+    payload: z.record(z.unknown()).optional(),
+    requiresApproval: z.boolean(),
+    willRun: z.literal(false),
+    successEvidence: z.array(z.string()),
+  })
+  .openapi('AcoNextDecisionAction');
+
+const acoNextDecisionFactorSchema = z
+  .object({
+    id: z.string(),
+    status: z.string(),
+    source: z.string(),
+    summary: z.string(),
+  })
+  .openapi('AcoNextDecisionFactor');
+
+const acoNextDecisionEvidenceSummarySchema = z
+  .object({
+    readiness: acoReadinessSchema,
+    validationStatus: z.enum(['passed', 'warning', 'failed']),
+    graphStatus: z.enum(['available', 'partial', 'forbidden', 'unavailable']),
+    graphWaivers: z.number(),
+    evidenceBlockers: z.number(),
+    evidenceResolutionRequired: z.boolean(),
+    ledgerSummary: acoLedgerSummarySchema,
+  })
+  .openapi('AcoNextDecisionEvidenceSummary');
+
+const acoNextDecisionSchema = z
+  .object({
+    schemaVersion: z.literal('aco.next-decision.v1'),
+    kind: z.enum([
+      'blocked_by_validation',
+      'blocked_by_evidence',
+      'blocked_by_graph',
+      'approval_required',
+      'needs_correct_course',
+      'ready_for_implementation',
+    ]),
+    title: z.string(),
+    summary: z.string(),
+    primaryAction: acoNextDecisionActionSchema,
+    secondaryActions: z.array(acoNextDecisionActionSchema),
+    decisionFactors: z.array(acoNextDecisionFactorSchema),
+    evidenceSummary: acoNextDecisionEvidenceSummarySchema,
+    waiverIds: z.array(z.string()),
+    evidenceBlockerIds: z.array(z.string()),
+    evidenceResolutionIds: z.array(z.string()),
+    nextPrompt: z.string(),
+  })
+  .openapi('AcoNextDecision');
+
 const acoRouteSchema = z
   .object({
     id: z.string(),
@@ -118,6 +176,7 @@ export const acoStatusResponseSchema = z
     ledgerSummary: acoLedgerSummarySchema,
     evidenceBlockers: z.array(acoEvidenceBlockerSchema),
     evidenceResolution: acoEvidenceResolutionSchema,
+    nextDecision: acoNextDecisionSchema,
   })
   .openapi('AcoStatusResponse');
 
@@ -177,6 +236,7 @@ export const acoCompileResponseSchema = z
     ledgerSummary: acoLedgerSummarySchema,
     evidenceBlockers: z.array(acoEvidenceBlockerSchema),
     evidenceResolution: acoEvidenceResolutionSchema,
+    nextDecision: acoNextDecisionSchema,
   })
   .openapi('AcoCompileResponse');
 

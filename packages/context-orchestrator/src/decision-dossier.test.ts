@@ -37,6 +37,8 @@ describe('decision dossier', () => {
     expect(dossier.evidenceResolution.items.map(item => item.evidenceId)).toContain(
       'graph-waiver.bmad-plugins-marketplace'
     );
+    expect(dossier.nextDecision.kind).toBe('approval_required');
+    expect(dossier.nextDecision.primaryAction.willRun).toBe(false);
     expect(dossier.waivers.map(waiver => waiver.id)).toEqual([
       'graph-waiver.bmad-plugins-marketplace',
       'graph-waiver.bmad-sample-data',
@@ -69,6 +71,8 @@ describe('decision dossier', () => {
     expect(markdown).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(markdown).toContain('willRun=false');
     expect(markdown).toContain('## Evidence Resolution');
+    expect(markdown).toContain('## Next Decision');
+    expect(markdown).toContain('Kind: approval_required');
   });
 });
 

@@ -15,6 +15,8 @@ import {
   getAcoReadinessLabel,
 } from '@/lib/aco-readiness';
 
+const supportedNextDecisionSchemaVersion = 'aco.next-decision.v1';
+
 // AC-ACO-STATUS-004: selectedProject.default_cwd is the only cwd sent to status, route, and compile APIs.
 // AC-ACO-STATUS-005: User-facing labels say Context Orchestrator and Needs approval.
 export function AcoStatusPage(): React.ReactElement {
@@ -101,6 +103,8 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
           </div>
         </CardContent>
       </Card>
+
+      <NextDecisionPanel status={status} />
 
       <Card>
         <CardHeader>
@@ -286,6 +290,7 @@ function CompileResult({
         <Metric label="route" value={result.route.label} />
         <Metric label="blockers" value={String(result.evidenceBlockers.length)} />
         <Metric label="closure actions" value={String(result.evidenceResolution.items.length)} />
+        <Metric label="next decision" value={formatNextDecisionKind(result.nextDecision)} />
         <Metric label="archive" value={result.archivePath} />
       </div>
       <a className="mt-3 inline-flex text-sm text-primary underline" href={packageUrl}>
@@ -293,6 +298,81 @@ function CompileResult({
       </a>
     </div>
   );
+}
+
+function NextDecisionPanel({ status }: { status: AcoStatusResponse }): React.ReactElement {
+  const decision = status.nextDecision;
+  if (!hasSupportedNextDecisionSchema(decision)) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Next Decision</CardTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Unsupported decision schema. Review ACO status manually before taking action.
+              </p>
+            </div>
+            <Badge variant="destructive">manual fallback</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="rounded-md border border-border bg-surface p-3">
+            <div className="text-sm font-medium text-text-primary">Review ACO status manually</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              manual · willRun=false · approval=no
+            </div>
+          </div>
+          <div className="grid gap-3 text-sm sm:grid-cols-3">
+            <Metric label="schema" value={decision.schemaVersion} />
+            <Metric label="waivers" value="unknown" />
+            <Metric label="blockers" value="unknown" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  const action = decision.primaryAction;
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle>Next Decision</CardTitle>
+            <p className="mt-2 text-sm text-muted-foreground">{decision.summary}</p>
+          </div>
+          <Badge variant={action.requiresApproval ? 'destructive' : 'secondary'}>
+            {decision.kind}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="rounded-md border border-border bg-surface p-3">
+          <div className="text-sm font-medium text-text-primary">{action.label}</div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {action.kind} · willRun={String(action.willRun)} · approval=
+            {action.requiresApproval ? 'yes' : 'no'}
+          </div>
+        </div>
+        <div className="grid gap-3 text-sm sm:grid-cols-3">
+          <Metric label="schema" value={decision.schemaVersion} />
+          <Metric label="waivers" value={String(decision.waiverIds.length)} />
+          <Metric label="blockers" value={String(decision.evidenceBlockerIds.length)} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function hasSupportedNextDecisionSchema(decision: AcoStatusResponse['nextDecision']): boolean {
+  return (
+    (decision as { schemaVersion?: string }).schemaVersion === supportedNextDecisionSchemaVersion
+  );
+}
+
+function formatNextDecisionKind(decision: AcoCompileResponse['nextDecision']): string {
+  if (!hasSupportedNextDecisionSchema(decision)) return 'manual fallback';
+  return decision.kind;
 }
 
 function InlineError({ message }: { message: string }): React.ReactElement {
