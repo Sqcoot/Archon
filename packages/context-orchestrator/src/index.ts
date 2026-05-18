@@ -17,6 +17,8 @@ export {
 export type { BuildLedgerBundleOptions, RepositoryStatusEvidence } from './ledgers';
 export { planDocumentation } from './docs';
 export { getGraphContext } from './graph';
+export { readArtifactPackageManifest } from './artifact-package';
+export type { ArtifactPackageLookup } from './artifact-package';
 export {
   createArchivedPolicyDecision,
   evaluatePromptPackagePolicy,
@@ -35,7 +37,11 @@ export {
   validateSafeRunId,
   writeFileNoFollow,
 } from './security';
-export { getContextOrchestratorLedgers, getContextOrchestratorStatus } from './status';
+export {
+  getContextOrchestratorLedgers,
+  getContextOrchestratorReadiness,
+  getContextOrchestratorStatus,
+} from './status';
 export type { ContextOrchestratorStatus } from './status';
 export { validateContextOrchestrator } from './validation';
 export type {
@@ -46,6 +52,7 @@ export type {
   CapabilityRoute,
   CavemanMode,
   CompilePromptPackageOptions,
+  ContextOrchestratorReadiness,
   DocumentationPlan,
   DocumentationTarget,
   DocumentationTargetStatus,

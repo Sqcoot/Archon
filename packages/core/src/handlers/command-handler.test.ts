@@ -29,6 +29,73 @@ const mockDeleteCodebase = mock(() => Promise.resolve());
 const mockListCodebases = mock(() => Promise.resolve([]));
 const mockGetActiveSession = mock(() => Promise.resolve(null));
 const mockDeactivateSession = mock(() => Promise.resolve());
+const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
+  cwd: '/workspace/my-repo',
+  graphStatus: 'forbidden',
+  graphWaivers: 2,
+  graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace'],
+  waivers: [],
+  approvalRequired: true,
+  readiness: 'needs_approval',
+  validationStatus: 'passed',
+  ledgerSchemaVersion: 'aco.ledger-bundle.v1',
+  ledgerSummary: {
+    toolAvailability: { total: 0, counts: zeroLedgerCounts() },
+    commands: { total: 0, counts: zeroLedgerCounts() },
+    combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
+  },
+}));
+const mockGetContextOrchestratorLedgers = mock(async (_cwd: string) => ({
+  schemaVersion: 'aco.ledger-bundle.v1',
+  toolAvailability: [],
+  commands: [],
+  summary: {
+    toolAvailability: { total: 0, counts: zeroLedgerCounts() },
+    commands: { total: 0, counts: zeroLedgerCounts() },
+    combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
+  },
+}));
+const mockRouteBmad = mock((_input: { prompt: string }) => ({
+  id: 'brownfield-architecture',
+  label: 'Brownfield Architecture',
+  steps: ['bmad-investigate', 'bmad-create-architecture'],
+  rationale: 'Architecture-sensitive request.',
+}));
+const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: string }) => ({
+  archivePath: '/workspace/my-repo/.archon/artifacts/context-orchestrator/run-1',
+  files: {
+    'manifest.json':
+      '/workspace/my-repo/.archon/artifacts/context-orchestrator/run-1/manifest.json',
+  },
+  package: {
+    runId: 'run-1',
+    graphContext: {
+      status: 'forbidden',
+      waiverCount: 2,
+      waivers: [],
+    },
+    validationReport: { status: 'passed' },
+    bmadRoute: mockRouteBmad({ prompt: 'compile' }),
+    ledgerBundle: {
+      schemaVersion: 'aco.ledger-bundle.v1',
+      summary: {
+        combined: { total: 1, counts: { ...zeroLedgerCounts(), forbidden: 1 } },
+      },
+    },
+  },
+}));
+
+function zeroLedgerCounts(): Record<string, number> {
+  return {
+    available: 0,
+    partial: 0,
+    blocked: 0,
+    deferred: 0,
+    forbidden: 0,
+    'not used': 0,
+    unknown: 0,
+  };
+}
 
 // Workflow database mocks
 const mockGetActiveWorkflowRun = mock(() => Promise.resolve(null));
@@ -80,6 +147,14 @@ mock.module('../db/codebases', () => ({
 mock.module('../db/sessions', () => ({
   getActiveSession: mockGetActiveSession,
   deactivateSession: mockDeactivateSession,
+}));
+
+mock.module('@archon/context-orchestrator', () => ({
+  getContextOrchestratorStatus: mockGetContextOrchestratorStatus,
+  getContextOrchestratorLedgers: mockGetContextOrchestratorLedgers,
+  routeBmad: mockRouteBmad,
+  compilePromptPackage: mockCompilePromptPackage,
+  getContextOrchestratorReadiness: () => 'needs_approval',
 }));
 
 mock.module('../db/workflows', () => ({
@@ -223,6 +298,10 @@ function clearAllMocks(): void {
   mockListCodebases.mockClear();
   mockGetActiveSession.mockClear();
   mockDeactivateSession.mockClear();
+  mockGetContextOrchestratorStatus.mockClear();
+  mockGetContextOrchestratorLedgers.mockClear();
+  mockRouteBmad.mockClear();
+  mockCompilePromptPackage.mockClear();
   // Workflow db mocks
   mockGetActiveWorkflowRun.mockClear();
   mockCancelWorkflowRun.mockClear();
@@ -1608,6 +1687,108 @@ describe('CommandHandler', () => {
 
         expect(result.success).toBe(false);
         expect(result.message).toContain('Workflow `test-workflow` not found');
+      });
+    });
+
+    describe('/context', () => {
+      const conversationWithCodebase: Conversation = {
+        ...baseConversation,
+        codebase_id: 'codebase-123',
+      };
+
+      beforeEach(() => {
+        mockGetCodebase.mockResolvedValue({
+          id: 'codebase-123',
+          name: 'test-repo',
+          repository_url: 'https://github.com/test/repo',
+          default_cwd: '/workspace/my-repo',
+          ai_assistant_type: 'claude',
+          commands: {},
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+      });
+
+      test('AC-P1-SLASH shows Context Orchestrator status', async () => {
+        const result = await handleCommand(conversationWithCodebase, '/context status');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Context Orchestrator Status');
+        expect(result.message).toContain('Readiness: Needs approval');
+        expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/workspace/my-repo');
+      });
+
+      test('AC-P1-SLASH routes a request', async () => {
+        const result = await handleCommand(
+          conversationWithCodebase,
+          '/context route "Implement native context loop"'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Context Orchestrator Route');
+        expect(result.message).toContain('bmad-investigate');
+        expect(mockRouteBmad).toHaveBeenCalledWith({ prompt: 'Implement native context loop' });
+      });
+
+      test('AC-P1-SLASH returns ledger coverage', async () => {
+        const result = await handleCommand(conversationWithCodebase, '/context ledgers');
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Context Orchestrator Ledgers');
+        expect(result.message).toContain('aco.ledger-bundle.v1');
+        expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/workspace/my-repo');
+      });
+
+      test('AC-P1-SLASH compiles a context package', async () => {
+        const result = await handleCommand(
+          conversationWithCodebase,
+          '/context compile "Implement native context loop"'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Context Package Created');
+        expect(result.message).toContain('run-1');
+        expect(mockCompilePromptPackage).toHaveBeenCalledWith({
+          cwd: '/workspace/my-repo',
+          prompt: 'Implement native context loop',
+        });
+      });
+
+      test('AC-P1-SLASH runs bundled context-orchestrate workflow', async () => {
+        spyDiscoverWorkflows.mockResolvedValueOnce({
+          workflows: [
+            makeTestWorkflowWithSource({
+              name: 'context-orchestrate',
+              description: 'Native Context Orchestrator loop',
+            }),
+          ],
+          errors: [],
+        });
+
+        const result = await handleCommand(
+          conversationWithCodebase,
+          '/context run "Implement native context loop"'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.workflow?.definition.name).toBe('context-orchestrate');
+        expect(result.workflow?.args).toBe('Implement native context loop');
+      });
+
+      test('AC-P1-SLASH unknown subcommand returns help', async () => {
+        const result = await handleCommand(conversationWithCodebase, '/context wat');
+
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('/context status');
+        expect(result.message).toContain('/context run <request>');
+      });
+
+      test('AC-P1-SLASH rejects missing project context', async () => {
+        const result = await handleCommand(baseConversation, '/context status');
+
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('No project configured');
+        expect(mockGetContextOrchestratorStatus).not.toHaveBeenCalled();
       });
     });
 

@@ -15,6 +15,9 @@ const fixtureStatus: ContextOrchestratorStatus = {
   graphStatus: 'forbidden',
   graphWaivers: 2,
   graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+  waivers: [],
+  approvalRequired: true,
+  readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
   ledgerSummary: {
     toolAvailability: {
@@ -68,8 +71,8 @@ describe('aco commands', () => {
   it('AC-ACO-STATUS-001 AC-P1-CLI renders validation graph waivers schema and ledger counts', () => {
     const output = formatAcoStatusText(fixtureStatus);
 
-    expect(output).toContain('ACO Status');
-    expect(output).toContain('Context Readiness: Blocked by forbidden graph limits');
+    expect(output).toContain('Context Orchestrator Status');
+    expect(output).toContain('Readiness: Needs approval');
     expect(output).toContain('validation: passed');
     expect(output).toContain('graph: forbidden');
     expect(output).toContain('waivers: 2');
@@ -82,7 +85,7 @@ describe('aco commands', () => {
   it('AC-ACO-STATUS-007 AC-FORBIDDEN-GRAPH-001 keeps forbidden waiver IDs visible', () => {
     const output = formatAcoStatusText(fixtureStatus);
 
-    expect(output).toContain('Forbidden graph confidence limits');
+    expect(output).toContain('Approval-required graph confidence limits');
     expect(output).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(output).toContain('graph-waiver.bmad-sample-data');
     expect(output).not.toContain('Ready with known limits');
@@ -101,13 +104,13 @@ describe('aco commands', () => {
     expect(parsed).toEqual(expected);
   });
 
-  it('prints ACO Status text by default', async () => {
+  it('prints Context Orchestrator status text by default', async () => {
     logSpy = spyOn(console, 'log').mockImplementation(() => {});
 
     await acoStatusCommand({ cwd: repoRoot });
 
     const output = logSpy.mock.calls[0]?.[0] as string;
-    expect(output).toContain('ACO Status');
+    expect(output).toContain('Context Orchestrator Status');
     expect(output).toContain('ledger counts:');
   });
 

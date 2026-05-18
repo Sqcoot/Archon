@@ -1,0 +1,110 @@
+name: context-orchestrate
+description: |
+  Use when: User wants the native Context Orchestrator loop for route, ledgers,
+            compiled context package, evidence, risks, approval state, and handoff.
+  Triggers: "context orchestrate", "compile context", "route context", "aco loop".
+  Does: Reads status and ledgers, compiles the package into workflow artifacts,
+        pauses when graph evidence needs approval, and writes a handoff summary.
+  NOT for: Direct implementation work without a compiled context package.
+
+nodes:
+  - id: status
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context status --cwd "$PWD" --json > "$ARTIFACTS_DIR/context-orchestrator/status.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/status.json"
+
+  - id: ledgers
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context ledgers --cwd "$PWD" --json > "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+    depends_on: [status]
+
+  - id: compile
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context compile \
+        --cwd "$PWD" \
+        --archive-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json \
+        "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+    depends_on: [status, ledgers]
+
+  - id: graph-validation-gate
+    bash: |
+      set -euo pipefail
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json" bun -e '
+        const fs = await import("node:fs");
+        const data = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const approvalRequired =
+          data.approvalRequired === true ||
+          data.readiness === "needs_approval" ||
+          data.graphStatus === "forbidden" ||
+          data.graphStatus === "unavailable";
+        console.log(approvalRequired ? "true" : "false");
+      '
+    depends_on: [compile]
+
+  - id: approve-graph
+    approval:
+      message: |
+        Context Orchestrator needs approval before handoff.
+
+        Run ID: $WORKFLOW_ID
+        Review: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/manifest.json
+        Reason: graph evidence is forbidden, unavailable, or otherwise approval-required.
+      capture_response: true
+    depends_on: [graph-validation-gate]
+    when: "$graph-validation-gate.output == 'true'"
+
+  - id: handoff
+    bash: |
+      set -euo pipefail
+      HANDOFF="$ARTIFACTS_DIR/context-orchestrator/handoff.md"
+      STATUS_JSON="$ARTIFACTS_DIR/context-orchestrator/status.json"
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      HANDOFF="$HANDOFF" STATUS_JSON="$STATUS_JSON" COMPILE_RESULT="$COMPILE_RESULT" bun -e '
+        const fs = await import("node:fs");
+        const status = JSON.parse(fs.readFileSync(process.env.STATUS_JSON, "utf8"));
+        const compiled = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const readiness = compiled.readiness ?? status.readiness ?? "unknown";
+        const lines = [
+          "# Context Orchestrator Handoff",
+          "",
+          `Run ID: ${compiled.runId}`,
+          `Readiness: ${readiness}`,
+          `Approval required: ${compiled.approvalRequired === true ? "yes" : "no"}`,
+          `Route: ${compiled.route}`,
+          `Validation: ${compiled.validationStatus}`,
+          `Graph: ${compiled.graphStatus}`,
+          `Context package: ${compiled.archivePath}`,
+          "",
+          "## Evidence",
+          "",
+          `Ledger schema: ${compiled.ledgerSchemaVersion}`,
+          `Ledger rows: ${compiled.ledgerSummary?.combined?.total ?? "unknown"}`,
+          `Waivers: ${(compiled.graphWaiverIds ?? []).join(", ") || "none"}`,
+          "",
+          "## Next Action",
+          "",
+          readiness === "needs_approval"
+            ? "Approve or reject the graph gate before implementation."
+            : "Use the compiled context package for the next implementation prompt.",
+        ];
+        fs.writeFileSync(process.env.HANDOFF, `${lines.join("\n")}\n`);
+        console.log(fs.readFileSync(process.env.HANDOFF, "utf8"));
+      '
+    depends_on: [graph-validation-gate, approve-graph]
+    trigger_rule: all_done
+
+  - id: final-summary
+    bash: |
+      set -euo pipefail
+      cat "$ARTIFACTS_DIR/context-orchestrator/handoff.md"
+    depends_on: [handoff]

@@ -2645,18 +2645,86 @@ export interface components {
       total: number;
       counts: components['schemas']['AcoLedgerStatusCounts'];
     };
+    AcoReadiness: 'ready' | 'blocked' | 'needs_approval' | 'unknown';
+    AcoGraphWaiver: {
+      id: string;
+      repository: string;
+      owner: string;
+      reason: string;
+      evidence: string;
+      expiryCondition: string;
+    };
+    AcoLedgerSummary: {
+      toolAvailability: components['schemas']['AcoLedgerSummarySection'];
+      commands: components['schemas']['AcoLedgerSummarySection'];
+      combined: components['schemas']['AcoLedgerSummarySection'];
+    };
+    AcoRoute: {
+      id: string;
+      label: string;
+      steps: string[];
+      rationale: string;
+    };
     AcoStatusResponse: {
       cwd: string;
       graphStatus: string;
       graphWaivers: number;
       graphWaiverIds: string[];
+      waivers: components['schemas']['AcoGraphWaiver'][];
+      approvalRequired: boolean;
+      readiness: components['schemas']['AcoReadiness'];
       validationStatus: string;
       ledgerSchemaVersion: string;
-      ledgerSummary: {
-        toolAvailability: components['schemas']['AcoLedgerSummarySection'];
-        commands: components['schemas']['AcoLedgerSummarySection'];
-        combined: components['schemas']['AcoLedgerSummarySection'];
-      };
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoLedgersResponse: {
+      schemaVersion: string;
+      generatedAt?: string;
+      toolAvailability: Record<string, unknown>[];
+      commands: Record<string, unknown>[];
+      summary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoRouteRequest: {
+      cwd: string;
+      prompt: string;
+    };
+    AcoRouteResponse: components['schemas']['AcoRoute'];
+    AcoCompileRequest: {
+      cwd: string;
+      prompt: string;
+      runId?: string;
+      timestamp?: string;
+      cavemanMode?: 'off' | 'lite' | 'full' | 'ultra';
+    };
+    AcoCompileResponse: {
+      runId: string;
+      archivePath: string;
+      files: Record<string, string>;
+      route: components['schemas']['AcoRoute'];
+      graphStatus: string;
+      graphWaivers: number;
+      graphWaiverIds: string[];
+      waivers: components['schemas']['AcoGraphWaiver'][];
+      approvalRequired: boolean;
+      readiness: components['schemas']['AcoReadiness'];
+      validationStatus: string;
+      ledgerSchemaVersion: string;
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoArtifactPackageParams: {
+      runId: string;
+    };
+    AcoArtifactPackageQuery: {
+      cwd: string;
+    };
+    AcoArtifactPackageResponse: {
+      runId: string;
+      archivePath: string;
+      manifest: Record<string, unknown>;
+      files: {
+        name: string;
+        path: string;
+      }[];
     };
     UpdateCheckResponse: {
       updateAvailable: boolean;

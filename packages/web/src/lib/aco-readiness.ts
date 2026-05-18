@@ -22,7 +22,12 @@ function getCombinedCounts(status: AcoStatusResponse): Record<LedgerCountKey, nu
 }
 
 export function getAcoReadinessLabel(status: AcoStatusResponse): string {
-  if (status.graphStatus === 'forbidden') return 'Blocked by forbidden graph limits';
+  if (status.readiness === 'needs_approval') return 'Needs approval';
+  if (status.readiness === 'blocked') return 'Blocked';
+  if (status.readiness === 'unknown') return 'Unknown';
+  if (status.readiness === 'ready' && status.validationStatus === 'passed') return 'Ready';
+
+  if (status.graphStatus === 'forbidden') return 'Needs approval';
   if (status.validationStatus !== 'passed') return 'Blocked';
 
   const counts = getCombinedCounts(status);
@@ -48,7 +53,7 @@ export function formatAcoLedgerCounts(status: AcoStatusResponse): string {
 export function formatAcoEvidenceSummary(status: AcoStatusResponse): string {
   const unknown = status.ledgerSummary.combined.counts.unknown;
   const limitLabel =
-    status.graphStatus === 'forbidden' ? 'forbidden graph limits' : 'accepted limits';
+    status.graphStatus === 'forbidden' ? 'approval-required graph limits' : 'accepted limits';
   return [
     `validation ${status.validationStatus}`,
     `graph ${status.graphStatus}`,
@@ -65,15 +70,15 @@ export function formatAcoHandoffNarrative(status: AcoStatusResponse): string {
       : '- none';
   const waiverHeading =
     status.graphStatus === 'forbidden'
-      ? 'Forbidden graph confidence limits:'
+      ? 'Approval-required graph confidence limits:'
       : 'Accepted confidence limits:';
   const limitNarrative =
     status.graphStatus === 'forbidden'
-      ? 'Forbidden graph limits: failed waiver-required graph evidence remains unresolved; this does not prove full marketplace/plugin graph certainty, sample data completeness, or production CI enforcement.'
+      ? 'Needs approval: failed waiver-required graph evidence remains unresolved; this does not prove full marketplace/plugin graph certainty, sample data completeness, or production CI enforcement.'
       : 'Known limits: graph remains partial when accepted waivers are present; this does not prove full marketplace/plugin graph certainty, sample data completeness, or production CI enforcement.';
 
   return [
-    `ACO Readiness: ${getAcoReadinessLabel(status)}`,
+    `Context Orchestrator Readiness: ${getAcoReadinessLabel(status)}`,
     `Validation: ${status.validationStatus}`,
     `Graph: ${status.graphStatus}`,
     `Ledger: ${status.ledgerSchemaVersion}; ${formatAcoLedgerCounts(status)}`,

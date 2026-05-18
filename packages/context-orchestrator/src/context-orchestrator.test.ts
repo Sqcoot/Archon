@@ -7,6 +7,7 @@ import {
   compilePromptPackage,
   createArchivedPolicyDecision,
   isPathInside,
+  readArtifactPackageManifest,
   redactSecrets,
   routeBmad,
   stringifyArchivedPolicyDecision,
@@ -216,6 +217,34 @@ describe('context orchestrator core', () => {
         runId: 'bad\\id',
       })
     ).rejects.toThrow('Invalid ACO archive runId');
+  });
+
+  test('AC-P1-API reads manifest-backed artifact packages and rejects traversal IDs', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'aco-cwd-'));
+    const localArchiveRoot = join(cwd, '.archon/artifacts/context-orchestrator');
+    const archivePath = join(localArchiveRoot, 'lookup-run');
+    await mkdir(archivePath, { recursive: true });
+    await writeFile(
+      join(archivePath, 'manifest.json'),
+      `${JSON.stringify({ runId: 'lookup-run', ledgerSchemaVersion: 'aco.ledger-bundle.v1' })}\n`
+    );
+    await writeFile(join(archivePath, 'commands-ledger.json'), '{}\n');
+
+    await expect(readArtifactPackageManifest(cwd, '../escape')).rejects.toThrow(
+      'Invalid ACO archive runId'
+    );
+    const lookup = await readArtifactPackageManifest(cwd, 'lookup-run');
+    expect(lookup.manifest.runId).toBe('lookup-run');
+    expect(lookup.files.map(file => file.name)).toContain('manifest.json');
+
+    if (process.platform !== 'win32') {
+      const outside = await mkdtemp(join(tmpdir(), 'aco-package-outside-'));
+      await writeFile(join(outside, 'manifest.json'), '{}\n');
+      await symlink(outside, join(localArchiveRoot, 'symlink-run'), 'dir');
+      await expect(readArtifactPackageManifest(cwd, 'symlink-run')).rejects.toThrow(
+        'Archive real path escapes root'
+      );
+    }
   });
 
   test('rejects symlink archive roots and file collisions', async () => {

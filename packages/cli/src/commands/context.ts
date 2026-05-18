@@ -1,5 +1,6 @@
 import {
   compilePromptPackage,
+  getContextOrchestratorReadiness,
   getContextOrchestratorLedgers,
   getContextOrchestratorStatus,
   renderLedgerBundleMarkdown,
@@ -29,7 +30,8 @@ export async function contextStatusCommand(options: ContextCommandOptions): Prom
     return;
   }
 
-  console.log(`ACO status: ${status.validationStatus}`);
+  console.log(`Context Orchestrator status: ${status.validationStatus}`);
+  console.log(`Readiness: ${status.readiness}`);
   console.log(`Graph: ${status.graphStatus} (${status.graphWaivers} waiver(s))`);
 }
 
@@ -71,7 +73,7 @@ export async function contextLedgersCommand(options: ContextCommandOptions): Pro
         )
       );
     } else {
-      console.error(`ACO ledgers failed: ${message}`);
+      console.error(`Context Orchestrator ledgers failed: ${message}`);
     }
     return 1;
   }
@@ -95,7 +97,7 @@ export async function contextCompileCommand(
     return;
   }
 
-  console.log(`ACO package: ${result.archivePath}`);
+  console.log(`Context package: ${result.archivePath}`);
   console.log(`Route: ${result.package.bmadRoute.id}`);
   console.log(`Graph: ${result.package.graphContext.status}`);
   console.log(`Validation: ${result.package.validationReport.status}`);
@@ -112,7 +114,7 @@ export async function contextRouteCommand(
     return;
   }
 
-  console.log(`ACO route: ${route.id}`);
+  console.log(`Context Orchestrator route: ${route.id}`);
   console.log(route.rationale);
   for (const step of route.steps) {
     console.log(`- ${step}`);
@@ -120,6 +122,10 @@ export async function contextRouteCommand(
 }
 
 function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
+  const readiness = getContextOrchestratorReadiness(
+    result.package.graphContext,
+    result.package.validationReport
+  );
   return {
     runId: result.package.runId,
     archivePath: result.archivePath,
@@ -128,6 +134,9 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     graphStatus: result.package.graphContext.status,
     graphWaivers: result.package.graphContext.waiverCount,
     graphWaiverIds: result.package.graphContext.waivers.map(waiver => waiver.id),
+    waivers: result.package.graphContext.waivers,
+    approvalRequired: readiness === 'needs_approval',
+    readiness,
     openaiDocsMcpStatus: result.package.documentationPlan.readiness.openaiDocsMcp,
     context7Status: result.package.documentationPlan.readiness.context7,
     acceptanceStatus: result.package.acceptancePlan.status,

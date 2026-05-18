@@ -1,26 +1,26 @@
-# ACO Status Demo Script
+# Context Orchestrator Status Demo Script
 
 ## Purpose
 
-Show how ACO status exposes blocked graph readiness without claiming complete graph coverage.
+Show how Context Orchestrator status exposes approval-required graph readiness without claiming complete graph coverage.
 
 ## Demo Flow
 
-1. Open `/aco/status` for the selected registered project.
-2. Confirm the status says `Blocked by forbidden graph limits`.
+1. Open the Context Orchestrator page for the selected registered project.
+2. Confirm the status says `Needs approval`.
 3. Confirm validation is `passed`, graph is `forbidden`, schema is `aco.ledger-bundle.v1`, and combined ledger totals are total `39` with graph-derived rows counted as `forbidden`, not `partial`.
 4. Copy or inspect the forbidden graph confidence limits:
    - `graph-waiver.bmad-plugins-marketplace`
    - `graph-waiver.bmad-sample-data`
 5. Open a workflow run detail page for the same registered project.
-6. Confirm the workflow detail ACO snapshot reports the same validation, graph, waiver, schema, and ledger-count evidence.
+6. Confirm the workflow detail Context Orchestrator snapshot reports the same validation, graph, waiver, schema, and ledger-count evidence.
 7. Copy the PR/handoff narrative and verify it repeats the same readiness evidence.
 
 ## Traceability
 
 | Visible claim | Source field | Acceptance |
 | --- | --- | --- |
-| `Blocked by forbidden graph limits` | `validationStatus`, `graphStatus`, `graphWaivers` | AC-P1-WEB, AC-P3-WF, AC-P2-DEMO |
+| `Needs approval` | `readiness`, `approvalRequired`, `graphStatus`, `graphWaivers` | AC-P1-WEB, AC-P3-WF, AC-P2-DEMO |
 | Validation passed | `validationStatus` | AC-P1-CLI, AC-P1-API, AC-P1-WEB |
 | Graph forbidden | `graphStatus` | AC-P1-CLI, AC-P1-API, AC-P3-PR |
 | Forbidden graph confidence limits | `graphWaiverIds` | AC-P3-WF, AC-P3-PR, AC-P2-DEMO |
@@ -28,9 +28,9 @@ Show how ACO status exposes blocked graph readiness without claiming complete gr
 
 ## What This Proves
 
-- ACO validation passed for the selected repository state.
-- ACO graph readiness is forbidden because failed waiver-required graph evidence remains unresolved.
-- ACO has a first-class status surface in CLI, API, Web, workflow detail, and PR/handoff text.
+- Context Orchestrator validation passed for the selected repository state.
+- Context Orchestrator graph readiness needs approval because failed waiver-required graph evidence remains unresolved.
+- Context Orchestrator has a first-class status surface in CLI, API, Web, workflow detail, and PR/handoff text.
 - The same canonical evidence is reused across surfaces.
 - The two graph waivers are forbidden graph confidence limits and remain visible.
 

@@ -12,6 +12,9 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
   graphStatus: 'forbidden',
   graphWaivers: 2,
   graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+  waivers: [],
+  approvalRequired: true,
+  readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
   ledgerSummary: {
     toolAvailability: {
@@ -52,9 +55,78 @@ const mockGetContextOrchestratorStatus = mock(async (_cwd: string) => ({
     },
   },
 }));
+const mockGetContextOrchestratorLedgers = mock(async (_cwd: string) => ({
+  schemaVersion: 'aco.ledger-bundle.v1',
+  toolAvailability: [],
+  commands: [],
+  summary: {
+    toolAvailability: { total: 0, counts: zeroLedgerCounts() },
+    commands: { total: 0, counts: zeroLedgerCounts() },
+    combined: { total: 0, counts: zeroLedgerCounts() },
+  },
+}));
+const mockRouteBmad = mock((_input: { prompt: string }) => ({
+  id: 'brownfield-architecture',
+  label: 'Brownfield Architecture',
+  steps: ['bmad-investigate', 'bmad-create-architecture'],
+  rationale: 'Architecture-sensitive request.',
+}));
+const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: string }) => ({
+  archivePath: '/tmp/project/.archon/artifacts/context-orchestrator/run-1',
+  files: {
+    'manifest.json': '/tmp/project/.archon/artifacts/context-orchestrator/run-1/manifest.json',
+  },
+  package: {
+    runId: 'run-1',
+    graphContext: {
+      status: 'forbidden',
+      waiverCount: 2,
+      waivers: [],
+    },
+    validationReport: { status: 'passed' },
+    bmadRoute: mockRouteBmad({ prompt: 'compile' }),
+    ledgerBundle: {
+      schemaVersion: 'aco.ledger-bundle.v1',
+      summary: {
+        toolAvailability: { total: 0, counts: zeroLedgerCounts() },
+        commands: { total: 0, counts: zeroLedgerCounts() },
+        combined: { total: 0, counts: zeroLedgerCounts() },
+      },
+    },
+  },
+}));
+const mockReadArtifactPackageManifest = mock(async (_cwd: string, _runId: string) => ({
+  runId: 'run-1',
+  archivePath: '/tmp/project/.archon/artifacts/context-orchestrator/run-1',
+  manifest: { runId: 'run-1', ledgerSchemaVersion: 'aco.ledger-bundle.v1' },
+  files: [
+    {
+      name: 'manifest.json',
+      path: '/tmp/project/.archon/artifacts/context-orchestrator/run-1/manifest.json',
+    },
+  ],
+}));
+
+function zeroLedgerCounts(): Record<string, number> {
+  return {
+    available: 0,
+    partial: 0,
+    blocked: 0,
+    deferred: 0,
+    forbidden: 0,
+    'not used': 0,
+    unknown: 0,
+  };
+}
 
 mock.module('@archon/context-orchestrator', () => ({
   getContextOrchestratorStatus: mockGetContextOrchestratorStatus,
+  getContextOrchestratorLedgers: mockGetContextOrchestratorLedgers,
+  routeBmad: mockRouteBmad,
+  compilePromptPackage: mockCompilePromptPackage,
+  readArtifactPackageManifest: mockReadArtifactPackageManifest,
+  serializeLedgerBundle: (bundle: unknown) => bundle,
+  getContextOrchestratorReadiness: () => 'needs_approval',
 }));
 
 mock.module('@archon/core', () => ({
@@ -220,6 +292,9 @@ describe('GET /api/aco/status', () => {
       graphStatus: 'forbidden',
       graphWaivers: 2,
       graphWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+      waivers: [],
+      approvalRequired: true,
+      readiness: 'needs_approval',
       ledgerSchemaVersion: 'aco.ledger-bundle.v1',
       ledgerSummary: {
         toolAvailability: {
@@ -260,6 +335,10 @@ describe('GET /api/aco/status', () => {
         },
       },
     }));
+    mockGetContextOrchestratorLedgers.mockClear();
+    mockRouteBmad.mockClear();
+    mockCompilePromptPackage.mockClear();
+    mockReadArtifactPackageManifest.mockClear();
   });
 
   test('AC-P1-API returns raw ACO status for a registered cwd', async () => {
@@ -271,9 +350,11 @@ describe('GET /api/aco/status', () => {
       ledgerSchemaVersion?: string;
       graphStatus?: string;
       graphWaiverIds?: string[];
+      readiness?: string;
     };
     expect(body.ledgerSchemaVersion).toBe('aco.ledger-bundle.v1');
     expect(body.graphStatus).toBe('forbidden');
+    expect(body.readiness).toBe('needs_approval');
     expect(body.graphWaiverIds).toContain('graph-waiver.bmad-plugins-marketplace');
     expect(mockGetContextOrchestratorStatus).toHaveBeenCalledWith('/tmp/project');
   });
@@ -305,7 +386,108 @@ describe('GET /api/aco/status', () => {
 
     expect(response.status).toBe(500);
     const body = (await response.json()) as { error?: string; detail?: string };
-    expect(body.error).toBe('ACO status read failed');
+    expect(body.error).toBe('Context Orchestrator status read failed');
     expect(body.detail).toContain('status unavailable');
+  });
+
+  test('AC-P1-API returns ledger bundle for a registered cwd', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/ledgers?cwd=/tmp/project');
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { schemaVersion?: string };
+    expect(body.schemaVersion).toBe('aco.ledger-bundle.v1');
+    expect(mockGetContextOrchestratorLedgers).toHaveBeenCalledWith('/tmp/project');
+  });
+
+  test('AC-P1-API routes a request for a registered cwd', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: '/tmp/project', prompt: 'Implement a feature' }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { id?: string; steps?: string[] };
+    expect(body.id).toBe('brownfield-architecture');
+    expect(body.steps).toContain('bmad-investigate');
+    expect(mockRouteBmad).toHaveBeenCalledWith({ prompt: 'Implement a feature' });
+  });
+
+  test('AC-P1-API compiles a package for a registered cwd', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/compile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: '/tmp/project', prompt: 'Compile context', runId: 'run-1' }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      runId?: string;
+      archivePath?: string;
+      readiness?: string;
+    };
+    expect(body.runId).toBe('run-1');
+    expect(body.readiness).toBe('needs_approval');
+    expect(body.archivePath).toContain('context-orchestrator');
+    expect(mockCompilePromptPackage).toHaveBeenCalledWith({
+      cwd: '/tmp/project',
+      prompt: 'Compile context',
+      runId: 'run-1',
+      timestamp: undefined,
+      cavemanMode: undefined,
+    });
+  });
+
+  test('AC-P1-API rejects compile for unregistered cwd', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/compile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: '/tmp/other', prompt: 'Compile context' }),
+    });
+
+    expect(response.status).toBe(404);
+    expect(mockCompilePromptPackage).not.toHaveBeenCalled();
+  });
+
+  test('AC-P1-API resolves subdirectories to the registered codebase cwd', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/compile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: '/tmp/project/packages/server', prompt: 'Compile context' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mockCompilePromptPackage).toHaveBeenCalledWith({
+      cwd: '/tmp/project',
+      prompt: 'Compile context',
+      runId: undefined,
+      timestamp: undefined,
+      cavemanMode: undefined,
+    });
+  });
+
+  test('AC-P1-API looks up manifest-backed artifact packages', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/artifact-packages/run-1?cwd=/tmp/project');
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { manifest?: { runId?: string } };
+    expect(body.manifest?.runId).toBe('run-1');
+    expect(mockReadArtifactPackageManifest).toHaveBeenCalledWith('/tmp/project', 'run-1');
+  });
+
+  test('AC-P1-API rejects artifact package traversal run IDs', async () => {
+    mockReadArtifactPackageManifest.mockImplementationOnce(async () => {
+      throw new Error('Invalid ACO archive runId: ../escape');
+    });
+    const app = makeApp();
+    const response = await app.request('/api/aco/artifact-packages/..%2Fescape?cwd=/tmp/project');
+
+    expect(response.status).toBe(400);
   });
 });

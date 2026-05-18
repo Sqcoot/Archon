@@ -176,6 +176,8 @@ export interface LedgerBundle {
   summary: LedgerBundleSummary;
 }
 
+export type ContextOrchestratorReadiness = 'ready' | 'blocked' | 'needs_approval' | 'unknown';
+
 export interface PromptPackagePolicyArtifact {
   id: string;
   path: string;
