@@ -333,6 +333,7 @@ function NextDecisionPanel({ status }: { status: AcoStatusResponse }): React.Rea
     );
   }
   const action = decision.primaryAction;
+  const approvalContract = getApprovalContract(action.payload);
   return (
     <Card>
       <CardHeader>
@@ -358,10 +359,44 @@ function NextDecisionPanel({ status }: { status: AcoStatusResponse }): React.Rea
           <Metric label="schema" value={decision.schemaVersion} />
           <Metric label="waivers" value={String(decision.waiverIds.length)} />
           <Metric label="blockers" value={String(decision.evidenceBlockerIds.length)} />
+          {approvalContract ? (
+            <>
+              <Metric label="contract" value={approvalContract.contractId} />
+              <Metric label="contract hash" value={approvalContract.contractHash} />
+              <Metric label="scope" value={approvalContract.approvalScope.summary} />
+            </>
+          ) : null}
         </div>
       </CardContent>
     </Card>
   );
+}
+
+function getApprovalContract(payload: unknown): {
+  schemaVersion: string;
+  contractId: string;
+  contractHash: string;
+  approvalScope: { summary: string };
+} | null {
+  if (payload === null || typeof payload !== 'object') return null;
+  const value = payload as Record<string, unknown>;
+  const approvalScope = value.approvalScope;
+  if (
+    value.schemaVersion !== 'aco.approval-contract.v1' ||
+    typeof value.contractId !== 'string' ||
+    typeof value.contractHash !== 'string' ||
+    approvalScope === null ||
+    typeof approvalScope !== 'object' ||
+    typeof (approvalScope as Record<string, unknown>).summary !== 'string'
+  ) {
+    return null;
+  }
+  return {
+    schemaVersion: value.schemaVersion,
+    contractId: value.contractId,
+    contractHash: value.contractHash,
+    approvalScope: { summary: (approvalScope as Record<string, string>).summary },
+  };
 }
 
 function hasSupportedNextDecisionSchema(decision: AcoStatusResponse['nextDecision']): boolean {

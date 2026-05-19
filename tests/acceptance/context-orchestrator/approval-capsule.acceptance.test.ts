@@ -11,6 +11,7 @@ describe('ACO approval capsule acceptance', () => {
 
     expect(schemaSource).toContain('approvalCapsuleSchema');
     expect(schemaSource).toContain('aco.approval-capsule.v1');
+    expect(schemaSource).toContain('acoApprovalContractV1Schema');
     expect(schemaSource).toContain('approvalCommands');
     expect(schemaSource).toContain('willRun');
   });
@@ -45,7 +46,9 @@ describe('ACO approval capsule acceptance', () => {
     );
 
     expect(workflowSource).toContain('id: approval-capsule');
+    expect(workflowSource).toContain('id: approval-capsule-verify');
     expect(workflowSource).toContain('context approval-capsule');
+    expect(workflowSource).toContain('context approval-capsule-verify');
     expect(workflowSource).toContain('depends_on: [graph-validation-gate]');
     expect(workflowSource).toContain('capsuleRequired');
     expect(workflowSource).toContain(
@@ -61,6 +64,7 @@ describe('ACO approval capsule acceptance', () => {
     );
 
     expect(workflowSource).toContain('approval-capsule.md');
+    expect(workflowSource).toContain('approval-capsule-verification.json');
     expect(workflowSource).toContain('Needs approval');
     expect(workflowSource).toContain('preserves listed waivers for this run only');
   });
@@ -76,5 +80,58 @@ describe('ACO approval capsule acceptance', () => {
     expect(testSource).toContain('willRun === false');
     expect(testSource).toContain('ledgerRefs.some');
     expect(testSource).toContain('non-forbidden');
+  });
+
+  test('Spec: 024-approval-capsule-spec.md Acceptance: ACO-APPROVAL-007 contract schema and hash are deterministic', async () => {
+    const source = await readFile(
+      join(process.cwd(), 'packages/context-orchestrator/src/schemas/approval-contract.ts'),
+      'utf8'
+    );
+    const testSource = await readFile(
+      join(process.cwd(), 'packages/context-orchestrator/src/schemas/approval-contract.test.ts'),
+      'utf8'
+    );
+
+    expect(source).toContain('acoApprovalContractV1Schema');
+    expect(source).toContain('contractHash');
+    expect(source).toContain('canonicalJson');
+    expect(testSource).toContain('ACO-APPROVAL-007');
+  });
+
+  test('Spec: 024-approval-capsule-spec.md Acceptance: ACO-APPROVAL-008 ACO-APPROVAL-009 ACO-APPROVAL-010 verification rejects drift and legacy capsules', async () => {
+    const testSource = await readFile(
+      join(process.cwd(), 'packages/context-orchestrator/src/approval-capsule.test.ts'),
+      'utf8'
+    );
+
+    expect(testSource).toContain('ACO-APPROVAL-008');
+    expect(testSource).toContain('ACO-APPROVAL-010');
+    expect(testSource).toContain('activeWaiverIds');
+    expect(testSource).toContain('verifyApprovalCapsuleArtifacts');
+    expect(testSource).toContain('approvalContract');
+  });
+
+  test('Spec: 024-approval-capsule-spec.md Acceptance: ACO-APPROVAL-011 API Web CLI and workflow expose contract as inert data', async () => {
+    const cliSource = await readFile(
+      join(process.cwd(), 'packages/cli/src/commands/context.test.ts'),
+      'utf8'
+    );
+    const apiSchemaSource = await readFile(
+      join(process.cwd(), 'packages/server/src/routes/schemas/aco.schemas.ts'),
+      'utf8'
+    );
+    const webTestSource = await readFile(
+      join(process.cwd(), 'packages/web/src/routes/AcoStatusPage.test.ts'),
+      'utf8'
+    );
+    const workflowSource = await readFile(
+      join(process.cwd(), '.archon/workflows/defaults/context-orchestrate.yaml'),
+      'utf8'
+    );
+
+    expect(cliSource).toContain('contextApprovalCapsuleVerifyCommand');
+    expect(apiSchemaSource).toContain('AcoApprovalContractV1');
+    expect(webTestSource).toContain('ACO-APPROVAL-011');
+    expect(workflowSource).toContain("$approval-capsule-verify.output.status == 'valid'");
   });
 });

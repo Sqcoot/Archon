@@ -1005,6 +1005,131 @@
       "status": "enforced"
     },
     {
+      "requirement_id": "ACO-APPROVAL-007",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-contract.ts",
+          "markers": ["acoApprovalContractV1Schema", "contractHash", "canonicalJson"],
+          "summary": "Canonical approval contract schema and hash builder live in the context-orchestrator package."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-contract.test.ts",
+          "markers": ["ACO-APPROVAL-007"],
+          "summary": "Schema tests verify deterministic contract IDs and hashes."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-008",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/approval-capsule.test.ts",
+          "markers": ["ACO-APPROVAL-008", "activeWaiverIds"],
+          "summary": "Approval capsule tests verify waiver drift invalidates verification."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-009",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-009"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-contract.test.ts",
+          "markers": ["ACO-APPROVAL-009", "createLedgerFingerprint"],
+          "summary": "Approval contract tests verify ledger fingerprint drift changes the contract input."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-010",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-010"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/approval-capsule.test.ts",
+          "markers": ["ACO-APPROVAL-010", "legacy"],
+          "summary": "Approval capsule tests verify legacy prose-only capsules are invalid and require regeneration."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-contract.test.ts",
+          "markers": ["ACO-APPROVAL-010", "redacts secret-like strings"],
+          "summary": "Approval contract tests verify canonical serialization redacts secret-like values."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-APPROVAL-011",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/024-approval-capsule-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/approval-capsule.acceptance.test.ts",
+        "markers": ["ACO-APPROVAL-011"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/commands/context.test.ts",
+          "markers": ["ACO-APPROVAL-011", "contextApprovalCapsuleVerifyCommand"],
+          "summary": "CLI tests verify read-only approval capsule verification output."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/server/src/routes/schemas/aco.schemas.ts",
+          "markers": ["AcoApprovalContractV1"],
+          "summary": "Server OpenAPI schemas mirror the approval contract shape for display."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/web/src/routes/AcoStatusPage.test.ts",
+          "markers": ["ACO-APPROVAL-011"],
+          "summary": "Web tests verify approval contract ID and hash render without local decision recompute."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/context-orchestrate.yaml",
+          "markers": ["approval-capsule-verify"],
+          "summary": "Bundled workflow verifies the capsule before approval handoff and blocks handoff on invalid verification."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
       "requirement_id": "AC-ACO-INTENT-001",
       "kind": "ledger",
       "spec": "docs/context-orchestrator/specs/025-goal-bound-evidence-gate-spec.md",
@@ -1214,6 +1339,31 @@
           "ref": "packages/context-orchestrator/src/next-decision.test.ts",
           "markers": ["same input", "does not mutate input"],
           "summary": "Purity tests verify deterministic output and no input mutation."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-NEXT-007",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/026-next-decision-engine-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/next-decision.acceptance.test.ts",
+        "markers": ["AC-NEXT-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/next-decision.test.ts",
+          "markers": ["aco.approval-contract.v1", "primaryAction.payload"],
+          "summary": "Next decision tests verify approval-required actions carry the canonical contract payload."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/approval-contract.ts",
+          "markers": ["verifyAcoApprovalContract", "contractHash"],
+          "summary": "Approval contract helpers verify payload hash and ID integrity."
         }
       ],
       "status": "enforced"

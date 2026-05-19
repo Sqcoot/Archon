@@ -15,6 +15,12 @@ describe('next decision', () => {
     expect(decision.evidenceBlockerIds).toEqual([]);
     expect(decision.primaryAction.requiresApproval).toBe(true);
     expect(decision.primaryAction.willRun).toBe(false);
+    expect(decision.primaryAction.payload).toMatchObject({
+      schemaVersion: 'aco.approval-contract.v1',
+      actionId: 'next.approve-current-graph-waivers',
+      requiredWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+      willRun: false,
+    });
   });
 
   test('AC-NEXT-002 failed validation has highest branch precedence', () => {

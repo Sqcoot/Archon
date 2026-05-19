@@ -7,6 +7,7 @@ import { getGraphContext } from './graph';
 import { createContextIntent } from './intent';
 import { buildLedgerBundle, ledgerStatusOrder } from './ledgers';
 import { buildNextDecision } from './next-decision';
+import { createLedgerFingerprint } from './schemas/approval-contract';
 import { redactSecrets } from './security';
 import { getContextOrchestratorReadiness } from './status';
 import { validateContextOrchestrator } from './validation';
@@ -119,6 +120,7 @@ export async function createDecisionDossier(
       validationReport,
       graphContext,
       ledgerSummary: ledgerBundle.summary,
+      ledgerFingerprint: createLedgerFingerprint(ledgerBundle),
       evidenceBlockers: ledgerBundle.evidenceBlockers,
       evidenceResolution,
     });

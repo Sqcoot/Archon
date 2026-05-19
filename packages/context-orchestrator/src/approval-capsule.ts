@@ -1,4 +1,4 @@
-import { lstat } from 'fs/promises';
+import { lstat, readFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
@@ -10,6 +10,17 @@ import { createContextIntent } from './intent';
 import { buildLedgerBundle } from './ledgers';
 import { getContextOrchestratorReadiness } from './status';
 import { validateContextOrchestrator } from './validation';
+import {
+  ACO_APPROVAL_CONTRACT_SCHEMA_VERSION,
+  acoApprovalContractVerificationSchema,
+  approvalContractFromPayload,
+  buildAcoApprovalContract,
+  compareApprovalContracts,
+  createLedgerFingerprint,
+  verifyAcoApprovalContract,
+  type AcoApprovalContractMismatch,
+  type AcoApprovalContractVerification,
+} from './schemas/approval-contract';
 import {
   approvalCapsuleSchema,
   type ApprovalCapsule,
@@ -61,6 +72,12 @@ export interface CreateApprovalCapsuleOptions {
 export interface ApprovalCapsuleArtifactFiles {
   json: string;
   markdown: string;
+}
+
+export interface VerifyApprovalCapsuleArtifactsOptions {
+  cwd: string;
+  artifactRoot: string;
+  runId: string;
 }
 
 const approvalLedgerStatuses = new Set(['deferred', 'forbidden'] as const);
@@ -126,6 +143,38 @@ export async function createApprovalCapsule(
       `ACO approval capsule requires readiness=needs_approval and graphStatus=forbidden; got readiness=${readiness} graphStatus=${graphContext.status}`
     );
   }
+  const approvalContract = buildAcoApprovalContract({
+    actionId: 'next.approve-current-graph-waivers',
+    contextIntent,
+    route: bmadRoute,
+    readiness,
+    graphContext,
+    evidenceResolution: decisionDossier.evidenceResolution,
+    ledgerFingerprint: createLedgerFingerprint(ledgerBundle),
+    validationReport,
+  });
+  const payloadContract = approvalContractFromPayload(
+    decisionDossier.nextDecision.primaryAction.payload
+  );
+  if (decisionDossier.nextDecision.kind === 'approval_required') {
+    if (payloadContract === null) {
+      throw new Error(
+        `ACO approval capsule requires nextDecision=approval_required with ${ACO_APPROVAL_CONTRACT_SCHEMA_VERSION}; got missing payload`
+      );
+    }
+    const payloadMismatches = compareApprovalContracts(
+      approvalContract,
+      payloadContract,
+      'nextDecision.payload'
+    );
+    if (payloadMismatches.length > 0) {
+      throw new Error(
+        `ACO approval capsule nextDecision approval contract mismatch: ${payloadMismatches
+          .map(mismatch => mismatch.field)
+          .join(', ')}`
+      );
+    }
+  }
 
   const activeWaiverIds = graphContext.waivers.map(waiver => redactSecrets(waiver.id));
   const capsule: ApprovalCapsule = {
@@ -142,6 +191,7 @@ export async function createApprovalCapsule(
     activeWaiverIds,
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution: decisionDossier.evidenceResolution,
+    approvalContract,
     nextDecision: decisionDossier.nextDecision,
     ledgerRefs: buildApprovalLedgerRefs(ledgerBundle),
     approvalCommands: buildApprovalCommands(decisionDossier),
@@ -150,6 +200,142 @@ export async function createApprovalCapsule(
   };
 
   return approvalCapsuleSchema.parse(capsule);
+}
+
+export async function verifyApprovalCapsuleArtifacts(
+  options: VerifyApprovalCapsuleArtifactsOptions
+): Promise<AcoApprovalContractVerification> {
+  const files = getApprovalCapsuleArtifactFiles(options.artifactRoot, options.runId);
+  const raw = await readFile(files.json, 'utf8');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    return invalidVerification('', '', [
+      {
+        field: 'approvalCapsule',
+        reason: `Approval capsule JSON is malformed: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ]);
+  }
+
+  const capsuleResult = approvalCapsuleSchema.safeParse(parsed);
+  if (!capsuleResult.success) {
+    return invalidVerification(
+      getRecordString(parsed, 'contractId'),
+      getRecordString(parsed, 'contractHash'),
+      [
+        {
+          field: 'approvalCapsule',
+          reason: isLegacyApprovalCapsule(parsed)
+            ? 'Legacy approval capsule is missing approvalContract.'
+            : 'Approval capsule schema is invalid.',
+        },
+      ]
+    );
+  }
+
+  const capsule = capsuleResult.data;
+  const mismatches: AcoApprovalContractMismatch[] = [
+    ...verifyAcoApprovalContract(capsule.approvalContract).mismatches,
+  ];
+  const payloadContract = approvalContractFromPayload(capsule.nextDecision.primaryAction.payload);
+  if (capsule.nextDecision.kind === 'approval_required' && payloadContract === null) {
+    mismatches.push({
+      field: 'nextDecision.primaryAction.payload',
+      reason: 'Next decision primary action payload is not an approval contract.',
+    });
+  } else if (payloadContract !== null) {
+    mismatches.push(
+      ...compareApprovalContracts(capsule.approvalContract, payloadContract, 'nextDecision.payload')
+    );
+  }
+
+  const activeWaiverIds = sorted(capsule.activeWaiverIds);
+  if (
+    JSON.stringify(activeWaiverIds) !== JSON.stringify(capsule.approvalContract.requiredWaiverIds)
+  ) {
+    mismatches.push({
+      field: 'activeWaiverIds',
+      reason: 'Approval capsule active waivers differ from approval contract required waivers.',
+      expected: JSON.stringify(capsule.approvalContract.requiredWaiverIds),
+      actual: JSON.stringify(activeWaiverIds),
+    });
+  }
+
+  const evidenceResolutionIds = sorted(
+    capsule.evidenceResolution.items
+      .filter(
+        item =>
+          item.targetKind === 'graph' &&
+          item.resolver === 'approval' &&
+          item.requiresApproval &&
+          capsule.approvalContract.requiredWaiverIds.includes(item.evidenceId)
+      )
+      .map(item => item.evidenceId)
+  );
+  if (
+    JSON.stringify(evidenceResolutionIds) !==
+    JSON.stringify(capsule.approvalContract.evidenceResolutionIds)
+  ) {
+    mismatches.push({
+      field: 'evidenceResolutionIds',
+      reason: 'Approval capsule evidence resolution IDs differ from approval contract.',
+      expected: JSON.stringify(capsule.approvalContract.evidenceResolutionIds),
+      actual: JSON.stringify(evidenceResolutionIds),
+    });
+  }
+
+  if (capsule.readiness !== capsule.approvalContract.readiness) {
+    mismatches.push({
+      field: 'readiness',
+      reason: 'Approval capsule readiness differs from approval contract.',
+      expected: capsule.approvalContract.readiness,
+      actual: capsule.readiness,
+    });
+  }
+  if (capsule.graphStatus !== capsule.approvalContract.graphStatus) {
+    mismatches.push({
+      field: 'graphStatus',
+      reason: 'Approval capsule graph status differs from approval contract.',
+      expected: capsule.approvalContract.graphStatus,
+      actual: capsule.graphStatus,
+    });
+  }
+  if (capsule.validationStatus !== capsule.approvalContract.validationStatus) {
+    mismatches.push({
+      field: 'validationStatus',
+      reason: 'Approval capsule validation status differs from approval contract.',
+      expected: capsule.approvalContract.validationStatus,
+      actual: capsule.validationStatus,
+    });
+  }
+
+  try {
+    const currentCapsule = await createApprovalCapsule({
+      cwd: options.cwd,
+      prompt: capsule.contextIntent.objective,
+      runId: capsule.runId,
+    });
+    mismatches.push(
+      ...compareApprovalContracts(
+        currentCapsule.approvalContract,
+        capsule.approvalContract,
+        'currentEvidence'
+      )
+    );
+  } catch (error) {
+    mismatches.push({
+      field: 'currentEvidence',
+      reason: `Current ACO evidence cannot produce an approval contract: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
+
+  return verificationFromMismatches(
+    capsule.approvalContract.contractId,
+    capsule.approvalContract.contractHash,
+    mismatches
+  );
 }
 
 export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string {
@@ -182,6 +368,10 @@ export function renderApprovalCapsuleMarkdown(capsule: ApprovalCapsule): string 
     '## Evidence Resolution',
     '',
     ...renderEvidenceResolution(capsule.evidenceResolution),
+    '',
+    '## Approval Contract',
+    '',
+    ...renderApprovalContract(capsule.approvalContract, capsule.runId),
     '',
     '## Next Decision',
     '',
@@ -385,6 +575,20 @@ function renderEvidenceResolution(
   );
 }
 
+function renderApprovalContract(
+  contract: ApprovalCapsule['approvalContract'],
+  runId: string
+): string[] {
+  return [
+    `- Schema: ${contract.schemaVersion}`,
+    `- Contract ID: ${contract.contractId}`,
+    `- Contract hash: ${contract.contractHash}`,
+    `- Scope: ${contract.approvalScope.summary}`,
+    `- Required waivers: ${contract.requiredWaiverIds.join(', ') || 'none'}`,
+    `- Verification: run \`archon context approval-capsule-verify --cwd <repo> --artifact-root <artifact-root> --run-id ${runId}\` before approving handoff`,
+  ];
+}
+
 function renderNextDecision(nextDecision: ApprovalCapsule['nextDecision']): string[] {
   return [
     `- Schema: ${nextDecision.schemaVersion}`,
@@ -455,4 +659,57 @@ function isEnoent(error: unknown): boolean {
     typeof (error as { code?: unknown }).code === 'string' &&
     (error as { code: string }).code === 'ENOENT'
   );
+}
+
+function sorted(values: string[]): string[] {
+  return [...new Set(values.map(redactSecrets))].sort((left, right) => left.localeCompare(right));
+}
+
+function invalidVerification(
+  contractId: string,
+  contractHash: string,
+  mismatches: AcoApprovalContractMismatch[]
+): AcoApprovalContractVerification {
+  return verificationFromMismatches(contractId, contractHash, mismatches);
+}
+
+function verificationFromMismatches(
+  contractId: string,
+  contractHash: string,
+  mismatches: AcoApprovalContractMismatch[]
+): AcoApprovalContractVerification {
+  return acoApprovalContractVerificationSchema.parse({
+    schemaVersion: 'aco.approval-contract-verification.v1',
+    status: mismatches.length === 0 ? 'valid' : 'invalid',
+    contractId: redactSecrets(contractId),
+    contractHash: redactSecrets(contractHash),
+    mismatches: mismatches.map(mismatch => ({
+      field: redactSecrets(mismatch.field),
+      reason: redactSecrets(mismatch.reason),
+      ...(mismatch.expected !== undefined ? { expected: redactSecrets(mismatch.expected) } : {}),
+      ...(mismatch.actual !== undefined ? { actual: redactSecrets(mismatch.actual) } : {}),
+    })),
+    nextAction:
+      mismatches.length === 0
+        ? 'Approval contract is valid for the current ACO evidence.'
+        : 'Regenerate the ACO approval capsule for the current evidence before approving handoff.',
+    willRun: false,
+  });
+}
+
+function isLegacyApprovalCapsule(value: unknown): boolean {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    (value as Record<string, unknown>).schemaVersion === APPROVAL_CAPSULE_SCHEMA_VERSION &&
+    !('approvalContract' in value)
+  );
+}
+
+function getRecordString(value: unknown, key: string): string {
+  if (value !== null && typeof value === 'object') {
+    const nested = (value as Record<string, unknown>)[key];
+    return typeof nested === 'string' ? redactSecrets(nested) : '';
+  }
+  return '';
 }

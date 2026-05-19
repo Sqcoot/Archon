@@ -7,6 +7,7 @@ import { getGraphContext } from './graph';
 import { createContextIntent, deriveDefaultObjective } from './intent';
 import { buildLedgerBundle } from './ledgers';
 import { buildNextDecision } from './next-decision';
+import { createLedgerFingerprint } from './schemas/approval-contract';
 import { validateContextOrchestrator } from './validation';
 import type {
   ContextOrchestratorReadiness,
@@ -162,6 +163,7 @@ async function buildContextLedgerEvidence(
     validationReport,
     graphContext,
     ledgerSummary: ledgerBundle.summary,
+    ledgerFingerprint: createLedgerFingerprint(ledgerBundle),
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution,
   });

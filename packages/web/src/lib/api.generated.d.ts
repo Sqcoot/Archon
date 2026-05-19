@@ -2344,6 +2344,27 @@ export interface components {
       required: boolean;
       items: components['schemas']['AcoEvidenceResolutionItem'][];
     };
+    AcoApprovalContractV1: {
+      schemaVersion: 'aco.approval-contract.v1';
+      contractId: string;
+      contractHash: string;
+      actionId: string;
+      intentHash: string;
+      commitSha: string;
+      routeId: string;
+      readiness: 'needs_approval';
+      graphStatus: 'forbidden';
+      requiredWaiverIds: string[];
+      evidenceResolutionIds: string[];
+      ledgerFingerprint: string;
+      validationStatus: 'passed' | 'warning' | 'failed';
+      willRun: false;
+      approvalScope: {
+        type: 'workflow-handoff';
+        allowedActions: 'preserve-current-graph-waivers'[];
+        summary: 'Approval preserves listed graph waivers for this run only.';
+      };
+    };
     AcoNextDecisionAction: {
       id: string;
       /** @enum {string} */

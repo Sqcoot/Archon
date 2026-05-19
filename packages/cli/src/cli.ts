@@ -70,6 +70,7 @@ import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import {
   contextApprovalCapsuleCommand,
+  contextApprovalCapsuleVerifyCommand,
   contextCompileCommand,
   contextDossierCommand,
   contextGraphWaiversCommand,
@@ -128,6 +129,7 @@ Commands:
   context graph-waivers      Diagnose failed ACO graph waivers
   context ledgers [prompt]   Show ACO Tool Availability and Commands ledgers
   context approval-capsule <prompt> Show/write ACO approval capsule for a run
+  context approval-capsule-verify Verify ACO approval capsule contract
   context status [prompt]    Show ACO research and validation status
   context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
@@ -169,6 +171,7 @@ Examples:
   archon context graph-waivers --cwd /path/to/repo --json
   archon context ledgers --cwd /path/to/repo --json "Plan this feature"
   archon context approval-capsule --cwd /path/to/repo --run-id run-1 --json "Plan this feature"
+  archon context approval-capsule-verify --cwd /path/to/repo --artifact-root /tmp/artifacts --run-id run-1 --json
   archon context validate --cwd /path/to/repo
   archon skill install
   archon skill install /path/to/project
@@ -746,6 +749,26 @@ async function main(): Promise<number> {
             });
           }
 
+          case 'approval-capsule-verify': {
+            const runId = values['run-id'] as string | undefined;
+            const artifactRoot = values['artifact-root'] as string | undefined;
+            if (!runId || !artifactRoot) {
+              console.error(
+                'Usage: archon context approval-capsule-verify [--cwd <repo>] --artifact-root <dir> --run-id <id> [--json]'
+              );
+              if (!runId) console.error('Error: --run-id is required');
+              if (!artifactRoot) console.error('Error: --artifact-root is required');
+              return 1;
+            }
+            return await contextApprovalCapsuleVerifyCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              artifactRoot,
+              runId,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
           case 'compile': {
             const prompt = positionals.slice(2).join(' ');
             if (!prompt) {
@@ -781,7 +804,7 @@ async function main(): Promise<number> {
               console.error(`Unknown context subcommand: ${subcommand}`);
             }
             console.error(
-              'Available: route, dossier, approval-capsule, compile, graph-waivers, ledgers, status, validate'
+              'Available: route, dossier, approval-capsule, approval-capsule-verify, compile, graph-waivers, ledgers, status, validate'
             );
             return 1;
         }
