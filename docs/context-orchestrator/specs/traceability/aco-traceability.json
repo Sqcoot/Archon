@@ -1367,6 +1367,126 @@
         }
       ],
       "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-001",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["captureRouteAnalytics", "appendRouteAnalyticsRecord"],
+          "summary": "Analytics writes are isolated to explicit capture and append helpers."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/cli/src/cli.ts",
+          "markers": ["contextAnalyticsCaptureCommand", "contextAnalyticsReportCommand"],
+          "summary": "CLI parser exposes explicit analytics capture and read-only report subcommands."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-002",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["mkdir(dirname(analyticsPath)", "appendFile"],
+          "summary": "Capture creates the ledger directory and appends one JSONL record."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-003",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["routeId", "nextDecisionKind", "waiverIds"],
+          "summary": "Captured records include route, next-decision, and waiver evidence from the decision dossier."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-004",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["hashAnalyticsIntent", "normalizeAnalyticsPrompt"],
+          "summary": "Intent hashes use redacted normalized prompt text."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-005",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["malformedRows", "warnings"],
+          "summary": "Report generation skips malformed rows and surfaces warning metadata."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-RA-006",
+      "kind": "ledger",
+      "spec": "docs/context-orchestrator/specs/027-route-analytics-ledger-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/route-analytics.acceptance.test.ts",
+        "markers": ["AC-RA-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/route-analytics.ts",
+          "markers": ["ENOENT", "totalRowsRead: 0"],
+          "summary": "Missing analytics ledgers report empty aggregates without creating files."
+        }
+      ],
+      "status": "enforced"
     }
   ]
 }
