@@ -17,6 +17,8 @@
       "AC-ACO-WAIVER-",
       "ACO-APPROVAL-",
       "ACO-CODEX-003",
+      "ACO-028-",
+      "ACO-ADV-",
       "ACO-EVENTS-"
     ]
   },
@@ -1484,6 +1486,177 @@
           "ref": "packages/context-orchestrator/src/route-analytics.ts",
           "markers": ["ENOENT", "totalRowsRead: 0"],
           "summary": "Missing analytics ledgers report empty aggregates without creating files."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-028-001",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/specs.acceptance.test.ts",
+        "markers": ["ACO-028-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/validate-traceability.ts",
+          "markers": ["validateTraceability"],
+          "summary": "Traceability validation enforces spec, matrix, acceptance, and evidence references."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-001",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": ["name: archon-aco-adversarial-loop"],
+          "summary": "New provider-neutral ACO adversarial loop workflow is present."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-002",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-adversarial-dev.yaml",
+          "markers": ["name: archon-adversarial-dev", "provider: claude"],
+          "summary": "Existing app-generation adversarial workflow remains separate."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-003",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": ["provider is inherited", "mutates_checkout: false"],
+          "summary": "New workflow inherits provider selection and writes only per-run artifacts."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-004",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": ["explicit-approval-record", "generatorAllowed"],
+          "summary": "Generator path depends on an explicit approval record for approval-required readiness."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-005",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": ["readiness-gate", "graph-waiver.bmad-plugins-marketplace"],
+          "summary": "Workflow consumes current ACO graph evidence and preserves known waiver IDs."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-006",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": ["sprint-001.contract.json", "observable proof"],
+          "summary": "Contract node writes concrete criteria before the Generator node runs."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-007",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts",
+          "markers": ["acoAdversarialEvaluatorVerdictSchema", "acoAdversarialFindingSchema"],
+          "summary": "Schemas require structured evaluator verdicts and evidence-bound findings."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-008",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/028-adversarial-contract-loop-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/adversarial-contract-loop.acceptance.test.ts",
+        "markers": ["ACO-ADV-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts",
+          "markers": ["acoAdversarialRunStateSchema", "acoAdversarialFeedbackArtifactSchema"],
+          "summary": "Schemas cover loop run state and feedback artifacts used by handoff."
         }
       ],
       "status": "enforced"
