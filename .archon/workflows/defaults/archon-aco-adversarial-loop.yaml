@@ -1,0 +1,356 @@
+name: archon-aco-adversarial-loop
+description: |
+  Use when: User wants an ACO-grounded contracted adversarial implementation loop.
+  Triggers: "aco adversarial loop", "contracted adversarial loop", "aco contract loop",
+            "adversarial contract loop", "contracted generator evaluator".
+  Does: Compiles ACO status, ledgers, and context package evidence; gates readiness with
+        an explicit approval record; then writes planner, contract, generator, evaluator,
+        feedback, run-state, trace, and handoff artifacts. The provider is inherited
+        from caller or config.
+  NOT for: Direct one-off fixes, standalone app generation, graph maintenance, or provider-specific runs.
+
+mutates_checkout: false
+
+nodes:
+  - id: aco-status
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context status --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/status.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/status.json"
+
+  - id: aco-ledgers
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context ledgers --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+    depends_on: [aco-status]
+
+  - id: aco-compile
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context compile \
+        --cwd "$PWD" \
+        --archive-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json \
+        "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+    depends_on: [aco-status, aco-ledgers]
+
+  - id: readiness-gate
+    bash: |
+      set -euo pipefail
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json" bun -e '
+        const fs = await import("node:fs");
+        const compiled = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const approvalRequired =
+          compiled.approvalRequired === true ||
+          compiled.readiness === "needs_approval" ||
+          compiled.nextDecision?.kind === "approval_required";
+        const gate = {
+          readiness: compiled.readiness ?? "unknown",
+          graphStatus: compiled.graphStatus ?? "unavailable",
+          validationStatus: compiled.validationStatus ?? "failed",
+          nextDecisionKind: compiled.nextDecision?.kind ?? "needs_correct_course",
+          approvalRequired,
+          waiverIds: compiled.graphWaiverIds ?? [],
+        };
+        console.log(JSON.stringify(gate));
+      ' | tee "$ARTIFACTS_DIR/context-orchestrator/readiness-gate.json"
+    depends_on: [aco-compile]
+
+  - id: approval-capsule
+    bash: |
+      set -euo pipefail
+      bun run cli context approval-capsule \
+        --cwd "$PWD" \
+        --artifact-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json \
+        "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/approval-capsule-result.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/approval-capsule-result.json"
+    depends_on: [readiness-gate]
+    when: "$readiness-gate.output.approvalRequired == 'true'"
+
+  - id: approval-capsule-verify
+    bash: |
+      set -euo pipefail
+      VERIFY_RESULT="$ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json"
+      set +e
+      bun run cli context approval-capsule-verify \
+        --cwd "$PWD" \
+        --artifact-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json > "$VERIFY_RESULT"
+      set -e
+      if [ ! -s "$VERIFY_RESULT" ]; then
+        printf '{"schemaVersion":"aco.approval-contract-verification.v1","status":"invalid","contractId":"","contractHash":"","mismatches":[{"field":"approval-capsule-verify","reason":"verification command produced no JSON"}],"nextAction":"Regenerate the ACO approval capsule for the current evidence before approving handoff.","willRun":false}\n' > "$VERIFY_RESULT"
+      fi
+      cat "$VERIFY_RESULT"
+    depends_on: [approval-capsule]
+    when: "$readiness-gate.output.approvalRequired == 'true'"
+
+  - id: approve-readiness
+    approval:
+      message: |
+        ACO readiness requires explicit approval before the Generator can run.
+
+        Run ID: $WORKFLOW_ID
+        Context package: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/manifest.json
+        Approval capsule: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/approval-capsule.md
+        Verification: $ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json
+        Preserved waivers:
+        - graph-waiver.bmad-plugins-marketplace
+        - graph-waiver.bmad-sample-data
+
+        Approval preserves listed waivers for this run only.
+      capture_response: true
+    depends_on: [approval-capsule-verify]
+    when: "$readiness-gate.output.approvalRequired == 'true' && $approval-capsule-verify.output.status == 'valid'"
+
+  - id: explicit-approval-record
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/aco-adversarial-loop"
+      STATUS_JSON="$ARTIFACTS_DIR/context-orchestrator/status.json"
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      VERIFY_RESULT="$ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json"
+      READINESS_INPUT="$ARTIFACTS_DIR/aco-adversarial-loop/readiness-input.json"
+      APPROVAL_RECORD="$ARTIFACTS_DIR/aco-adversarial-loop/explicit-approval-record.json"
+      STATUS_JSON="$STATUS_JSON" COMPILE_RESULT="$COMPILE_RESULT" VERIFY_RESULT="$VERIFY_RESULT" READINESS_INPUT="$READINESS_INPUT" APPROVAL_RECORD="$APPROVAL_RECORD" bun -e '
+        const fs = await import("node:fs");
+        const crypto = await import("node:crypto");
+        const status = JSON.parse(fs.readFileSync(process.env.STATUS_JSON, "utf8"));
+        const compiled = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const verification = fs.existsSync(process.env.VERIFY_RESULT)
+          ? JSON.parse(fs.readFileSync(process.env.VERIFY_RESULT, "utf8"))
+          : { status: "not_required", contractId: "", contractHash: "" };
+        function canonical(value) {
+          if (Array.isArray(value)) return value.map(canonical);
+          if (value && typeof value === "object") {
+            return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, val]) => [key, canonical(val)]));
+          }
+          return value;
+        }
+        function sha256(value) {
+          return crypto.createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
+        }
+        const refs = [
+          { artifact: "status", path: process.env.STATUS_JSON, description: "ACO status for current objective." },
+          { artifact: "ledgers", path: `${process.env.COMPILE_RESULT.replace("compile-result.json", "ledgers.json")}`, description: "ACO ledger bundle for current objective." },
+          { artifact: "compile", path: process.env.COMPILE_RESULT, jsonPointer: "/nextDecision", description: "Compiled ACO package and next decision." },
+        ];
+        const approvalRequired =
+          compiled.approvalRequired === true ||
+          compiled.readiness === "needs_approval" ||
+          compiled.nextDecision?.kind === "approval_required";
+        const readinessInput = {
+          schemaVersion: "aco.adversarial-contract-loop.v1",
+          intentHash: compiled.contextIntent?.intentHash ?? status.contextIntent?.intentHash ?? "unknown",
+          routeId: compiled.route ?? status.route ?? "unknown",
+          readiness: compiled.readiness ?? status.readiness ?? "unknown",
+          graphStatus: compiled.graphStatus ?? status.graphStatus ?? "unavailable",
+          validationStatus: compiled.validationStatus ?? status.validationStatus ?? "failed",
+          nextDecisionKind: compiled.nextDecision?.kind ?? status.nextDecision?.kind ?? "needs_correct_course",
+          waiverIds: compiled.graphWaiverIds ?? status.graphWaiverIds ?? [],
+          acoContextRefs: refs,
+        };
+        const readinessInputHash = sha256(readinessInput);
+        const approved = approvalRequired ? verification.status === "valid" : true;
+        const record = {
+          schemaVersion: "aco.adversarial-contract-loop.v1",
+          status: approvalRequired ? (approved ? "approved" : "invalid") : "not_required",
+          readinessInputHash,
+          ...(verification.contractId ? { approvalContractId: verification.contractId } : {}),
+          ...(verification.contractHash ? { approvalContractHash: verification.contractHash } : {}),
+          waiverIds: readinessInput.waiverIds,
+          recordedAt: new Date().toISOString(),
+          acoContextRefs: refs,
+        };
+        fs.writeFileSync(process.env.READINESS_INPUT, `${JSON.stringify(readinessInput, null, 2)}\n`);
+        fs.writeFileSync(process.env.APPROVAL_RECORD, `${JSON.stringify(record, null, 2)}\n`);
+        console.log(JSON.stringify({ generatorAllowed: approved, approvalRequired, readinessInputHash, recordPath: process.env.APPROVAL_RECORD }));
+      '
+    depends_on: [readiness-gate, approval-capsule-verify, approve-readiness]
+    trigger_rule: all_done
+
+  - id: initialize-loop-artifacts
+    bash: |
+      set -euo pipefail
+      LOOP_DIR="$ARTIFACTS_DIR/aco-adversarial-loop"
+      mkdir -p "$LOOP_DIR/contracts" "$LOOP_DIR/attempts" "$LOOP_DIR/verdicts" "$LOOP_DIR/feedback"
+      printf '{"schemaVersion":"aco.adversarial-contract-loop.v1","phase":"planning","sprintId":"sprint-001","round":1,"status":"running","approvalRecordPath":"%s/explicit-approval-record.json","nextDecisionKind":"%s","acoContextRefs":[{"artifact":"compile","path":"%s/context-orchestrator/compile-result.json","jsonPointer":"/nextDecision","description":"Compiled ACO next decision."}]}\n' "$LOOP_DIR" "$readiness-gate.output.nextDecisionKind" "$ARTIFACTS_DIR" > "$LOOP_DIR/run-state.json"
+      printf '{"schemaVersion":"aco.adversarial-contract-loop.v1","sprints":[{"sprintId":"sprint-001","title":"Current contracted slice","status":"planned","acoContextRefs":[{"artifact":"compile","path":"%s/context-orchestrator/compile-result.json","description":"Compiled ACO package."}]}]}\n' "$ARTIFACTS_DIR" > "$LOOP_DIR/sprint-plan.json"
+      printf '{"event":"initialized","runState":"%s/run-state.json","approvalRecord":"%s/explicit-approval-record.json"}\n' "$LOOP_DIR" "$LOOP_DIR" > "$LOOP_DIR/trace.jsonl"
+      echo "{\"loopDir\":\"$LOOP_DIR\",\"runState\":\"$LOOP_DIR/run-state.json\"}"
+    depends_on: [explicit-approval-record]
+    when: "$explicit-approval-record.output.generatorAllowed == 'true'"
+
+  - id: planner
+    prompt: |
+      ACO-ADV-006 Planner role.
+
+      Read:
+      - `$ARTIFACTS_DIR/context-orchestrator/status.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/ledgers.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/readiness-input.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/explicit-approval-record.json`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/aco-adversarial-plan.md`
+      - update `$ARTIFACTS_DIR/aco-adversarial-loop/sprint-plan.json` if needed
+
+      The plan must be bounded to one contracted slice and must include `acoContextRefs`
+      pointing at the ACO compile/status/ledger artifacts. Do not implement code and do not
+      certify readiness.
+    allowed_tools: [Read, Write, Glob, Grep]
+    depends_on: [initialize-loop-artifacts]
+
+  - id: contract
+    prompt: |
+      ACO-ADV-006 Contract role.
+
+      Read:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/aco-adversarial-plan.md`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/sprint-plan.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/contracts/sprint-001.contract.json`
+
+      Contract JSON must use schemaVersion `aco.adversarial-contract-loop.v1`, sprintId
+      `sprint-001`, criteria with concrete observable proof, and `acoContextRefs` on the
+      contract and every criterion.
+    allowed_tools: [Read, Write, Glob, Grep]
+    depends_on: [planner]
+
+  - id: generator
+    prompt: |
+      ACO-ADV-004 ACO-ADV-006 Generator role.
+
+      Preconditions:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/explicit-approval-record.json` exists for the
+        current readiness input.
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/contracts/sprint-001.contract.json` exists.
+
+      Read:
+      - current contract
+      - previous feedback artifact if present
+      - ACO compile result
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/attempts/sprint-001-round-001.generator-report.json`
+
+      The report must include the generated story payload, contract path, changed-file summary
+      if any, validation commands, `certification: "not-certified-by-generator"`, and
+      `acoContextRefs`. The Generator does not certify pass/fail, approval, readiness, or final
+      quality.
+    allowed_tools: [Read, Write, Glob, Grep, Bash]
+    depends_on: [contract]
+
+  - id: evaluator
+    prompt: |
+      ACO-ADV-007 Evaluator role.
+
+      Read:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/contracts/sprint-001.contract.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/attempts/sprint-001-round-001.generator-report.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/verdicts/sprint-001-round-001.evaluator-verdict.json`
+
+      Do not edit source implementation during evaluation. Grade every contract criterion.
+      Verdict JSON must include scores, evidence, findings with criterionId, severity,
+      reproduction, expectedBehavior, actualBehavior, suggestedFixDirection, and
+      `acoContextRefs`.
+    allowed_tools: [Read, Write, Glob, Grep, Bash]
+    depends_on: [generator]
+
+  - id: feedback
+    bash: |
+      set -euo pipefail
+      LOOP_DIR="$ARTIFACTS_DIR/aco-adversarial-loop"
+      VERDICT="$LOOP_DIR/verdicts/sprint-001-round-001.evaluator-verdict.json"
+      FEEDBACK="$LOOP_DIR/feedback/sprint-001-round-001.feedback.json"
+      LOOP_DIR="$LOOP_DIR" VERDICT="$VERDICT" FEEDBACK="$FEEDBACK" bun -e '
+        const fs = await import("node:fs");
+        const verdict = JSON.parse(fs.readFileSync(process.env.VERDICT, "utf8"));
+        const artifact = {
+          schemaVersion: "aco.adversarial-contract-loop.v1",
+          sprintId: verdict.sprintId ?? "sprint-001",
+          round: verdict.round ?? 1,
+          verdictPath: process.env.VERDICT,
+          actionableFindings: verdict.findings ?? [],
+          retryInstruction: verdict.verdict === "passed" ? "No retry required." : "Address every actionable finding before the next Generator attempt.",
+          acoContextRefs: verdict.acoContextRefs ?? [],
+        };
+        fs.writeFileSync(process.env.FEEDBACK, `${JSON.stringify(artifact, null, 2)}\n`);
+        fs.appendFileSync(`${process.env.LOOP_DIR}/trace.jsonl`, `${JSON.stringify({ event: "feedback-written", feedback: process.env.FEEDBACK })}\n`);
+        console.log(JSON.stringify({ feedbackPath: process.env.FEEDBACK, verdict: verdict.verdict ?? "unknown" }));
+      '
+    depends_on: [evaluator]
+
+  - id: handoff
+    bash: |
+      set -euo pipefail
+      LOOP_DIR="$ARTIFACTS_DIR/aco-adversarial-loop"
+      HANDOFF="$LOOP_DIR/handoff.md"
+      HANDOFF="$HANDOFF" LOOP_DIR="$LOOP_DIR" ARTIFACTS_DIR="$ARTIFACTS_DIR" bun -e '
+        const fs = await import("node:fs");
+        const readJson = (path) => JSON.parse(fs.readFileSync(path, "utf8"));
+        const status = readJson(`${process.env.ARTIFACTS_DIR}/context-orchestrator/status.json`);
+        const compiled = readJson(`${process.env.ARTIFACTS_DIR}/context-orchestrator/compile-result.json`);
+        const approval = readJson(`${process.env.LOOP_DIR}/explicit-approval-record.json`);
+        const feedback = readJson(`${process.env.LOOP_DIR}/feedback/sprint-001-round-001.feedback.json`);
+        const lines = [
+          "# ACO Adversarial Loop Handoff",
+          "",
+          `Readiness: ${compiled.readiness ?? status.readiness ?? "unknown"}`,
+          `Next decision: ${compiled.nextDecision?.kind ?? status.nextDecision?.kind ?? "unknown"}`,
+          `Approval record: ${approval.status}`,
+          `ACO status: ${process.env.ARTIFACTS_DIR}/context-orchestrator/status.json`,
+          `ACO ledgers: ${process.env.ARTIFACTS_DIR}/context-orchestrator/ledgers.json`,
+          `ACO compile: ${process.env.ARTIFACTS_DIR}/context-orchestrator/compile-result.json`,
+          "",
+          "## Preserved Waivers",
+          "",
+          "- graph-waiver.bmad-plugins-marketplace",
+          "- graph-waiver.bmad-sample-data",
+          "",
+          "## Loop Artifacts",
+          "",
+          `Plan: ${process.env.LOOP_DIR}/aco-adversarial-plan.md`,
+          `Sprint plan: ${process.env.LOOP_DIR}/sprint-plan.json`,
+          `Run state: ${process.env.LOOP_DIR}/run-state.json`,
+          `Contract: ${process.env.LOOP_DIR}/contracts/sprint-001.contract.json`,
+          `Attempt: ${process.env.LOOP_DIR}/attempts/sprint-001-round-001.generator-report.json`,
+          `Verdict: ${process.env.LOOP_DIR}/verdicts/sprint-001-round-001.evaluator-verdict.json`,
+          `Feedback: ${process.env.LOOP_DIR}/feedback/sprint-001-round-001.feedback.json`,
+          `Trace: ${process.env.LOOP_DIR}/trace.jsonl`,
+          "",
+          "## Validation",
+          "",
+          `Validation status: ${compiled.validationStatus ?? status.validationStatus ?? "unknown"}`,
+          `Feedback verdict: ${feedback.actionableFindings.length === 0 ? "no findings recorded" : `${feedback.actionableFindings.length} finding(s)`}`,
+          "",
+          "## Known Blockers",
+          "",
+          compiled.readiness === "needs_approval"
+            ? "Readiness remains needs_approval while graph waivers remain part of current evidence."
+            : "none",
+        ];
+        fs.writeFileSync(process.env.HANDOFF, `${lines.join("\n")}\n`);
+        console.log(fs.readFileSync(process.env.HANDOFF, "utf8"));
+      '
+    depends_on: [feedback]
+
+  - id: final-summary
+    bash: |
+      set -euo pipefail
+      cat "$ARTIFACTS_DIR/aco-adversarial-loop/handoff.md"
+    depends_on: [handoff]

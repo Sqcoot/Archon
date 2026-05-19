@@ -50,6 +50,7 @@ const specs = [
   '025-goal-bound-evidence-gate-spec.md',
   '026-next-decision-engine-spec.md',
   '027-route-analytics-ledger-spec.md',
+  '028-adversarial-contract-loop-spec.md',
 ];
 
 interface TraceabilityManifest {
@@ -176,6 +177,15 @@ describe('ACO spec acceptance', () => {
       'AC-RA-004',
       'AC-RA-005',
       'AC-RA-006',
+      'ACO-028-001',
+      'ACO-ADV-001',
+      'ACO-ADV-002',
+      'ACO-ADV-003',
+      'ACO-ADV-004',
+      'ACO-ADV-005',
+      'ACO-ADV-006',
+      'ACO-ADV-007',
+      'ACO-ADV-008',
     ]) {
       expect(matrix).toContain(marker);
     }
