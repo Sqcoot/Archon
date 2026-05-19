@@ -63,13 +63,14 @@ describe('context orchestrator core', () => {
     expect(result.files['policy-decision.json']).toContain('policy-decision.json');
     expect(result.files['decision-dossier.json']).toContain('decision-dossier.json');
     expect(result.files['decision-dossier.md']).toContain('decision-dossier.md');
+    expect(result.files['target-intent-boundary.json']).toContain('target-intent-boundary.json');
     expect(result.files['tool-availability-ledger.json']).toContain(
       'tool-availability-ledger.json'
     );
     expect(result.files['tool-availability-ledger.md']).toContain('tool-availability-ledger.md');
     expect(result.files['commands-ledger.json']).toContain('commands-ledger.json');
     expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
-    expect(Object.keys(result.files)).toHaveLength(23);
+    expect(Object.keys(result.files)).toHaveLength(24);
 
     const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
       schema_version: string;
@@ -83,6 +84,10 @@ describe('context orchestrator core', () => {
         security?: unknown;
         ledgers?: { schemaVersion?: string; toolAvailability?: unknown[]; commands?: unknown[] };
         nextDecision?: { schemaVersion?: string; kind?: string; evidenceBlockerIds?: string[] };
+        targetIntentBoundary?: {
+          schemaVersion?: string;
+          scope?: { nonEnforcementBoundary?: true };
+        };
       };
     };
     expect(policyInput.schema_version).toBe('aco.prompt-package.policy-input.v1');
@@ -94,6 +99,10 @@ describe('context orchestrator core', () => {
     expect(policyInput.evidence.security).toBeDefined();
     expect(policyInput.evidence.ledgers?.schemaVersion).toBe('aco.ledger-bundle.v1');
     expect(policyInput.evidence.nextDecision?.schemaVersion).toBe('aco.next-decision.v1');
+    expect(policyInput.evidence.targetIntentBoundary?.schemaVersion).toBe(
+      'aco.target-intent-boundary.v1'
+    );
+    expect(policyInput.evidence.targetIntentBoundary?.scope?.nonEnforcementBoundary).toBe(true);
     expectCurrentCompileNextDecisionKind(policyInput.evidence.nextDecision);
     expect(policyInput.evidence.ledgers?.toolAvailability?.length).toBeGreaterThan(0);
     expect(policyInput.evidence.ledgers?.commands?.length).toBeGreaterThan(0);
@@ -104,12 +113,17 @@ describe('context orchestrator core', () => {
       'tool-availability-ledger.json'
     );
     expect(policyInput.artifacts.map(artifact => artifact.path)).toContain('commands-ledger.json');
+    expect(policyInput.artifacts.map(artifact => artifact.path)).toContain(
+      'target-intent-boundary.json'
+    );
 
     const manifest = JSON.parse(await readFile(result.files['manifest.json'], 'utf8')) as {
       ledgerSchemaVersion?: string;
       ledgerArtifacts?: string[];
       decisionDossierSchemaVersion?: string;
       decisionDossierArtifacts?: string[];
+      targetIntentBoundaryArtifact?: string;
+      targetIntentBoundarySchemaVersion?: string;
       nextDecision?: { schemaVersion?: string; kind?: string; evidenceBlockerIds?: string[] };
       ledgerSummary?: unknown;
     };
@@ -125,6 +139,8 @@ describe('context orchestrator core', () => {
       'decision-dossier.json',
       'decision-dossier.md',
     ]);
+    expect(manifest.targetIntentBoundaryArtifact).toBe('target-intent-boundary.json');
+    expect(manifest.targetIntentBoundarySchemaVersion).toBe('aco.target-intent-boundary.v1');
     expect(manifest.nextDecision?.schemaVersion).toBe('aco.next-decision.v1');
     expectCurrentCompileNextDecisionKind(manifest.nextDecision);
     expect(manifest.ledgerSummary).toBeDefined();
