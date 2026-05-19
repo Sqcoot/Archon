@@ -19,6 +19,7 @@
       "ACO-CODEX-003",
       "ACO-028-",
       "ACO-ADV-",
+      "ACO-TARGET-",
       "ACO-EVENTS-"
     ]
   },
@@ -1657,6 +1658,196 @@
           "ref": "packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts",
           "markers": ["acoAdversarialRunStateSchema", "acoAdversarialFeedbackArtifactSchema"],
           "summary": "Schemas cover loop run state and feedback artifacts used by handoff."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-001",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/target-intent-boundary.ts",
+          "markers": ["same_as_harness", "sourceSignals"],
+          "summary": "Builder records Archon/ACO self-work as same_as_harness with provenance signals."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-002",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/target-intent-boundary.ts",
+          "markers": ["current_repo", "classifyWorkIntent"],
+          "summary": "Builder derives current-repo targets independently from work intent classification."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-003",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/target-intent-boundary.ts",
+          "markers": ["artifact_only", "read_only"],
+          "summary": "Builder supports no-source validation/evaluation targets with read-only or artifact-only policy."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-004",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/target-intent-boundary.ts",
+          "markers": ["target_unknown", "approval_required"],
+          "summary": "Ambiguous targets compile with warnings and a safe approval-required decision instead of guessing."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-005",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/target-intent-boundary.ts",
+          "markers": ["bug_fix", "feature_change", "refactor", "investigation"],
+          "summary": "Work intent enum and classifier keep bug, feature, refactor, and investigation labels separate from target location."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-006",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["target-intent-boundary.json", "targetIntentBoundary"],
+          "summary": "Compiler writes the schema-valid target-intent-boundary archive artifact."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-007",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/compiler.ts",
+          "markers": ["targetIntentBoundaryArtifact", "Target Intent Boundary"],
+          "summary": "Manifest, policy input evidence, and final package render boundary references."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-008",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/types.ts",
+          "markers": ["targetIntentBoundary?: TargetIntentBoundaryArtifact"],
+          "summary": "PromptPackage keeps the new boundary optional so existing archive consumers remain compatible."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-009",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-009"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/target-intent-boundary.ts",
+          "markers": ["nonEnforcementBoundary", "z.literal(true)"],
+          "summary": "Schema requires the artifact to state its descriptive non-enforcement boundary."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TARGET-010",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/029-target-intent-boundary-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+        "markers": ["ACO-TARGET-010"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/target-intent-boundary.acceptance.test.ts",
+          "markers": ["archon-adversarial-dev.yaml", "research:graph", "@archon/server"],
+          "summary": "Acceptance coverage guards against graph refresh, waiver cleanup, provider/server/web/DB imports, lifecycle mutation, and legacy workflow edits."
         }
       ],
       "status": "enforced"

@@ -1,4 +1,5 @@
 import type { NextDecision } from './schemas/next-decision';
+import type { TargetIntentBoundaryArtifact } from './schemas/target-intent-boundary';
 export type { NextDecision } from './schemas/next-decision';
 
 export type McpReadinessState =
@@ -412,6 +413,7 @@ export interface PromptPackagePolicyInput {
     ledgers: Record<string, unknown>;
     decisionDossier?: Record<string, unknown>;
     nextDecision?: Record<string, unknown>;
+    targetIntentBoundary?: Record<string, unknown>;
   };
   validation: Record<string, unknown>;
 }
@@ -471,6 +473,7 @@ export interface PromptPackage {
   contextIntent: ContextIntent;
   intent: string;
   evidenceSummary: string;
+  targetIntentBoundary?: TargetIntentBoundaryArtifact;
   graphContext: GraphContext;
   documentationPlan: DocumentationPlan;
   bmadRoute: BmadRoute;

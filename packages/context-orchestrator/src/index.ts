@@ -27,6 +27,7 @@ export { createEvidenceClosurePlan } from './evidence-closure';
 export type { CreateEvidenceClosurePlanOptions } from './evidence-closure';
 export { createContextIntent, deriveDefaultObjective, normalizeObjective } from './intent';
 export type { CreateContextIntentOptions } from './intent';
+export { createTargetIntentBoundary } from './target-intent-boundary';
 export {
   appendRouteAnalyticsRecord,
   buildRouteAnalyticsRecord,
@@ -224,6 +225,34 @@ export {
   exampleAcoAdversarialReadinessInput,
   exampleAcoContextRefs,
 } from './schemas/adversarial-contract-loop';
+export type {
+  TargetIntentBoundaryArtifact,
+  TargetIntentBoundaryConfidence,
+  TargetIntentBoundaryDirtyState,
+  TargetIntentBoundaryMutationPolicy,
+  TargetIntentBoundaryNextDecisionKind,
+  TargetIntentBoundaryRelationship,
+  TargetIntentBoundarySourceSignal,
+  TargetIntentBoundarySourceSignalKind,
+  TargetIntentBoundaryWarning,
+  TargetIntentBoundaryWarningCode,
+  TargetIntentBoundaryWorkIntent,
+} from './schemas/target-intent-boundary';
+export {
+  TARGET_INTENT_BOUNDARY_SCHEMA_VERSION,
+  exampleTargetIntentBoundary,
+  targetIntentBoundaryConfidenceSchema,
+  targetIntentBoundaryDirtyStateSchema,
+  targetIntentBoundaryMutationPolicySchema,
+  targetIntentBoundaryNextDecisionKindSchema,
+  targetIntentBoundaryRelationshipSchema,
+  targetIntentBoundarySchema,
+  targetIntentBoundarySourceSignalKindSchema,
+  targetIntentBoundarySourceSignalSchema,
+  targetIntentBoundaryWarningCodeSchema,
+  targetIntentBoundaryWarningSchema,
+  targetIntentBoundaryWorkIntentSchema,
+} from './schemas/target-intent-boundary';
 export type {
   NextDecision,
   NextDecisionAction,

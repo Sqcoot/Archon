@@ -23,6 +23,7 @@ import {
   validateSafeRunId,
   writeFileNoFollow,
 } from './security';
+import { createTargetIntentBoundary } from './target-intent-boundary';
 import { withAcoSpan } from './telemetry';
 import { validateContextOrchestrator } from './validation';
 import type { AcoSpanAttributes } from './telemetry';
@@ -37,6 +38,7 @@ import type {
 
 const archiveFiles = [
   'manifest.json',
+  'target-intent-boundary.json',
   'prompt-package.json',
   'policy-decision.json',
   'decision-dossier.json',
@@ -114,6 +116,18 @@ async function compilePromptPackageWithoutTelemetry(
     validationReport,
     ledgerBundle,
   });
+  const targetIntentBoundary = await createTargetIntentBoundary({
+    cwd: options.cwd,
+    objective: redactedPrompt,
+    timestamp,
+    archivePath,
+    boundaryPath: join(archivePath, 'target-intent-boundary.json'),
+    routeId: bmadRoute.id,
+    contextArtifacts: ['manifest.json', 'prompt-package.json', 'final-prompt-package.md'],
+    ledgerArtifacts: ['tool-availability-ledger.json', 'commands-ledger.json'],
+    normalizedObjective: contextIntent.normalizedObjective,
+    commitSha: contextIntent.commitSha,
+  });
   const decisionDossier = await createDecisionDossier({
     cwd: options.cwd,
     prompt: options.prompt,
@@ -152,6 +166,7 @@ async function compilePromptPackageWithoutTelemetry(
     timestamp,
     originalPrompt: redactedPrompt,
     targetCodebase: options.cwd,
+    targetIntentBoundary,
     contextIntent,
     intent,
     evidenceSummary: graphContext.summary,
@@ -324,6 +339,11 @@ async function writeArchiveFiles(
   );
   await writeFileNoFollow(
     archivePath,
+    files['target-intent-boundary.json'],
+    `${JSON.stringify(promptPackage.targetIntentBoundary, null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
     files['prompt-package.json'],
     `${JSON.stringify(toPolicyInput(promptPackage), null, 2)}\n`
   );
@@ -431,6 +451,11 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     runId: promptPackage.runId,
     timestamp: promptPackage.timestamp,
     targetCodebase: promptPackage.targetCodebase,
+    targetIntentBoundarySchemaVersion: promptPackage.targetIntentBoundary?.schemaVersion,
+    targetIntentBoundaryArtifact: promptPackage.targetIntentBoundary
+      ? 'target-intent-boundary.json'
+      : undefined,
+    targetIntentBoundary: promptPackage.targetIntentBoundary,
     contextIntent: promptPackage.contextIntent,
     intentHash: promptPackage.contextIntent.intentHash,
     intent: promptPackage.intent,
@@ -493,6 +518,10 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
         unknown
       >,
       decisionDossier: promptPackage.decisionDossier as unknown as Record<string, unknown>,
+      targetIntentBoundary: promptPackage.targetIntentBoundary as unknown as Record<
+        string,
+        unknown
+      >,
     },
     validation: promptPackage.validationReport as unknown as Record<string, unknown>,
   };
@@ -516,6 +545,10 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     `Target: ${promptPackage.targetCodebase}`,
     `Intent: ${promptPackage.contextIntent.intentHash}`,
     `Objective: ${promptPackage.contextIntent.normalizedObjective}`,
+    '',
+    '## Target Intent Boundary',
+    '',
+    renderTargetIntentBoundary(promptPackage),
     '',
     '## Specs',
     '',
@@ -593,6 +626,26 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     '## Codex Prompt',
     '',
     promptPackage.codexPrompt,
+  ].join('\n');
+}
+
+function renderTargetIntentBoundary(promptPackage: PromptPackage): string {
+  const boundary = promptPackage.targetIntentBoundary;
+  if (boundary === undefined) return '- target-intent-boundary.json not present';
+
+  return [
+    'Artifact: target-intent-boundary.json',
+    `Schema: ${boundary.schemaVersion}`,
+    `Target relationship: ${boundary.target.relationship}`,
+    `Target equals harness: ${boundary.target.equalsHarness ? 'yes' : 'no'}`,
+    `Work intent: ${boundary.objective.workIntent}`,
+    `Mutation policy: ${boundary.scope.mutationPolicy}`,
+    `Confidence: ${boundary.target.confidence}`,
+    `Non-enforcement boundary: ${boundary.scope.nonEnforcementBoundary ? 'yes' : 'no'}`,
+    boundary.evidence.warnings.length > 0
+      ? `Warnings: ${boundary.evidence.warnings.map(warning => warning.code).join(', ')}`
+      : 'Warnings: none',
+    `Next decision: ${boundary.nextDecision.kind}`,
   ].join('\n');
 }
 
