@@ -49,6 +49,7 @@ const specs = [
   '024-approval-capsule-spec.md',
   '025-goal-bound-evidence-gate-spec.md',
   '026-next-decision-engine-spec.md',
+  '027-route-analytics-ledger-spec.md',
 ];
 
 interface TraceabilityManifest {
@@ -168,6 +169,13 @@ describe('ACO spec acceptance', () => {
       'AC-NEXT-004',
       'AC-NEXT-005',
       'AC-NEXT-006',
+      'AC-NEXT-007',
+      'AC-RA-001',
+      'AC-RA-002',
+      'AC-RA-003',
+      'AC-RA-004',
+      'AC-RA-005',
+      'AC-RA-006',
     ]) {
       expect(matrix).toContain(marker);
     }

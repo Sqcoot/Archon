@@ -10,7 +10,10 @@ import {
   renderDecisionDossierMarkdown,
   renderLedgerBundleMarkdown,
   renderGraphWaiverClosureReportMarkdown,
+  renderRouteAnalyticsReportMarkdown,
   serializeLedgerBundle,
+  captureRouteAnalytics,
+  readRouteAnalyticsSummary,
   routeBmad,
   validateContextOrchestrator,
   verifyApprovalCapsuleArtifacts,
@@ -35,6 +38,11 @@ export interface ContextCompileCommandOptions extends ContextCommandOptions {
 export interface ContextApprovalCapsuleCommandOptions extends ContextCommandOptions {
   artifactRoot?: string;
   runId: string;
+}
+
+export interface ContextAnalyticsCommandOptions extends ContextCommandOptions {
+  analyticsPath?: string;
+  limit?: number;
 }
 
 export async function contextStatusCommand(options: ContextCommandOptions): Promise<void> {
@@ -148,6 +156,49 @@ export async function contextGraphWaiversCommand(
   }
 
   console.log(renderGraphWaiverClosureReportMarkdown(report));
+  return 0;
+}
+
+export async function contextAnalyticsCaptureCommand(
+  prompt: string,
+  options: ContextAnalyticsCommandOptions
+): Promise<number> {
+  const result = await captureRouteAnalytics({
+    cwd: options.cwd,
+    prompt,
+    source: 'cli',
+    timestamp: options.timestamp,
+    analyticsPath: options.analyticsPath,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return 0;
+  }
+
+  console.log(`Route analytics captured: ${result.record.recordId}`);
+  console.log(`Route: ${result.record.routeId}`);
+  console.log(`Readiness: ${result.record.readiness}`);
+  console.log(`Next decision: ${result.record.nextDecisionKind}`);
+  console.log(`Ledger: ${result.analyticsPath}`);
+  return 0;
+}
+
+export async function contextAnalyticsReportCommand(
+  options: ContextAnalyticsCommandOptions
+): Promise<number> {
+  const report = await readRouteAnalyticsSummary({
+    cwd: options.cwd,
+    limit: options.limit,
+    analyticsPath: options.analyticsPath,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return 0;
+  }
+
+  console.log(renderRouteAnalyticsReportMarkdown(report));
   return 0;
 }
 

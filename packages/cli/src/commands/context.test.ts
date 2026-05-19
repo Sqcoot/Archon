@@ -4,6 +4,8 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { compilePromptPackage } from '@archon/context-orchestrator';
 import {
+  contextAnalyticsCaptureCommand,
+  contextAnalyticsReportCommand,
   contextApprovalCapsuleCommand,
   contextApprovalCapsuleVerifyCommand,
   contextCompileCommand,
@@ -266,6 +268,8 @@ describe('context commands', () => {
   });
 
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
+    expect(contextAnalyticsCaptureCommand).toBeFunction();
+    expect(contextAnalyticsReportCommand).toBeFunction();
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();
     expect(contextValidateCommand).toBeFunction();
@@ -275,5 +279,59 @@ describe('context commands', () => {
     expect(contextApprovalCapsuleVerifyCommand).toBeFunction();
     expect(contextLedgersCommand).toBeFunction();
     expect(contextGraphWaiversCommand).toBeFunction();
+  });
+
+  it('AC-RA-002 captures route analytics JSON through explicit command', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const analyticsPath = join(
+      await mkdtemp(join(tmpdir(), 'aco-cli-route-analytics-')),
+      'a.jsonl'
+    );
+
+    const exitCode = await contextAnalyticsCaptureCommand('Implement route analytics.', {
+      cwd: repoRoot,
+      json: true,
+      analyticsPath,
+      timestamp: '2026-05-19T12:00:00.000Z',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      analyticsPath?: string;
+      record?: { routeId?: string; nextDecisionKind?: string };
+    };
+    expect(parsed.schemaVersion).toBe('aco.route-analytics-capture.v1');
+    expect(parsed.analyticsPath).toBe(analyticsPath);
+    expect(parsed.record?.routeId).toBe('brownfield-architecture');
+    expect(parsed.record?.nextDecisionKind).toBeDefined();
+    expect(await readFile(analyticsPath, 'utf8')).toContain('aco.route-analytics.v1');
+  });
+
+  it('AC-RA-006 reports route analytics JSON without requiring an existing ledger', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const analyticsPath = join(
+      await mkdtemp(join(tmpdir(), 'aco-cli-route-analytics-')),
+      'missing.jsonl'
+    );
+
+    const exitCode = await contextAnalyticsReportCommand({
+      cwd: repoRoot,
+      json: true,
+      analyticsPath,
+      limit: 1,
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      aggregates?: { totalRecords?: number };
+      recentRecords?: unknown[];
+    };
+    expect(parsed.schemaVersion).toBe('aco.route-analytics-report.v1');
+    expect(parsed.aggregates?.totalRecords).toBe(0);
+    expect(parsed.recentRecords).toEqual([]);
   });
 });

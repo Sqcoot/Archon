@@ -27,6 +27,21 @@ export { createEvidenceClosurePlan } from './evidence-closure';
 export type { CreateEvidenceClosurePlanOptions } from './evidence-closure';
 export { createContextIntent, deriveDefaultObjective, normalizeObjective } from './intent';
 export type { CreateContextIntentOptions } from './intent';
+export {
+  appendRouteAnalyticsRecord,
+  buildRouteAnalyticsRecord,
+  captureRouteAnalytics,
+  getRouteAnalyticsPath,
+  hashAnalyticsIntent,
+  normalizeAnalyticsPrompt,
+  readRouteAnalyticsSummary,
+  renderRouteAnalyticsReportMarkdown,
+} from './route-analytics';
+export type {
+  CaptureRouteAnalyticsOptions,
+  CaptureRouteAnalyticsResult,
+  ReadRouteAnalyticsSummaryOptions,
+} from './route-analytics';
 export { buildNextDecision } from './next-decision';
 export type { BuildNextDecisionInput } from './next-decision';
 export {
@@ -156,6 +171,20 @@ export {
   createLedgerFingerprint,
   verifyAcoApprovalContract,
 } from './schemas/approval-contract';
+export type {
+  RouteAnalyticsRecordV1,
+  RouteAnalyticsReport,
+  RouteAnalyticsSource,
+  RouteAnalyticsTopCount,
+} from './schemas/route-analytics';
+export {
+  ROUTE_ANALYTICS_RECORD_SCHEMA_VERSION,
+  ROUTE_ANALYTICS_REPORT_SCHEMA_VERSION,
+  routeAnalyticsRecordSchema,
+  routeAnalyticsReportSchema,
+  routeAnalyticsSourceSchema,
+  routeAnalyticsTopCountSchema,
+} from './schemas/route-analytics';
 export type {
   NextDecision,
   NextDecisionAction,
