@@ -13,6 +13,7 @@ import {
   serializeLedgerBundle,
   routeBmad,
   validateContextOrchestrator,
+  verifyApprovalCapsuleArtifacts,
   writeApprovalCapsuleArtifacts,
   type CavemanMode,
   type PromptPackageResult,
@@ -181,6 +182,56 @@ export async function contextApprovalCapsuleCommand(
 
   console.log(renderApprovalCapsuleMarkdown(capsule));
   return 0;
+}
+
+export async function contextApprovalCapsuleVerifyCommand(
+  options: ContextApprovalCapsuleCommandOptions
+): Promise<number> {
+  if (options.artifactRoot === undefined) {
+    const message = '--artifact-root is required';
+    if (options.json) {
+      console.log(
+        JSON.stringify(
+          {
+            schemaVersion: 'aco.approval-contract-verification.v1',
+            status: 'invalid',
+            contractId: '',
+            contractHash: '',
+            mismatches: [{ field: 'artifactRoot', reason: message }],
+            nextAction: 'Provide the ACO artifact root and retry approval capsule verification.',
+            willRun: false,
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      console.error(`Context Orchestrator approval capsule verification failed: ${message}`);
+    }
+    return 1;
+  }
+
+  const verification = await verifyApprovalCapsuleArtifacts({
+    cwd: options.cwd,
+    artifactRoot: options.artifactRoot,
+    runId: options.runId,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(verification, null, 2));
+  } else {
+    console.log(`Approval contract verification: ${verification.status}`);
+    console.log(`Contract: ${verification.contractId || 'unknown'}`);
+    console.log(`Will run: ${verification.willRun ? 'yes' : 'no'}`);
+    if (verification.mismatches.length > 0) {
+      for (const mismatch of verification.mismatches) {
+        console.log(`- ${mismatch.field}: ${mismatch.reason}`);
+      }
+    }
+    console.log(`Next action: ${verification.nextAction}`);
+  }
+
+  return verification.status === 'valid' ? 0 : 1;
 }
 
 export async function contextCompileCommand(

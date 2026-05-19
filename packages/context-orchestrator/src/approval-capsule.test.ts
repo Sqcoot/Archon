@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, readFile } from 'fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import {
   compilePromptPackage,
   createApprovalCapsule,
   renderApprovalCapsuleMarkdown,
+  verifyApprovalCapsuleArtifacts,
   writeApprovalCapsuleArtifacts,
 } from './index';
 import type { GraphContext, ValidationReport } from './types';
@@ -47,6 +48,11 @@ describe('approval capsule', () => {
       expect(capsule.nextDecision.kind).toBe('approval_required');
     }
     expect(capsule.nextDecision.primaryAction.willRun).toBe(false);
+    expect(capsule.approvalContract.schemaVersion).toBe('aco.approval-contract.v1');
+    if (capsule.nextDecision.kind === 'approval_required') {
+      expect(capsule.nextDecision.primaryAction.payload).toEqual(capsule.approvalContract);
+    }
+    expect(capsule.approvalContract.willRun).toBe(false);
     expect(capsule.decisionScope).toContain('preserves only these active graph waivers');
     expect(capsule.decisionScope).toContain('for this run only');
 
@@ -55,6 +61,8 @@ describe('approval capsule', () => {
     expect(markdown).toContain('Release readiness: Needs approval while waivers remain.');
     expect(markdown).toContain('## Evidence Resolution');
     expect(markdown).toContain('## Next Decision');
+    expect(markdown).toContain('## Approval Contract');
+    expect(markdown).toContain(capsule.approvalContract.contractId);
     expect(markdown).toContain('willRun=false');
   });
 
@@ -76,11 +84,82 @@ describe('approval capsule', () => {
     });
 
     const files = await writeApprovalCapsuleArtifacts(capsule, archiveRoot);
+    const verification = await verifyApprovalCapsuleArtifacts({
+      cwd: repoRoot,
+      artifactRoot: archiveRoot,
+      runId: 'aco-approval-write',
+    });
 
     expect(files.json).toBe(join(archiveRoot, 'aco-approval-write', 'approval-capsule.json'));
     expect(files.markdown).toBe(join(archiveRoot, 'aco-approval-write', 'approval-capsule.md'));
     expect(await readFile(files.json, 'utf8')).toContain('"aco.approval-capsule.v1"');
     expect(await readFile(files.markdown, 'utf8')).toContain('# ACO Approval Capsule');
+    expect(verification.status).toBe('valid');
+    expect(verification.willRun).toBe(false);
+  });
+
+  test('ACO-APPROVAL-008 detects waiver mismatch during approval capsule verification', async () => {
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-approval-waiver-drift-'));
+    await compilePromptPackage({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      archiveRoot,
+      runId: 'aco-approval-waiver-drift',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+    const capsule = await createApprovalCapsule({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      runId: 'aco-approval-waiver-drift',
+      timestamp: '2026-05-18T12:00:00.000Z',
+      artifactRoot: archiveRoot,
+    });
+    const files = await writeApprovalCapsuleArtifacts(capsule, archiveRoot);
+    const tampered = {
+      ...capsule,
+      activeWaiverIds: ['graph-waiver.bmad-sample-data'],
+    };
+    await writeFile(files.json, `${JSON.stringify(tampered, null, 2)}\n`);
+
+    const verification = await verifyApprovalCapsuleArtifacts({
+      cwd: repoRoot,
+      artifactRoot: archiveRoot,
+      runId: 'aco-approval-waiver-drift',
+    });
+
+    expect(verification.status).toBe('invalid');
+    expect(verification.mismatches.map(mismatch => mismatch.field)).toContain('activeWaiverIds');
+    expect(verification.willRun).toBe(false);
+  });
+
+  test('ACO-APPROVAL-010 treats legacy prose-only capsule as invalid', async () => {
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-approval-legacy-'));
+    await compilePromptPackage({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      archiveRoot,
+      runId: 'aco-approval-legacy',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+    const capsule = await createApprovalCapsule({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      runId: 'aco-approval-legacy',
+      timestamp: '2026-05-18T12:00:00.000Z',
+      artifactRoot: archiveRoot,
+    });
+    const files = await writeApprovalCapsuleArtifacts(capsule, archiveRoot);
+    const { approvalContract: _approvalContract, ...legacyCapsule } = capsule;
+    await writeFile(files.json, `${JSON.stringify(legacyCapsule, null, 2)}\n`);
+
+    const verification = await verifyApprovalCapsuleArtifacts({
+      cwd: repoRoot,
+      artifactRoot: archiveRoot,
+      runId: 'aco-approval-legacy',
+    });
+
+    expect(verification.status).toBe('invalid');
+    expect(verification.nextAction).toContain('Regenerate');
   });
 
   test('ACO-APPROVAL-003 rejects missing compiled package for artifact mode', async () => {

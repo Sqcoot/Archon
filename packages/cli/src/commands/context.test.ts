@@ -5,6 +5,7 @@ import { join, resolve } from 'path';
 import { compilePromptPackage } from '@archon/context-orchestrator';
 import {
   contextApprovalCapsuleCommand,
+  contextApprovalCapsuleVerifyCommand,
   contextCompileCommand,
   contextDossierCommand,
   contextGraphWaiversCommand,
@@ -224,6 +225,46 @@ describe('context commands', () => {
     expect(await readFile(parsed.files?.json ?? '', 'utf8')).toContain('"aco.approval-capsule.v1"');
   });
 
+  it('ACO-APPROVAL-011 verifies approval capsule contract read-only', async () => {
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    const archiveRoot = await mkdtemp(join(tmpdir(), 'aco-cli-approval-verify-'));
+    await compilePromptPackage({
+      cwd: repoRoot,
+      prompt: 'Implement ACO Approval Capsule',
+      archiveRoot,
+      runId: 'aco-cli-approval-verify',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+    await contextApprovalCapsuleCommand('Implement ACO Approval Capsule', {
+      cwd: repoRoot,
+      json: true,
+      artifactRoot: archiveRoot,
+      runId: 'aco-cli-approval-verify',
+      timestamp: '2026-05-18T12:00:00.000Z',
+    });
+    logSpy.mockClear();
+
+    const exitCode = await contextApprovalCapsuleVerifyCommand({
+      cwd: repoRoot,
+      json: true,
+      artifactRoot: archiveRoot,
+      runId: 'aco-cli-approval-verify',
+    });
+
+    expect(exitCode).toBe(0);
+    const output = logSpy.mock.calls[0]?.[0] as string;
+    const parsed = JSON.parse(output) as {
+      schemaVersion?: string;
+      status?: string;
+      willRun?: boolean;
+      contractId?: string;
+    };
+    expect(parsed.schemaVersion).toBe('aco.approval-contract-verification.v1');
+    expect(parsed.status).toBe('valid');
+    expect(parsed.willRun).toBe(false);
+    expect(parsed.contractId).toContain('aco.approval-contract.v1:');
+  });
+
   it('AC-LEDGER-007 keeps existing context command exports available', () => {
     expect(contextRouteCommand).toBeFunction();
     expect(contextStatusCommand).toBeFunction();
@@ -231,6 +272,7 @@ describe('context commands', () => {
     expect(contextCompileCommand).toBeFunction();
     expect(contextDossierCommand).toBeFunction();
     expect(contextApprovalCapsuleCommand).toBeFunction();
+    expect(contextApprovalCapsuleVerifyCommand).toBeFunction();
     expect(contextLedgersCommand).toBeFunction();
     expect(contextGraphWaiversCommand).toBeFunction();
   });

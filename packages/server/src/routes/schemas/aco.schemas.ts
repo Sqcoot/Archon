@@ -87,13 +87,37 @@ const acoEvidenceResolutionSchema = z
   })
   .openapi('AcoEvidenceResolution');
 
+const acoApprovalContractSchema = z
+  .object({
+    schemaVersion: z.literal('aco.approval-contract.v1'),
+    contractId: z.string(),
+    contractHash: z.string(),
+    actionId: z.string(),
+    intentHash: z.string(),
+    commitSha: z.string(),
+    routeId: z.string(),
+    readiness: z.literal('needs_approval'),
+    graphStatus: z.literal('forbidden'),
+    requiredWaiverIds: z.array(z.string()),
+    evidenceResolutionIds: z.array(z.string()),
+    ledgerFingerprint: z.string(),
+    validationStatus: z.enum(['passed', 'warning', 'failed']),
+    willRun: z.literal(false),
+    approvalScope: z.object({
+      type: z.literal('workflow-handoff'),
+      allowedActions: z.array(z.literal('preserve-current-graph-waivers')),
+      summary: z.literal('Approval preserves listed graph waivers for this run only.'),
+    }),
+  })
+  .openapi('AcoApprovalContractV1');
+
 const acoNextDecisionActionSchema = z
   .object({
     id: z.string(),
     kind: z.enum(['approval', 'manual', 'validation', 'correct_course', 'implementation']),
     label: z.string(),
     command: z.array(z.string()).optional(),
-    payload: z.record(z.unknown()).optional(),
+    payload: z.union([acoApprovalContractSchema, z.record(z.unknown())]).optional(),
     requiresApproval: z.boolean(),
     willRun: z.literal(false),
     successEvidence: z.array(z.string()),

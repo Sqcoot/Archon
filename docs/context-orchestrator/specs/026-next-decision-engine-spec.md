@@ -6,7 +6,7 @@ Define the ACO Next Decision Engine so Context Orchestrator evidence produces on
 
 ## Scope
 
-Pure decision derivation, `NextDecision` schema, branch precedence, stable evidence IDs, status/compile/dossier/approval-capsule/API/Web exposure, and inert user-facing actions.
+Pure decision derivation, `NextDecision` schema, branch precedence, stable evidence IDs, canonical approval contract payloads, status/compile/dossier/approval-capsule/API/Web exposure, and inert user-facing actions.
 
 ## Non-Goals
 
@@ -25,6 +25,7 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 - Decision kinds are `blocked_by_validation`, `blocked_by_evidence`, `blocked_by_graph`, `approval_required`, `needs_correct_course`, and `ready_for_implementation`.
 - Decision branch priority is executable: failed validation; non-graph blockers; graph unavailable/forbidden without valid explicit waivers; graph unavailable/forbidden with valid explicit waivers and approval resolution; unknown/warning/partial states; ready.
 - Action objects include a typed action kind, label, optional argv command, optional payload, approval flag, `willRun: false`, and success evidence.
+- For `approval_required`, `primaryAction.payload` is the canonical `aco.approval-contract.v1` object, not prose and not a loose waiver list.
 - Waiver IDs, evidence blocker IDs, and evidence resolution IDs are sorted and stable.
 - The same input produces the same output and does not mutate input objects.
 - Unsupported schema versions are not actionable; consumers may render a manual fallback but must not execute anything or claim readiness.
@@ -34,6 +35,7 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 - `getContextOrchestratorStatus()` includes the canonical `nextDecision`.
 - `compilePromptPackage()` stores the same `nextDecision` in prompt-package evidence.
 - Decision dossier and approval capsule include and render the same `nextDecision`.
+- Approval capsule embeds the same approval contract as `nextDecision.primaryAction.payload`.
 - Existing ACO API responses expose `nextDecision` through status and compile contracts.
 - The Web Context Orchestrator page renders the API-provided decision and does not recompute decision priority client-side.
 
@@ -51,6 +53,7 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 ## Outputs
 
 - `NextDecision`
+- `AcoApprovalContractV1` in `approval_required` primary action payload
 - rendered Next Decision section in decision dossier and approval capsule Markdown
 - status and compile JSON with `nextDecision`
 - ACO API response schemas with `nextDecision`
@@ -58,11 +61,12 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 
 ## Known Unknowns
 
-- Whether future slash command and workflow consumers should treat `nextDecision` as a gate input after this read-only surface proves stable.
+- Whether future slash command and workflow consumers should consume approval contracts directly after artifact/CLI verification proves stable.
 
 ## Evidence References
 
 - packages/context-orchestrator/src/next-decision.ts
+- packages/context-orchestrator/src/schemas/approval-contract.ts
 - packages/context-orchestrator/src/status.ts
 - packages/context-orchestrator/src/decision-dossier.ts
 - packages/context-orchestrator/src/approval-capsule.ts
@@ -78,12 +82,14 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 - AC-NEXT-004: Given graph is forbidden or unavailable without valid explicit waivers and approval resolution items, when the decision is built, then `kind` is `blocked_by_graph`.
 - AC-NEXT-005: Given decision dossier, approval capsule, status, compile, API, and Web surfaces receive ACO evidence, when they render next action state, then they use the same canonical `nextDecision` and do not locally recompute priority.
 - AC-NEXT-006: Given identical input objects, when `buildNextDecision()` runs more than once, then output is identical, input objects are unchanged, and no I/O, subprocess, graph refresh, approval execution, or lifecycle mutation occurs.
+- AC-NEXT-007: Given the next decision is `approval_required`, when the primary action is rendered or serialized, then its payload is `aco.approval-contract.v1`, `willRun=false`, and the contract hash verifies against canonical contract contents.
 
 ## Failure Behavior
 
 - Missing or malformed decision inputs produce `needs_correct_course` unless validation failure, evidence blockers, or graph failure provide a higher-priority blocked decision.
 - Unsupported schema versions are rendered as manual fallback by consumers.
 - Empty action commands remain inert and must not be shell-interpolated.
+- Malformed approval contract payloads are not actionable and must be treated as manual/invalid approval state by consumers.
 
 ## Security Constraints
 
@@ -91,6 +97,7 @@ Pure decision derivation, `NextDecision` schema, branch precedence, stable evide
 - Do not read `.env` files or external evidence sources during decision derivation.
 - Do not include raw secrets in `nextPrompt`, action labels, summaries, or payloads.
 - Do not execute command strings from decision rendering.
+- Do not include raw prompt text, host paths, usernames, `.env` values, or secret-like values in approval contract hash input.
 
 ## Open Questions
 

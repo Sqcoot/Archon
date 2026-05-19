@@ -1,4 +1,5 @@
 import { z } from '@hono/zod-openapi';
+import { acoApprovalContractV1Schema } from './approval-contract';
 
 const ledgerStatusCountsSchema = z.object({
   available: z.number().int().nonnegative(),
@@ -35,7 +36,7 @@ export const nextDecisionActionSchema = z.object({
   kind: z.enum(['approval', 'manual', 'validation', 'correct_course', 'implementation']),
   label: z.string().min(1),
   command: z.array(z.string().min(1)).optional(),
-  payload: z.record(z.unknown()).optional(),
+  payload: z.union([acoApprovalContractV1Schema, z.record(z.unknown())]).optional(),
   requiresApproval: z.boolean(),
   willRun: z.literal(false),
   successEvidence: z.array(z.string().min(1)),

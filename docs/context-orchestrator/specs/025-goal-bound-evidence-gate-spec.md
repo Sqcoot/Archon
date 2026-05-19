@@ -25,6 +25,7 @@ Context intent metadata, ledger provenance fields, freshness state, readiness bl
 - Evidence blockers also emit an `evidenceResolution` plan with typed closure items: evidence ID, capability ID, target kind, target name, resolver, next action, approval requirement, blocking acceptance IDs, and expected success evidence.
 - Documentation evidence closure is deterministic during status/compile/dossier creation. It identifies OpenAI Docs MCP or Context7 resolution work but does not fetch documentation, mutate MCP config, refresh graph evidence, or write tracked files.
 - Forbidden graph waivers remain approval-gated and must not be silently converted to ready evidence.
+- Approval-required graph waiver evidence emits a canonical approval contract so the user approves the exact intent hash, commit SHA, waiver IDs, evidence resolution IDs, ledger fingerprint, route, readiness, and graph/validation state represented by the current goal.
 
 ## Archon-Specific Behavior
 
@@ -33,6 +34,7 @@ Context intent metadata, ledger provenance fields, freshness state, readiness bl
 - API and Web ACO status/ledger calls pass the selected user objective where the UI has one, otherwise a derived status objective.
 - Workflow handoff includes the intent hash so artifacts can be tied back to the goal that produced them.
 - Status, compile, dossier, approval capsule, API, Web, slash, and workflow handoff surfaces expose evidence resolution without parsing prose.
+- Status, compile, dossier, approval capsule, API, Web, slash, and workflow handoff surfaces expose the same approval contract ID/hash when graph waiver approval is required.
 
 ## Inputs
 
@@ -52,6 +54,7 @@ Context intent metadata, ledger provenance fields, freshness state, readiness bl
 - intent-bound ledger bundle
 - evidence blockers
 - evidence resolution plan
+- approval contract for approval-required graph waiver state
 - intent-bound prompt package and decision dossier
 - intent-bound approval capsule
 - workflow handoff text with intent hash
@@ -76,6 +79,7 @@ Context intent metadata, ledger provenance fields, freshness state, readiness bl
 - AC-ACO-BLOCKER-001: Given a required evidence row is stale, unknown, blocked, partial, or unresolved, when ACO computes readiness evidence, then it emits an evidence blocker with the exact row ID and next verification action.
 - AC-ACO-WAIVER-001: Given graph evidence remains forbidden because named waivers are active, when intent-bound evidence is computed, then readiness remains `needs_approval` and waiver IDs remain visible.
 - AC-ACO-BLOCKER-001: Given status, compile, dossier, approval capsule, slash, API, Web, or workflow handoff output is generated, when evidence resolution items exist, then the output includes structured `evidenceResolution` state or a direct rendering of its same fields.
+- AC-ACO-WAIVER-001 also covers graph waiver approval contracts: given graph waiver approval is required for a goal-bound run, when approval state is rendered, then the approval contract carries the same intent hash, waiver IDs, evidence resolution IDs, and ledger fingerprint as the goal-bound evidence.
 
 ## Failure Behavior
 
@@ -83,6 +87,7 @@ Context intent metadata, ledger provenance fields, freshness state, readiness bl
 - Missing commit SHA does not fail readiness; it records `commitSha=unknown`.
 - Required unresolved evidence prevents ready claims until the row is verified or explicitly waived.
 - Evidence resolution items are advisory work items. They must not execute docs fetches, graph refreshes, or tracked-file writes as part of readiness computation.
+- Approval contract verification failures are advisory blockers for handoff. They must not execute approval commands, refresh graph evidence, or mutate workflow/session lifecycle state.
 
 ## Security Constraints
 

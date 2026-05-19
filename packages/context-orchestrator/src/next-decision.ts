@@ -3,6 +3,7 @@ import {
   type NextDecision,
   type NextDecisionAction,
 } from './schemas/next-decision';
+import { buildAcoApprovalContract, createLedgerFingerprint } from './schemas/approval-contract';
 import { redactSecrets } from './security';
 import type {
   BmadRoute,
@@ -22,6 +23,7 @@ export interface BuildNextDecisionInput {
   validationReport: ValidationReport;
   graphContext: GraphContext;
   ledgerSummary: LedgerBundleSummary;
+  ledgerFingerprint?: string;
   evidenceBlockers: EvidenceBlocker[];
   evidenceResolution: EvidenceClosurePlan;
 }
@@ -119,7 +121,17 @@ export function buildNextDecision(input: BuildNextDecisionInput): NextDecision {
         id: 'next.approve-current-graph-waivers',
         kind: 'approval',
         label: 'Approve preserving current graph waivers',
-        payload: { waiverIds, evidenceResolutionIds: approvalResolutionIds },
+        payload: buildAcoApprovalContract({
+          actionId: 'next.approve-current-graph-waivers',
+          contextIntent: input.contextIntent,
+          route: input.route,
+          readiness: input.readiness,
+          graphContext: input.graphContext,
+          evidenceResolution: input.evidenceResolution,
+          ledgerFingerprint:
+            input.ledgerFingerprint ?? createLedgerFingerprint(input.ledgerSummary),
+          validationReport: input.validationReport,
+        }),
         requiresApproval: true,
         willRun: false,
         successEvidence: [

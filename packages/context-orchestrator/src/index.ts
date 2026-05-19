@@ -8,11 +8,13 @@ export {
   createApprovalCapsule,
   getApprovalCapsuleArtifactFiles,
   renderApprovalCapsuleMarkdown,
+  verifyApprovalCapsuleArtifacts,
   writeApprovalCapsuleArtifacts,
 } from './approval-capsule';
 export type {
   ApprovalCapsuleArtifactFiles,
   CreateApprovalCapsuleOptions,
+  VerifyApprovalCapsuleArtifactsOptions,
 } from './approval-capsule';
 export { compilePromptPackage } from './compiler';
 export {
@@ -137,6 +139,23 @@ export type {
   ValidationCheck,
   ValidationReport,
 } from './types';
+export type {
+  AcoApprovalContractMismatch,
+  AcoApprovalContractV1,
+  AcoApprovalContractVerification,
+  AcoApprovalScope,
+} from './schemas/approval-contract';
+export {
+  ACO_APPROVAL_CONTRACT_SCHEMA_VERSION,
+  ACO_APPROVAL_CONTRACT_VERIFICATION_SCHEMA_VERSION,
+  acoApprovalContractV1Schema,
+  acoApprovalContractVerificationSchema,
+  buildAcoApprovalContract,
+  canonicalJson,
+  compareApprovalContracts,
+  createLedgerFingerprint,
+  verifyAcoApprovalContract,
+} from './schemas/approval-contract';
 export type {
   NextDecision,
   NextDecisionAction,

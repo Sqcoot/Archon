@@ -1,4 +1,5 @@
 import { z } from '@hono/zod-openapi';
+import { acoApprovalContractV1Schema } from './approval-contract';
 import { nextDecisionSchema } from './next-decision';
 
 const ledgerStatusCountsSchema = z.object({
@@ -120,6 +121,7 @@ export const approvalCapsuleSchema = z.object({
   activeWaiverIds: z.array(z.string().min(1)),
   evidenceBlockers: z.array(evidenceBlockerSchema),
   evidenceResolution: evidenceClosurePlanSchema,
+  approvalContract: acoApprovalContractV1Schema,
   nextDecision: nextDecisionSchema,
   ledgerRefs: z.array(approvalCapsuleLedgerRefSchema),
   approvalCommands: z.array(approvalCapsuleCommandSchema),

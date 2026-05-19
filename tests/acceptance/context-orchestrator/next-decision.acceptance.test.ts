@@ -8,6 +8,7 @@ import {
   createApprovalCapsule,
   createDecisionDossier,
   getContextOrchestratorStatus,
+  verifyAcoApprovalContract,
   type BuildNextDecisionInput,
   type EvidenceBlocker,
   type GraphContext,
@@ -105,6 +106,18 @@ describe('ACO next decision acceptance', () => {
 
     expect(second).toEqual(first);
     expect(JSON.stringify(input)).toBe(before);
+  });
+
+  test('AC-NEXT-007 approval_required primary payload is the canonical approval contract', () => {
+    const decision = buildNextDecision(baseInput());
+
+    expect(decision.kind).toBe('approval_required');
+    expect(decision.primaryAction.payload).toMatchObject({
+      schemaVersion: 'aco.approval-contract.v1',
+      willRun: false,
+      requiredWaiverIds: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+    });
+    expect(verifyAcoApprovalContract(decision.primaryAction.payload).status).toBe('valid');
   });
 });
 
