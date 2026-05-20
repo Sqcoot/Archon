@@ -53,7 +53,7 @@ Acceptance, contract, golden, integration, unit, and security tests for ACO.
 - Given `context-orchestrate` is bundled, when workflow validation runs, then the workflow is valid and the only optional MCP notification baseline is downgraded by an explicit guard.
 - Given Web renders Context Orchestrator status, when Web tests run, then status, route, compile, package link, and Needs approval state are visible through API helpers/readiness helpers.
 - Given a context package is compiled, when package tests run, then no secrets are archived, manifest output is deterministic, OPA policy decision exists, and ledger JSON/Markdown files are present.
-- Given Graph Waiver Closure runs against failed waiver-required graph evidence, when acceptance tests run, then AC-GWCL-001 through AC-GWCL-006 prove diagnostics exist, empty waiver graphs stay unresolved, repair commands are approval-required, and readiness remains Needs approval.
+- Given Graph Waiver Closure runs against failed waiver-required graph evidence, when acceptance tests run, then AC-GWCL-001 through AC-GWCL-006 prove diagnostics exist, empty waiver graphs stay unresolved, missing ignored graph cache is synthesized only from internally consistent tracked waiver evidence, repair commands are approval-required, and readiness remains Needs approval.
 - Given approval-required graph waiver evidence exists, when acceptance tests run, then approval contract schema/hash, capsule embedding, read-only verification, workflow handoff blocking, API schema mirroring, and Web rendering are covered by ACO-APPROVAL IDs.
 - Given a production Context Orchestrator feature, when acceptance tests are searched, then at least one acceptance scenario maps to its spec ID.
 

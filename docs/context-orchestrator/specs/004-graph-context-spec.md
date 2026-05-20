@@ -20,6 +20,7 @@ Graphify modes, normalized graph summaries, merge behavior, waivers, and path sa
 - Failed graph evidence with `waiverRequired=true` is a forbidden graph readiness limit. Non-failed waiver records may remain partial confidence limits.
 - Graph modes are auto, required, off, and fixture.
 - Graph Waiver Closure reports diagnose failed waiver-required graph evidence without clearing waivers, rebuilding graphs, or promoting readiness unless explicit follow-up evidence and approval exist.
+- Graph Waiver Closure is evidence-only: it may synthesize a missing `graph.json` only from tracked, internally consistent waiver-required failure evidence, and must not repair or override existing malformed artifacts.
 
 ## Archon-Specific Behavior
 
