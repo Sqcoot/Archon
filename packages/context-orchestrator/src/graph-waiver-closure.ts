@@ -17,6 +17,9 @@ import type {
 } from './types';
 
 export const GRAPH_WAIVER_CLOSURE_SCHEMA_VERSION = 'aco.graph-waiver-closure.v1' as const;
+const UPSTREAM_MANIFEST_PATH = 'docs/context-orchestrator/research/upstream-manifest.json';
+const GRAPH_EVIDENCE_INDEX_PATH = 'docs/context-orchestrator/research/graph-evidence-index.md';
+const RESEARCH_WAIVERS_PATH = 'docs/context-orchestrator/research/waivers.md';
 
 interface BuildGraphWaiverClosureReportOptions {
   cwd: string;
@@ -50,6 +53,42 @@ interface GraphMetadataShape {
   error?: unknown;
 }
 
+type MissingGraphSynthesisReason =
+  | 'documented_failed_waiver_required'
+  | 'missing_manifest'
+  | 'missing_index_row'
+  | 'missing_waiver_section'
+  | 'contradictory_docs'
+  | 'malformed_docs'
+  | 'unsafe_path'
+  | 'existing_malformed_artifact';
+type MissingGraphSynthesisFailureReason = Exclude<
+  MissingGraphSynthesisReason,
+  'documented_failed_waiver_required'
+>;
+
+interface MissingGraphSynthesisEvaluation {
+  canSynthesize: boolean;
+  reason: MissingGraphSynthesisReason;
+  message: string;
+}
+
+interface GraphEvidenceIndexRow {
+  repository: string;
+  graphStatus: string;
+  cloneStatus: string;
+  nodes: number;
+  edges: number;
+  waiverRequired: string;
+  graphPath: string;
+}
+
+interface WaiverDocSection {
+  repository: string;
+  status: string;
+  graphPath: string;
+}
+
 export async function getGraphWaiverClosureReport(
   options: BuildGraphWaiverClosureReportOptions
 ): Promise<GraphWaiverClosureReport> {
@@ -71,7 +110,13 @@ export async function getGraphWaiverClosureReport(
   for (const waiver of status.waivers) {
     const manifestRepo = manifestByName.get(waiver.repository);
     const repositoryStatus = graphStatusByName.get(waiver.repository);
-    const graphArtifact = await inspectGraphArtifact(options.cwd, waiver.repository);
+    const inspectedGraphArtifact = await inspectGraphArtifact(options.cwd, waiver.repository);
+    const graphArtifact = await synthesizeMissingGraphArtifact({
+      cwd: options.cwd,
+      repository: waiver.repository,
+      manifestRepo,
+      graphArtifact: inspectedGraphArtifact,
+    });
     const failureSummary = await buildFailureSummary(options.cwd, waiver.repository, manifestRepo);
     const decision = decideClosure(repositoryStatus, manifestRepo, graphArtifact);
     diagnostics.push(
@@ -110,6 +155,7 @@ export function renderGraphWaiverClosureReportMarkdown(report: GraphWaiverClosur
     `Approval: ${diagnostic.approvalStatus}`,
     `Graph artifact: ${diagnostic.graphArtifact.status} (${diagnostic.graphArtifact.nodes} nodes, ${diagnostic.graphArtifact.edges} edges)`,
     `Artifact path: ${diagnostic.graphArtifact.path}`,
+    `Artifact message: ${diagnostic.graphArtifact.message}`,
     `Reason: ${diagnostic.reason}`,
     `Failure: ${diagnostic.failureSummary}`,
     `Affected ledger rows: ${diagnostic.affectedLedgerRows.join(', ') || 'none'}`,
@@ -143,13 +189,306 @@ export function renderGraphWaiverClosureReportMarkdown(report: GraphWaiverClosur
 }
 
 async function readManifest(cwd: string): Promise<{ repositories: ManifestRepository[] }> {
-  const manifestPath = join(cwd, 'docs/context-orchestrator/research/upstream-manifest.json');
+  const manifestPath = join(cwd, UPSTREAM_MANIFEST_PATH);
   try {
     const parsed = JSON.parse(await readFile(manifestPath, 'utf8')) as UpstreamManifest;
     return { repositories: Array.isArray(parsed.repositories) ? parsed.repositories : [] };
   } catch {
     return { repositories: [] };
   }
+}
+
+async function synthesizeMissingGraphArtifact(input: {
+  cwd: string;
+  repository: string;
+  manifestRepo: ManifestRepository | undefined;
+  graphArtifact: GraphWaiverArtifactDiagnostic;
+}): Promise<GraphWaiverArtifactDiagnostic> {
+  if (input.graphArtifact.status === 'malformed') {
+    return {
+      ...input.graphArtifact,
+      message: `${input.graphArtifact.message} Missing graph synthesis rejected (existing_malformed_artifact): existing graph artifacts are never overridden by tracked waiver docs.`,
+    };
+  }
+  if (input.graphArtifact.status !== 'missing') {
+    return input.graphArtifact;
+  }
+
+  const evaluation = await evaluateMissingGraphSynthesis(input);
+  if (!evaluation.canSynthesize) {
+    return {
+      ...input.graphArtifact,
+      message: `${input.graphArtifact.message} Missing graph synthesis rejected (${evaluation.reason}): ${evaluation.message}`,
+    };
+  }
+
+  return {
+    ...input.graphArtifact,
+    status: 'empty-waiver',
+    graphStatus: 'waived',
+    nodes: 0,
+    edges: 0,
+    message: `Graph artifact is missing from ignored research/graphs cache, but tracked evidence proves failed waiver-required graph evidence remains unresolved (${evaluation.reason}). ${evaluation.message}`,
+  };
+}
+
+async function evaluateMissingGraphSynthesis(input: {
+  cwd: string;
+  repository: string;
+  manifestRepo: ManifestRepository | undefined;
+}): Promise<MissingGraphSynthesisEvaluation> {
+  const expectedGraphPath = expectedGraphPathForRepository(input.repository);
+  if (expectedGraphPath === null) {
+    return synthesisFailure(
+      'unsafe_path',
+      `Repository name "${input.repository}" cannot form a safe repo-relative graph path.`
+    );
+  }
+
+  if (input.manifestRepo?.name !== input.repository) {
+    return synthesisFailure(
+      'missing_manifest',
+      `No manifest row in ${UPSTREAM_MANIFEST_PATH} exactly matches repository ${input.repository}.`
+    );
+  }
+  if (input.manifestRepo.graphStatus !== 'failed' || input.manifestRepo.waiverRequired !== true) {
+    return synthesisFailure(
+      'contradictory_docs',
+      `${UPSTREAM_MANIFEST_PATH} must record graphStatus=failed and waiverRequired=true for ${input.repository}.`
+    );
+  }
+
+  const indexRow = await readGraphEvidenceIndexRow(input.cwd, input.repository);
+  if (!indexRow.ok) return synthesisFailure(indexRow.reason, indexRow.message);
+  const indexPathProblem = validateProofGraphPath(indexRow.row.graphPath, expectedGraphPath);
+  if (indexPathProblem !== null)
+    return synthesisFailure(indexPathProblem.reason, indexPathProblem.message);
+  if (
+    indexRow.row.graphStatus !== 'failed' ||
+    indexRow.row.cloneStatus !== 'fetched' ||
+    indexRow.row.nodes !== 0 ||
+    indexRow.row.edges !== 0 ||
+    indexRow.row.waiverRequired !== 'yes'
+  ) {
+    return synthesisFailure(
+      'contradictory_docs',
+      `${GRAPH_EVIDENCE_INDEX_PATH} must record failed/fetched/0 nodes/0 edges/waiver yes for ${input.repository}.`
+    );
+  }
+
+  const waiverSection = await readWaiverDocSection(input.cwd, input.repository);
+  if (!waiverSection.ok) return synthesisFailure(waiverSection.reason, waiverSection.message);
+  const waiverPathProblem = validateProofGraphPath(
+    waiverSection.section.graphPath,
+    expectedGraphPath
+  );
+  if (waiverPathProblem !== null) {
+    return synthesisFailure(waiverPathProblem.reason, waiverPathProblem.message);
+  }
+  if (waiverSection.section.status !== 'failed') {
+    return synthesisFailure(
+      'contradictory_docs',
+      `${RESEARCH_WAIVERS_PATH} must record Status: failed for ${input.repository}.`
+    );
+  }
+
+  return {
+    canSynthesize: true,
+    reason: 'documented_failed_waiver_required',
+    message: `Proof sources: ${UPSTREAM_MANIFEST_PATH}, ${GRAPH_EVIDENCE_INDEX_PATH}, ${RESEARCH_WAIVERS_PATH}. Next action: approve a targeted graph evidence refresh before clearing the waiver.`,
+  };
+}
+
+function synthesisFailure(
+  reason: MissingGraphSynthesisFailureReason,
+  message: string
+): MissingGraphSynthesisEvaluation {
+  return {
+    canSynthesize: false,
+    reason,
+    message,
+  };
+}
+
+async function readGraphEvidenceIndexRow(
+  cwd: string,
+  repository: string
+): Promise<
+  | { ok: true; row: GraphEvidenceIndexRow }
+  | { ok: false; reason: MissingGraphSynthesisFailureReason; message: string }
+> {
+  const text = await readOptionalText(join(cwd, GRAPH_EVIDENCE_INDEX_PATH));
+  if (text === null) {
+    return {
+      ok: false,
+      reason: 'missing_index_row',
+      message: `${GRAPH_EVIDENCE_INDEX_PATH} is missing.`,
+    };
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    const cells = parseMarkdownTableCells(line);
+    if (cells === null || cells.length === 0) continue;
+    if (cells[0] === 'Repository' || cells.every(cell => /^:?-{3,}:?$/.test(cell))) continue;
+    if (cells[0] !== repository) continue;
+    if (cells.length < 9) {
+      return {
+        ok: false,
+        reason: 'malformed_docs',
+        message: `${GRAPH_EVIDENCE_INDEX_PATH} row for ${repository} has ${cells.length} cells; expected at least 9.`,
+      };
+    }
+    const nodes = parseStrictCount(cells[5]);
+    const edges = parseStrictCount(cells[6]);
+    if (nodes === null || edges === null) {
+      return {
+        ok: false,
+        reason: 'malformed_docs',
+        message: `${GRAPH_EVIDENCE_INDEX_PATH} row for ${repository} must use numeric node and edge counts.`,
+      };
+    }
+    return {
+      ok: true,
+      row: {
+        repository: cells[0],
+        graphStatus: cells[1],
+        cloneStatus: cells[2],
+        nodes,
+        edges,
+        waiverRequired: cells[7],
+        graphPath: cells[8],
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    reason: 'missing_index_row',
+    message: `${GRAPH_EVIDENCE_INDEX_PATH} has no row for ${repository}.`,
+  };
+}
+
+async function readWaiverDocSection(
+  cwd: string,
+  repository: string
+): Promise<
+  | { ok: true; section: WaiverDocSection }
+  | { ok: false; reason: MissingGraphSynthesisFailureReason; message: string }
+> {
+  const text = await readOptionalText(join(cwd, RESEARCH_WAIVERS_PATH));
+  if (text === null) {
+    return {
+      ok: false,
+      reason: 'missing_waiver_section',
+      message: `${RESEARCH_WAIVERS_PATH} is missing.`,
+    };
+  }
+
+  let inSection = false;
+  let status: string | null = null;
+  let graphPath: string | null = null;
+  for (const line of text.split(/\r?\n/)) {
+    if (line.startsWith('## ')) {
+      if (inSection) break;
+      inSection = line.trim() === `## ${repository}`;
+      continue;
+    }
+    if (!inSection) continue;
+    const statusMatch = /^Status:\s*(.+)$/.exec(line);
+    if (statusMatch) status = statusMatch[1]?.trim() ?? null;
+    const graphPathMatch = /^Graph path:\s*(.+)$/.exec(line);
+    if (graphPathMatch) graphPath = graphPathMatch[1]?.trim() ?? null;
+  }
+
+  if (!inSection) {
+    return {
+      ok: false,
+      reason: 'missing_waiver_section',
+      message: `${RESEARCH_WAIVERS_PATH} has no ## ${repository} section.`,
+    };
+  }
+  if (status === null || graphPath === null) {
+    return {
+      ok: false,
+      reason: 'malformed_docs',
+      message: `${RESEARCH_WAIVERS_PATH} section for ${repository} must include Status and Graph path.`,
+    };
+  }
+
+  return {
+    ok: true,
+    section: {
+      repository,
+      status,
+      graphPath,
+    },
+  };
+}
+
+function parseMarkdownTableCells(line: string): string[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
+  return trimmed
+    .slice(1, -1)
+    .split('|')
+    .map(cell => cell.trim());
+}
+
+function parseStrictCount(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function expectedGraphPathForRepository(repository: string): string | null {
+  if (!isSafeRepositoryName(repository)) return null;
+  return `research/graphs/${repository}/graph.json`;
+}
+
+function isSafeRepositoryName(repository: string): boolean {
+  return (
+    repository.length > 0 &&
+    !repository.includes('\0') &&
+    !repository.includes('/') &&
+    !repository.includes('\\') &&
+    !repository.includes('..') &&
+    !/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(repository)
+  );
+}
+
+function validateProofGraphPath(
+  graphPath: string,
+  expectedGraphPath: string
+): { reason: MissingGraphSynthesisFailureReason; message: string } | null {
+  if (
+    graphPath.includes('\0') ||
+    graphPath.startsWith('/') ||
+    graphPath.includes('\\') ||
+    graphPath.split('/').includes('..') ||
+    /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(graphPath) ||
+    !graphPath.startsWith('research/graphs/')
+  ) {
+    return {
+      reason: 'unsafe_path',
+      message: `Graph proof path "${graphPath}" must be a safe repo-relative path under research/graphs.`,
+    };
+  }
+  if (
+    graphPath.toLowerCase() === expectedGraphPath.toLowerCase() &&
+    graphPath !== expectedGraphPath
+  ) {
+    return {
+      reason: 'unsafe_path',
+      message: `Graph proof path "${graphPath}" must match ${expectedGraphPath} with exact case.`,
+    };
+  }
+  if (graphPath !== expectedGraphPath) {
+    return {
+      reason: 'contradictory_docs',
+      message: `Graph proof path "${graphPath}" does not match expected path ${expectedGraphPath}.`,
+    };
+  }
+  return null;
 }
 
 function statusToRepositoryStatus(
