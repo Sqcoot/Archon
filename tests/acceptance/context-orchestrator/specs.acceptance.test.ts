@@ -52,6 +52,7 @@ const specs = [
   '027-route-analytics-ledger-spec.md',
   '028-adversarial-contract-loop-spec.md',
   '029-target-intent-boundary-spec.md',
+  '030-ai-layer-bootstrap-spec.md',
 ];
 
 interface TraceabilityManifest {
