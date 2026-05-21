@@ -42,7 +42,7 @@ Using `bmad-help`, this work is a brownfield core enhancement with architecture 
 3. `bmad-document-project`
 4. `bmad-domain-research`
 5. `bmad-technical-research`
-6. `bmad-cis-problem-solving`
+6. `bmad-investigate`
 7. `bmad-product-brief`
 8. `bmad-prd`
 9. `bmad-create-architecture`
@@ -55,3 +55,11 @@ Using `bmad-help`, this work is a brownfield core enhancement with architecture 
 ## Blockers
 
 No blocker prevents planning. All-workflow validation has a baseline optional MCP issue unrelated to ACO.
+
+## BMAD 6.7.1 Sync Note
+
+The installed BMAD catalog contains `core` and `bmm`, not optional CIS. ACO
+routes must not require `bmad-cis-problem-solving` unless CIS is installed.
+For current BMM forensic review, unfamiliar-code exploration, incident review,
+or changelog-delta investigation, use `bmad-investigate` before product/PRD
+planning and architecture steps.

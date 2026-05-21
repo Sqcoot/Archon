@@ -201,7 +201,8 @@ const markdownSpecs: MarkdownSpec[] = [
     ],
     genericBehavior: [
       'BmadRoute contains route steps, rationale, assumptions, required gates, and fallback route.',
-      'Architecture-sensitive brownfield work starts with context, documentation, research, PRD, validation, architecture, review, stories, readiness, sprint planning.',
+      'Architecture-sensitive brownfield work starts with context, documentation, research, forensic investigation when evidence is uncertain, PRD, validation, architecture, review, stories, readiness, sprint planning.',
+      'Route steps should prefer skills available in the installed BMAD catalog. Optional module skills must not be emitted as required route steps unless the module is installed or explicitly selected.',
     ],
     archonBehavior: [
       'Archon route summaries can be exposed through CLI, slash command, workflow, or API after ADR selection.',
@@ -209,12 +210,12 @@ const markdownSpecs: MarkdownSpec[] = [
     inputs: ['prompt intent', 'graph evidence', 'docs evidence', 'risk level', 'task size'],
     outputs: ['BmadRoute', 'assumption-evidence gate result', 'next BMAD skill'],
     knownUnknowns: [
-      'exact local BMAD catalog availability in this repo',
+      'whether future route catalogs should be resolved dynamically from `_bmad/_config/bmad-help.csv`',
       'whether custom assumption gate becomes a bundled workflow',
     ],
     evidenceReferences: ['docs/context-orchestrator/research/bmad-graph-report.md'],
     acceptanceScenarios: [
-      'Given architecture-sensitive Archon work, when ACO routes the prompt, then PRD validation occurs before architecture and readiness before sprint planning.',
+      'Given architecture-sensitive Archon work, when ACO routes the prompt, then current installed BMAD skills are emitted, PRD validation occurs before architecture, and readiness occurs before sprint planning.',
     ],
     failureBehavior: ['Blocked architecture-controlling assumptions trigger correct-course.'],
     securityConstraints: ['BMAD route output must not expose secrets or raw env values.'],

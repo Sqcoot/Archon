@@ -10,6 +10,8 @@ describe('ACO route acceptance', () => {
     expect(route.id).toBe('brownfield-architecture');
     expect(route.steps).toContain('bmad-generate-project-context');
     expect(route.steps).toContain('bmad-technical-research');
+    expect(route.steps).toContain('bmad-investigate');
+    expect(route.steps).not.toContain('bmad-cis-problem-solving');
     expect(route.steps.indexOf('bmad-prd')).toBeLessThan(
       route.steps.indexOf('bmad-create-architecture')
     );

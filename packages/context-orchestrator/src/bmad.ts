@@ -6,7 +6,7 @@ const brownfieldSteps = [
   'bmad-document-project',
   'bmad-domain-research',
   'bmad-technical-research',
-  'bmad-cis-problem-solving',
+  'bmad-investigate',
   'bmad-product-brief',
   'bmad-prd',
   'bmad-create-architecture',
