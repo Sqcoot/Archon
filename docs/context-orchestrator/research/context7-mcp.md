@@ -11,8 +11,8 @@ Evidence captured: 2026-05-17
 `codex mcp list` shows `context7` configured and enabled:
 
 ```text
-Name      Command                              Status
-context7  /Users/edam/.codex/bin/context7-mcp  enabled
+Name      Command                                      Status
+context7  <provider-managed-context7-mcp-command-path>  enabled
 ```
 
 ## Context7 CLI Evidence

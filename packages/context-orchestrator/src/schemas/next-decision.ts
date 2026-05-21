@@ -50,7 +50,7 @@ export const nextDecisionFactorSchema = z.object({
 });
 
 export const nextDecisionEvidenceSummarySchema = z.object({
-  readiness: z.enum(['ready', 'blocked', 'needs_approval', 'unknown']),
+  readiness: z.enum(['ready', 'blocked', 'needs_approval', 'needs_decision', 'unknown']),
   validationStatus: z.enum(['passed', 'warning', 'failed']),
   graphStatus: z.enum(['available', 'partial', 'forbidden', 'unavailable']),
   graphWaivers: z.number().int().nonnegative(),

@@ -468,9 +468,27 @@ function graphContext(): GraphContext {
 function documentationPlan(): DocumentationPlan {
   return {
     readiness: {
-      openaiDocsMcp: 'available',
-      context7: 'available',
+      openaiDocsMcp: 'deferred_by_design',
+      context7: 'deferred_by_design',
     },
+    integrations: [
+      {
+        id: 'openai-docs-mcp',
+        label: 'OpenAI Docs MCP',
+        state: 'deferred_by_design',
+        reason: 'No OpenAI docs target in fixture.',
+        checkedAt: 'fixture',
+        networkAccess: 'not_attempted',
+      },
+      {
+        id: 'context7',
+        label: 'Context7',
+        state: 'deferred_by_design',
+        reason: 'No Context7 target in fixture.',
+        checkedAt: 'fixture',
+        networkAccess: 'not_attempted',
+      },
+    ],
     targets: [],
     unresolved: [],
   };
@@ -482,6 +500,12 @@ function bmadRoute(): BmadRoute {
     label: 'Brownfield architecture-sensitive route',
     steps: ['bmad-index-docs'],
     rationale: 'Test route.',
+    confidence: 'high',
+    matchedSignals: ['architecture'],
+    rejectedAlternatives: [],
+    fallbackBehavior: 'Stop for clarification if evidence is missing.',
+    nextRecommendedAction: 'Generate project context before architecture.',
+    requiresDecision: false,
   };
 }
 

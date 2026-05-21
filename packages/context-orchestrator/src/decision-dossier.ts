@@ -99,7 +99,8 @@ export async function createDecisionDossier(
   const readiness = getContextOrchestratorReadiness(
     graphContext,
     validationReport,
-    ledgerBundle.evidenceBlockers
+    ledgerBundle.evidenceBlockers,
+    { route: bmadRoute }
   );
   const evidenceResolution =
     options.evidenceResolution ??

@@ -63,7 +63,9 @@ function AcoStatusContent({ status }: { status: AcoStatusResponse }): React.Reac
   });
   const readiness = getAcoReadinessLabel(status);
   const badgeVariant =
-    readiness === 'Blocked' || readiness === 'Needs approval' ? 'destructive' : 'default';
+    readiness === 'Blocked' || readiness === 'Needs approval' || readiness === 'Needs decision'
+      ? 'destructive'
+      : 'default';
   const graphLimitLabel = status.approvalRequired
     ? 'approval-required graph limits'
     : 'accepted graph limits';
@@ -282,8 +284,14 @@ function CompileResult({
             {result.contextIntent.intentHash}
           </div>
         </div>
-        <Badge variant={result.approvalRequired ? 'destructive' : 'default'}>
-          {result.approvalRequired ? 'Needs approval' : 'Ready'}
+        <Badge
+          variant={
+            result.readiness === 'ready' || result.readiness === 'unknown'
+              ? 'default'
+              : 'destructive'
+          }
+        >
+          {formatCompileReadiness(result.readiness)}
         </Badge>
       </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -408,6 +416,21 @@ function hasSupportedNextDecisionSchema(decision: AcoStatusResponse['nextDecisio
 function formatNextDecisionKind(decision: AcoCompileResponse['nextDecision']): string {
   if (!hasSupportedNextDecisionSchema(decision)) return 'manual fallback';
   return decision.kind;
+}
+
+function formatCompileReadiness(readiness: AcoCompileResponse['readiness']): string {
+  switch (readiness) {
+    case 'ready':
+      return 'Ready';
+    case 'blocked':
+      return 'Blocked';
+    case 'needs_approval':
+      return 'Needs approval';
+    case 'needs_decision':
+      return 'Needs decision';
+    case 'unknown':
+      return 'Unknown';
+  }
 }
 
 function InlineError({ message }: { message: string }): React.ReactElement {

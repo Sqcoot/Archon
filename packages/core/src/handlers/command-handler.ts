@@ -1095,6 +1095,8 @@ function formatReadiness(readiness: ContextOrchestratorReadiness): string {
       return 'Blocked';
     case 'needs_approval':
       return 'Needs approval';
+    case 'needs_decision':
+      return 'Needs decision';
     case 'unknown':
       return 'Unknown';
   }

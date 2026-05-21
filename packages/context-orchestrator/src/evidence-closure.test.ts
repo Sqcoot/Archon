@@ -70,7 +70,17 @@ describe('Evidence Closure Planner', () => {
 
   test('AC-ACO-EVIDENCE-001 routes unresolved OpenAI targets to OpenAI Docs MCP', () => {
     const documentationPlan: DocumentationPlan = {
-      readiness: { openaiDocsMcp: 'available', context7: 'available' },
+      readiness: { openaiDocsMcp: 'not_configured', context7: 'deferred_by_design' },
+      integrations: [
+        {
+          id: 'openai-docs-mcp',
+          label: 'OpenAI Docs MCP',
+          state: 'not_configured',
+          reason: 'OpenAI docs target requires explicit runtime configuration.',
+          checkedAt: 'fixture',
+          networkAccess: 'not_attempted',
+        },
+      ],
       targets: [
         {
           source: 'openai-docs-mcp',
@@ -102,7 +112,25 @@ describe('Evidence Closure Planner', () => {
     const closurePlan = createEvidenceClosurePlan({
       contextIntent,
       documentationPlan: {
-        readiness: { openaiDocsMcp: 'available', context7: 'available' },
+        readiness: { openaiDocsMcp: 'deferred_by_design', context7: 'deferred_by_design' },
+        integrations: [
+          {
+            id: 'openai-docs-mcp',
+            label: 'OpenAI Docs MCP',
+            state: 'deferred_by_design',
+            reason: 'No OpenAI docs target in fixture.',
+            checkedAt: 'fixture',
+            networkAccess: 'not_attempted',
+          },
+          {
+            id: 'context7',
+            label: 'Context7',
+            state: 'deferred_by_design',
+            reason: 'No Context7 target in fixture.',
+            checkedAt: 'fixture',
+            networkAccess: 'not_attempted',
+          },
+        ],
         targets: [],
         unresolved: [],
       },

@@ -5,12 +5,31 @@ import { join, resolve } from 'path';
 import {
   compilePromptPackage,
   getContextOrchestratorLedgers,
+  getContextOrchestratorReadiness,
   getContextOrchestratorStatus,
 } from './index';
 
 const repoRoot = resolve(import.meta.dir, '../../..');
 
 describe('context orchestrator status confidence', () => {
+  test('ACO-READINESS-001 readiness contract covers ready, blocked, needs_approval, needs_decision, unknown', () => {
+    const passed = { status: 'passed' as const };
+    const failed = { status: 'failed' as const };
+    const warning = { status: 'warning' as const };
+    const available = { status: 'available' as const };
+    const forbidden = { status: 'forbidden' as const };
+
+    expect(getContextOrchestratorReadiness(available, passed)).toBe('ready');
+    expect(getContextOrchestratorReadiness(available, failed)).toBe('blocked');
+    expect(getContextOrchestratorReadiness(forbidden, passed)).toBe('needs_approval');
+    expect(
+      getContextOrchestratorReadiness(available, passed, [], {
+        route: { requiresDecision: true },
+      })
+    ).toBe('needs_decision');
+    expect(getContextOrchestratorReadiness(available, warning)).toBe('unknown');
+  });
+
   test('AC-CONFIDENCE-004 status ledgers compile agree on graph and ledger confidence', async () => {
     const prompt = 'implement aco confidence closure';
     const timestamp = '2026-05-18T12:00:00.000Z';

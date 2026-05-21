@@ -136,7 +136,8 @@ export async function createApprovalCapsule(
   const readiness = getContextOrchestratorReadiness(
     graphContext,
     validationReport,
-    ledgerBundle.evidenceBlockers
+    ledgerBundle.evidenceBlockers,
+    { route: bmadRoute }
   );
   if (readiness !== 'needs_approval' || graphContext.status !== 'forbidden') {
     throw new Error(

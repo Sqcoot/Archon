@@ -2,13 +2,15 @@ import type { NextDecision } from './schemas/next-decision';
 import type { TargetIntentBoundaryArtifact } from './schemas/target-intent-boundary';
 export type { NextDecision } from './schemas/next-decision';
 
-export type McpReadinessState =
-  | 'available'
-  | 'configured-but-unverified'
+export type IntegrationVerificationState =
+  | 'verified_available'
+  | 'configured_but_not_reachable'
+  | 'not_configured'
   | 'unavailable'
-  | 'optional-skipped'
-  | 'required-missing'
-  | 'blocked';
+  | 'unknown'
+  | 'deferred_by_design';
+
+export type McpReadinessState = IntegrationVerificationState;
 
 export type GraphStatus = 'not-started' | 'complete' | 'failed' | 'waived';
 
@@ -129,8 +131,24 @@ export interface DocumentationPlan {
     openaiDocsMcp: McpReadinessState;
     context7: McpReadinessState;
   };
+  integrations: IntegrationVerification[];
   targets: DocumentationTarget[];
   unresolved: string[];
+}
+
+export interface IntegrationVerification {
+  id: 'openai-docs-mcp' | 'context7' | 'generic-docs';
+  label: string;
+  state: IntegrationVerificationState;
+  reason: string;
+  checkedAt: string;
+  networkAccess: 'not_attempted' | 'attempted';
+}
+
+export interface BmadRejectedAlternative {
+  id: string;
+  label: string;
+  reason: string;
 }
 
 export interface BmadRoute {
@@ -138,6 +156,12 @@ export interface BmadRoute {
   label: string;
   steps: string[];
   rationale: string;
+  confidence: 'high' | 'medium' | 'low';
+  matchedSignals: string[];
+  rejectedAlternatives: BmadRejectedAlternative[];
+  fallbackBehavior: string;
+  nextRecommendedAction: string;
+  requiresDecision: boolean;
 }
 
 export interface AcceptanceScenario {
@@ -324,7 +348,12 @@ export interface LedgerBundle {
   summary: LedgerBundleSummary;
 }
 
-export type ContextOrchestratorReadiness = 'ready' | 'blocked' | 'needs_approval' | 'unknown';
+export type ContextOrchestratorReadiness =
+  | 'ready'
+  | 'blocked'
+  | 'needs_approval'
+  | 'needs_decision'
+  | 'unknown';
 
 export interface DecisionDossierEvidence {
   id: string;

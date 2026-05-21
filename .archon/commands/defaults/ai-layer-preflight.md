@@ -16,7 +16,7 @@ Own only read-only preflight inspection.
 ## Required Work
 
 1. Verify Archon repo identity, branch, remote, status, and target cwd.
-2. Verify `/Users/edam/Documents/TODA/helpline` exists and is readable.
+2. If `ARCHON_HELPLINE_REFERENCE_ROOT` is set, verify it exists and is readable; otherwise record Helpline reference as `not_configured`.
 3. Inspect actual workflow and command conventions.
 4. Inspect workflow schemas, command validation, provider registry, docs conventions, and bundled default generation.
 5. Inspect validation commands from `package.json`.

@@ -382,8 +382,14 @@ function buildToolAvailabilityEntries(
   const policy = checkById(options.validationReport, 'aco-policy');
   const traceability = checkById(options.validationReport, 'aco-traceability');
   const packageScriptStatus = Object.keys(packageScripts).length > 0 ? 'available' : 'blocked';
+  const unverifiedRequiredDocs = options.documentationPlan.integrations.filter(
+    integration =>
+      integration.state !== 'verified_available' && integration.state !== 'deferred_by_design'
+  );
   const docsStatus =
-    options.documentationPlan.unresolved.length > 0 ? 'partial' : ('available' as LedgerStatus);
+    options.documentationPlan.unresolved.length > 0 || unverifiedRequiredDocs.length > 0
+      ? 'partial'
+      : ('available' as LedgerStatus);
   const graphStatus = graphToLedgerStatus(options.graphContext.status);
 
   return [
@@ -572,7 +578,7 @@ function buildToolAvailabilityEntries(
       name: 'Docs evidence',
       category: 'evidence',
       status: docsStatus,
-      sourceEvidence: `documentationPlan targets=${options.documentationPlan.targets.length}; unresolved=${options.documentationPlan.unresolved.length}.`,
+      sourceEvidence: `documentationPlan targets=${options.documentationPlan.targets.length}; unresolved=${options.documentationPlan.unresolved.length}; integrations=${options.documentationPlan.integrations.map(integration => `${integration.id}:${integration.state}`).join(',')}.`,
       invocationPath: 'planDocumentation({ prompt })',
       scope: 'OpenAI Docs MCP, Context7, or generic docs planning.',
       preconditions: 'Prompt can be inspected for documentation needs.',
@@ -585,8 +591,8 @@ function buildToolAvailabilityEntries(
       lastVerifiedAt,
       notes:
         options.documentationPlan.unresolved.length > 0
-          ? `Unresolved: ${options.documentationPlan.unresolved.join(', ')}`
-          : 'No unresolved docs targets.',
+          ? `Unresolved: ${options.documentationPlan.unresolved.join(', ')}. ${unverifiedRequiredDocs.map(integration => `${integration.id}=${integration.state}`).join(', ')}`
+          : `No unresolved docs targets. ${options.documentationPlan.integrations.map(integration => `${integration.id}=${integration.state}`).join(', ')}`,
       confidence: 'observed',
     }),
     toolEntry({

@@ -6,6 +6,10 @@ describe('ACO documentation acceptance', () => {
     const plan = planDocumentation({ prompt: 'How should Codex MCP configuration be set up?' });
     expect(plan.targets[0]?.source).toBe('openai-docs-mcp');
     expect(plan.targets[0]?.topic).toContain('Codex');
+    expect(plan.readiness.openaiDocsMcp).not.toBe('verified_available');
+    expect(plan.integrations.find(item => item.id === 'openai-docs-mcp')?.reason).toContain(
+      'does not assume MCP availability'
+    );
   });
 
   test('Spec: 005-documentation-resolution-spec.md Acceptance: ACO-DOCS-002 unknown third-party library keeps Context7 ID unresolved', () => {
@@ -13,6 +17,10 @@ describe('ACO documentation acceptance', () => {
     const target = plan.targets.find(item => item.source === 'context7');
     expect(target?.libraryId).toBeUndefined();
     expect(target?.status).toBe('unresolved');
+    expect(plan.readiness.context7).not.toBe('verified_available');
+    expect(plan.integrations.find(item => item.id === 'context7')?.networkAccess).toBe(
+      'not_attempted'
+    );
   });
 
   test('Spec: 005-documentation-resolution-spec.md Acceptance: AC-CONFIDENCE-003 task verbs do not create unresolved Context7 targets', () => {

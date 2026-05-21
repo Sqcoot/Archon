@@ -50,6 +50,8 @@ function toReadinessLabel(status: ContextOrchestratorStatus): string {
       return 'Ready';
     case 'needs_approval':
       return 'Needs approval';
+    case 'needs_decision':
+      return 'Needs decision';
     case 'unknown':
       return 'Unknown';
     case 'blocked':

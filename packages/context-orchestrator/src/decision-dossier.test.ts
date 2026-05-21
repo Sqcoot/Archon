@@ -82,13 +82,37 @@ const routeFixture: BmadRoute = {
   steps: ['bmad-index-docs', 'bmad-create-architecture'],
   rationale:
     'Archon implementation work should gather context, validate PRD, then create architecture.',
+  confidence: 'high',
+  matchedSignals: ['architecture'],
+  rejectedAlternatives: [],
+  fallbackBehavior: 'Stop for clarification if evidence is missing.',
+  nextRecommendedAction: 'Generate project context before architecture.',
+  requiresDecision: false,
 };
 
 const documentationPlanFixture: DocumentationPlan = {
   readiness: {
-    openaiDocsMcp: 'available',
-    context7: 'available',
+    openaiDocsMcp: 'deferred_by_design',
+    context7: 'deferred_by_design',
   },
+  integrations: [
+    {
+      id: 'openai-docs-mcp',
+      label: 'OpenAI Docs MCP',
+      state: 'deferred_by_design',
+      reason: 'No OpenAI docs target in fixture.',
+      checkedAt: 'fixture',
+      networkAccess: 'not_attempted',
+    },
+    {
+      id: 'context7',
+      label: 'Context7',
+      state: 'deferred_by_design',
+      reason: 'No Context7 target in fixture.',
+      checkedAt: 'fixture',
+      networkAccess: 'not_attempted',
+    },
+  ],
   targets: [],
   unresolved: [],
 };

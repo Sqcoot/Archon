@@ -15,7 +15,7 @@ Own only read-only Helpline reference classification.
 
 ## Required Work
 
-1. Inspect `/Users/edam/Documents/TODA/helpline` as read-only reference material.
+1. Inspect `ARCHON_HELPLINE_REFERENCE_ROOT` as read-only reference material when configured; otherwise stop with `not_configured`.
 2. Classify ideas as generalizable, repo-specific, provider-specific, implement-now, propose, or defer.
 3. Do not copy repo-specific content blindly.
 4. Write `$ARTIFACTS_DIR/ai-layer/helpline-notes.md`.

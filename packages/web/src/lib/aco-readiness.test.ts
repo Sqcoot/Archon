@@ -169,4 +169,32 @@ describe('ACO readiness display helpers', () => {
     expect(getAcoReadinessLabel(status)).toBe('Ready');
     expect(formatAcoEvidenceSummary(status)).toContain('2 unknown');
   });
+
+  test('AC-P1-WEB renders needs_decision without implying readiness', () => {
+    const status: AcoStatusResponse = {
+      ...baseStatus,
+      graphStatus: 'available',
+      graphWaivers: 0,
+      graphWaiverIds: [],
+      waivers: [],
+      approvalRequired: false,
+      readiness: 'needs_decision',
+      nextDecision: {
+        ...baseStatus.nextDecision,
+        kind: 'needs_correct_course',
+        evidenceSummary: {
+          ...baseStatus.nextDecision.evidenceSummary,
+          readiness: 'needs_decision',
+          graphStatus: 'available',
+          graphWaivers: 0,
+        },
+      },
+    };
+
+    expect(getAcoReadinessLabel(status)).toBe('Needs decision');
+    expect(formatAcoHandoffNarrative(status)).toContain(
+      'Context Orchestrator Readiness: Needs decision'
+    );
+    expect(formatAcoHandoffNarrative(status)).not.toContain('Ready with known limits');
+  });
 });

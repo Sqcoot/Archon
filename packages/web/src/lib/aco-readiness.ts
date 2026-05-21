@@ -23,6 +23,7 @@ function getCombinedCounts(status: AcoStatusResponse): Record<LedgerCountKey, nu
 
 export function getAcoReadinessLabel(status: AcoStatusResponse): string {
   if (status.readiness === 'needs_approval') return 'Needs approval';
+  if (status.readiness === 'needs_decision') return 'Needs decision';
   if (status.readiness === 'blocked') return 'Blocked';
   if (status.readiness === 'unknown') return 'Unknown';
   if (status.readiness === 'ready' && status.validationStatus === 'passed') return 'Ready';

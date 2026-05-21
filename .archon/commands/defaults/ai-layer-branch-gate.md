@@ -20,8 +20,8 @@ Own only branch-gate behavior. Do not edit product files.
 ## Required Work
 
 1. Create `$ARTIFACTS_DIR/ai-layer` if `$ARTIFACTS_DIR` is set. If it is not set, stop and report that artifact handoff is unavailable.
-2. Verify `/Users/edam/Documents/TODA/Archon` is the git root.
-3. Verify the actual branch is `stabilization/stab-002-sdd-atdd-alignment`.
+2. Verify the current working directory is the git root unless `ARCHON_AI_LAYER_REPO_ROOT` is set.
+3. Verify the actual branch matches `ARCHON_AI_LAYER_REQUIRED_BRANCH` when that variable is set; otherwise record the branch without failing.
 4. Record `git status --short`.
 5. Write:
    - `$ARTIFACTS_DIR/ai-layer/branch-gate.md`

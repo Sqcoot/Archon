@@ -16,7 +16,7 @@ Own only stop permission.
 ## Required Work
 
 1. Verify terminal state is one of the allowed endgoal states.
-2. Verify branch is `stabilization/stab-002-sdd-atdd-alignment`.
+2. Verify branch matches `ARCHON_AI_LAYER_REQUIRED_BRANCH` when configured; otherwise record current branch as evidence.
 3. Verify no retry is still recommended.
 4. Verify no required node is pending.
 5. Verify final response can honestly report results.

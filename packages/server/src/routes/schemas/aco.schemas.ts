@@ -20,7 +20,7 @@ const ledgerSummarySectionSchema = z
   .openapi('AcoLedgerSummarySection');
 
 const acoReadinessSchema = z
-  .enum(['ready', 'blocked', 'needs_approval', 'unknown'])
+  .enum(['ready', 'blocked', 'needs_approval', 'needs_decision', 'unknown'])
   .openapi('AcoReadiness');
 
 const acoWaiverSchema = z
@@ -175,6 +175,20 @@ const acoRouteSchema = z
     label: z.string(),
     steps: z.array(z.string()),
     rationale: z.string(),
+    confidence: z.enum(['high', 'medium', 'low']).optional(),
+    matchedSignals: z.array(z.string()).optional(),
+    rejectedAlternatives: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          reason: z.string(),
+        })
+      )
+      .optional(),
+    fallbackBehavior: z.string().optional(),
+    nextRecommendedAction: z.string().optional(),
+    requiresDecision: z.boolean().optional(),
   })
   .openapi('AcoRoute');
 

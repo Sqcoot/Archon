@@ -1,4 +1,9 @@
-import type { DocumentationPlan, DocumentationTarget } from './types';
+import type {
+  DocumentationPlan,
+  DocumentationTarget,
+  IntegrationVerification,
+  IntegrationVerificationState,
+} from './types';
 
 const thirdPartyIgnore = new Set([
   'ACO',
@@ -54,10 +59,12 @@ const thirdPartyIgnore = new Set([
 
 export interface PlanDocumentationOptions {
   prompt: string;
+  timestamp?: string;
 }
 
 export function planDocumentation(options: PlanDocumentationOptions): DocumentationPlan {
   const prompt = options.prompt;
+  const checkedAt = options.timestamp ?? 'not-runtime-checked';
   const targets: DocumentationTarget[] = [];
   const lower = prompt.toLowerCase();
 
@@ -95,16 +102,81 @@ export function planDocumentation(options: PlanDocumentationOptions): Documentat
     });
   }
 
+  const integrations = buildIntegrationStates(targets, checkedAt);
+
   return {
     readiness: {
-      openaiDocsMcp: 'available',
-      context7: 'available',
+      openaiDocsMcp:
+        integrations.find(integration => integration.id === 'openai-docs-mcp')?.state ??
+        'deferred_by_design',
+      context7:
+        integrations.find(integration => integration.id === 'context7')?.state ??
+        'deferred_by_design',
     },
+    integrations,
     targets,
     unresolved: targets
       .filter(target => target.status === 'unresolved')
       .map(target => target.topic),
   };
+}
+
+function buildIntegrationStates(
+  targets: DocumentationTarget[],
+  checkedAt: string
+): IntegrationVerification[] {
+  const openaiRequired = targets.some(target => target.source === 'openai-docs-mcp');
+  const context7Required = targets.some(target => target.source === 'context7');
+  return [
+    integrationState({
+      id: 'openai-docs-mcp',
+      label: 'OpenAI Docs MCP',
+      state: openaiRequired ? configuredState('OPENAI_DOCS_MCP_ENABLED') : 'deferred_by_design',
+      reason: openaiRequired
+        ? 'OpenAI/Codex docs are required; ACO does not assume MCP availability without runtime configuration.'
+        : 'No OpenAI/Codex documentation target selected for this prompt.',
+      checkedAt,
+    }),
+    integrationState({
+      id: 'context7',
+      label: 'Context7',
+      state: context7Required ? configuredState('CONTEXT7_API_KEY') : 'deferred_by_design',
+      reason: context7Required
+        ? 'Third-party docs are required; Context7 library ID must be resolved by an explicit docs command.'
+        : 'No third-party documentation target selected for this prompt.',
+      checkedAt,
+    }),
+    integrationState({
+      id: 'generic-docs',
+      label: 'Generic docs planning',
+      state: targets.some(target => target.source === 'generic')
+        ? 'verified_available'
+        : 'deferred_by_design',
+      reason: targets.some(target => target.source === 'generic')
+        ? 'Generic docs planning is local deterministic logic and needs no external integration.'
+        : 'Generic docs planning not selected for this prompt.',
+      checkedAt,
+    }),
+  ];
+}
+
+function integrationState(input: {
+  id: IntegrationVerification['id'];
+  label: string;
+  state: IntegrationVerificationState;
+  reason: string;
+  checkedAt: string;
+}): IntegrationVerification {
+  return {
+    ...input,
+    networkAccess: 'not_attempted',
+  };
+}
+
+function configuredState(
+  envName: 'CONTEXT7_API_KEY' | 'OPENAI_DOCS_MCP_ENABLED'
+): IntegrationVerificationState {
+  return process.env[envName] ? 'configured_but_not_reachable' : 'not_configured';
 }
 
 function detectThirdPartyLibrary(prompt: string): string | null {

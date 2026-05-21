@@ -2296,7 +2296,7 @@ export interface components {
       expiryCondition: string;
     };
     /** @enum {string} */
-    AcoReadiness: 'ready' | 'blocked' | 'needs_approval' | 'unknown';
+    AcoReadiness: 'ready' | 'blocked' | 'needs_approval' | 'needs_decision' | 'unknown';
     AcoLedgerStatusCounts: {
       available: number;
       partial: number;
@@ -2345,6 +2345,7 @@ export interface components {
       items: components['schemas']['AcoEvidenceResolutionItem'][];
     };
     AcoApprovalContractV1: {
+      /** @enum {string} */
       schemaVersion: 'aco.approval-contract.v1';
       contractId: string;
       contractHash: string;
@@ -2352,16 +2353,22 @@ export interface components {
       intentHash: string;
       commitSha: string;
       routeId: string;
+      /** @enum {string} */
       readiness: 'needs_approval';
+      /** @enum {string} */
       graphStatus: 'forbidden';
       requiredWaiverIds: string[];
       evidenceResolutionIds: string[];
       ledgerFingerprint: string;
+      /** @enum {string} */
       validationStatus: 'passed' | 'warning' | 'failed';
+      /** @enum {boolean} */
       willRun: false;
       approvalScope: {
+        /** @enum {string} */
         type: 'workflow-handoff';
         allowedActions: 'preserve-current-graph-waivers'[];
+        /** @enum {string} */
         summary: 'Approval preserves listed graph waivers for this run only.';
       };
     };
@@ -2371,10 +2378,13 @@ export interface components {
       kind: 'approval' | 'manual' | 'validation' | 'correct_course' | 'implementation';
       label: string;
       command?: string[];
-      payload?: {
-        [key: string]: unknown;
-      };
+      payload?:
+        | components['schemas']['AcoApprovalContractV1']
+        | {
+            [key: string]: unknown;
+          };
       requiresApproval: boolean;
+      /** @enum {boolean} */
       willRun: false;
       successEvidence: string[];
     };
@@ -2396,6 +2406,7 @@ export interface components {
       ledgerSummary: components['schemas']['AcoLedgerSummary'];
     };
     AcoNextDecision: {
+      /** @enum {string} */
       schemaVersion: 'aco.next-decision.v1';
       /** @enum {string} */
       kind:
@@ -2453,6 +2464,17 @@ export interface components {
       label: string;
       steps: string[];
       rationale: string;
+      /** @enum {string} */
+      confidence?: 'high' | 'medium' | 'low';
+      matchedSignals?: string[];
+      rejectedAlternatives?: {
+        id: string;
+        label: string;
+        reason: string;
+      }[];
+      fallbackBehavior?: string;
+      nextRecommendedAction?: string;
+      requiresDecision?: boolean;
     };
     AcoRouteRequest: {
       cwd: string;
@@ -2463,6 +2485,17 @@ export interface components {
       label: string;
       steps: string[];
       rationale: string;
+      /** @enum {string} */
+      confidence?: 'high' | 'medium' | 'low';
+      matchedSignals?: string[];
+      rejectedAlternatives?: {
+        id: string;
+        label: string;
+        reason: string;
+      }[];
+      fallbackBehavior?: string;
+      nextRecommendedAction?: string;
+      requiresDecision?: boolean;
     };
     AcoCompileResponse: {
       runId: string;
@@ -2816,6 +2849,7 @@ export interface components {
           args?: string[];
         };
       };
+      always_run?: boolean;
       command?: string;
       prompt?: string;
       bash?: string;

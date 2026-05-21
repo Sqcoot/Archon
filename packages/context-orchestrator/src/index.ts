@@ -130,6 +130,8 @@ export type {
   CommandLedgerEntry,
   CommandSafety,
   ContextIntent,
+  IntegrationVerification,
+  IntegrationVerificationState,
   McpReadinessState,
   EvidenceBlocker,
   EvidenceClosurePlan,

@@ -10,6 +10,7 @@ import { buildNextDecision } from './next-decision';
 import { createLedgerFingerprint } from './schemas/approval-contract';
 import { validateContextOrchestrator } from './validation';
 import type {
+  BmadRoute,
   ContextOrchestratorReadiness,
   ContextIntent,
   EvidenceClosurePlan,
@@ -56,6 +57,7 @@ export async function getContextOrchestratorStatus(
     ledgerBundle,
     evidenceResolution,
     nextDecision,
+    readiness,
   } = await buildContextLedgerEvidence(cwd, options);
   return {
     cwd,
@@ -65,11 +67,7 @@ export async function getContextOrchestratorStatus(
     graphWaiverIds: graphContext.waivers.map(waiver => waiver.id),
     waivers: graphContext.waivers,
     approvalRequired: isApprovalRequired(graphContext),
-    readiness: getContextOrchestratorReadiness(
-      graphContext,
-      validationReport,
-      ledgerBundle.evidenceBlockers
-    ),
+    readiness,
     validationStatus: validationReport.status,
     ledgerSchemaVersion: ledgerBundle.schemaVersion,
     ledgerSummary: ledgerBundle.summary,
@@ -82,12 +80,14 @@ export async function getContextOrchestratorStatus(
 export function getContextOrchestratorReadiness(
   graphContext: Pick<GraphContext, 'status'>,
   validationReport: Pick<ValidationReport, 'status'>,
-  evidenceBlockers: readonly EvidenceBlocker[] = []
+  evidenceBlockers: readonly EvidenceBlocker[] = [],
+  options: { route?: Pick<BmadRoute, 'requiresDecision'> } = {}
 ): ContextOrchestratorReadiness {
   if (isApprovalRequired(graphContext)) return 'needs_approval';
   if (validationReport.status === 'failed') return 'blocked';
   // Evidence blockers preserve exact ledger row IDs, for example tool.docs-evidence.
   if (evidenceBlockers.length > 0) return 'blocked';
+  if (options.route?.requiresDecision) return 'needs_decision';
   if (validationReport.status !== 'passed') return 'unknown';
   if (graphContext.status === 'partial') return 'unknown';
   return 'ready';
@@ -115,6 +115,7 @@ async function buildContextLedgerEvidence(
   ledgerBundle: LedgerBundle;
   evidenceResolution: EvidenceClosurePlan;
   nextDecision: NextDecision;
+  readiness: ContextOrchestratorReadiness;
 }> {
   const contextIntent =
     options.contextIntent ??
@@ -154,7 +155,8 @@ async function buildContextLedgerEvidence(
   const readiness = getContextOrchestratorReadiness(
     graphContext,
     validationReport,
-    ledgerBundle.evidenceBlockers
+    ledgerBundle.evidenceBlockers,
+    { route: bmadRoute }
   );
   const nextDecision = buildNextDecision({
     contextIntent,
@@ -175,6 +177,7 @@ async function buildContextLedgerEvidence(
     ledgerBundle,
     evidenceResolution,
     nextDecision,
+    readiness,
   };
 }
 

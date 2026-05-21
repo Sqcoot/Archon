@@ -16,9 +16,9 @@ Own only the durable goal/endgoal contract and initial routing gate.
 ## Required Work
 
 1. Resolve the target repo from the workflow cwd. Distinguish:
-   - Archon source repo: `/Users/edam/Documents/TODA/Archon`
-   - required branch: `stabilization/stab-002-sdd-atdd-alignment`
-   - Helpline reference repo: `/Users/edam/Documents/TODA/helpline`
+   - Archon source repo: current workflow repository, or `ARCHON_AI_LAYER_REPO_ROOT` when set
+   - required branch: `ARCHON_AI_LAYER_REQUIRED_BRANCH` when set; otherwise record current branch as evidence
+   - optional Helpline reference repo: `ARCHON_HELPLINE_REFERENCE_ROOT` when set
    - target repo cwd
 2. Infer provider target from `$ARGUMENTS`: `claude`, `codex`, or `both`; default to `both`.
 3. Infer mode from `$ARGUMENTS`: `dry-run`, `propose`, `apply`, or `apply-safe-and-propose-risky`; default to `apply-safe-and-propose-risky`.

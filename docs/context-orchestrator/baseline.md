@@ -1,8 +1,8 @@
 # ACO Baseline
 
 Date: 2026-05-17
-Repository: `/Users/edam/Documents/TODA/Archon`
-Branch: `dev`
+Repository: current checkout root
+Branch: recorded by `git branch --show-current` during each stabilization run
 
 ## Purpose
 

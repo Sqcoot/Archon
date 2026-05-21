@@ -1038,7 +1038,8 @@ export function registerApiRoutes(
     const readiness = getContextOrchestratorReadiness(
       promptPackage.graphContext,
       promptPackage.validationReport,
-      promptPackage.ledgerBundle.evidenceBlockers
+      promptPackage.ledgerBundle.evidenceBlockers,
+      { route: promptPackage.bmadRoute }
     );
     return {
       runId: promptPackage.runId,

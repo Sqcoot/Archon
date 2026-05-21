@@ -336,7 +336,8 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
   const readiness = getContextOrchestratorReadiness(
     result.package.graphContext,
     result.package.validationReport,
-    result.package.ledgerBundle.evidenceBlockers
+    result.package.ledgerBundle.evidenceBlockers,
+    { route: result.package.bmadRoute }
   );
   return {
     runId: result.package.runId,
