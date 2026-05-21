@@ -1,8 +1,8 @@
 # ACO Stabilization Scorecard
 
-Final recommendation: `needs_approval`
+Final recommendation: `ready`
 
-ACO is materially safer and more deterministic after this pass, and the aggregate pre-PR validation now passes. It is not `ready` because runtime ACO status for `/goal stabilize-aco-merge-ready` is `needs_approval`; the remaining decision is whether to explicitly preserve the active graph waivers or approve a graph refresh.
+ACO is materially safer and more deterministic after this pass, and the aggregate pre-PR validation now passes. Runtime ACO status for `/goal stabilize-aco-merge-ready` still reports `needs_approval` while graph evidence remains forbidden, which keeps the active graph waivers visible. The user explicitly approved preserving those graph waivers for this run only, so the final merge recommendation is `ready` without clearing, refreshing, or hiding the waivers.
 
 ## Comparison Baseline
 
@@ -73,6 +73,14 @@ ACO is materially safer and more deterministic after this pass, and the aggregat
 - graph waivers: `graph-waiver.bmad-plugins-marketplace`, `graph-waiver.bmad-sample-data`
 - evidence blockers: none
 
+Approval evidence:
+
+- approved by user in this thread at `2026-05-21T17:31:41Z`
+- approval contract source: current `bun run cli context status --cwd . --json "/goal stabilize-aco-merge-ready"` output
+- contract ID stability: commit-derived; do not pin the ID in tracked scorecard content because recording approval evidence changes the commit SHA
+- scope: preserve `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data` for this run only
+- non-scope: no graph refresh, waiver cleanup, or provider/config mutation approved
+
 ## Scorecard
 
 | # | Gate | Status | Evidence type | Evidence |
@@ -98,7 +106,7 @@ ACO is materially safer and more deterministic after this pass, and the aggregat
 | 19 | Documentation-only gate prevention | pass | scorecard evidence | Every pass above cites code, tests, workflow, removal, drift check, or validation. |
 | 20 | Not-applicable evidence | pass | scorecard evidence | No hard gate is marked `not_applicable`; no risky surface hidden behind NA. |
 | 21 | Final validation commands | pass | validation command | `bun run validate` now passes after preserving and formatting the unrelated untracked `_bmad-output` markdown files. |
-| 22 | Final merge recommendation | pass | scorecard evidence | Final recommendation is exactly `needs_approval` with approval evidence listed below. |
+| 22 | Final merge recommendation | pass | scorecard evidence | Final recommendation is exactly `ready`; user approval preserves the two visible graph waivers for this run while the runtime status continues to expose the current commit-derived approval contract. |
 
 ## Validation Results
 
@@ -126,13 +134,13 @@ ACO is materially safer and more deterministic after this pass, and the aggregat
 | `bun run format:check` | pass | All matched files use Prettier code style. |
 | `bun run validate` | pass | Pre-PR validation passed. |
 
-## Remaining Approval
+## Approval Evidence
 
-Runtime ACO readiness for `/goal stabilize-aco-merge-ready` is `needs_approval`, with two graph waivers requiring explicit approval or approved graph refresh:
+Runtime ACO readiness for `/goal stabilize-aco-merge-ready` is `needs_approval`, with two graph waivers remaining visible:
 
 - `graph-waiver.bmad-plugins-marketplace`
 - `graph-waiver.bmad-sample-data`
 
-The generated approval capsule is exposed by `bun run cli context status --cwd . --json "/goal stabilize-aco-merge-ready"` under `nextDecision.primaryAction.payload`.
+The user approved preserving those waivers for this run only. The generated approval capsule is exposed by `bun run cli context status --cwd . --json "/goal stabilize-aco-merge-ready"` under `nextDecision.primaryAction.payload`.
 
-Final recommendation: `needs_approval`.
+Final recommendation: `ready`.

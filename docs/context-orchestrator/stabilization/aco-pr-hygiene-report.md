@@ -1,6 +1,6 @@
 # ACO PR Hygiene Report
 
-Final recommendation: `needs_approval`
+Final recommendation: `ready`
 
 ## Baseline
 
@@ -100,15 +100,16 @@ Commands blocked or failing:
 
 ## Remaining Risks
 
-- The branch cannot be declared `ready` while the ACO runtime status is `needs_approval`.
-- Current graph waivers are deliberately preserved and require explicit reviewer approval or approved graph refresh.
-- The scorecard is intentionally conservative: graph-waiver approval is still required before a ready merge recommendation.
+- Runtime ACO status still reports `needs_approval` while graph evidence remains forbidden; this is intentional so the waivers stay visible.
+- The user approved preserving `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data` for this run only. The current commit-derived approval contract remains available from `bun run cli context status --cwd . --json "/goal stabilize-aco-merge-ready"`.
+- This approval does not approve graph refresh, waiver cleanup, or provider/config mutation.
 
 ## Final Recommendation
 
-`needs_approval`
+`ready`
 
 Exact reasons:
 
-1. ACO runtime readiness is `needs_approval` for `/goal stabilize-aco-merge-ready`.
-2. Graph waiver approvals remain required for `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data`.
+1. All hard gates are pass/not-applicable with evidence; no hard gates are failed or unknown.
+2. Full local validation passed, including `bun run validate`.
+3. The remaining graph-waiver decision was explicitly approved by the user for this run only, preserving `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data` while keeping the current commit-derived approval contract visible through ACO status.

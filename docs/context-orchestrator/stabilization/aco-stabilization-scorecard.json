@@ -1,7 +1,7 @@
 {
   "schemaVersion": "aco.stabilization-scorecard.v1",
-  "finalRecommendation": "needs_approval",
-  "generatedAt": "2026-05-21T17:21:51Z",
+  "finalRecommendation": "ready",
+  "generatedAt": "2026-05-21T17:31:41Z",
   "baseline": {
     "currentBranch": "stabilization/stab-002-bmad-method-current-sync",
     "targetBranch": "sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev",
@@ -36,6 +36,24 @@
       "graph-waiver.bmad-sample-data"
     ],
     "evidenceBlockerIds": []
+  },
+  "approvalEvidence": {
+    "approvedAt": "2026-05-21T17:31:41Z",
+    "approvedBy": "user-thread-approval",
+    "approvalContractSource": "bun run cli context status --cwd . --json \"/goal stabilize-aco-merge-ready\"",
+    "contractIdStability": "Commit-derived; do not pin the approval contract ID in tracked scorecard content because recording approval evidence changes the commit SHA.",
+    "approvedAction": "preserve-current-graph-waivers",
+    "approvedWaiverIds": [
+      "graph-waiver.bmad-plugins-marketplace",
+      "graph-waiver.bmad-sample-data"
+    ],
+    "scope": "Preserve the listed graph waivers for this run only.",
+    "nonScope": [
+      "No graph refresh approved.",
+      "No waiver cleanup approved.",
+      "No provider or live config mutation approved."
+    ],
+    "readinessImpact": "Resolves the final merge recommendation gate while preserving runtime waiver visibility."
   },
   "gates": [
     {
@@ -211,8 +229,8 @@
       "title": "Final merge recommendation",
       "status": "pass",
       "evidenceTypes": ["scorecard evidence"],
-      "evidence": "Final recommendation is exactly needs_approval, with graph-waiver approval evidence listed.",
-      "readinessImpact": "Reviewer receives an honest non-ready state."
+      "evidence": "Final recommendation is exactly ready; the user approved preserving graph-waiver.bmad-plugins-marketplace and graph-waiver.bmad-sample-data for this run while the runtime status continues to expose the current commit-derived approval contract.",
+      "readinessImpact": "Reviewer receives a ready merge recommendation with explicit waiver approval evidence and unchanged runtime waiver visibility."
     }
   ],
   "validation": [
@@ -279,8 +297,5 @@
   ],
   "explicitDeferrals": [],
   "notApplicable": [],
-  "blockers": [
-    "Runtime ACO readiness is needs_approval for /goal stabilize-aco-merge-ready.",
-    "Graph waivers graph-waiver.bmad-plugins-marketplace and graph-waiver.bmad-sample-data require explicit approval or approved graph refresh."
-  ]
+  "blockers": []
 }
