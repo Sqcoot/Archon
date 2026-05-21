@@ -34,7 +34,7 @@ Route catalog, brownfield route, quick route, correct-course route, and assumpti
 
 - BmadRoute
 - assumption-evidence gate result
-- next BMAD command
+- next BMAD skill
 
 ## Known Unknowns
 

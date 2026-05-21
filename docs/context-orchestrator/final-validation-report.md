@@ -235,15 +235,15 @@ Research and acceptance scripts:
 - Hosted CI is externally blocked until GitHub runner billing/account status is resolved.
 - Workflow validation still has the pre-existing non-ACO `archon-smart-pr-review` `.archon/mcp/ntfy.json` waiver.
 
-## Next BMAD Command
+## Next BMAD Skill
 
 Next recommended BMAD step for this corrective slice:
 
-`/bmad-bmm-code-review`
+`bmad-code-review`
 
 Next recommended BMAD step for milestone 2 after review:
 
-`/bmad-bmm-create-story`
+`bmad-create-story`
 
 Story target:
 

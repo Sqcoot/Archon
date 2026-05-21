@@ -207,7 +207,7 @@ const markdownSpecs: MarkdownSpec[] = [
       'Archon route summaries can be exposed through CLI, slash command, workflow, or API after ADR selection.',
     ],
     inputs: ['prompt intent', 'graph evidence', 'docs evidence', 'risk level', 'task size'],
-    outputs: ['BmadRoute', 'assumption-evidence gate result', 'next BMAD command'],
+    outputs: ['BmadRoute', 'assumption-evidence gate result', 'next BMAD skill'],
     knownUnknowns: [
       'exact local BMAD catalog availability in this repo',
       'whether custom assumption gate becomes a bundled workflow',
@@ -432,7 +432,7 @@ const markdownSpecs: MarkdownSpec[] = [
       'Archon work uses package boundaries and existing validation commands; no direct commits to main.',
     ],
     inputs: ['goal', 'manifest', 'graph reports', 'docs readiness', 'BMAD route'],
-    outputs: ['phase reports', 'blockers', 'next BMAD command'],
+    outputs: ['phase reports', 'blockers', 'next BMAD skill'],
     knownUnknowns: ['which later phases need correct-course'],
     evidenceReferences: ['docs/context-orchestrator/research/graph-open-questions.md'],
     acceptanceScenarios: [
@@ -446,7 +446,7 @@ const markdownSpecs: MarkdownSpec[] = [
     path: '018-release-readiness-spec.md',
     title: '018 Release Readiness Spec',
     purpose: 'Define final readiness gate for ACO MVP.',
-    scope: 'Validation commands, reports, unknowns, waivers, limitations, next BMAD command.',
+    scope: 'Validation commands, reports, unknowns, waivers, limitations, next BMAD skill.',
     nonGoals: ['Do not release with failing required acceptance suites.'],
     genericBehavior: [
       'ReleaseReadinessReport aggregates spec, acceptance, contract, golden, integration, security, build, and waiver status.',
@@ -459,7 +459,7 @@ const markdownSpecs: MarkdownSpec[] = [
     knownUnknowns: ['final MVP surfaces and commands'],
     evidenceReferences: ['AGENTS.md', 'package.json'],
     acceptanceScenarios: [
-      'Given one required acceptance suite fails, when release readiness is checked, then release readiness fails and report lists blocker plus next BMAD command.',
+      'Given one required acceptance suite fails, when release readiness is checked, then release readiness fails and report lists blocker plus next BMAD skill.',
     ],
     failureBehavior: [
       'Fail release readiness on required test, build, security, or validation failure.',

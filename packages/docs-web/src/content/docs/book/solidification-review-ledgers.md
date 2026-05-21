@@ -66,7 +66,7 @@ Use this ledger before claiming a tool is available, missing, blocked, or safe t
 | Tool / Capability | Source | Invocation Path | Scope | Status | Preconditions | Verification Check | Primary Use | Failure Mode | Fallback | Owner | Last Verified | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Archon ACO | `archon context status --cwd .` output | `archon context route --cwd . "<task>"` and `archon context status --cwd .` | route and readiness evidence | `forbidden` | Archon CLI available | command exits 0 and reports route/status | choose BMAD route and identify readiness caveats | graph forbidden, waivers, or missing policy tool | record caveat and limit claims | project | `2026-05-18` | Example state: route `brownfield-architecture`; validation passed; graph forbidden with named waivers such as `graph-waiver.bmad-plugins-marketplace`. |
-| BMAD Party Mode | BMAD skill roster / agent outputs | `/bmad-party-mode` | review consensus | `available` | BMAD skills installed | reviewers produce consensus or objections | challenge scope, evidence, and unsafe certainty | advisory-only output or thread limit | use smaller reviewer set or manual review | project | `unknown` | Consensus does not replace command evidence. |
+| BMAD Party Mode | BMAD skill roster / agent outputs | `bmad-party-mode` | review consensus | `available` | BMAD skills installed | reviewers produce consensus or objections | challenge scope, evidence, and unsafe certainty | advisory-only output or thread limit | use smaller reviewer set or manual review | project | `unknown` | Consensus does not replace command evidence. |
 | OPA | shell command output | `opa version` | policy validation prerequisite | `unknown` | `opa` on `PATH` | command exits 0 | run policy gates such as `bun run aco:policy` | `opa: command not found` | install/pin OPA or mark policy validation blocked | project | `unknown` | Do not assume OPA availability. |
 
 ---
@@ -98,12 +98,12 @@ archon context ledgers --cwd . --json
 
 Then fill the Tool Availability Ledger and Commands Ledger. Run validation gates only after you know their prerequisites and mutation risk.
 
-Use BMAD review commands when you need critique:
+Use BMAD review skills when you need critique:
 
 ```text
-/bmad-party-mode
-/bmad-review-adversarial-general
-/bmad-review-edge-case-hunter
+bmad-party-mode
+bmad-review-adversarial-general
+bmad-review-edge-case-hunter
 ```
 
 Commands that write files or artifacts require explicit approval in a read-only stabilization review. Examples include `archon context compile`, `bun run research:graph`, `bun run aco:research`, `bun run format`, `bun run lint:fix`, code generation, migrations, commits, pushes, and PR creation.

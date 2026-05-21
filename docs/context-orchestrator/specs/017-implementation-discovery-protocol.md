@@ -32,7 +32,7 @@ Preflight, graph/docs evidence, specs, acceptance, ADRs, implementation, validat
 
 - phase reports
 - blockers
-- next BMAD command
+- next BMAD skill
 - Tool Availability Ledger
 - Commands Ledger
 

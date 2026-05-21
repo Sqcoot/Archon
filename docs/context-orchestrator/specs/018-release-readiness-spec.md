@@ -6,7 +6,7 @@ Define final readiness gate for ACO MVP.
 
 ## Scope
 
-Validation commands, reports, unknowns, waivers, limitations, next BMAD command.
+Validation commands, reports, unknowns, waivers, limitations, next BMAD skill.
 
 ## Non-Goals
 
@@ -48,7 +48,7 @@ Validation commands, reports, unknowns, waivers, limitations, next BMAD command.
 
 ## Acceptance Scenarios
 
-- Given one required acceptance suite fails, when release readiness is checked, then release readiness fails and report lists blocker plus next BMAD command.
+- Given one required acceptance suite fails, when release readiness is checked, then release readiness fails and report lists blocker plus next BMAD skill.
 - AC-CONFIDENCE-006: Given the ACO confidence-closure PR narrative is prepared, when reviewers inspect it, then it lists scope, validation commands, remaining waivers, release risk, and rollback path.
 - AC-ACO-STATUS-007: Given Context Orchestrator status ships with failed waiver-required graph evidence, when release readiness is reported, then `graph-waiver.bmad-plugins-marketplace` and `graph-waiver.bmad-sample-data` remain visible as approval-required graph confidence limits.
 - AC-P3-PR: Given Context Orchestrator readiness is included in PR or handoff text, when reviewers inspect it, then it includes validation, graph status, waiver IDs, ledger schema, ledger counts, and the Needs approval caveat.

@@ -57,9 +57,9 @@ Date: 2026-05-17
 - Add richer Context7 target extraction based on graph dependencies, not only prompt text.
 - Add workflow-event integration after the workflow contract is accepted.
 
-## Next BMAD Workflow
+## Next BMAD Skill
 
-`/bmad-bmm-code-review`
+`bmad-code-review`
 
 Recommended story:
 
