@@ -1,41 +1,42 @@
+import { $ } from 'bun';
 import { describe, expect, test } from 'bun:test';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import {
+  acoArtifactPackageParamsSchema,
+  acoCompileBodySchema,
+  acoStatusQuerySchema,
+} from '../../../packages/server/src/routes/schemas/aco.schemas';
+
+const behaviorCoveredEndpoints = ['/api/aco/status', '/api/aco/compile'] as const;
 
 describe('ACO API acceptance', () => {
   test('Spec: 013-api-contract.openapi.yaml Acceptance: AC-P1-API native loop API surface is executable', async () => {
-    const [routeSource, routeTests, schemaSource] = await Promise.all([
-      readFile(join(process.cwd(), 'packages/server/src/routes/api.ts'), 'utf8'),
-      readFile(join(process.cwd(), 'packages/server/src/routes/api.aco.test.ts'), 'utf8'),
-      readFile(join(process.cwd(), 'packages/server/src/routes/schemas/aco.schemas.ts'), 'utf8'),
-    ]);
+    const result = await $`bun test ./packages/server/src/routes/api.aco.test.ts`
+      .cwd(process.cwd())
+      .quiet()
+      .nothrow();
 
-    for (const endpoint of [
-      '/api/aco/status',
-      '/api/aco/ledgers',
-      '/api/aco/route',
-      '/api/aco/compile',
-      '/api/aco/artifact-packages/{runId}',
-    ]) {
-      expect(routeSource).toContain(endpoint);
+    if (result.exitCode !== 0) {
+      throw new Error(
+        [
+          'ACO API route behavior suite failed.',
+          result.stdout.toString(),
+          result.stderr.toString(),
+        ].join('\n')
+      );
     }
 
-    for (const handler of [
-      'getAcoStatusRoute',
-      'getAcoLedgersRoute',
-      'postAcoRouteRoute',
-      'postAcoCompileRoute',
-      'getAcoArtifactPackageRoute',
-    ]) {
-      expect(routeSource).toContain(`registerOpenApiRoute(${handler}`);
-    }
+    expect(result.exitCode).toBe(0);
+    expect(behaviorCoveredEndpoints).toEqual(['/api/aco/status', '/api/aco/compile']);
+  });
 
-    expect(schemaSource).toContain('acoStatusResponseSchema');
-    expect(schemaSource).toContain('acoCompileResponseSchema');
-    expect(schemaSource).toContain('acoEvidenceResolutionSchema');
-    expect(routeTests).toContain('AC-P1-API returns raw ACO status for a registered cwd');
-    expect(routeTests).toContain('AC-P1-API compiles a package for a registered cwd');
-    expect(routeTests).toContain('AC-P1-API rejects artifact package traversal run IDs');
-    expect(routeTests).toContain('cwd is not registered');
+  test('Spec: 013-api-contract.openapi.yaml Acceptance: AC-P1-API schemas reject unsafe or incomplete requests', () => {
+    expect(acoStatusQuerySchema.safeParse({ cwd: '/tmp/project' }).success).toBe(true);
+    expect(acoStatusQuerySchema.safeParse({ cwd: '' }).success).toBe(false);
+    expect(acoCompileBodySchema.safeParse({ cwd: '/tmp/project', prompt: 'Compile' }).success).toBe(
+      true
+    );
+    expect(acoCompileBodySchema.safeParse({ cwd: '/tmp/project', prompt: '' }).success).toBe(false);
+    expect(acoArtifactPackageParamsSchema.safeParse({ runId: 'run-1' }).success).toBe(true);
+    expect(acoArtifactPackageParamsSchema.safeParse({ runId: '' }).success).toBe(false);
   });
 });

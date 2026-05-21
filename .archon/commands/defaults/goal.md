@@ -67,8 +67,10 @@ Allowed surfaces:
 4. generated-file reproducibility report
 5. validation command report
 6. security hardening report
-7. final scorecard
-8. final merge recommendation
+7. graph-waiver approval report, if waivers remain
+8. final scorecard
+9. final PR hygiene report
+10. final merge recommendation
 
 ## Baseline Requirements
 
@@ -83,6 +85,8 @@ Record:
 - initial changed-file count
 - final changed-file count
 - open PR or compare URL when available
+- current head commit
+- current base commit
 
 ## Evidence Rules
 
@@ -114,6 +118,10 @@ Every `not_applicable` gate must include:
 - 0 hard-coded developer-local paths in retained product source.
 - 0 stale branch gates in bundled defaults.
 - 0 missing required fixtures.
+- 0 ignored local fixture dependencies, including `.agents/**`, in retained tests.
+- 0 default Codex hooks invoke `kild` or undeclared private local tools.
+- 0 tracked local MCP setup artifacts contain developer-local paths, private
+  credential-store names, or machine-local wrapper paths.
 - 0 unreproducible retained generated files.
 - 5/5 readiness states represented and behavior-tested: `ready`, `blocked`,
   `needs_approval`, `needs_decision`, `unknown`.
@@ -127,19 +135,29 @@ Every `not_applicable` gate must include:
   gates, traceability gates, and generated files have evidence.
 - 0 hard gates are `unknown`.
 - 100% hard gates include evidence.
+- Graph waivers, if retained, remain visible with waiver IDs, approval scope,
+  approval evidence, and runtime readiness impact.
 
 ## Final Recommendation States
 
 Final recommendation must be exactly one of:
 
 - `ready`
+- `ready_with_approved_graph_waivers`
 - `blocked`
 - `needs_approval`
 - `needs_decision`
 
-`ready` requires every hard gate to pass or be explicitly `not_applicable` with
-evidence. Failed, skipped, unknown, or evidence-free hard gates force a non-ready
-recommendation.
+Plain `ready` requires every hard gate to pass or be explicitly
+`not_applicable` with evidence and runtime ACO status must not be
+approval-dependent.
+
+If runtime ACO status is `needs_approval` only because graph waivers are
+preserved by explicit user approval, the final recommendation must be
+`ready_with_approved_graph_waivers`, not plain `ready`.
+
+Failed, skipped, unknown, or evidence-free hard gates force `blocked`,
+`needs_approval`, or `needs_decision`.
 
 ## Validation Expectations
 

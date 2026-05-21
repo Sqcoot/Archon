@@ -10,28 +10,6 @@
           }
         ]
       }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "kild agent-status --self working 2>/dev/null || true",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "kild agent-status --self idle 2>/dev/null || true",
-            "timeout": 5
-          }
-        ]
-      }
     ]
   }
 }

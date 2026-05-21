@@ -95,8 +95,7 @@ describe('AI Layer Bootstrap acceptance', () => {
     }
   });
 
-  test('Spec: 030-ai-layer-bootstrap-spec.md Acceptance: AI-LAYER-004 skills and explorers support Claude and Codex', async () => {
-    const codexSkill = await readFile(join(root, '.agents/skills/scoped-tests/SKILL.md'), 'utf8');
+  test('Spec: 030-ai-layer-bootstrap-spec.md Acceptance: AI-LAYER-004 committed skills and explorers support Claude and Codex', async () => {
     const claudeSkill = await readFile(join(root, '.claude/skills/scoped-tests/SKILL.md'), 'utf8');
     const claudeExplorer = await readFile(
       join(root, '.claude/agents/ai-layer-explorer.md'),
@@ -107,8 +106,6 @@ describe('AI Layer Bootstrap acceptance', () => {
       'utf8'
     );
 
-    expect(codexSkill).toContain('name: scoped-tests');
-    expect(codexSkill).toContain('description:');
     expect(claudeSkill).toContain('name: scoped-tests');
     expect(claudeSkill).toContain('description:');
     expect(claudeExplorer).toContain('tools: Read, Grep, Glob');

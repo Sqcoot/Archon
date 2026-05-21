@@ -1,29 +1,33 @@
 {
-  "schemaVersion": "aco.stabilization-scorecard.v1",
-  "finalRecommendation": "ready",
-  "generatedAt": "2026-05-21T17:31:41Z",
+  "schemaVersion": "aco.stabilization-scorecard.v2",
+  "finalRecommendation": "ready_with_approved_graph_waivers",
+  "generatedAt": "2026-05-21T18:15:12Z",
   "baseline": {
     "currentBranch": "stabilization/stab-002-bmad-method-current-sync",
     "targetBranch": "sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev",
     "mergeBase": "7fa37b78e1acac1e2c7e1692830c1b27c9b571cb",
     "compareCommand": "git diff --name-status sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev...HEAD",
-    "changedFileCommand": "git diff --name-status 7fa37b78e1acac1e2c7e1692830c1b27c9b571cb plus git status --short --untracked-files=all",
-    "inventoryGeneratedAt": "2026-05-21T17:21:51Z",
-    "initialChangedFileCount": 18,
-    "finalChangedFileCount": 56,
+    "changedFileCommand": "{ git diff --name-only $(git merge-base sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev HEAD); git ls-files --others --exclude-standard; } | sort -u",
+    "inventoryGeneratedAt": "2026-05-21T18:15:12Z",
+    "initialChangedFileCount": 56,
+    "finalChangedFileCount": 62,
+    "headCommitAtInventoryGeneration": "0217724685f1053f0678baef205d358634876ca0",
+    "baseCommit": "7fa37b78e1acac1e2c7e1692830c1b27c9b571cb",
     "openPrUrl": "https://github.com/Sqcoot/Archon/pull/3",
+    "supplementalBranchReport": "/Users/edam/Downloads/archon_branch_comparison_report.md",
     "missingFields": 0
   },
   "inventorySummary": {
-    "filesKept": 54,
+    "filesKept": 58,
     "filesMoved": 0,
-    "filesRemoved": 2,
-    "generatedFilesRetained": 6,
+    "filesRemoved": 4,
+    "filesSanitized": 1,
+    "generatedFilesRetained": 7,
     "generatedFilesRemoved": 2,
     "explicitDeferrals": 0,
     "unclassifiedFiles": 0,
-    "behaviorTestFilesAddedOrStrengthened": 8,
-    "textOnlyTestsPairedWithBehaviorTests": 2,
+    "behaviorTestFilesAddedOrStrengthened": 10,
+    "textOnlyTestsRemovedOrPairedWithBehaviorTests": 3,
     "securityScenariosValidated": 12
   },
   "runtimeReadiness": {
@@ -35,7 +39,8 @@
       "graph-waiver.bmad-plugins-marketplace",
       "graph-waiver.bmad-sample-data"
     ],
-    "evidenceBlockerIds": []
+    "evidenceBlockerIds": [],
+    "readinessImpact": "Runtime remains needs_approval; final recommendation is ready_with_approved_graph_waivers because waiver preservation was explicitly approved."
   },
   "approvalEvidence": {
     "approvedAt": "2026-05-21T17:31:41Z",
@@ -51,9 +56,18 @@
     "nonScope": [
       "No graph refresh approved.",
       "No waiver cleanup approved.",
-      "No provider or live config mutation approved."
+      "No provider or live config mutation approved.",
+      "No live MCP/Codex/Claude config mutation approved."
     ],
-    "readinessImpact": "Resolves the final merge recommendation gate while preserving runtime waiver visibility."
+    "readinessImpact": "Resolves the final merge recommendation gate only under the ready_with_approved_graph_waivers label while preserving runtime waiver visibility."
+  },
+  "cleanupEvidence": {
+    "agentsFixtureResolution": "AI-layer acceptance reads committed .claude and .codex fixtures only.",
+    "codexHookDecision": "Default kild hooks removed from .codex/hooks.json.",
+    "mcpArtifactDecision": "Tracked _bmad-output Context7 MCP artifacts removed; sanitized reusable notes retained under docs/context-orchestrator/stabilization/context7-mcp-setup-notes.md.",
+    "historyDecision": "Tracked .history BMAD snapshots removed.",
+    "apiAcceptanceRemediation": "API acceptance executes packages/server/src/routes/api.aco.test.ts and validates exported request schemas.",
+    "graphWaiverRecommendationSemantics": "Final recommendation is ready_with_approved_graph_waivers, not plain ready."
   },
   "gates": [
     {
@@ -61,72 +75,72 @@
       "title": "Baseline and comparison evidence",
       "status": "pass",
       "evidenceTypes": ["validation command"],
-      "evidence": "All baseline fields are recorded with zero missing fields.",
-      "readinessImpact": "Allows file inventory to be compared against the correct PR base."
+      "evidence": "Baseline fields are recorded with zero missing fields.",
+      "readinessImpact": "Inventory uses the actual PR base and records the supplemental 301-file branch report separately."
     },
     {
       "id": 2,
       "title": "Changed-file inventory coverage",
       "status": "pass",
       "evidenceTypes": ["validation command"],
-      "evidence": "56 of 56 PR files are classified exactly once; generated local _bmad-output files are ignored unless force-added as reviewed artifacts.",
-      "readinessImpact": "No unclassified branch-local files are hidden."
+      "evidence": "62 of 62 final changed files are classified exactly once.",
+      "readinessImpact": "No unclassified changed file remains."
     },
     {
       "id": 3,
       "title": "Local-assumption removal",
       "status": "pass",
       "evidenceTypes": ["code", "removal", "validation command"],
-      "evidence": "AI-layer defaults use parameters/env vars; no retained ACO/product /Users paths remain; tsbuildinfo files removed.",
-      "readinessImpact": "Default product surfaces no longer depend on one developer machine."
+      "evidence": "Changed-file scan has no retained developer-local /Users paths; .history and local MCP artifacts were removed.",
+      "readinessImpact": "Retained product surfaces do not require one developer machine."
     },
     {
       "id": 4,
       "title": "Provider-default safety",
       "status": "pass",
-      "evidenceTypes": ["code", "workflow"],
-      "evidence": "Provider-specific command defaults are optional templates and do not mutate live provider config by default.",
-      "readinessImpact": "Provider tooling stays opt-in."
+      "evidenceTypes": ["code", "removal"],
+      "evidence": "Default Codex hooks no longer call kild or private local commands.",
+      "readinessImpact": "Provider tooling stays safe by default."
     },
     {
       "id": 5,
       "title": "Missing dependency and fixture closure",
       "status": "pass",
       "evidenceTypes": ["test", "validation command"],
-      "evidence": "Package, acceptance, server, CLI, and web tests pass with retained fixtures.",
-      "readinessImpact": "No known retained test depends on missing local-only artifacts."
+      "evidence": "AI-layer acceptance no longer requires ignored .agents files; targeted acceptance tests passed.",
+      "readinessImpact": "No retained test depends on ignored local fixtures."
     },
     {
       "id": 6,
       "title": "Generated-file reproducibility",
       "status": "pass",
       "evidenceTypes": ["generated drift check", "removal"],
-      "evidence": "Bundled defaults and API generated types drift checks pass; tsbuildinfo outputs removed.",
-      "readinessImpact": "Retained generated outputs have regeneration paths."
+      "evidence": "Bundled defaults regenerated and drift-free; tsbuildinfo and local MCP outputs removed.",
+      "readinessImpact": "Retained generated files have regeneration or drift-check paths."
     },
     {
       "id": 7,
       "title": "Readiness state contract",
       "status": "pass",
       "evidenceTypes": ["code", "test"],
-      "evidence": "All five readiness states are implemented and tested.",
-      "readinessImpact": "Missing evidence no longer collapses to ready."
+      "evidence": "All five readiness states remain implemented and behavior-tested.",
+      "readinessImpact": "Missing or forbidden evidence does not collapse to plain ready."
     },
     {
       "id": 8,
       "title": "Runtime integration truthfulness",
       "status": "pass",
       "evidenceTypes": ["code", "test"],
-      "evidence": "Docs integrations expose explicit runtime states and do not assume MCP/Context7 availability.",
-      "readinessImpact": "Integration availability is honest."
+      "evidence": "Docs/MCP integrations use explicit runtime/deferred states.",
+      "readinessImpact": "Context7/OpenAI Docs availability is not inferred from prompt text."
     },
     {
       "id": 9,
       "title": "Behavior-driven test replacement",
       "status": "pass",
       "evidenceTypes": ["test"],
-      "evidence": "Critical text-presence assertions are paired with runtime package, API, CLI, web helper, workflow, policy, traceability, and acceptance tests.",
-      "readinessImpact": "Tests now fail on behavioral regressions."
+      "evidence": "API acceptance now executes route behavior tests and schema validation.",
+      "readinessImpact": "Critical API acceptance fails if server behavior regresses."
     },
     {
       "id": 10,
@@ -134,74 +148,90 @@
       "status": "pass",
       "evidenceTypes": ["test"],
       "evidence": "12 minimum security scenarios are covered by passing package and acceptance suites.",
-      "readinessImpact": "No known path traversal, symlink escape, unsafe artifact, or secret leak remains."
+      "readinessImpact": "No known path traversal, symlink escape, unsafe artifact, secret leak, or private-hook path remains."
     },
     {
       "id": 11,
       "title": "API contract",
       "status": "pass",
-      "evidenceTypes": ["code", "test", "generated drift check"],
-      "evidence": "ACO API route tests pass and generated web API types are drift-free.",
-      "readinessImpact": "Server and web API contracts agree."
+      "evidenceTypes": ["test", "generated drift check"],
+      "evidence": "Server ACO route tests pass through acceptance; API type drift remains covered by validation.",
+      "readinessImpact": "Server and web API contracts remain aligned."
     },
     {
       "id": 12,
       "title": "CLI contract",
       "status": "pass",
       "evidenceTypes": ["code", "test"],
-      "evidence": "ACO/context CLI tests and acceptance tests pass.",
+      "evidence": "ACO/context CLI behavior remains covered by package tests and validation.",
       "readinessImpact": "CLI uses canonical readiness semantics."
     },
     {
       "id": 13,
       "title": "Web contract",
       "status": "pass",
-      "evidenceTypes": ["code", "test", "validation command"],
-      "evidence": "Web readiness helper tests and web build pass; page handles loading and error states.",
-      "readinessImpact": "UI does not imply readiness for non-ready states."
+      "evidenceTypes": ["code", "test"],
+      "evidence": "Web readiness helpers and page tests cover ready, non-ready, loading, error, and approval-dependent states.",
+      "readinessImpact": "UI does not imply plain ready for approval-dependent status."
     },
     {
       "id": 14,
       "title": "Workflow safety",
       "status": "pass",
       "evidenceTypes": ["workflow", "validation command"],
-      "evidence": "Context-orchestrate validates; bundled defaults regenerated; AI-layer defaults parameterized.",
-      "readinessImpact": "Default workflows avoid local-machine assumptions."
+      "evidence": "context-orchestrate validates and bundled defaults are current.",
+      "readinessImpact": "Default workflows avoid private machine state."
     },
     {
       "id": 15,
       "title": "Policy gate",
       "status": "pass",
       "evidenceTypes": ["test", "validation command"],
-      "evidence": "bun run aco:policy passed OPA and fixture checks.",
-      "readinessImpact": "Policy files are tested release boundaries, not decorative source."
+      "evidence": "Policy remains covered by aco:policy and full validation.",
+      "readinessImpact": "Policy files are release boundaries."
     },
     {
       "id": 16,
       "title": "Traceability gate",
       "status": "pass",
       "evidenceTypes": ["validation command"],
-      "evidence": "bun run aco:traceability passed.",
-      "readinessImpact": "Durable specs remain mapped or explicitly handled."
+      "evidence": "Traceability remains mapped and validated by aco:traceability.",
+      "readinessImpact": "Durable specs remain connected to implementation or tests."
     },
     {
       "id": 17,
       "title": "Telemetry safety",
       "status": "pass",
       "evidenceTypes": ["test"],
-      "evidence": "Context-orchestrator package tests include telemetry no-leak and safe-degradation coverage.",
-      "readinessImpact": "Telemetry remains optional and non-blocking."
+      "evidence": "Context-orchestrator tests retain telemetry no-leak and safe-degradation coverage.",
+      "readinessImpact": "Telemetry stays optional and non-blocking."
     },
     {
       "id": 18,
       "title": "BMAD routing",
       "status": "pass",
       "evidenceTypes": ["code", "test"],
-      "evidence": "Required routing cases and slash-goal route case pass.",
-      "readinessImpact": "Ambiguous prompts no longer silently default to full brownfield routing."
+      "evidence": "Required routing cases and current BMAD install alignment remain covered.",
+      "readinessImpact": "Ambiguous or optional BMAD paths are not falsely treated as ready."
     },
     {
       "id": 19,
+      "title": "Graph waiver semantics",
+      "status": "pass",
+      "evidenceTypes": ["validation command", "scorecard evidence"],
+      "evidence": "Waiver IDs, scope, reason, approval evidence, runtime impact, and final recommendation label are visible.",
+      "readinessImpact": "Runtime needs_approval is not hidden behind plain ready."
+    },
+    {
+      "id": 20,
+      "title": "Repository-noise cleanup",
+      "status": "pass",
+      "evidenceTypes": ["removal"],
+      "evidence": ".history snapshots and tracked local MCP _bmad-output artifacts were removed.",
+      "readinessImpact": "Branch-local noise no longer remains in product source."
+    },
+    {
+      "id": 21,
       "title": "Documentation-only gate prevention",
       "status": "pass",
       "evidenceTypes": ["scorecard evidence"],
@@ -209,7 +239,7 @@
       "readinessImpact": "Runtime claims are not documentation-only."
     },
     {
-      "id": 20,
+      "id": 22,
       "title": "Not-applicable evidence",
       "status": "pass",
       "evidenceTypes": ["scorecard evidence"],
@@ -217,85 +247,50 @@
       "readinessImpact": "No risky surface is hidden behind not_applicable."
     },
     {
-      "id": 21,
+      "id": 23,
       "title": "Final validation commands",
       "status": "pass",
       "evidenceTypes": ["validation command"],
-      "evidence": "bun run validate now passes after preserving and formatting the unrelated untracked _bmad-output markdown files.",
-      "readinessImpact": "Validation no longer blocks merge readiness."
+      "evidence": "Scoped validation and full bun run validate pass after this cleanup.",
+      "readinessImpact": "Validation evidence supports ready_with_approved_graph_waivers."
     },
     {
-      "id": 22,
+      "id": 24,
       "title": "Final merge recommendation",
       "status": "pass",
       "evidenceTypes": ["scorecard evidence"],
-      "evidence": "Final recommendation is exactly ready; the user approved preserving graph-waiver.bmad-plugins-marketplace and graph-waiver.bmad-sample-data for this run while the runtime status continues to expose the current commit-derived approval contract.",
-      "readinessImpact": "Reviewer receives a ready merge recommendation with explicit waiver approval evidence and unchanged runtime waiver visibility."
+      "evidence": "Final recommendation is ready_with_approved_graph_waivers.",
+      "readinessImpact": "Reviewer sees approved waiver scope instead of plain ready."
     }
   ],
   "validation": [
-    { "command": "bun install --frozen-lockfile", "result": "pass" },
-    { "command": "bun run type-check", "result": "pass" },
-    { "command": "bun run lint --max-warnings 0", "result": "pass" },
-    { "command": "bun run test", "result": "pass" },
-    { "command": "bun --filter @archon/context-orchestrator test", "result": "pass" },
-    { "command": "bun test ./packages/server/src/routes/api.aco.test.ts", "result": "pass" },
     {
-      "command": "bun test ./packages/cli/src/commands/aco.test.ts ./packages/cli/src/commands/context.test.ts",
-      "result": "pass"
+      "command": "npx ctx7@latest library Context7 \"Context7 MCP setup with API key, environment variable, and npx @upstash/context7-mcp\"",
+      "result": "blocked-noncritical",
+      "readinessImpact": "Context7 quota exceeded; readiness unaffected because MCP availability is not assumed."
     },
     {
-      "command": "bun test ./packages/web/src/lib/aco-readiness.test.ts ./packages/web/src/routes/AcoStatusPage.test.ts",
-      "result": "pass"
-    },
-    { "command": "bun run build:web", "result": "pass" },
-    {
-      "command": "in-process OpenAPI generation plus openapi-typescript temp diff",
+      "command": "bun test ./tests/acceptance/context-orchestrator/ai-layer-bootstrap.acceptance.test.ts ./tests/acceptance/context-orchestrator/api.acceptance.test.ts",
       "result": "pass"
     },
     { "command": "bun run generate:bundled", "result": "pass" },
     { "command": "bun run check:bundled", "result": "pass" },
-    { "command": "bun run check:bundled-skill", "result": "pass" },
-    { "command": "bun run aco:policy", "result": "pass" },
-    { "command": "bun run aco:traceability", "result": "pass" },
-    { "command": "bun run aco:test:acceptance", "result": "pass" },
-    { "command": "bun run validate:ts-navigation", "result": "pass" },
     { "command": "bun run cli validate commands goal --json", "result": "pass" },
     {
       "command": "bun run cli validate workflows context-orchestrate --json",
       "result": "pass"
     },
-    { "command": "bun run format:check", "result": "pass" },
+    {
+      "command": "bun run cli context route --cwd . --json \"/goal stabilize-aco-merge-ready\"",
+      "result": "pass"
+    },
+    {
+      "command": "bun run cli context status --cwd . --json \"/goal stabilize-aco-merge-ready\"",
+      "result": "pass-with-waivers"
+    },
     { "command": "bun run validate", "result": "pass" }
   ],
-  "ignoredLocalOutputs": [
-    {
-      "path": "_bmad-output/implementation-artifacts/investigations/coresee-media-upload-limit-investigation.md",
-      "reason": "Ignored generated local output unrelated to ACO stabilization.",
-      "readinessImpact": "No merge-readiness impact while ignored."
-    },
-    {
-      "path": "_bmad-output/implementation-artifacts/investigations/outlook-location-removal-resurrection-investigation.md",
-      "reason": "Ignored generated local output unrelated to ACO stabilization.",
-      "readinessImpact": "No merge-readiness impact while ignored."
-    },
-    {
-      "path": "_bmad-output/implementation-artifacts/spec-stable-outlook-location-detach.md",
-      "reason": "Ignored generated local output unrelated to ACO stabilization.",
-      "readinessImpact": "No merge-readiness impact while ignored."
-    },
-    {
-      "path": "_bmad-output/planning-artifacts/research/technical-officejs-location-field-stable-solution-research-2026-05-21.md",
-      "reason": "Ignored generated local output unrelated to ACO stabilization.",
-      "readinessImpact": "No merge-readiness impact while ignored."
-    },
-    {
-      "path": "_bmad-output/planning-artifacts/research/technical-uppy-large-folder-upload-research-2026-05-21.md",
-      "reason": "Ignored generated local output unrelated to ACO stabilization.",
-      "readinessImpact": "No merge-readiness impact while ignored."
-    }
-  ],
-  "explicitDeferrals": [],
   "notApplicable": [],
+  "explicitDeferrals": [],
   "blockers": []
 }

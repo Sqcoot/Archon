@@ -10,7 +10,7 @@ The workflow adapts Helpline's large-codebase AI-layer concepts in an Archon-nat
 
 - Add a bundled `archon-ai-layer-bootstrap` workflow.
 - Add supporting `ai-layer-*` bundled commands.
-- Dogfood Archon's own AI layer with lean root instructions, a codebase map, scoped tests skills, read-only explorer agents, package-local instruction files, and TypeScript symbol-navigation validation.
+- Dogfood Archon's own AI layer with lean root instructions, a codebase map, committed scoped-test guidance, read-only explorer agents, package-local instruction files, and TypeScript symbol-navigation validation.
 - Require artifact handoff under `$ARTIFACTS_DIR/ai-layer`.
 - Preserve branch-specific SDD/ATDD behavior by adding acceptance coverage before implementation.
 - Keep hooks and MCP as proposed/deferred unless deterministic validation proves live enablement.
@@ -39,7 +39,9 @@ The workflow adapts Helpline's large-codebase AI-layer concepts in an Archon-nat
 - Generated bundled defaults are refreshed with `bun run generate:bundled`.
 - The workflow remains provider-neutral and does not require Claude-only node fields.
 - Claude-specific project context lives in `CLAUDE.md`, `.claude/skills`, and `.claude/agents`.
-- Codex-specific project context lives in `AGENTS.md`, `.agents/skills`, and `.codex/agents`.
+- Codex-specific project context lives in `AGENTS.md` and `.codex/agents`.
+  User-local or ignored `.agents/skills` content is optional and must not be
+  required by committed tests.
 - `CODEBASE_MAP.md` holds architecture navigation so root instruction files stay lean.
 - TypeScript navigation validation uses TypeScript's language service, not pyright.
 
@@ -63,7 +65,7 @@ The workflow adapts Helpline's large-codebase AI-layer concepts in an Archon-nat
 - `$ARTIFACTS_DIR/ai-layer/*.md` inspection, plan, validation, review, and completion artifacts
 - Bundled workflow and command files
 - Lean project instruction files and codebase map
-- Scoped test skills and read-only explorer agents
+- Committed scoped-test guidance and read-only explorer agents
 - TypeScript navigation validation script
 - Documentation page
 
@@ -82,8 +84,8 @@ The workflow adapts Helpline's large-codebase AI-layer concepts in an Archon-nat
 - `AGENTS.md`
 - `CLAUDE.md`
 - `CODEBASE_MAP.md`
-- `.agents/skills/scoped-tests/SKILL.md`
 - `.claude/skills/scoped-tests/SKILL.md`
+- `.codex/agents/ai-layer-explorer.toml`
 - `scripts/validate-ts-navigation.ts`
 - `tests/acceptance/context-orchestrator/ai-layer-bootstrap.acceptance.test.ts`
 - `packages/docs-web/src/content/docs/guides/ai-layer-bootstrap.md`
@@ -93,7 +95,7 @@ The workflow adapts Helpline's large-codebase AI-layer concepts in an Archon-nat
 - AI-LAYER-001: Given the stabilization branch, when the AI Layer Bootstrap workflow is inspected, then it begins with branch and goal gates, writes artifact contracts, and ends with completion-audit, endgoal-gate, and stop-gate nodes.
 - AI-LAYER-002: Given the bundled command set, when each `ai-layer-*` command is inspected, then each command has a Goal Check, reads required artifacts, writes an assigned artifact, and records a status and handoff.
 - AI-LAYER-003: Given Archon's dogfooded AI layer, when root and package instruction files are inspected, then root instructions are lean, local files are scoped to real directories, and the symbol/type navigation rule is present.
-- AI-LAYER-004: Given Claude and Codex compatibility requirements, when skills and explorer agents are inspected, then scoped-tests exists for both providers and explorer agents are read-only by instruction and location.
+- AI-LAYER-004: Given Claude and Codex compatibility requirements, when committed skills and explorer agents are inspected, then the Claude scoped-tests skill and Claude/Codex read-only explorer agents exist without requiring ignored `.agents/**` files.
 - AI-LAYER-005: Given Helpline's Python LSP reference, when Archon's navigation support is inspected, then pyright is not copied and TypeScript language-service validation exists.
 - AI-LAYER-006: Given hooks and MCP are risky config surfaces, when implementation artifacts are inspected, then live hook/MCP config is not modified and templates/proposals or deferred reasons are recorded.
 - AI-LAYER-007: Given a run reaches validation, completion, and stop gates, when gate artifacts are inspected, then terminal state is one of the allowed endgoal states and `stop-gate.json` states whether stopping is allowed.
