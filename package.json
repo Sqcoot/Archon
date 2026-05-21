@@ -17,6 +17,7 @@
     "generate:bundled": "bun run scripts/generate-bundled-defaults.ts",
     "check:bundled": "bun run scripts/generate-bundled-defaults.ts --check",
     "check:bundled-skill": "bun run scripts/check-bundled-skill.ts --check",
+    "validate:ts-navigation": "bun scripts/validate-ts-navigation.ts",
     "test": "bun --filter '*' --parallel test",
     "test:watch": "bun --filter @archon/server test:watch",
     "type-check": "bun --filter '*' type-check && bun x tsc --noEmit -p scripts/tsconfig.json",

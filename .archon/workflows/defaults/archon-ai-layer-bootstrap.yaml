@@ -1,0 +1,101 @@
+name: archon-ai-layer-bootstrap
+description: |
+  Use when: Bootstrap or refresh an AI layer for a repository, including AGENTS.md,
+            CLAUDE.md, CODEBASE_MAP.md, scoped skills, artifact gates, and validation.
+  Triggers: "ai layer bootstrap", "bootstrap AI layer", "generate AGENTS.md and CLAUDE.md",
+            "large codebase AI layer", "symbol navigation".
+  Does: Verifies the required branch, defines a goal/endgoal contract, inspects local
+        Archon and Helpline references, plans safe/proposed edits, validates output,
+        audits completion, and writes an endgoal and stop gate.
+  Artifacts: Writes durable handoff under $ARTIFACTS_DIR/ai-layer.
+  Risk policy: Hook and mcp config changes are proposed or deferred unless validated.
+  NOT for: One-off coding help or live hook/MCP enablement without review.
+tags:
+  - ai-layer
+  - bootstrap
+  - sdd-atdd
+
+nodes:
+  - id: branch-gate
+    command: ai-layer-branch-gate
+    context: fresh
+
+  - id: define-goal
+    command: ai-layer-goal
+    depends_on: [branch-gate]
+    context: fresh
+
+  - id: preflight
+    command: ai-layer-preflight
+    depends_on: [define-goal]
+    context: fresh
+
+  - id: sdd-atdd-audit
+    command: ai-layer-sdd-atdd-audit
+    depends_on: [preflight]
+    context: fresh
+
+  - id: audit-ai-layer
+    command: ai-layer-audit
+    depends_on: [preflight]
+    context: fresh
+
+  - id: study-reference
+    command: ai-layer-study-reference
+    depends_on: [preflight]
+    context: fresh
+
+  - id: study-helpline-lsp
+    command: ai-layer-study-helpline-lsp
+    depends_on: [preflight]
+    context: fresh
+
+  - id: map-codebase
+    command: ai-layer-map-codebase
+    depends_on: [sdd-atdd-audit, audit-ai-layer, study-reference]
+    context: fresh
+
+  - id: design-lsp-navigation
+    command: ai-layer-design-lsp-navigation
+    depends_on: [study-helpline-lsp, audit-ai-layer]
+    context: fresh
+
+  - id: design-ai-layer
+    command: ai-layer-design
+    depends_on: [map-codebase, design-lsp-navigation]
+    context: fresh
+
+  - id: apply-or-propose
+    command: ai-layer-implement
+    depends_on: [design-ai-layer]
+    context: fresh
+
+  - id: validate-ai-layer
+    command: ai-layer-validate
+    depends_on: [apply-or-propose]
+    context: fresh
+
+  - id: validate-lsp-navigation
+    command: ai-layer-validate-lsp-navigation
+    depends_on: [validate-ai-layer]
+    context: fresh
+
+  - id: review-ai-layer
+    command: ai-layer-review
+    depends_on: [validate-lsp-navigation]
+    context: fresh
+
+  - id: completion-audit
+    command: ai-layer-completion-audit
+    depends_on: [review-ai-layer]
+    context: fresh
+
+  - id: endgoal-gate
+    command: ai-layer-endgoal-gate
+    depends_on: [completion-audit]
+    context: fresh
+
+  - id: stop-gate
+    command: ai-layer-stop-gate
+    depends_on: [endgoal-gate]
+    context: fresh
