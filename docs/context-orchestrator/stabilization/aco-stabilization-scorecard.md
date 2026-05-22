@@ -9,22 +9,27 @@ user approved preserving those waivers for this run only, so the final merge
 recommendation is not plain `ready`; it is
 `ready_with_approved_graph_waivers`.
 
-## Comparison Baseline
+## Historical Comparison Baseline
+
+This scorecard was generated on 2026-05-21 for an earlier PR review base. It is
+retained as historical stabilization evidence only. Final merge-hygiene analysis
+for the current cleanup goal uses `origin/dev...HEAD` in
+`stab-002-dev-diff-inventory.md`.
 
 | Field | Value |
 | --- | --- |
 | Current branch | `stabilization/stab-002-bmad-method-current-sync` |
-| Target branch | `sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev` |
+| Historical target | Earlier PR review base; see Sqcoot/Archon#3. |
 | Merge base | `7fa37b78e1acac1e2c7e1692830c1b27c9b571cb` |
-| Compare command | `git diff --name-status sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev...HEAD` |
-| Changed-file command | `{ git diff --name-only $(git merge-base sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev HEAD); git ls-files --others --exclude-standard; } | sort -u` |
+| Historical compare command | Earlier PR-base comparison; not the final merge-hygiene command. |
+| Historical changed-file command | Earlier PR-base inventory plus untracked files; not the final merge-hygiene inventory. |
 | Inventory generated at | `2026-05-21T18:15:12Z` |
 | Initial changed-file count | 56 |
 | Final changed-file count | 62 |
 | Head commit at inventory generation | `0217724685f1053f0678baef205d358634876ca0` |
 | Base commit | `7fa37b78e1acac1e2c7e1692830c1b27c9b571cb` |
 | Open PR | [Sqcoot/Archon#3](https://github.com/Sqcoot/Archon/pull/3) |
-| Supplemental branch report | `/Users/edam/Downloads/archon_branch_comparison_report.md` reports the broader 301-file branch surface against upstream `dev`. |
+| Historical supplemental report | External local report used during the 2026-05-21 review; not retained in repo and not used as final evidence for this goal. |
 | Missing baseline fields | 0 |
 
 ## Inventory Summary

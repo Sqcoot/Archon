@@ -4,17 +4,18 @@
   "generatedAt": "2026-05-21T18:15:12Z",
   "baseline": {
     "currentBranch": "stabilization/stab-002-bmad-method-current-sync",
-    "targetBranch": "sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev",
+    "targetBranch": "historical-pr-review-base-see-openPrUrl",
+    "historicalBaselineNote": "Generated for an earlier PR review base on 2026-05-21. Retained as historical stabilization evidence only; final cleanup analysis uses origin/dev...HEAD.",
     "mergeBase": "7fa37b78e1acac1e2c7e1692830c1b27c9b571cb",
-    "compareCommand": "git diff --name-status sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev...HEAD",
-    "changedFileCommand": "{ git diff --name-only $(git merge-base sqcoot/stabilization/stab-002-sdd-atdd-alignment-upstream-dev HEAD); git ls-files --others --exclude-standard; } | sort -u",
+    "compareCommand": "historical PR-base comparison; not the final merge-hygiene command",
+    "changedFileCommand": "historical PR-base inventory plus untracked files; not the final merge-hygiene inventory",
     "inventoryGeneratedAt": "2026-05-21T18:15:12Z",
     "initialChangedFileCount": 56,
     "finalChangedFileCount": 62,
     "headCommitAtInventoryGeneration": "0217724685f1053f0678baef205d358634876ca0",
     "baseCommit": "7fa37b78e1acac1e2c7e1692830c1b27c9b571cb",
     "openPrUrl": "https://github.com/Sqcoot/Archon/pull/3",
-    "supplementalBranchReport": "/Users/edam/Downloads/archon_branch_comparison_report.md",
+    "supplementalBranchReport": "historical external local report not retained in repository",
     "missingFields": 0
   },
   "inventorySummary": {
