@@ -1,3 +1,6 @@
+# Repo-local Archon config stays intentionally minimal.
+# Broader assistant/defaults/secret settings are inherited or configured outside
+# version-controlled repo YAML unless local support and need are verified.
 worktree:
   baseBranch: dev
 

@@ -24,6 +24,10 @@ Archon is a workflow engine for AI coding agents. Define your development proces
 
 Like what Dockerfiles did for infrastructure and GitHub Actions did for CI/CD - Archon does for AI coding workflows. Think n8n, but for software development.
 
+## Agentic Workflow Governance
+
+For this repo's Archon-compatible AI workflow operating model, see [`docs/ai/README.md`](docs/ai/README.md).
+
 ## Why Archon?
 
 When you ask an AI agent to "fix this bug", what happens depends on the model's mood. It might skip planning. It might forget to run tests. It might write a PR description that ignores your template. Every run is different.

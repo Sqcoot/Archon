@@ -1,5 +1,14 @@
 # Agentic Coding Operating Guide
 
+This guide is the operating model. The compliance matrix is the current source of truth for repo coverage.
+
+Start here for operational status:
+
+- [AI operating layer index](README.md)
+- [Workflow compliance matrix](workflow-compliance-matrix.md)
+- [BMAD to Archon mapping](bmad-to-archon-mapping.md)
+- [STAB-002 validation report](stab-002-validation-report.md)
+
 ## 1. Operating principle
 
 A reliable AI coding workflow is not "ask the model better." It is "encode the development process as version-controlled workflow assets with scoped context, deterministic gates, isolated execution, explicit artifacts, bounded loops, human approvals, and outcome-based validation."
@@ -199,70 +208,70 @@ Sqcoot or any fork may differ from upstream Archon. Verify the installed source 
 
 ```text
 docs/ai/
-  ubiquitous-language.md
-  codebase-map.md
-  workflow-catalog.md
-  agent-contract-template.md
-  artifact-schema.md
-  review-rubrics.md
+  README.md
+  agentic-coding-operating-guide.md
+  workflow-compliance-matrix.md
+  bmad-to-archon-mapping.md
   workflow-validation.md
-  worktree-policy.md
-  branch-lifecycle.md
+  worktree-and-branch-lifecycle.md
   security-and-secrets.md
-  eval-suite.md
+  source-traceability.md
+  stab-002-validation-report.md
 
 CLAUDE.md
 
 .claude/
   settings.json
   skills/
-    react-native-screen/SKILL.md
-    redux-refactor/SKILL.md
-    api-client-update/SKILL.md
-    accessibility-review/SKILL.md
-    test-generation/SKILL.md
+    archon/SKILL.md
+    scoped-tests/SKILL.md
+    rulecheck/SKILL.md
   agents/
-    planner.md
-    explorer.md
-    reviewer.md
-    adversarial-reviewer.md
-    migration-checker.md
+    code-reviewer.md
+    codebase-analyst.md
+    pr-test-analyzer.md
+    silent-failure-hunter.md
+
+.agents/
+  skills/
+    bmad-help/SKILL.md
+    bmad-investigate/SKILL.md
+    bmad-prd/SKILL.md
+    bmad-code-review/SKILL.md
+    bmad-review-adversarial-general/SKILL.md
 
 .archon/
   config.yaml
-  .env.example
   workflows/
-    assist.yaml
-    idea-to-pr.yaml
-    fix-issue.yaml
-    plan-to-pr.yaml
-    refactor-safely.yaml
-    smart-pr-review.yaml
-    validate-pr.yaml
-    resolve-conflicts.yaml
-    architectural-sweep.yaml
-    workflow-self-improve.yaml
+    defaults/
+      archon-assist.yaml
+      archon-idea-to-pr.yaml
+      archon-fix-github-issue.yaml
+      archon-plan-to-pr.yaml
+      archon-refactor-safely.yaml
+      archon-smart-pr-review.yaml
+      archon-validate-pr.yaml
+      archon-resolve-conflicts.yaml
+      archon-architect.yaml
+      archon-ai-layer-bootstrap.yaml
+      context-orchestrate.yaml
   commands/
-    classify.md
-    investigate.md
-    plan.md
-    implement.md
-    validate.md
-    review.md
-    adversarial-review.md
-    create-pr.md
-    summarize-run.md
+    defaults/
+      archon-create-plan.md
+      archon-implement.md
+      archon-validate.md
+      archon-code-review-agent.md
+      archon-create-pr.md
+      archon-workflow-summary.md
+      ai-layer-*.md
   scripts/
-    parse-validation-output.ts
-    check-artifact-completeness.ts
-    classify-risk.ts
-    summarize-diff.ts
+    maintainer-standup-*.ts
+    marketplace-*.ts
   mcp/
-    github.json
-    linear.json
-    docs.json
+    # No repo-local MCP configs were found for this patch.
+    # Treat guide MCP paths as illustrative until files exist.
   state/
-    .gitkeep
+    stabilization-ledger.json
 ```
 
 `docs/ai/` contains policy, catalog, schemas, rubrics, and eval definitions. It must not contain secrets or transient run output.
@@ -277,7 +286,7 @@ CLAUDE.md
 
 `.archon/config.yaml` contains repo-specific Archon defaults. It must not contain secrets.
 
-`.archon/.env.example` lists required variable names and descriptions only. It must not contain real tokens, keys, URLs with credentials, or provider auth config.
+`.archon/.env.example`, if added, lists required variable names and descriptions only. It must not contain real tokens, keys, URLs with credentials, or provider auth config.
 
 `.archon/workflows/` contains deterministic process orchestration. Do not use removed `steps:` workflows.
 
@@ -285,7 +294,7 @@ CLAUDE.md
 
 `.archon/scripts/` contains deterministic TypeScript, JavaScript, or Python logic. Use it for parsing and transformations that would be brittle in bash.
 
-`.archon/mcp/` contains MCP config files referenced by nodes. Use env vars for secrets and consider gitignore policy before committing.
+`.archon/mcp/`, if present, contains MCP config files referenced by nodes. Use env vars for secrets and consider gitignore policy before committing.
 
 `.archon/state/` contains cross-run state when needed. Keep it gitignored unless the state is deliberately versioned.
 
@@ -525,7 +534,9 @@ Checkpoint:
 
 ## 11. Workflow YAML templates
 
-These examples are illustrative. Validate against the installed Archon fork before rollout. They use `nodes:`, not `steps:`. Every node specifies exactly one node type. Loop nodes avoid `retry`, `hooks`, `mcp`, `skills`, `allowed_tools`, `denied_tools`, `output_format`, and per-node provider/model overrides. If iteration needs those capabilities, use normal command nodes or restructure the workflow.
+These examples are illustrative only; validate against the installed Archon fork before copying. This repo's real assets use `archon-*` and `ai-layer-*` workflow and command names; see `workflow-compliance-matrix.md` for current coverage. Short command names such as `classify`, `plan`, `review`, `summarize-run`, and sample `.archon/mcp/*.json` paths are placeholders unless a file exists.
+
+The examples use `nodes:`, not `steps:`. Every node specifies exactly one node type. Loop nodes avoid `retry`, `hooks`, `mcp`, `skills`, `allowed_tools`, `denied_tools`, `output_format`, and per-node provider/model overrides. If iteration needs those capabilities, use normal command nodes or restructure the workflow. Current condition expressions compare against quoted literals, so boolean structured outputs are commonly checked as `== 'true'` or `== 'false'`. The installed fork supports `always_run` on nodes in `packages/workflows/src/schemas/dag-node.ts`; verify upstream before relying on it elsewhere.
 
 ### 11.1 idea-to-pr.yaml
 
@@ -561,7 +572,7 @@ nodes:
   - id: docs-context
     prompt: |
       Fetch only external docs needed for this request.
-      Request: $USER_MESSAGE
+      Request: $ARGUMENTS
       Classification: $classify.output
       Write findings to $ARTIFACTS_DIR/docs-context.md.
     depends_on: [classify]
@@ -1150,7 +1161,7 @@ Good MCP use cases: GitHub issue and PR context, Linear or Jira tickets, interna
 
 Bad MCP use cases: reading files already in the repo, bypassing normal permissions, production write access by default, secrets embedded in workflow YAML, vague "more context" without a specific node need, and attaching every MCP server to every node.
 
-MCP config should be separate from workflow YAML. MCP config should use environment variables for secrets. Use `.archon/mcp/*.json` for repo MCP definitions. Use per-node `mcp` only where needed. Prefer read-only MCP access first. Production-write MCP access needs an approval gate and audit trail.
+MCP config should be separate from workflow YAML. MCP config should use environment variables for secrets. Use `.archon/mcp/*.json` for repo MCP definitions when local MCP files exist. This branch currently has no repo-local `.archon/mcp/*.json` files, so MCP paths in examples are illustrative. Use per-node `mcp` only where needed. Prefer read-only MCP access first. Production-write MCP access needs an approval gate and audit trail.
 
 MCP support is provider-specific. Some Archon versions wire MCP for Claude and Codex; other providers may ignore it. Validate provider compatibility before rollout. MCP is not supported on loop nodes in the same way as normal command/prompt nodes; restructure if needed.
 
@@ -1243,43 +1254,17 @@ Worktree lifecycle checklist:
 
 `defaultAssistant` or repo `assistant` controls default provider. `assistants.claude.model` controls Claude default model. `assistants.claude.settingSources` controls whether project/user Claude settings are loaded. `assistants.codex.model`, `modelReasoningEffort`, `webSearchMode`, and `additionalDirectories` are Codex settings. `worktree.baseBranch` controls base branch if auto-detection is not enough. `worktree.copyFiles` copies required gitignored files into worktrees. `worktree.initSubmodules` controls submodule initialization. `worktree.path` can co-locate worktrees. `docs.path` controls `$DOCS_DIR`. `defaults.loadDefaultCommands` and `defaults.loadDefaultWorkflows` control bundled defaults. `commands.folder` can add another command folder. Global workflows, commands, and scripts can live in `~/.archon/workflows/`, `~/.archon/commands/`, and `~/.archon/scripts/`; repo-local assets override global assets, and global assets override bundled defaults. Secrets should be provided through env vars, secret stores, or platform config, never committed YAML.
 
-Example `.archon/config.yaml` for a React Native TypeScript repo:
+This repo's `.archon/config.yaml` is intentionally minimal:
 
 ```yaml
-assistant: claude
-
-assistants:
-  claude:
-    model: sonnet
-    settingSources:
-      - project
-  codex:
-    model: gpt-5.3-codex
-    modelReasoningEffort: medium
-    webSearchMode: disabled
-    additionalDirectories: []
-
-commands:
-  folder: .archon/commands
-  autoLoad: true
-
 worktree:
-  baseBranch: main
-  copyFiles:
-    - .env
-    - .vscode/
-  initSubmodules: true
-  path: .worktrees
+  baseBranch: dev
 
 docs:
-  path: docs
-
-defaults:
-  loadDefaultCommands: true
-  loadDefaultWorkflows: true
+  path: packages/docs-web/src/content/docs
 ```
 
-Example `.archon/.env.example`:
+Broader assistant settings, command/default loading, MCP credentials, and secrets are intentionally inherited from global/bundled config or omitted until local schema support and repo need are verified. Do not add config fields just because this guide describes them. If `.archon/.env.example` is added later, include variable names and comments only:
 
 ```dotenv
 # GitHub token for issue/PR MCP or gh operations.
@@ -1309,7 +1294,7 @@ Level 4: E2E checks.
 
 Level 5: production-safety checks.
 
-For a React Native TypeScript app, examples include type check, lint, format check, unit tests, Redux selector/reducer tests, API client tests, screen tests, E2E tests, build check, accessibility check, dependency audit, secret scan, bundle size check, and native build check where relevant.
+For this Bun/TypeScript Archon monorepo, validation examples include bundled default checks, TypeScript type-checking, ESLint, Prettier, workspace tests, ACO traceability, ACO acceptance tests, policy fixtures, docs builds when docs change, and workflow/command validation.
 
 Deterministic validation should be implemented as `bash:` or `script:` nodes, not just prompt instructions. Validation output must be captured in artifacts. Validation failures should feed a self-fix loop or fail the workflow. Do not let the agent claim "tests passed" without captured test output. Use package-level checks first, then broaden. Use `archon validate workflows` and `archon validate commands` for workflow asset validation.
 

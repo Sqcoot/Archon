@@ -17,3 +17,10 @@ Prefer symbol/type navigation for definitions and references. Use grep for broad
 ## Validation
 
 Use the scoped-tests skill to choose the smallest meaningful validation first. Escalate to `bun run validate` when shared packages, generated bundles, workflow engine code, provider boundaries, SDD/ATDD artifacts, or TypeScript config changed.
+
+## AI Workflow Governance
+
+- `docs/ai/README.md` is the AI workflow governance index.
+- `docs/ai/workflow-compliance-matrix.md` maps guide requirements to actual repo assets.
+- `docs/ai/bmad-to-archon-mapping.md` maps BMAD to Archon.
+- If editing `.archon`, `.claude`, `_bmad`, or `docs/ai`, update `docs/ai/stab-002-validation-report.md` or explain why not.

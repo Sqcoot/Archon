@@ -14,6 +14,7 @@ Use this file for navigation. Use `AGENTS.md` for always-on rules and package-lo
 - `.claude/agents`: Claude Code subagents.
 - `.claude/skills`: Claude Code skills.
 - `.codex`: Codex project hooks and custom agents.
+- `docs/ai`: AI workflow governance, compliance mapping, BMAD mapping, lifecycle/security policy, source traceability, and validation evidence.
 - `docs/context-orchestrator`: SDD/ATDD specs, ADRs, research evidence, and traceability.
 - `migrations`: database migrations.
 - `packages`: TypeScript workspace packages.
@@ -68,6 +69,19 @@ Preserve provider identity semantics. Provider is resolved from node provider, w
 - Traceability script: `scripts/context-orchestrator/validate-traceability.ts`.
 
 For stabilization work, update specs and acceptance tests before production code.
+
+## AI Operating Layer
+
+- `docs/ai/agentic-coding-operating-guide.md`: operating model for context, workflow-as-code, artifacts, gates, loops, review, and validation.
+- `docs/ai/workflow-compliance-matrix.md`: maps guide requirements to actual workflows, commands, scripts, skills, agents, MCP status, and gaps.
+- `docs/ai/bmad-to-archon-mapping.md`: maps `_bmad` assets and BMAD phases to Archon workflows, commands, artifacts, and gates.
+- `docs/ai/stab-002-validation-report.md`: current evidence trail for the STAB-002 operating-layer patch.
+- `docs/ai/source-traceability.md`: maps source ideas to repo decisions.
+- `docs/ai/workflow-validation.md`: workflow/command/repo validation policy.
+- `docs/ai/worktree-and-branch-lifecycle.md`: branch, worktree, resume, abandon, complete, and cleanup policy.
+- `docs/ai/security-and-secrets.md`: secrets, MCP, shell safety, and trust-sensitive config policy.
+
+Check these docs before adding workflow, command, BMAD, MCP, Claude, Codex, or AI-layer assets.
 
 ## TypeScript Navigation
 

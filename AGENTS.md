@@ -40,6 +40,15 @@ Archon is a remote agentic coding platform for controlling AI coding assistants 
 - Validate with `bun run cli validate workflows` and `bun run cli validate commands`.
 - Do not invent workflow schema fields. Inspect `packages/workflows/src/schemas/` first.
 
+## AI Workflow Governance
+
+- Read `docs/ai/README.md` before making workflow, harness, BMAD, MCP, or AI operating-layer changes.
+- For Archon workflow governance, consult `docs/ai/agentic-coding-operating-guide.md`.
+- For current asset coverage, consult `docs/ai/workflow-compliance-matrix.md`.
+- For BMAD mapping, consult `docs/ai/bmad-to-archon-mapping.md`.
+- Do not create duplicate workflows or commands without checking the compliance matrix.
+- Do not claim validation passed without updating `docs/ai/stab-002-validation-report.md` or citing actual command output.
+
 ## Git And Safety
 
 - Never run `git clean -fd`.
