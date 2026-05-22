@@ -8,11 +8,11 @@ This matrix maps the operating guide to current repository assets. It is intenti
 | --- | --- | --- | --- |
 | Workflow coverage | Partial | `.archon/workflows/defaults/*` covers assist, issue fixing, PR flow, review, validation, refactor, architecture, AI-layer bootstrap, ACO orchestration, and workflow builder. | Some guide-only examples use short illustrative names and are not installed workflows. |
 | Command coverage | Covered for bundled Archon commands, partial for guide placeholders | `.archon/commands/defaults/*` contains `archon-*` and `ai-layer-*` commands. | No installed short commands named `classify`, `plan`, `review`, `summarize-run`, or `parse-validation-output`. |
-| Script coverage | Partial | `scripts/*`, `.archon/scripts/*`, and `package.json` validation scripts exist. | Guide examples reference deterministic scripts that do not all exist. |
+| Script coverage | Partial | `scripts/*`, `.archon/scripts/*`, and `package.json` validation scripts exist. Runtime-enforcement v1 adds artifact, branch, and completion precondition checks. | Guide examples reference deterministic scripts that do not all exist. |
 | Claude/Codex asset coverage | Covered | `.claude/settings.json`, `.claude/skills`, `.claude/agents`, `.agents/skills`, `.codex/agents`, `.codex/hooks.json`. | Trust-sensitive config should be proposed first, not edited blindly. |
-| Artifact coverage | Partial | ACO and workflow prompts use `$ARTIFACTS_DIR`; `.archon/artifacts/` is gitignored; context-orchestrator artifacts already include ledgers and route reports. | No single repo-wide artifact schema file enforces all guide artifacts. |
+| Artifact coverage | Partial | ACO and workflow prompts use `$ARTIFACTS_DIR`; `.archon/artifacts/` is gitignored; context-orchestrator artifacts already include ledgers and route reports; `artifact-schema.md` and `check-artifact-completeness.ts` add heading checks. | The checker is generic Markdown enforcement, not workflow-engine enforcement. |
 | Loop and approval coverage | Partial | `context-orchestrate`, `archon-aco-adversarial-loop`, `archon-piv-loop`, `archon-ralph-dag`, `archon-adversarial-dev`, `archon-interactive-prd`, and `archon-validate-pr` exercise gates, loops, and all-done joins. | Most production workflows rely on commands and prompts rather than a uniform loop/gate rubric. |
-| Worktree and lifecycle coverage | Partial | CLI supports `--branch`, `--from`, `--no-worktree`, `--resume`, `workflow status`, `workflow abandon`, `complete`, and `isolation cleanup`; config sets `worktree.baseBranch: dev`. | Policy is now documented in `worktree-and-branch-lifecycle.md`; no new enforcement added. |
+| Worktree and lifecycle coverage | Partial | CLI supports `--branch`, `--from`, `--no-worktree`, `--resume`, `workflow status`, `workflow abandon`, `complete`, and `isolation cleanup`; config sets `worktree.baseBranch: dev`; `validate-branch-name.ts` and `check-complete-preconditions.ts` add read-only guards. | Complete/cleanup still requires human approval for destructive lifecycle actions. |
 | BMAD coverage | Partial | `_bmad` install/config manifests and `.agents/skills/bmad-*` are present; ACO route/ledger commands surface BMAD route decisions. | BMAD phases are not yet first-class Archon workflow nodes for every phase. |
 | MCP coverage | Illustrative only | Provider MCP loading exists in `packages/providers/src/mcp/`; optional workflow references guard `.archon/mcp/ntfy.json`. | No repo-local `.archon/mcp/*.json` files exist. |
 | Config intent | Covered | `.archon/config.yaml` remains minimal with comments. | Broader config keys are intentionally inherited or omitted until locally verified and needed. |
@@ -57,6 +57,7 @@ This matrix maps the operating guide to current repository assets. It is intenti
 | --- | --- | --- | --- | --- | --- |
 | Parse validation output | `.archon/workflows/defaults/archon-validate-pr.yaml`, `scripts/context-orchestrator/validate-traceability.ts` | Partial | PR validation has report command; traceability parser exists. | No `.archon/scripts/parse-validation-output.ts`. | Add only when workflow requires machine parsing beyond existing commands. |
 | Artifact completeness | `archon-ai-layer-bootstrap.yaml` gate commands, `context-orchestrate.yaml`, `packages/context-orchestrator/src/artifact-package.ts` | Partial | ACO compiler writes manifests and artifacts. | No generic artifact completeness script. | Prefer context-orchestrator package for ACO artifacts. |
+| Artifact completeness runtime check | `.archon/scripts/check-artifact-completeness.ts`, `docs/ai/artifact-schema.md`, `package.json` `ai:check-artifacts` | Covered for Markdown handoff headings | Script checks required sections and exits nonzero for missing headings. | Does not validate semantic quality or JSON artifacts. | Use as a low-risk gate for Markdown workflow artifacts. |
 | Risk classification | Prompt classifiers in workflows; `.agents/skills/bmad-check-implementation-readiness` | Partial | Classifier prompts and BMAD readiness skill exist. | No deterministic risk script for all workflows. | Keep as AI classification unless a repeatable schema emerges. |
 | Diff summarization | `.archon/commands/defaults/archon-pr-review-scope.md`, `archon-workflow-summary.md` | Covered | Review scope and summary commands summarize diffs. | None. | Use existing commands. |
 | Traceability checks | `scripts/context-orchestrator/validate-traceability.ts`, `bun run aco:traceability` | Covered | Package script exists and validation report records it. | None. | Run before PR. |
@@ -98,10 +99,10 @@ This matrix maps the operating guide to current repository assets. It is intenti
 | Lifecycle item | Existing asset | Status | Evidence | Gap | Next action |
 | --- | --- | --- | --- | --- | --- |
 | Worktree creation | CLI `workflow run --branch`, default isolation, `.archon/config.yaml` | Covered | Help output lists `--branch`, `--from`, `--no-worktree`; config base branch is `dev`. | Some workflows pin `worktree.enabled: false`. | Use `--branch` for non-trivial edits. |
-| Branch naming | Docs policy | Partial | This document and lifecycle doc define branch patterns. | Not enforced by CLI policy here. | Validate branch names before shell use. |
+| Branch naming | `.archon/scripts/validate-branch-name.ts`, package script `ai:validate-branch`, docs policy | Covered for local preflight | Script checks current or supplied branch with shell-safety and Git ref checks. | CLI workflow branch generation has its own implementation. | Run before complete, shelling branch names, or lifecycle operations. |
 | Resume | CLI `--resume`, docs | Covered | Help output lists resume. | Needs failed run state. | Use run ID/status before resume. |
 | Abandon | CLI `workflow abandon` in docs/help references | Covered | Guide and local skill references include abandon. | Not validated in this patch. | Use for stuck/unwanted runs. |
-| Complete | CLI `complete <branch>` | Covered | Help output lists complete. | Destructive lifecycle effect. | Use only after merge or approved discard. |
+| Complete | CLI `complete <branch>`, `.archon/scripts/check-complete-preconditions.ts` | Partial | Read-only script checks branch, dirty tree, and upstream ambiguity before complete/cleanup. | It cannot prove PR merge state without forge context. | Use only after merge or approved discard. |
 | Cleanup | CLI `isolation cleanup` | Covered | Help output lists cleanup. | Can remove worktrees. | Require explicit approval for destructive cleanup. |
 | Conflict handling | `archon-resolve-conflicts.yaml`, `archon-resolve-merge-conflicts.md` | Covered | Dedicated workflow and command exist. | Requires human review of conflict resolution. | Use isolated branch. |
 
@@ -113,24 +114,24 @@ BMAD coverage is partial. `_bmad` contains installer metadata, module config, ca
 
 ### Must fix before stabilization
 
-1. Keep `docs/ai/stab-002-validation-report.md` current with real command output.
+1. Keep `docs/ai/stab-002-validation-report.md` and `docs/ai/stab-002-runtime-validation-report.md` current with real command output.
 2. Preserve active Context Orchestrator graph waivers unless explicit approval allows refresh.
 3. Do not treat illustrative guide commands or MCP configs as installed assets.
 
 ### Should fix soon
 
-1. Add an artifact schema only if workflows/scripts will enforce it.
-2. Add a workflow self-improvement workflow only after repeated workflow failure evidence exists.
-3. Decide whether BMAD phase outputs should be explicit inputs to `archon-plan-to-pr` or ACO compile.
+1. Add a workflow self-improvement workflow only after repeated workflow failure evidence exists.
+2. Decide whether BMAD phase outputs should be explicit inputs to `archon-plan-to-pr` or ACO compile.
+3. Promote artifact heading checks into workflow nodes only after artifact adoption is proven.
 
 ### Nice to have
 
-1. Add a deterministic artifact completeness script for `$ARTIFACTS_DIR`.
-2. Add optional MCP config templates under proposed docs, not live config.
-3. Add branch-name validation helper for workflow shell nodes.
+1. Add optional MCP config templates under proposed docs, not live config.
+2. Add branch-name validation helper calls inside workflow shell nodes where branches are user-supplied.
+3. Add semantic artifact schema validation beyond heading checks.
 
 ### Explicitly out of scope
 
-1. No new `.archon/workflows`, `.archon/commands`, `.archon/scripts`, `.claude/agents`, `.claude/skills`, or `.archon/mcp` assets are added in this patch.
+1. No new `.archon/workflows`, `.archon/commands`, `.claude/agents`, `.claude/skills`, or `.archon/mcp` assets are added in this patch.
 2. No graph refresh or waiver cleanup.
 3. No runtime artifacts under `.archon/artifacts/` are committed.

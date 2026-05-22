@@ -68,6 +68,26 @@ bun run validate
 
 because root entry points and operating docs changed.
 
+## Runtime enforcement validation
+
+Runtime-enforcement v1 adds read-only local checks:
+
+```bash
+bun run ai:check-artifacts docs/ai
+bun run ai:validate-branch
+bun run ai:check-complete
+```
+
+Use direct script invocations when passing unusual paths:
+
+```bash
+bun .archon/scripts/check-artifact-completeness.ts <artifact-file-or-directory>
+bun .archon/scripts/validate-branch-name.ts [branch-name]
+bun .archon/scripts/check-complete-preconditions.ts
+```
+
+`ai:check-complete` is expected to fail while the current patch has uncommitted changes. Record that as lifecycle evidence; do not clean, delete, reset, or complete the branch just to make the command pass.
+
 ## Runtime validation
 
 Validate these behaviors when a workflow changes or a new workflow is added:
@@ -89,6 +109,9 @@ Validate these behaviors when a workflow changes or a new workflow is added:
 - Artifacts are written to `$ARTIFACTS_DIR`.
 - Run history records status, events, and summary.
 - Worktree isolation creates or reuses the expected branch.
+- Artifact completeness checks pass for intended workflow artifacts.
+- Branch names pass shell-safety and documented-prefix validation.
+- Complete/cleanup preconditions fail closed when the worktree is dirty.
 
 ## Evidence standard
 

@@ -36,6 +36,13 @@ Validate or quote all user-controlled strings before they reach shell:
 
 Prefer structured parsing over ad hoc shell string manipulation when the repo already has TypeScript, JSON, or YAML tooling.
 
+Use the branch-name guard before putting branch names into shell commands:
+
+```bash
+bun run ai:validate-branch
+bun .archon/scripts/validate-branch-name.ts <branch-name>
+```
+
 ## Workflow YAML rules
 
 - Use `allowed_tools` and `denied_tools` on AI nodes when the task can be scoped.

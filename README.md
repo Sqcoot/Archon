@@ -252,7 +252,7 @@ Archon ships with workflows for common development tasks:
 | `archon-test-loop-dag` | Loop node test workflow - iterative counter until completion |
 | `archon-piv-loop` | Guided Plan-Implement-Validate loop with human review between iterations |
 
-Archon ships 17 default workflows - run `archon workflow list` or describe what you want and the router picks the right one.
+Archon ships a curated set of public default workflows. Local development checkouts may load additional bundled, test, internal, or repo-local workflows; use `bun run cli workflow list --cwd .` for the exact current count.
 
 **Or define your own.** Default workflows are great starting points - copy one from `.archon/workflows/defaults/` and customize it. Workflows are YAML files in `.archon/workflows/`, commands are markdown files in `.archon/commands/`. Same-named files in your repo override the bundled defaults. Commit them - your whole team runs the same process.
 

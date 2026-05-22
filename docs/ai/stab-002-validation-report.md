@@ -110,3 +110,7 @@ Findings and corrections:
 Sufficient for the operational endgoal of this patch.
 
 The guide is linked, compliance mapping exists, BMAD mapping exists, validation evidence exists, config intent is clarified, and critical validation passed. Remaining gaps are documented in `workflow-compliance-matrix.md` and are not blockers for this docs/config operationalization patch.
+
+## Runtime-enforcement follow-up
+
+The next-stage runtime-enforcement patch is tracked separately in `docs/ai/runtime-enforcement-decision.md`, `docs/ai/runtime-enforcement-ledger.md`, and `docs/ai/stab-002-runtime-validation-report.md`.

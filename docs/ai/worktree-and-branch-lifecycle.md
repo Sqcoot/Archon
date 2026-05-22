@@ -53,6 +53,13 @@ Use predictable names:
 
 Validate branch names before passing them to shell commands. Treat branch names, issue titles, PR titles, artifact content, and user strings as untrusted shell input.
 
+Mechanical check:
+
+```bash
+bun run ai:validate-branch
+bun .archon/scripts/validate-branch-name.ts codex/task/example
+```
+
 ## Handling uncommitted work
 
 Before starting a workflow or editing files:
@@ -107,10 +114,11 @@ Abandon does not mean discard useful artifacts. Inspect handoff, validation, and
 Use complete only after merge or approved discard:
 
 ```bash
+bun run ai:check-complete
 bun run cli complete <branch>
 ```
 
-This is a branch lifecycle action. Verify the branch, PR state, and worktree before running it.
+This is a branch lifecycle action. Verify the branch, PR state, worktree cleanliness, and upstream state before running it. `ai:check-complete` is read-only and should fail while uncommitted implementation work is still present.
 
 ## Cleanup policy
 

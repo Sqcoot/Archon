@@ -71,8 +71,21 @@ Important observation: `_bmad/_config/skill-manifest.csv` references skill paths
 - `_bmad` contains manifests and config, but not the referenced `SKILL.md` files under `_bmad/core` and `_bmad/bmm`.
 - Actual BMAD skills are installed under `.agents/skills/bmad-*`; workflows do not automatically discover or route those skills.
 - `bun run cli context route` selected `unknown-help` for this docs-only operationalization prompt, so BMAD route confidence is intentionally marked partial.
+- `bun run cli context route` also selected `unknown-help` for the runtime-enforcement follow-up, so this patch does not add a first-class BMAD workflow.
 - BMAD planning and implementation artifact folders are configured but not wired as default Archon workflow inputs.
 - No repo-local MCP configs exist for BMAD or external documentation.
+
+## Runtime enforcement decision
+
+Runtime-enforcement v1 keeps BMAD mapped/advisory and does not add `.archon/workflows/archon-bmad-story-to-plan.yaml`.
+
+Required evidence before adding that workflow:
+
+1. A concrete BMAD story or phase artifact under `_bmad-output`.
+2. A repeated need that existing `archon-plan-to-pr`, `archon-ralph-dag`, or `context-orchestrate` workflows do not satisfy.
+3. Stable mapping from BMAD skill outputs to `$ARTIFACTS_DIR`.
+4. Deterministic validation that can run without product-code side effects.
+5. A human gate for story readiness or phase promotion.
 
 ## Next actions
 

@@ -76,6 +76,11 @@ For stabilization work, update specs and acceptance tests before production code
 - `docs/ai/workflow-compliance-matrix.md`: maps guide requirements to actual workflows, commands, scripts, skills, agents, MCP status, and gaps.
 - `docs/ai/bmad-to-archon-mapping.md`: maps `_bmad` assets and BMAD phases to Archon workflows, commands, artifacts, and gates.
 - `docs/ai/stab-002-validation-report.md`: current evidence trail for the STAB-002 operating-layer patch.
+- `docs/ai/stab-002-runtime-validation-report.md`: validation evidence for the runtime-enforcement follow-up.
+- `docs/ai/runtime-enforcement-decision.md`: runtime-enforcement choices for artifact, branch, lifecycle, BMAD, MCP, and ledger policy.
+- `docs/ai/runtime-enforcement-ledger.md`: reviewable docs ledger for runtime-enforcement decisions.
+- `docs/ai/artifact-schema.md`: workflow artifact heading schema and completeness check.
+- `docs/ai/dri-ownership.md`: DRI placeholders and AI-layer review cadence.
 - `docs/ai/source-traceability.md`: maps source ideas to repo decisions.
 - `docs/ai/workflow-validation.md`: workflow/command/repo validation policy.
 - `docs/ai/worktree-and-branch-lifecycle.md`: branch, worktree, resume, abandon, complete, and cleanup policy.
