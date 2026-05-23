@@ -418,7 +418,7 @@ Test Release Report — archon v0.3.1 via brew
 Tested at:    2026-04-08 15:42 UTC
 Binary SHA:   e62eb73547b3740d56f242859b434a91d3830360a0d18f14de383da0fd7a0be6
 Binary path:  /opt/homebrew/Cellar/archon/0.3.1/bin/archon
-Dev binary:   /Users/rasmus/.bun/bin/archon → ../install/.../cli.ts (unchanged)
+Dev binary:   $HOME/.bun/bin/archon → ../install/.../cli.ts (unchanged)
 
   [PASS]  Test 1  version reports 0.3.1, Build: binary, commit abc1234
   [PASS]  Test 2  workflow list returned 21 bundled workflows
@@ -442,7 +442,7 @@ Test Release Report — archon v0.3.1 via curl-vps
 Tested at:    2026-04-08 15:42 UTC
 Binary SHA:   0cf83e15e6af228e3c3473467ca30fa7525b6d7069818d85f97a115ea703d708
 Binary path:  user@vps:/usr/local/bin/archon
-Dev binary:   /Users/rasmus/.bun/bin/archon (unchanged)
+Dev binary:   $HOME/.bun/bin/archon (unchanged)
 
   [PASS]  Test 1  version reports 0.3.1, Build: binary
   [FAIL]  Test 2  workflow list returned 0 workflows

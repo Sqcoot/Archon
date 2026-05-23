@@ -27,12 +27,14 @@ describe('ACO Context Intake gate', () => {
     const repo = await fixtureRepo({
       '.archon/commands/defaults/bad.md':
         'Use /Users/edam/Documents/TODA/Archon as the repository root.\n',
+      '.claude/skills/test-release/SKILL.md':
+        'Dev binary: /Users/rasmus/.bun/bin/archon (unchanged)\n',
     });
 
     const report = await evaluateContextIntake({ cwd: repo });
 
     expect(report.state).toBe('blocked');
-    expect(codes(report.blockers)).toContain('developer_local_path');
+    expect(codes(report.blockers).filter(code => code === 'developer_local_path')).toHaveLength(2);
   });
 
   test('fake local path is allowed only in clearly marked fixture or example', async () => {
@@ -105,7 +107,9 @@ describe('ACO Context Intake gate', () => {
     });
     const allowed = await fixtureRepo({
       '.claude/settings.json': JSON.stringify({
-        note: 'Optional opt-in provider hook template guarded by command -v and user-local config.',
+        env: {
+          CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+        },
       }),
     });
 
