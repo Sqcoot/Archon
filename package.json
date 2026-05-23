@@ -19,6 +19,8 @@
     "check:bundled-skill": "bun run scripts/check-bundled-skill.ts --check",
     "aco:context-intake": "bun scripts/context-orchestrator/validate-context-intake.ts",
     "aco:context-intake:test": "bun test ./scripts/context-orchestrator/validate-context-intake.test.ts",
+    "aco:completion-preconditions": "bun scripts/context-orchestrator/validate-completion-preconditions.ts",
+    "aco:completion-preconditions:test": "bun test ./scripts/context-orchestrator/validate-completion-preconditions.test.ts",
     "test": "bun --filter '*' --parallel test",
     "test:watch": "bun --filter @archon/server test:watch",
     "type-check": "bun --filter '*' type-check && bun x tsc --noEmit -p scripts/tsconfig.json",
