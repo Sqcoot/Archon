@@ -1,6 +1,6 @@
 # ACO Context Intake Gate
 
-The ACO Context Intake gate is a local, read-only lint gate for committed reusable agent context. It scans tracked files only, so ignored runtime artifacts under `.archon/artifacts/` and `.archon/state/` are not used as readiness evidence.
+The ACO Context Intake gate is a local, read-only lint gate for committed reusable agent context. It scans tracked files only, including bundled Archon commands/workflows, Claude agents/commands/skills, Codex context, CI workflows, package metadata, and docs. Ignored runtime artifacts under `.archon/artifacts/` and `.archon/state/` are not used as readiness evidence.
 
 Run it with:
 

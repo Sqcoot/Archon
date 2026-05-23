@@ -77,6 +77,7 @@ const reusablePrefixes = [
   '.archon/commands/defaults/',
   '.archon/workflows/defaults/',
   '.claude/agents/',
+  '.claude/commands/',
   '.claude/skills/',
   '.codex/',
   '.github/agents/',
@@ -211,7 +212,7 @@ function inspectSurface(surface: ContextIntakeSurface): ContextIntakeFinding[] {
       path,
       line,
       lineNumber,
-      window: lines.slice(Math.max(0, index - 2), index + 3).join('\n'),
+      window: lines.slice(Math.max(0, index - 4), index + 3).join('\n'),
     };
 
     if (matches(localPathPattern, line) && !isClearlyMarkedFixture(context)) {
@@ -235,6 +236,7 @@ function inspectSurface(surface: ContextIntakeSurface): ContextIntakeFinding[] {
     if (
       readinessClaimPattern.test(line) &&
       isReadinessClaimSurface(path) &&
+      !isExpectedOrConditionalClaim(context) &&
       !hasReadinessEvidence(context.window)
     ) {
       findings.push(finding(context, 'readiness_claim_without_evidence', 'blocker'));
@@ -329,6 +331,7 @@ function isExecutableSurface(path: string): boolean {
   return (
     path.startsWith('.archon/commands/defaults/') ||
     path.startsWith('.archon/workflows/defaults/') ||
+    path.startsWith('.claude/commands/') ||
     path === '.claude/settings.json' ||
     path === '.codex/hooks.json' ||
     path.startsWith('.claude/skills/')
@@ -354,7 +357,14 @@ function isReadinessClaimSurface(path: string): boolean {
   return (
     path.startsWith('docs/') ||
     path.startsWith('.archon/commands/defaults/') ||
+    path.startsWith('.claude/commands/') ||
     path.startsWith('.archon/workflows/defaults/')
+  );
+}
+
+function isExpectedOrConditionalClaim(context: InspectionContext): boolean {
+  return (
+    /\bExpected\b/i.test(context.window) && /\b(?:if|when|should|expected)\b/i.test(context.line)
   );
 }
 

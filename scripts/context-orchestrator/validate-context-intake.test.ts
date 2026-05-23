@@ -1,8 +1,14 @@
-import { describe, expect, test } from 'bun:test';
-import { mkdtemp, mkdir, unlink } from 'fs/promises';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { mkdtemp, mkdir, rm, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { dirname, join } from 'path';
 import { evaluateContextIntake, type ContextIntakeCode } from './validate-context-intake';
+
+const fixtureRepos: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(fixtureRepos.splice(0).map(repo => rm(repo, { recursive: true, force: true })));
+});
 
 describe('ACO Context Intake gate', () => {
   test('clean committed reusable context passes and returns output contract', async () => {
@@ -29,12 +35,13 @@ describe('ACO Context Intake gate', () => {
         'Use /Users/edam/Documents/TODA/Archon as the repository root.\n',
       '.claude/skills/test-release/SKILL.md':
         'Dev binary: /Users/rasmus/.bun/bin/archon (unchanged)\n',
+      '.claude/commands/bad.md': 'Open /Users/alice/private-repo before validation.\n',
     });
 
     const report = await evaluateContextIntake({ cwd: repo });
 
     expect(report.state).toBe('blocked');
-    expect(codes(report.blockers).filter(code => code === 'developer_local_path')).toHaveLength(2);
+    expect(codes(report.blockers).filter(code => code === 'developer_local_path')).toHaveLength(3);
   });
 
   test('fake local path is allowed only in clearly marked fixture or example', async () => {
@@ -128,12 +135,26 @@ describe('ACO Context Intake gate', () => {
   test('readiness claim without evidence is blocked', async () => {
     const repo = await fixtureRepo({
       'docs/aco-readiness.md': 'Readiness: ready. Validation passed.\n',
+      '.claude/commands/validate.md': 'Final recommendation: ready for merge.\n',
     });
 
     const report = await evaluateContextIntake({ cwd: repo });
 
     expect(report.state).toBe('blocked');
-    expect(codes(report.blockers)).toContain('readiness_claim_without_evidence');
+    expect(
+      codes(report.blockers).filter(code => code === 'readiness_claim_without_evidence')
+    ).toHaveLength(2);
+  });
+
+  test('conditional expected outcomes in command checklists are not static readiness claims', async () => {
+    const repo = await fixtureRepo({
+      '.claude/commands/validation/validate.md':
+        '**Expected:**\n- PR ready for merge (if review passed)\n',
+    });
+
+    const report = await evaluateContextIntake({ cwd: repo });
+
+    expect(report.state).toBe('ready');
   });
 
   test('scan failures return structured unknown state instead of throwing', async () => {
@@ -153,6 +174,7 @@ describe('ACO Context Intake gate', () => {
 
 async function fixtureRepo(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'aco-context-intake-'));
+  fixtureRepos.push(root);
   for (const [path, content] of Object.entries(files)) {
     const fullPath = join(root, path);
     await mkdir(dirname(fullPath), { recursive: true });
