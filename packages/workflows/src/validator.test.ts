@@ -22,13 +22,27 @@ import type { WorkflowDefinition, DagNode } from './schemas';
 // =============================================================================
 
 let tmpDir: string;
+const originalArchonHome = process.env.ARCHON_HOME;
+const originalArchonDocker = process.env.ARCHON_DOCKER;
 
 beforeEach(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), 'validator-test-'));
+  process.env.ARCHON_HOME = join(tmpDir, 'archon-home');
+  delete process.env.ARCHON_DOCKER;
 });
 
 afterEach(async () => {
   await rm(tmpDir, { recursive: true, force: true });
+  if (originalArchonHome === undefined) {
+    delete process.env.ARCHON_HOME;
+  } else {
+    process.env.ARCHON_HOME = originalArchonHome;
+  }
+  if (originalArchonDocker === undefined) {
+    delete process.env.ARCHON_DOCKER;
+  } else {
+    process.env.ARCHON_DOCKER = originalArchonDocker;
+  }
 });
 
 function makeWorkflow(name: string, nodes: DagNode[], provider?: string): WorkflowDefinition {

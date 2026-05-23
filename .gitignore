@@ -45,6 +45,7 @@ docker-compose.override.yml
 sessions/
 api_sessions/
 e2e-screenshots/
+aco_codex_conversation_transfer.md
 
 # Archon logs and artifacts (generated at runtime)
 .archon/logs/
