@@ -17,6 +17,7 @@ COPY package.json bun.lock ./
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/core/package.json ./packages/core/
+COPY packages/context-orchestrator/package.json ./packages/context-orchestrator/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
 # so Bun's workspace lockfile resolves correctly.
@@ -127,6 +128,7 @@ COPY package.json bun.lock ./
 COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/core/package.json ./packages/core/
+COPY packages/context-orchestrator/package.json ./packages/context-orchestrator/
 # docs-web source is NOT copied — it's a static site deployed separately
 # (see .github/workflows/deploy-docs.yml). package.json is included only
 # so Bun's workspace lockfile resolves correctly.
@@ -146,6 +148,7 @@ RUN bun install --frozen-lockfile --production --ignore-scripts --linker=hoisted
 COPY packages/adapters/ ./packages/adapters/
 COPY packages/cli/ ./packages/cli/
 COPY packages/core/ ./packages/core/
+COPY packages/context-orchestrator/ ./packages/context-orchestrator/
 COPY packages/git/ ./packages/git/
 COPY packages/isolation/ ./packages/isolation/
 COPY packages/paths/ ./packages/paths/
