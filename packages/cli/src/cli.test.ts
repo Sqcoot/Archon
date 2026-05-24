@@ -23,6 +23,7 @@ describe('CLI argument parsing', () => {
         from: { type: 'string' },
         'from-branch': { type: 'string' },
         'no-worktree': { type: 'boolean' },
+        provider: { type: 'string' },
         spawn: { type: 'boolean' },
         quiet: { type: 'boolean', short: 'q' },
         verbose: { type: 'boolean', short: 'v' },
@@ -108,6 +109,24 @@ describe('CLI argument parsing', () => {
     it('should parse workflow run with only name (no message)', () => {
       const result = parseCliArgs(['workflow', 'run', 'assist']);
       expect(result.positionals).toEqual(['workflow', 'run', 'assist']);
+    });
+
+    it('should parse provider override for workflow run', () => {
+      const result = parseCliArgs([
+        'workflow',
+        'run',
+        'archon-aco-adversarial-loop',
+        '--provider',
+        'codex',
+        'finish closure',
+      ]);
+      expect(result.values.provider).toBe('codex');
+      expect(result.positionals).toEqual([
+        'workflow',
+        'run',
+        'archon-aco-adversarial-loop',
+        'finish closure',
+      ]);
     });
 
     it('should parse --from flag for workflow run', () => {

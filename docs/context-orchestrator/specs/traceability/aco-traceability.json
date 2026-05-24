@@ -179,6 +179,16 @@
         },
         {
           "label": "VERIFIED",
+          "ref": "packages/workflows/src/executor.ts",
+          "markers": [
+            "providerOverride ?? workflow.provider ?? config.assistant",
+            "providerSource",
+            "cli override"
+          ],
+          "summary": "Execution-time provider override lets Codex run the canonical adversarial loop without a Codex-named workflow fork."
+        },
+        {
+          "label": "VERIFIED",
           "ref": "scripts/context-orchestrator/check-role-contracts.ts",
           "markers": [
             "ROLE_CONTRACTS",
@@ -216,6 +226,17 @@
             "goalCompletion.canClaimComplete"
           ],
           "summary": "Adversarial loop Evaluator prompt owns the final original-goal completion verdict."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": [
+            "ACO-ADV-007",
+            "ACO role contracts remain workflow artifact/node contracts, not Codex subagents.",
+            "Can we honestly claim the original goal is done?",
+            "goalCompletion.canClaimComplete"
+          ],
+          "summary": "Canonical adversarial loop keeps Evaluator ownership of the original-goal completion verdict across providers."
         },
         {
           "label": "VERIFIED",

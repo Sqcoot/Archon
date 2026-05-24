@@ -9,8 +9,8 @@
 | 022-sdd-atdd-traceability-gate-spec.md | ACO-TRACE-001 | `scripts/context-orchestrator/validate-traceability.ts`; `tests/acceptance/context-orchestrator/traceability.acceptance.test.ts` | traceability validator enforced |
 | 022-sdd-atdd-traceability-gate-spec.md | ACO-TRACE-002 | `scripts/context-orchestrator/validate-traceability.ts`; `tests/acceptance/context-orchestrator/traceability.acceptance.test.ts` | manifest drift failure enforced |
 | 022-sdd-atdd-traceability-gate-spec.md | ACO-TRACE-003 | `packages/context-orchestrator/src/validation.ts`; `tests/acceptance/context-orchestrator/traceability.acceptance.test.ts` | aggregate validation reports traceability and acceptance |
-| 014-workflow-contracts.md | ACO-ADV-006 | `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml`; `scripts/context-orchestrator/check-role-contracts.ts`; `tests/acceptance/context-orchestrator/workflow.acceptance.test.ts` | adversarial-loop role contract boundaries enforced |
-| 014-workflow-contracts.md | ACO-ADV-007 | `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml`; `packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts`; `packages/context-orchestrator/src/adversarial-contract-loop.test.ts`; `tests/acceptance/context-orchestrator/workflow.acceptance.test.ts` | evaluator owns original-goal completion verdict |
+| 014-workflow-contracts.md | ACO-ADV-006 | `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml`; workflow provider override `--provider codex`; `scripts/context-orchestrator/check-role-contracts.ts`; `tests/acceptance/context-orchestrator/workflow.acceptance.test.ts` | adversarial-loop role contract boundaries enforced without a Codex-named workflow fork |
+| 014-workflow-contracts.md | ACO-ADV-007 | `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml`; workflow provider override `--provider codex`; `packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts`; `packages/context-orchestrator/src/adversarial-contract-loop.test.ts`; `tests/acceptance/context-orchestrator/workflow.acceptance.test.ts` | evaluator owns original-goal completion verdict |
 
 Lifecycle:
 

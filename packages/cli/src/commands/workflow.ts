@@ -62,6 +62,7 @@ export interface WorkflowRunOptions {
   fromBranch?: string;
   noWorktree?: boolean;
   resume?: boolean;
+  providerOverride?: string;
   codebaseId?: string; // Skips path-based codebase lookup when resume/approve/reject already resolved it
   /**
    * Override the directory used for workflow YAML discovery.
@@ -671,11 +672,13 @@ export async function workflowRunCommand(
     }
 
     try {
-      const titleAssistantType = resolveTitleAssistantType(
-        workflow,
-        workflowConfig?.assistant,
-        conversation.ai_assistant_type
-      );
+      const titleAssistantType =
+        options.providerOverride ??
+        resolveTitleAssistantType(
+          workflow,
+          workflowConfig?.assistant,
+          conversation.ai_assistant_type
+        );
       const titleAssistantConfig = workflowConfig?.assistants?.[titleAssistantType] ?? {};
       await generateAndSetTitle(
         conversation.id,
@@ -783,8 +786,8 @@ export async function workflowRunCommand(
   let result: Awaited<ReturnType<typeof executeWorkflow>>;
   try {
     const opts = prepared
-      ? { codebaseId: codebase?.id, ...prepared }
-      : { codebaseId: codebase?.id };
+      ? { codebaseId: codebase?.id, providerOverride: options.providerOverride, ...prepared }
+      : { codebaseId: codebase?.id, providerOverride: options.providerOverride };
     result = await executeWorkflow(
       deps,
       adapter,

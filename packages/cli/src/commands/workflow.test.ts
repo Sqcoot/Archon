@@ -743,6 +743,51 @@ describe('workflowRunCommand', () => {
     );
   });
 
+  it('passes provider override to execution and title generation', async () => {
+    const { discoverWorkflowsWithConfig } = await import('@archon/workflows/workflow-discovery');
+    const { executeWorkflow } = await import('@archon/workflows/executor');
+    const conversationDb = await import('@archon/core/db/conversations');
+    const codebaseDb = await import('@archon/core/db/codebases');
+    const core = await import('@archon/core');
+
+    (discoverWorkflowsWithConfig as ReturnType<typeof mock>).mockResolvedValueOnce({
+      workflows: [makeTestWorkflowWithSource({ name: 'assist', description: 'Help' })],
+      errors: [],
+    });
+    (conversationDb.getOrCreateConversation as ReturnType<typeof mock>).mockResolvedValueOnce({
+      id: 'conv-123',
+      ai_assistant_type: 'claude',
+    });
+    (core.loadConfig as ReturnType<typeof mock>).mockResolvedValueOnce({
+      assistant: 'claude',
+      assistants: { codex: { model: 'gpt-5.4' } },
+      defaults: {},
+    });
+    (codebaseDb.findCodebaseByDefaultCwd as ReturnType<typeof mock>).mockResolvedValueOnce(null);
+    (conversationDb.updateConversation as ReturnType<typeof mock>).mockResolvedValueOnce(undefined);
+    (executeWorkflow as ReturnType<typeof mock>).mockResolvedValueOnce({
+      success: true,
+      workflowRunId: 'run-123',
+    });
+    (core.generateAndSetTitle as ReturnType<typeof mock>).mockClear();
+
+    await workflowRunCommand('/test/path', 'assist', 'check provider', {
+      noWorktree: true,
+      providerOverride: 'codex',
+    });
+
+    const executeCall = (executeWorkflow as ReturnType<typeof mock>).mock.calls.at(-1);
+    expect(executeCall?.[7]).toMatchObject({ providerOverride: 'codex' });
+    expect(core.generateAndSetTitle).toHaveBeenCalledWith(
+      'conv-123',
+      'check provider',
+      'codex',
+      '/test/path',
+      'assist',
+      { model: 'gpt-5.4' }
+    );
+  });
+
   it('passes fromBranch into isolation task request', async () => {
     const { discoverWorkflowsWithConfig } = await import('@archon/workflows/workflow-discovery');
     const { executeWorkflow } = await import('@archon/workflows/executor');

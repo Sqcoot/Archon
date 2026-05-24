@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import {
@@ -101,6 +102,48 @@ describe('ACO workflow acceptance', () => {
     expect(adversarialLoop?.issues).toEqual([]);
   });
 
+  test('Spec: 014-workflow-contracts.md Acceptance: ACO-ADV-006 Codex provider override preserves canonical role contracts', async () => {
+    const codexForkPath = join(
+      process.cwd(),
+      '.archon/workflows/defaults',
+      `archon-aco-adversarial-loop-${'codex'}.yaml`
+    );
+    expect(existsSync(codexForkPath)).toBe(false);
+
+    const workflowSource = await readFile(
+      join(process.cwd(), '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml'),
+      'utf8'
+    );
+
+    for (const evidence of [
+      'ACO role contracts remain workflow artifact/node contracts, not Codex subagents.',
+      'Codex agents and tool-restriction capabilities are unsupported runtime capabilities.',
+      'ACO-ADV-006 Coordinator/Triage role.',
+      'ACO-ADV-006 Skill Curator role.',
+      'ACO-ADV-006 BMAD Reviewer role.',
+      'ACO-ADV-006 Agentic Search role.',
+      'ACO-ADV-006 Planner role.',
+      'ACO-ADV-006 Contract role.',
+      'ACO-ADV-004 ACO-ADV-006 Generator role.',
+      'ACO-ADV-006 QA/Verifier role.',
+      'ACO-ADV-007 Evaluator role.',
+      'certification: "not-certified-by-generator"',
+      'Can claim complete:',
+    ]) {
+      expect(workflowSource).toContain(evidence);
+    }
+    expect(workflowSource).not.toContain('allowed_tools:');
+    expect(workflowSource).not.toContain('agents:');
+
+    const report = await validateWorkflow('archon-aco-adversarial-loop', ['--provider', 'codex']);
+    const adversarialLoop = report.results.find(
+      result => result.workflowName === 'archon-aco-adversarial-loop'
+    );
+    expect(report.summary).toMatchObject({ total: 1, valid: 1, errors: 0, warnings: 0 });
+    expect(adversarialLoop?.valid).toBe(true);
+    expect(adversarialLoop?.issues).toEqual([]);
+  });
+
   test('Spec: 014-workflow-contracts.md Acceptance: ACO-ADV-007 Evaluator judges original goal completion', async () => {
     const workflowSource = await readFile(
       join(process.cwd(), '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml'),
@@ -110,7 +153,7 @@ describe('ACO workflow acceptance', () => {
     for (const evidence of [
       'name: archon-aco-adversarial-loop',
       'certification: "not-certified-by-generator"',
-      'Do not edit product source, run shell commands, or certify',
+      'Do not edit product source, run validation/product-source commands, or certify',
       'Can we honestly claim the original goal is done?',
       'originalObjective',
       'goalCompletion.status',
@@ -192,9 +235,12 @@ describe('ACO workflow acceptance', () => {
   });
 });
 
-async function validateWorkflow(workflowName: string): Promise<WorkflowValidationReport> {
+async function validateWorkflow(
+  workflowName: string,
+  extraArgs: string[] = []
+): Promise<WorkflowValidationReport> {
   const result = await runBun(
-    ['run', 'cli', 'validate', 'workflows', workflowName, '--json'],
+    ['run', 'cli', 'validate', 'workflows', workflowName, ...extraArgs, '--json'],
     20_000
   );
   expect(result.exitCode, result.stderr).toBe(0);

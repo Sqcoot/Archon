@@ -6,8 +6,10 @@ description: |
   Does: Compiles ACO status, ledgers, and context package evidence; gates readiness with
         an explicit approval record; then writes planner, contract, generator, evaluator,
         feedback, run-state, trace, and handoff artifacts. The provider is inherited
-        from caller or config.
-  NOT for: Direct one-off fixes, standalone app generation, graph maintenance, or provider-specific runs.
+        from an execution-time override, workflow config, or repo config.
+        ACO role contracts remain workflow artifact/node contracts, not Codex subagents.
+        Codex agents and tool-restriction capabilities are unsupported runtime capabilities.
+  NOT for: Direct one-off fixes, standalone app generation, graph maintenance, or provider-specific workflow forks.
 
 mutates_checkout: false
 
@@ -202,9 +204,11 @@ nodes:
       - `$ARTIFACTS_DIR/aco-adversarial-loop/coordinator-triage.md`
 
       Route the current request, identify decision-grade ambiguity, choose the ACO/BMAD path,
-      and record which role owns the final handoff after the Evaluator verdict. Do not edit
-      product source, run shell commands, or certify final readiness.
-    allowed_tools: [Read, Write, Glob, Grep]
+      and record which role owns the final handoff after the Evaluator verdict. Use only
+      provider-available artifact read/write mechanisms. If the provider lacks direct file
+      tools, shell-backed filesystem access is allowed only for the artifact paths listed
+      above. Do not edit product source, run validation/product-source commands, or certify
+      final readiness.
     depends_on: [initialize-loop-artifacts]
 
   - id: skill-curator
@@ -222,9 +226,10 @@ nodes:
 
       Select only repo-available skills, commands, workflows, and tools for the current ACO
       objective. Reject unsupported runtime claims explicitly. Mark non-native capabilities as
-      advisory, deferred, or unavailable instead of presenting them as executable support. Do not
-      implement code or certify final readiness.
-    allowed_tools: [Read, Write, Glob, Grep]
+      advisory, deferred, or unavailable instead of presenting them as executable support.
+      Codex agents and tool-restriction capabilities are unsupported runtime capabilities;
+      role boundaries are contractual workflow artifact requirements, not Codex runtime gates.
+      Do not implement code or certify final readiness.
     depends_on: [coordinator-triage]
 
   - id: bmad-reviewer
@@ -242,7 +247,6 @@ nodes:
       Review whether the selected BMAD advisory route is methodologically appropriate and whether
       any ACO/BMAD sequence step is missing. BMAD Reviewer is advisory only and must not override
       ACO readiness, validation, approval gates, or the Evaluator goal-completion verdict.
-    allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [coordinator-triage]
 
   - id: agentic-search
@@ -259,9 +263,11 @@ nodes:
       - `$ARTIFACTS_DIR/aco-adversarial-loop/agentic-search.md`
 
       Identify likely implementation surfaces, existing tests, acceptance markers, and
-      evidence gaps for the current ACO objective. Do not edit product source, run shell
-      commands, certify readiness, or expand beyond the compiled ACO context.
-    allowed_tools: [Read, Write, Glob, Grep]
+      evidence gaps for the current ACO objective. Use only provider-available artifact
+      read/write mechanisms; shell-backed filesystem access is allowed only for the listed
+      artifact paths when direct file tools are unavailable. Do not edit product source,
+      run validation/product-source commands, certify readiness, or expand beyond the compiled
+      ACO context.
     depends_on: [coordinator-triage]
 
   - id: planner
@@ -283,7 +289,6 @@ nodes:
       The plan must be bounded to one contracted slice and must include `acoContextRefs`
       pointing at the ACO compile/status/ledger artifacts. Do not implement code and do not
       certify readiness.
-    allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [agentic-search, skill-curator, bmad-reviewer]
 
   - id: contract
@@ -301,7 +306,6 @@ nodes:
       Contract JSON must use schemaVersion `aco.adversarial-contract-loop.v1`, sprintId
       `sprint-001`, criteria with concrete observable proof, and `acoContextRefs` on the
       contract and every criterion.
-    allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [planner]
 
   - id: generator
@@ -324,8 +328,10 @@ nodes:
       The report must include the generated story payload, contract path, changed-file summary
       if any, validation commands, `certification: "not-certified-by-generator"`, and
       `acoContextRefs`. The Generator does not certify pass/fail, approval, readiness, or final
-      quality. Do not run shell commands from this artifact-only workflow node.
-    allowed_tools: [Read, Write, Glob, Grep]
+      quality. Use only provider-available artifact read/write mechanisms; shell-backed
+      filesystem access is allowed only for the listed artifact paths when direct file tools are
+      unavailable. Do not run validation/product-source commands from this artifact-only
+      workflow node.
     depends_on: [contract]
 
   - id: qa-verifier
@@ -342,9 +348,10 @@ nodes:
 
       Check whether the Generator report is internally complete, objective-bound, and
       aligned with the contract. Record missing evidence and commands that still need
-      deterministic execution. Do not edit product source, run shell commands, or certify
-      final readiness.
-    allowed_tools: [Read, Write, Glob, Grep]
+      deterministic execution. Use only provider-available artifact read/write mechanisms;
+      shell-backed filesystem access is allowed only for the listed artifact paths when direct
+      file tools are unavailable. Do not edit product source, run validation/product-source
+      commands, or certify final readiness.
     depends_on: [generator]
 
   - id: evaluator
@@ -365,9 +372,11 @@ nodes:
       Write only:
       - `$ARTIFACTS_DIR/aco-adversarial-loop/verdicts/sprint-001-round-001.evaluator-verdict.json`
 
-      Do not edit source implementation during evaluation. Do not run shell commands from this
-      artifact-only workflow node. Grade every contract criterion, but contract scoring alone is
-      not completion.
+      Do not edit source implementation during evaluation. Use only provider-available artifact
+      read/write mechanisms; shell-backed filesystem access is allowed only for the listed
+      artifact paths when direct file tools are unavailable. Do not run validation/product-source
+      commands from this artifact-only workflow node. Grade every contract criterion, but
+      contract scoring alone is not completion.
 
       The Evaluator is the final independent goal-completion judge. It must answer:
       `Can we honestly claim the original goal is done?`
@@ -386,7 +395,6 @@ nodes:
       `goalCompletion.canClaimComplete` is true. Dirty worktree evidence, active graph waivers,
       `needs_approval`, failed validation, stale artifacts, unknown runtime claims, or unresolved
       source-disposition gaps prevent a `passed` verdict.
-    allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [qa-verifier]
 
   # ACO-ADV-006 Feedback/Handoff role.
@@ -444,8 +452,18 @@ nodes:
           blockers: ["missing-goal-completion"],
           requiredNextAction: "Regenerate evaluator verdict with goalCompletion.",
         };
-        const blockerLines = goalCompletion.blockers?.length > 0
-          ? goalCompletion.blockers.map((blocker) => `- ${blocker}`)
+        const formatBlocker = (blocker) => {
+          if (typeof blocker === "string") return `- ${blocker}`;
+          if (blocker && typeof blocker === "object") {
+            const id = blocker.id ?? blocker.blockerId ?? blocker.code ?? blocker.kind ?? "blocker";
+            const summary = blocker.summary ?? blocker.reason ?? blocker.message ?? blocker.requiredNextAction ?? "";
+            return `- ${id}${summary ? `: ${summary}` : ""}`;
+          }
+          return `- ${String(blocker)}`;
+        };
+        const rawBlockers = Array.isArray(goalCompletion.blockers) ? goalCompletion.blockers : [];
+        const blockerLines = rawBlockers.length > 0
+          ? rawBlockers.map(formatBlocker)
           : compiled.readiness === "needs_approval"
             ? ["- Readiness remains needs_approval while graph waivers remain part of current evidence."]
             : ["- none"];

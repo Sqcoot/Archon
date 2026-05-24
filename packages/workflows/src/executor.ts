@@ -146,6 +146,8 @@ type ResumePayload =
 export type ExecuteWorkflowOptions = ResumePayload & {
   /** Codebase ID for env vars + isolation context. */
   codebaseId?: string;
+  /** Execution-time provider override. Does not mutate workflow YAML or repo config. */
+  providerOverride?: string;
   /**
    * GitHub issue/PR context. When provided:
    * - Stored in `WorkflowRun.metadata` as `{ github_context }`
@@ -221,6 +223,7 @@ export async function executeWorkflow(
 ): Promise<WorkflowExecutionResult> {
   const {
     codebaseId,
+    providerOverride,
     issueContext,
     isolationContext,
     parentConversationId,
@@ -258,10 +261,14 @@ export async function executeWorkflow(
   const docsDir = config.docsPath ?? 'docs/';
 
   // Resolve provider and model once (used by all nodes).
-  // Provider is explicit: node.provider ?? workflow.provider ?? config.assistant.
+  // Provider is explicit: node.provider ?? providerOverride ?? workflow.provider ?? config.assistant.
   // Model strings pass through to the SDK as-is — the SDK validates at request time.
-  const resolvedProvider: string = workflow.provider ?? config.assistant;
-  const providerSource = workflow.provider ? 'workflow definition' : 'config';
+  const resolvedProvider: string = providerOverride ?? workflow.provider ?? config.assistant;
+  const providerSource = providerOverride
+    ? 'cli override'
+    : workflow.provider
+      ? 'workflow definition'
+      : 'config';
   if (!isRegisteredProvider(resolvedProvider)) {
     throw new Error(
       `Workflow '${workflow.name}': unknown provider '${resolvedProvider}'. ` +

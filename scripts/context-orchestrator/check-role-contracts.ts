@@ -8,7 +8,9 @@ interface RoleContractCheck {
   status: RoleContractStatus;
   file: string;
   markers: string[];
+  forbidden: string[];
   missing: string[];
+  forbiddenFound: string[];
 }
 
 interface RoleContractReport {
@@ -17,12 +19,19 @@ interface RoleContractReport {
   errors: string[];
 }
 
+interface RoleContractDefinition {
+  id: string;
+  file: string;
+  markers: readonly string[];
+  forbidden?: readonly string[];
+}
+
 interface CliOptions {
   root: string;
   json: boolean;
 }
 
-const ROLE_CONTRACTS = [
+const ROLE_CONTRACTS: readonly RoleContractDefinition[] = [
   {
     id: 'workflow-role-nodes',
     file: '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml',
@@ -43,13 +52,36 @@ const ROLE_CONTRACTS = [
     id: 'workflow-role-boundaries',
     file: '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml',
     markers: [
+      'ACO role contracts remain workflow artifact/node contracts, not Codex subagents.',
+      'Codex agents and tool-restriction capabilities are unsupported runtime capabilities.',
       'Reject unsupported runtime claims explicitly.',
+      'role boundaries are contractual workflow artifact requirements, not Codex runtime gates.',
       'BMAD Reviewer is advisory only',
       'certify final readiness.',
       'certification: "not-certified-by-generator"',
       'Can we honestly claim the original goal is done?',
       'Goal completion:',
       'Can claim complete:',
+    ],
+    forbidden: ['allowed_tools:', 'agents:'],
+  },
+  {
+    id: 'codex-provider-capability-boundary',
+    file: 'packages/providers/src/codex/capabilities.ts',
+    markers: ['agents: false', 'toolRestrictions: false'],
+  },
+  {
+    id: 'claude-provider-capability-boundary',
+    file: 'packages/providers/src/claude/capabilities.ts',
+    markers: ['agents: true', 'toolRestrictions: true'],
+  },
+  {
+    id: 'workflow-provider-override-boundary',
+    file: 'packages/workflows/src/executor.ts',
+    markers: [
+      'providerOverride ?? workflow.provider ?? config.assistant',
+      'providerSource = providerOverride',
+      "'cli override'",
     ],
   },
   {
@@ -107,7 +139,7 @@ const ROLE_CONTRACTS = [
     file: 'docs/context-orchestrator/specs/spec-traceability-matrix.md',
     markers: ['ACO-ADV-006', 'role contract'],
   },
-] as const;
+];
 
 function parseArgs(args: string[]): CliOptions {
   let root = process.cwd();
@@ -143,16 +175,22 @@ async function validateRoleContracts(root: string): Promise<RoleContractReport> 
     }
 
     const missing = contract.markers.filter(marker => !text.includes(marker));
+    const forbiddenFound = (contract.forbidden ?? []).filter(marker => text.includes(marker));
     if (missing.length > 0) {
       errors.push(`${contract.file}: missing ${missing.join(', ')}`);
+    }
+    if (forbiddenFound.length > 0) {
+      errors.push(`${contract.file}: found forbidden ${forbiddenFound.join(', ')}`);
     }
 
     checks.push({
       id: contract.id,
-      status: missing.length === 0 ? 'passed' : 'failed',
+      status: missing.length === 0 && forbiddenFound.length === 0 ? 'passed' : 'failed',
       file: contract.file,
       markers: [...contract.markers],
+      forbidden: [...(contract.forbidden ?? [])],
       missing,
+      forbiddenFound,
     });
   }
 

@@ -16,7 +16,7 @@ Lifecycle:
 | --- | --- | --- |
 | Context Orchestrator package and validation gates | `packages/context-orchestrator`, `scripts/context-orchestrator`, `bun run aco:gates:test` | Ported as repo-native package behavior. |
 | CLI, API, Web, and slash surfaces | `packages/cli/src/commands/context.ts`, `packages/server/src/routes/api.ts`, `packages/web/src/routes/AcoStatusPage.tsx`, `packages/core/src/handlers/command-handler.ts` | Ported as native ACO coordination surfaces. |
-| ACO workflow defaults | `.archon/workflows/defaults/context-orchestrate.yaml`, `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml` | Ported with hardened workflow validation and explicit approval gates. |
+| ACO workflow defaults | `.archon/workflows/defaults/context-orchestrate.yaml`, `.archon/workflows/defaults/archon-aco-adversarial-loop.yaml`; workflow provider override `--provider codex` | Ported with hardened workflow validation, explicit approval gates, and a canonical ACO closure path that can run under Codex without a Codex-named workflow fork or unsupported Codex subagent/tool-restriction claims. |
 | SDD/ATDD traceability and selected acceptance | `docs/context-orchestrator/specs/traceability/aco-traceability.json`, `tests/acceptance/context-orchestrator` | Ported as selected enforced acceptance for API, slash, workflow, events, and traceability. |
 | Active graph waiver evidence | `docs/context-orchestrator/research/upstream-manifest.json`, `docs/context-orchestrator/research/waivers.md` | Ported to preserve named waiver state without graph refresh or waiver cleanup. |
 

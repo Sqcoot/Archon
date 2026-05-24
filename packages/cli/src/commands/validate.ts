@@ -21,6 +21,7 @@ import type {
   ScriptValidationResult,
 } from '@archon/workflows/validator';
 import { loadConfig, loadRepoConfig } from '@archon/core';
+import { getRegisteredProviders, isRegisteredProvider } from '@archon/providers';
 
 /**
  * Build ValidationConfig from the repo's .archon/config.yaml
@@ -82,11 +83,25 @@ function formatWorkflowResult(result: WorkflowValidationResult): string {
 export async function validateWorkflowsCommand(
   cwd: string,
   name?: string,
-  json?: boolean
+  json?: boolean,
+  providerOverride?: string
 ): Promise<number> {
   const config = await buildValidationConfig(cwd);
   const mergedConfig = await loadConfig(cwd);
   const defaultProvider = mergedConfig.assistant;
+  if (providerOverride && !isRegisteredProvider(providerOverride)) {
+    const message =
+      `Unknown provider '${providerOverride}'. Registered: ` +
+      getRegisteredProviders()
+        .map(provider => provider.id)
+        .join(', ');
+    if (json) {
+      console.log(JSON.stringify({ error: message }));
+    } else {
+      console.error(message);
+    }
+    return 1;
+  }
   const { workflows: workflowEntries, errors: loadErrors } = await discoverWorkflowsWithConfig(
     cwd,
     loadConfig
@@ -107,7 +122,15 @@ export async function validateWorkflowsCommand(
 
   // Validate successfully parsed workflows (Level 3)
   for (const { workflow } of workflowEntries) {
-    const issues = await validateWorkflowResources(workflow, cwd, config, defaultProvider);
+    const workflowForValidation = providerOverride
+      ? { ...workflow, provider: providerOverride }
+      : workflow;
+    const issues = await validateWorkflowResources(
+      workflowForValidation,
+      cwd,
+      config,
+      defaultProvider
+    );
     results.push(makeWorkflowResult(workflow.name, issues));
   }
 
@@ -157,6 +180,7 @@ export async function validateWorkflowsCommand(
   if (json) {
     console.log(
       JSON.stringify({
+        providerOverride: providerOverride ?? null,
         results: filteredResults,
         summary: {
           total: filteredResults.length,

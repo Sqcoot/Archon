@@ -432,6 +432,31 @@ describe('executeWorkflow', () => {
       expect(mockExecuteDagWorkflow).toHaveBeenCalledTimes(1);
     });
 
+    it('uses providerOverride ahead of workflow and config providers', async () => {
+      const store = makeStore();
+      const deps = makeDeps(store);
+      await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow({ provider: 'claude' }),
+        'test message',
+        'db-conv-1',
+        { providerOverride: 'codex' }
+      );
+
+      expect(mockExecuteDagWorkflow.mock.calls[0]?.[6]).toBe('codex');
+      expect(mockLogFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workflowName: 'test-workflow',
+          provider: 'codex',
+          providerSource: 'cli override',
+        }),
+        'workflow_provider_resolved'
+      );
+    });
+
     it('throws when workflow.provider is not a registered provider', async () => {
       const store = makeStore();
       const deps = makeDeps(store);

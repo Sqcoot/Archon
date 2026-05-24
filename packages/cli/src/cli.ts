@@ -150,6 +150,7 @@ Options:
   --from, --from-branch <name> Create new branch from specific start point
   --no-worktree              Run on branch directly without worktree isolation
   --resume                   Resume the most recent failed run of the workflow (mutually exclusive with --branch)
+  --provider <id>            Override workflow provider for this run or validation
   --spawn                    Open setup wizard in a new terminal window (for setup command)
   --quiet, -q                Reduce log verbosity to warnings and errors only
   --verbose, -v              Show debug-level output
@@ -274,6 +275,7 @@ async function main(): Promise<number> {
         'from-branch': { type: 'string' },
         'no-worktree': { type: 'boolean' },
         resume: { type: 'boolean' },
+        provider: { type: 'string' },
         spawn: { type: 'boolean' },
         quiet: { type: 'boolean', short: 'q' },
         verbose: { type: 'boolean', short: 'v' },
@@ -313,6 +315,7 @@ async function main(): Promise<number> {
     (values.from as string | undefined) ?? (values['from-branch'] as string | undefined);
   const noWorktree = values['no-worktree'] as boolean | undefined;
   const resumeFlag = values.resume as boolean | undefined;
+  const providerOverride = values.provider as string | undefined;
   const spawnFlag = values.spawn as boolean | undefined;
   const jsonFlag = values.json as boolean | undefined;
   // Handle help flag
@@ -471,6 +474,7 @@ async function main(): Promise<number> {
               fromBranch,
               noWorktree,
               resume: resumeFlag,
+              providerOverride,
               quiet: values.quiet as boolean | undefined,
               verbose: values.verbose as boolean | undefined,
             };
@@ -643,7 +647,12 @@ async function main(): Promise<number> {
         switch (subcommand) {
           case 'workflows': {
             const validateName = positionals[2];
-            return await validateWorkflowsCommand(effectiveCwd, validateName, jsonFlag);
+            return await validateWorkflowsCommand(
+              effectiveCwd,
+              validateName,
+              jsonFlag,
+              providerOverride
+            );
           }
 
           case 'commands': {
