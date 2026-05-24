@@ -4,6 +4,339 @@
  */
 
 export interface paths {
+  '/api/aco/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Show Context Orchestrator status */
+    get: {
+      parameters: {
+        query: {
+          cwd: string;
+          objective?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Raw ACO status contract */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoStatusResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd is not registered */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description ACO status read failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/aco/ledgers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Show Context Orchestrator ledgers */
+    get: {
+      parameters: {
+        query: {
+          cwd: string;
+          objective?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Context Orchestrator ledger bundle */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoLedgersResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd is not registered */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description Context Orchestrator ledgers read failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/aco/route': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Route a request through Context Orchestrator BMAD routing */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['AcoRouteRequest'];
+        };
+      };
+      responses: {
+        /** @description BMAD route */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoRouteResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd is not registered */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description Context Orchestrator route failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/aco/compile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compile a Context Orchestrator prompt package */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['AcoCompileRequest'];
+        };
+      };
+      responses: {
+        /** @description Compiled Context Orchestrator package summary */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoCompileResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd is not registered */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description Context Orchestrator compile failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/aco/artifact-packages/{runId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read a Context Orchestrator artifact package manifest */
+    get: {
+      parameters: {
+        query: {
+          cwd: string;
+        };
+        header?: never;
+        path: {
+          runId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Manifest-backed Context Orchestrator artifact package lookup */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['AcoArtifactPackageResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description cwd or artifact package was not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+        /** @description Context Orchestrator artifact package lookup failed */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Error'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/conversations': {
     parameters: {
       query?: never;
@@ -925,7 +1258,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Resume a failed workflow run (re-run auto-resumes from completed nodes) */
+    /** Resume a failed workflow run (dispatches resume on the parent web conversation) */
     post: {
       parameters: {
         query?: never;
@@ -1517,6 +1850,7 @@ export interface paths {
       parameters: {
         query?: {
           cwd?: string;
+          source?: 'project' | 'global';
         };
         header?: never;
         path: {
@@ -1565,6 +1899,7 @@ export interface paths {
       parameters: {
         query?: {
           cwd?: string;
+          source?: 'project' | 'global';
         };
         header?: never;
         path: {
@@ -1944,6 +2279,264 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AcoContextIntent: {
+      objective: string;
+      normalizedObjective: string;
+      intentHash: string;
+      cwd: string;
+      commitSha: string;
+      generatedAt: string;
+    };
+    AcoGraphWaiver: {
+      id: string;
+      repository: string;
+      owner: string;
+      reason: string;
+      evidence: string;
+      expiryCondition: string;
+    };
+    /** @enum {string} */
+    AcoReadiness: 'ready' | 'blocked' | 'needs_approval' | 'needs_decision' | 'unknown';
+    AcoLedgerStatusCounts: {
+      available: number;
+      partial: number;
+      blocked: number;
+      deferred: number;
+      forbidden: number;
+      'not used': number;
+      unknown: number;
+    };
+    AcoLedgerSummarySection: {
+      total: number;
+      counts: components['schemas']['AcoLedgerStatusCounts'];
+    };
+    AcoLedgerSummary: {
+      toolAvailability: components['schemas']['AcoLedgerSummarySection'];
+      commands: components['schemas']['AcoLedgerSummarySection'];
+      combined: components['schemas']['AcoLedgerSummarySection'];
+    };
+    AcoEvidenceBlocker: {
+      id: string;
+      /** @enum {string} */
+      kind: 'tool' | 'command' | 'graph' | 'validation' | 'docs';
+      status: string;
+      /** @enum {string} */
+      freshness: 'fresh' | 'stale' | 'unknown' | 'waived';
+      reason: string;
+      sourceArtifact: string;
+      nextVerificationAction: string;
+    };
+    AcoEvidenceResolutionItem: {
+      evidenceId: string;
+      capabilityId: string;
+      /** @enum {string} */
+      targetKind: 'openai' | 'third-party' | 'unknown' | 'graph' | 'validation';
+      targetName: string;
+      /** @enum {string} */
+      resolver: 'openai-docs-mcp' | 'context7' | 'manual' | 'approval';
+      reason: string;
+      nextAction: string;
+      requiresApproval: boolean;
+      blockingAcceptanceIds: string[];
+      expectedSuccessEvidence: string[];
+    };
+    AcoEvidenceResolution: {
+      required: boolean;
+      items: components['schemas']['AcoEvidenceResolutionItem'][];
+    };
+    AcoApprovalContractV1: {
+      /** @enum {string} */
+      schemaVersion: 'aco.approval-contract.v1';
+      contractId: string;
+      contractHash: string;
+      actionId: string;
+      intentHash: string;
+      commitSha: string;
+      routeId: string;
+      /** @enum {string} */
+      readiness: 'needs_approval';
+      /** @enum {string} */
+      graphStatus: 'forbidden';
+      requiredWaiverIds: string[];
+      evidenceResolutionIds: string[];
+      ledgerFingerprint: string;
+      /** @enum {string} */
+      validationStatus: 'passed' | 'warning' | 'failed';
+      /** @enum {boolean} */
+      willRun: false;
+      approvalScope: {
+        /** @enum {string} */
+        type: 'workflow-handoff';
+        allowedActions: 'preserve-current-graph-waivers'[];
+        /** @enum {string} */
+        summary: 'Approval preserves listed graph waivers for this run only.';
+      };
+    };
+    AcoNextDecisionAction: {
+      id: string;
+      /** @enum {string} */
+      kind: 'approval' | 'manual' | 'validation' | 'correct_course' | 'implementation';
+      label: string;
+      command?: string[];
+      payload?:
+        | components['schemas']['AcoApprovalContractV1']
+        | {
+            [key: string]: unknown;
+          };
+      requiresApproval: boolean;
+      /** @enum {boolean} */
+      willRun: false;
+      successEvidence: string[];
+    };
+    AcoNextDecisionFactor: {
+      id: string;
+      status: string;
+      source: string;
+      summary: string;
+    };
+    AcoNextDecisionEvidenceSummary: {
+      readiness: components['schemas']['AcoReadiness'];
+      /** @enum {string} */
+      validationStatus: 'passed' | 'warning' | 'failed';
+      /** @enum {string} */
+      graphStatus: 'available' | 'partial' | 'forbidden' | 'unavailable';
+      graphWaivers: number;
+      evidenceBlockers: number;
+      evidenceResolutionRequired: boolean;
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoNextDecision: {
+      /** @enum {string} */
+      schemaVersion: 'aco.next-decision.v1';
+      /** @enum {string} */
+      kind:
+        | 'blocked_by_validation'
+        | 'blocked_by_evidence'
+        | 'blocked_by_graph'
+        | 'approval_required'
+        | 'needs_correct_course'
+        | 'ready_for_implementation';
+      title: string;
+      summary: string;
+      primaryAction: components['schemas']['AcoNextDecisionAction'];
+      secondaryActions: components['schemas']['AcoNextDecisionAction'][];
+      decisionFactors: components['schemas']['AcoNextDecisionFactor'][];
+      evidenceSummary: components['schemas']['AcoNextDecisionEvidenceSummary'];
+      waiverIds: string[];
+      evidenceBlockerIds: string[];
+      evidenceResolutionIds: string[];
+      nextPrompt: string;
+    };
+    AcoStatusResponse: {
+      cwd: string;
+      contextIntent: components['schemas']['AcoContextIntent'];
+      graphStatus: string;
+      graphWaivers: number;
+      graphWaiverIds: string[];
+      waivers: components['schemas']['AcoGraphWaiver'][];
+      approvalRequired: boolean;
+      readiness: components['schemas']['AcoReadiness'];
+      validationStatus: string;
+      ledgerSchemaVersion: string;
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+      evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
+      evidenceResolution: components['schemas']['AcoEvidenceResolution'];
+      nextDecision: components['schemas']['AcoNextDecision'];
+    };
+    Error: {
+      error: string;
+    };
+    AcoLedgersResponse: {
+      schemaVersion: string;
+      generatedAt?: string;
+      contextIntent: components['schemas']['AcoContextIntent'];
+      toolAvailability: {
+        [key: string]: unknown;
+      }[];
+      commands: {
+        [key: string]: unknown;
+      }[];
+      evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
+      summary: components['schemas']['AcoLedgerSummary'];
+    };
+    AcoRouteResponse: {
+      id: string;
+      label: string;
+      steps: string[];
+      rationale: string;
+      /** @enum {string} */
+      confidence?: 'high' | 'medium' | 'low';
+      matchedSignals?: string[];
+      rejectedAlternatives?: {
+        id: string;
+        label: string;
+        reason: string;
+      }[];
+      fallbackBehavior?: string;
+      nextRecommendedAction?: string;
+      requiresDecision?: boolean;
+    };
+    AcoRouteRequest: {
+      cwd: string;
+      prompt: string;
+    };
+    AcoRoute: {
+      id: string;
+      label: string;
+      steps: string[];
+      rationale: string;
+      /** @enum {string} */
+      confidence?: 'high' | 'medium' | 'low';
+      matchedSignals?: string[];
+      rejectedAlternatives?: {
+        id: string;
+        label: string;
+        reason: string;
+      }[];
+      fallbackBehavior?: string;
+      nextRecommendedAction?: string;
+      requiresDecision?: boolean;
+    };
+    AcoCompileResponse: {
+      runId: string;
+      contextIntent: components['schemas']['AcoContextIntent'];
+      archivePath: string;
+      files: {
+        [key: string]: string;
+      };
+      route: components['schemas']['AcoRoute'];
+      graphStatus: string;
+      graphWaivers: number;
+      graphWaiverIds: string[];
+      waivers: components['schemas']['AcoGraphWaiver'][];
+      approvalRequired: boolean;
+      readiness: components['schemas']['AcoReadiness'];
+      validationStatus: string;
+      ledgerSchemaVersion: string;
+      ledgerSummary: components['schemas']['AcoLedgerSummary'];
+      evidenceBlockers: components['schemas']['AcoEvidenceBlocker'][];
+      evidenceResolution: components['schemas']['AcoEvidenceResolution'];
+      nextDecision: components['schemas']['AcoNextDecision'];
+    };
+    AcoCompileRequest: {
+      cwd: string;
+      prompt: string;
+      runId?: string;
+      timestamp?: string;
+      /** @enum {string} */
+      cavemanMode?: 'off' | 'lite' | 'full' | 'ultra';
+    };
+    AcoArtifactPackageResponse: {
+      runId: string;
+      archivePath: string;
+      manifest: {
+        [key: string]: unknown;
+      };
+      files: {
+        name: string;
+        path: string;
+      }[];
+    };
     Conversation: {
       id: string;
       platform_type: string;
@@ -1960,9 +2553,6 @@ export interface components {
       updated_at: string;
     };
     ConversationListResponse: components['schemas']['Conversation'][];
-    Error: {
-      error: string;
-    };
     CreateConversationResponse: {
       conversationId: string;
       id: string;
@@ -2259,6 +2849,7 @@ export interface components {
           args?: string[];
         };
       };
+      always_run?: boolean;
       command?: string;
       prompt?: string;
       bash?: string;
@@ -2348,6 +2939,7 @@ export interface components {
       worktree?: {
         enabled?: boolean;
       };
+      mutates_checkout?: boolean;
       tags?: string[];
       nodes: components['schemas']['DagNode'][];
     };

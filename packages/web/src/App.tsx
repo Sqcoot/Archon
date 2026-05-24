@@ -11,6 +11,7 @@ import { WorkflowsPage } from '@/routes/WorkflowsPage';
 import { WorkflowExecutionPage } from '@/routes/WorkflowExecutionPage';
 import { WorkflowBuilderPage } from '@/routes/WorkflowBuilderPage';
 import { SettingsPage } from '@/routes/SettingsPage';
+import { AcoStatusPage } from '@/routes/AcoStatusPage';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -72,6 +73,7 @@ export function App(): React.ReactElement {
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/chat/*" element={<ChatPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/aco/status" element={<AcoStatusPage />} />
                 <Route path="/workflows" element={<WorkflowsPage />} />
                 <Route path="/workflows/builder" element={<WorkflowBuilderPage />} />
                 <Route path="/workflows/runs/:runId" element={<WorkflowExecutionPage />} />
