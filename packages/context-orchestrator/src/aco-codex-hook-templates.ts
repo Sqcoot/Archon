@@ -126,8 +126,12 @@ export function buildAcoCodexHookManifestTemplate(options: {
 }
 
 function matcherForEvent(event: AcoBootstrapEvent): string | null {
-  if (event === 'SessionStart') return 'startup|resume|clear';
-  if (event === 'PreToolUse' || event === 'PostToolUse') return 'Bash|shell|local_shell';
-  if (event === 'PermissionRequest') return 'Bash|shell|local_shell';
+  if (event === 'SessionStart') return 'startup|resume|clear|compact';
+  if (event === 'PreToolUse' || event === 'PostToolUse') {
+    return 'Bash|apply_patch|Edit|Write|mcp__.*';
+  }
+  if (event === 'PermissionRequest') return 'Bash|apply_patch|Edit|Write|mcp__.*';
+  if (event === 'PreCompact' || event === 'PostCompact') return 'manual|auto';
+  if (event === 'SubagentStart' || event === 'SubagentStop') return 'agent_type';
   return null;
 }

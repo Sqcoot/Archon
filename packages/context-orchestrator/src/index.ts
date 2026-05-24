@@ -87,9 +87,15 @@ export type {
   AcoCodexHookTemplate,
 } from './aco-codex-hook-templates';
 export type {
+  RealCodexDomainEvidence,
+  RealCodexDomainId,
   RealCodexEvidence,
+  RealCodexGraphifyInputMode,
+  RealCodexGraphifyProof,
+  RealCodexHookDiscoveryProof,
   RealCodexHookSmokeOptions,
   RealCodexHookSmokeResult,
+  RealCodexResidueProof,
 } from './real-codex-harness';
 export {
   APPROVAL_CAPSULE_JSON,

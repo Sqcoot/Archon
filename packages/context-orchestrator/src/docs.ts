@@ -60,6 +60,8 @@ const thirdPartyIgnore = new Set([
 export interface PlanDocumentationOptions {
   prompt: string;
   timestamp?: string;
+  codebaseSignals?: string[];
+  graphSummary?: string;
 }
 
 export function planDocumentation(options: PlanDocumentationOptions): DocumentationPlan {
@@ -67,13 +69,13 @@ export function planDocumentation(options: PlanDocumentationOptions): Documentat
   const checkedAt = options.timestamp ?? 'not-runtime-checked';
   const targets: DocumentationTarget[] = [];
   const lower = prompt.toLowerCase();
-
-  if (
+  const openAiDocsRequired =
     lower.includes('codex') ||
     lower.includes('openai') ||
     lower.includes('mcp configuration') ||
-    lower.includes('mcp setup')
-  ) {
+    lower.includes('mcp setup');
+
+  if (openAiDocsRequired) {
     targets.push({
       source: 'openai-docs-mcp',
       topic: lower.includes('mcp') ? 'Codex MCP configuration' : 'Codex behavior',
@@ -82,14 +84,27 @@ export function planDocumentation(options: PlanDocumentationOptions): Documentat
     });
   }
 
-  const thirdParty = detectThirdPartyLibrary(prompt);
-  if (thirdParty) {
-    targets.push({
-      source: 'context7',
-      topic: thirdParty,
-      status: 'unresolved',
-      reason: 'Context7 library ID must be resolved before version-specific docs are used.',
-    });
+  if (!openAiDocsRequired) {
+    const thirdPartyTargets = new Set<string>();
+    const promptThirdParty = detectThirdPartyLibrary(prompt);
+    if (promptThirdParty !== null) thirdPartyTargets.add(promptThirdParty);
+    for (const signal of options.codebaseSignals ?? []) {
+      for (const detected of detectKnownLibraries(signal)) {
+        thirdPartyTargets.add(detected);
+      }
+    }
+    for (const detected of detectKnownLibraries(options.graphSummary ?? '')) {
+      thirdPartyTargets.add(detected);
+    }
+
+    for (const thirdParty of thirdPartyTargets) {
+      targets.push({
+        source: 'context7',
+        topic: thirdParty,
+        status: 'unresolved',
+        reason: context7Reason(thirdParty, options),
+      });
+    }
   }
 
   if (targets.length === 0) {
@@ -191,4 +206,24 @@ function detectThirdPartyLibrary(prompt: string): string | null {
   }
 
   return null;
+}
+
+function detectKnownLibraries(text: string): string[] {
+  return ['Hono', 'Zod'].filter(library => new RegExp(`\\b${library}\\b`, 'i').test(text));
+}
+
+function context7Reason(thirdParty: string, options: PlanDocumentationOptions): string {
+  const codebaseMentioned = (options.codebaseSignals ?? []).some(signal =>
+    signal.toLowerCase().includes(thirdParty.toLowerCase())
+  );
+  const graphMentioned = (options.graphSummary ?? '')
+    .toLowerCase()
+    .includes(thirdParty.toLowerCase());
+  if (graphMentioned) {
+    return 'Context7 target selected from Graphify/codebase summary evidence; library ID must be resolved before version-specific docs are used.';
+  }
+  if (codebaseMentioned) {
+    return 'Context7 target selected from generated temp codebase evidence; library ID must be resolved before version-specific docs are used.';
+  }
+  return 'Context7 library ID must be resolved before version-specific docs are used.';
 }
