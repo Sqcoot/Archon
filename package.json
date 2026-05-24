@@ -21,6 +21,8 @@
     "aco:context-intake:test": "bun test ./scripts/context-orchestrator/validate-context-intake.test.ts",
     "aco:completion-preconditions": "bun scripts/context-orchestrator/validate-completion-preconditions.ts",
     "aco:completion-preconditions:test": "bun test ./scripts/context-orchestrator/validate-completion-preconditions.test.ts",
+    "aco:goal-bound-evidence": "bun scripts/context-orchestrator/validate-goal-bound-evidence.ts",
+    "aco:goal-bound-evidence:test": "bun test ./scripts/context-orchestrator/validate-goal-bound-evidence.test.ts",
     "aco:target-intent": "bun scripts/context-orchestrator/validate-target-intent-boundary.ts",
     "aco:target-intent:test": "bun test ./scripts/context-orchestrator/validate-target-intent-boundary.test.ts",
     "test": "bun --filter '*' --parallel test",
