@@ -297,15 +297,37 @@ nodes:
       - `$ARTIFACTS_DIR/aco-adversarial-loop/contracts/sprint-001.contract.json`
       - `$ARTIFACTS_DIR/aco-adversarial-loop/attempts/sprint-001-round-001.generator-report.json`
       - `$ARTIFACTS_DIR/aco-adversarial-loop/verifications/sprint-001-round-001.qa-verifier.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/status.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/ledgers.json`
       - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/readiness-input.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/explicit-approval-record.json`
+      - `docs/context-orchestrator/source-disposition.md` if present
 
       Write only:
       - `$ARTIFACTS_DIR/aco-adversarial-loop/verdicts/sprint-001-round-001.evaluator-verdict.json`
 
-      Do not edit source implementation during evaluation. Grade every contract criterion.
-      Verdict JSON must include scores, evidence, findings with criterionId, severity,
-      reproduction, expectedBehavior, actualBehavior, suggestedFixDirection, and
-      `acoContextRefs`. Do not run shell commands from this artifact-only workflow node.
+      Do not edit source implementation during evaluation. Do not run shell commands from this
+      artifact-only workflow node. Grade every contract criterion, but contract scoring alone is
+      not completion.
+
+      The Evaluator is the final independent goal-completion judge. It must answer:
+      `Can we honestly claim the original goal is done?`
+
+      Verdict JSON must include:
+      - `originalObjective` from the current ACO status or compile context intent.
+      - `goalCompletion.status`: `complete`, `incomplete`, `blocked`, or `approval_required`.
+      - `goalCompletion.canClaimComplete`: true only when the original objective is complete.
+      - `goalCompletion.rationale`, `checkedEvidence`, `blockers`, and `requiredNextAction`.
+      - scores, evidence, findings with criterionId, severity, reproduction, expectedBehavior,
+        actualBehavior, suggestedFixDirection, and `acoContextRefs`.
+
+      Verdicts are: `passed`, `failed_contract`, `blocked_by_validation`,
+      `blocked_by_evidence`, `needs_correct_course`, or `approval_required`.
+      Use `passed` only when `goalCompletion.status` is `complete` and
+      `goalCompletion.canClaimComplete` is true. Dirty worktree evidence, active graph waivers,
+      `needs_approval`, failed validation, stale artifacts, unknown runtime claims, or unresolved
+      source-disposition gaps prevent a `passed` verdict.
     allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [qa-verifier]
 
@@ -318,18 +340,28 @@ nodes:
       LOOP_DIR="$LOOP_DIR" VERDICT="$VERDICT" FEEDBACK="$FEEDBACK" bun -e '
         const fs = await import("node:fs");
         const verdict = JSON.parse(fs.readFileSync(process.env.VERDICT, "utf8"));
+        const goalCompletion = verdict.goalCompletion ?? {
+          status: "blocked",
+          canClaimComplete: false,
+          rationale: "Evaluator verdict did not include goalCompletion.",
+          checkedEvidence: [process.env.VERDICT],
+          blockers: ["missing-goal-completion"],
+          requiredNextAction: "Regenerate the evaluator verdict with original goal-completion evidence.",
+        };
+        const complete = verdict.verdict === "passed" && goalCompletion.canClaimComplete === true;
         const artifact = {
           schemaVersion: "aco.adversarial-contract-loop.v1",
           sprintId: verdict.sprintId ?? "sprint-001",
           round: verdict.round ?? 1,
           verdictPath: process.env.VERDICT,
+          goalCompletion,
           actionableFindings: verdict.findings ?? [],
-          retryInstruction: verdict.verdict === "passed" ? "No retry required." : "Address every actionable finding before the next Generator attempt.",
+          retryInstruction: complete ? "No retry required." : goalCompletion.requiredNextAction,
           acoContextRefs: verdict.acoContextRefs ?? [],
         };
         fs.writeFileSync(process.env.FEEDBACK, `${JSON.stringify(artifact, null, 2)}\n`);
-        fs.appendFileSync(`${process.env.LOOP_DIR}/trace.jsonl`, `${JSON.stringify({ event: "feedback-written", feedback: process.env.FEEDBACK })}\n`);
-        console.log(JSON.stringify({ feedbackPath: process.env.FEEDBACK, verdict: verdict.verdict ?? "unknown" }));
+        fs.appendFileSync(`${process.env.LOOP_DIR}/trace.jsonl`, `${JSON.stringify({ event: "feedback-written", feedback: process.env.FEEDBACK, goalCompletionStatus: goalCompletion.status, canClaimComplete: goalCompletion.canClaimComplete })}\n`);
+        console.log(JSON.stringify({ feedbackPath: process.env.FEEDBACK, verdict: verdict.verdict ?? "unknown", goalCompletionStatus: goalCompletion.status, canClaimComplete: goalCompletion.canClaimComplete }));
       '
     depends_on: [evaluator]
 
@@ -344,14 +376,30 @@ nodes:
         const status = readJson(`${process.env.ARTIFACTS_DIR}/context-orchestrator/status.json`);
         const compiled = readJson(`${process.env.ARTIFACTS_DIR}/context-orchestrator/compile-result.json`);
         const approval = readJson(`${process.env.LOOP_DIR}/explicit-approval-record.json`);
+        const verdict = readJson(`${process.env.LOOP_DIR}/verdicts/sprint-001-round-001.evaluator-verdict.json`);
         const feedback = readJson(`${process.env.LOOP_DIR}/feedback/sprint-001-round-001.feedback.json`);
         const waiverIds = compiled.graphWaiverIds ?? status.graphWaiverIds ?? [];
+        const goalCompletion = feedback.goalCompletion ?? verdict.goalCompletion ?? {
+          status: "blocked",
+          canClaimComplete: false,
+          blockers: ["missing-goal-completion"],
+          requiredNextAction: "Regenerate evaluator verdict with goalCompletion.",
+        };
+        const blockerLines = goalCompletion.blockers?.length > 0
+          ? goalCompletion.blockers.map((blocker) => `- ${blocker}`)
+          : compiled.readiness === "needs_approval"
+            ? ["- Readiness remains needs_approval while graph waivers remain part of current evidence."]
+            : ["- none"];
         const lines = [
           "# ACO Adversarial Loop Handoff",
           "",
           `Readiness: ${compiled.readiness ?? status.readiness ?? "unknown"}`,
           `Next decision: ${compiled.nextDecision?.kind ?? status.nextDecision?.kind ?? "unknown"}`,
           `Approval record: ${approval.status}`,
+          `Evaluator verdict: ${verdict.verdict ?? "unknown"}`,
+          `Goal completion: ${goalCompletion.status ?? "unknown"}`,
+          `Can claim complete: ${goalCompletion.canClaimComplete === true ? "yes" : "no"}`,
+          `Required next action: ${goalCompletion.requiredNextAction ?? "unknown"}`,
           `ACO status: ${process.env.ARTIFACTS_DIR}/context-orchestrator/status.json`,
           `ACO ledgers: ${process.env.ARTIFACTS_DIR}/context-orchestrator/ledgers.json`,
           `ACO compile: ${process.env.ARTIFACTS_DIR}/context-orchestrator/compile-result.json`,
@@ -376,13 +424,11 @@ nodes:
           "## Validation",
           "",
           `Validation status: ${compiled.validationStatus ?? status.validationStatus ?? "unknown"}`,
-          `Feedback verdict: ${feedback.actionableFindings.length === 0 ? "no findings recorded" : `${feedback.actionableFindings.length} finding(s)`}`,
+          `Feedback findings: ${feedback.actionableFindings.length === 0 ? "no findings recorded" : `${feedback.actionableFindings.length} finding(s)`}`,
           "",
           "## Known Blockers",
           "",
-          compiled.readiness === "needs_approval"
-            ? "Readiness remains needs_approval while graph waivers remain part of current evidence."
-            : "none",
+          ...blockerLines,
         ];
         fs.writeFileSync(process.env.HANDOFF, `${lines.join("\n")}\n`);
         console.log(fs.readFileSync(process.env.HANDOFF, "utf8"));

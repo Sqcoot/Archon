@@ -1,7 +1,7 @@
 {
   "schema_version": "aco.traceability.v1",
   "scope": {
-    "enforced_prefixes": ["AC-P1-", "AC-P3-", "ACO-EVENTS-", "ACO-TRACE-"]
+    "enforced_prefixes": ["AC-P1-", "AC-P3-", "ACO-EVENTS-", "ACO-TRACE-", "ACO-ADV-"]
   },
   "requirements": [
     {
@@ -151,6 +151,48 @@
           "ref": "packages/context-orchestrator/src/validation.ts",
           "markers": ["aco-traceability", "traceabilityCheck", "aco-acceptance"],
           "summary": "Aggregate validation reports traceability and acceptance checks."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-ADV-007",
+      "kind": "workflow",
+      "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/workflow.acceptance.test.ts",
+        "markers": ["ACO-ADV-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": [
+            "ACO-ADV-007",
+            "Can we honestly claim the original goal is done?",
+            "goalCompletion.canClaimComplete"
+          ],
+          "summary": "Adversarial loop Evaluator prompt owns the final original-goal completion verdict."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/schemas/adversarial-contract-loop.ts",
+          "markers": [
+            "acoAdversarialGoalCompletionSchema",
+            "originalObjective",
+            "verdict passed requires goalCompletion.status complete"
+          ],
+          "summary": "Evaluator verdict schema requires original objective and goal-completion evidence."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/adversarial-contract-loop.test.ts",
+          "markers": [
+            "Evaluator cannot pass unless original goal completion is claimable",
+            "Generator report cannot certify readiness or pass/fail"
+          ],
+          "summary": "Schema tests enforce evaluator and generator role boundaries."
         }
       ],
       "status": "enforced"

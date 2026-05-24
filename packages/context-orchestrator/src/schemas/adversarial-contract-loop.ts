@@ -118,25 +118,66 @@ export const acoAdversarialVerdictKindSchema = z.enum([
   'approval_required',
 ]);
 
-export const acoAdversarialEvaluatorVerdictSchema = z.object({
-  schemaVersion: z.literal(ACO_ADVERSARIAL_CONTRACT_LOOP_SCHEMA_VERSION),
-  sprintId: z.string().min(1),
-  round: z.number().int().positive(),
-  verdict: acoAdversarialVerdictKindSchema,
-  contractPath: z.string().min(1),
-  generatorReportPath: z.string().min(1),
-  scores: z.record(z.number().min(0).max(10)),
-  findings: z.array(acoAdversarialFindingSchema),
-  evidence: z.array(z.string().min(1)).min(1),
-  nextDecisionKind: nextDecisionKindSchema.optional(),
-  acoContextRefs: acoContextRefsSchema,
+export const acoAdversarialGoalCompletionStatusSchema = z.enum([
+  'complete',
+  'incomplete',
+  'blocked',
+  'approval_required',
+]);
+
+export const acoAdversarialGoalCompletionSchema = z.object({
+  status: acoAdversarialGoalCompletionStatusSchema,
+  canClaimComplete: z.boolean(),
+  rationale: z.string().min(1),
+  checkedEvidence: z.array(z.string().min(1)).min(1),
+  blockers: z.array(z.string().min(1)),
+  requiredNextAction: z.string().min(1),
 });
+
+export const acoAdversarialEvaluatorVerdictSchema = z
+  .object({
+    schemaVersion: z.literal(ACO_ADVERSARIAL_CONTRACT_LOOP_SCHEMA_VERSION),
+    sprintId: z.string().min(1),
+    round: z.number().int().positive(),
+    verdict: acoAdversarialVerdictKindSchema,
+    originalObjective: z.string().min(1),
+    goalCompletion: acoAdversarialGoalCompletionSchema,
+    contractPath: z.string().min(1),
+    generatorReportPath: z.string().min(1),
+    scores: z.record(z.number().min(0).max(10)),
+    findings: z.array(acoAdversarialFindingSchema),
+    evidence: z.array(z.string().min(1)).min(1),
+    nextDecisionKind: nextDecisionKindSchema.optional(),
+    acoContextRefs: acoContextRefsSchema,
+  })
+  .superRefine((verdict, context) => {
+    const goalIsComplete =
+      verdict.goalCompletion.status === 'complete' && verdict.goalCompletion.canClaimComplete;
+
+    if (verdict.verdict === 'passed' && !goalIsComplete) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['verdict'],
+        message:
+          'verdict passed requires goalCompletion.status complete and canClaimComplete true.',
+      });
+    }
+
+    if (goalIsComplete && verdict.verdict !== 'passed') {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['goalCompletion'],
+        message: 'complete goalCompletion requires verdict passed.',
+      });
+    }
+  });
 
 export const acoAdversarialFeedbackArtifactSchema = z.object({
   schemaVersion: z.literal(ACO_ADVERSARIAL_CONTRACT_LOOP_SCHEMA_VERSION),
   sprintId: z.string().min(1),
   round: z.number().int().positive(),
   verdictPath: z.string().min(1),
+  goalCompletion: acoAdversarialGoalCompletionSchema,
   actionableFindings: z.array(acoAdversarialFindingSchema),
   retryInstruction: z.string().min(1),
   acoContextRefs: acoContextRefsSchema,
@@ -187,6 +228,20 @@ export const exampleAcoAdversarialFinding: AcoAdversarialFinding = {
   acoContextRefs: exampleAcoContextRefs,
 };
 
+export const exampleAcoAdversarialGoalCompletion: AcoAdversarialGoalCompletion = {
+  status: 'blocked',
+  canClaimComplete: false,
+  rationale: 'ACO readiness still reports approval-required graph waivers.',
+  checkedEvidence: [
+    '$ARTIFACTS_DIR/context-orchestrator/status.json',
+    '$ARTIFACTS_DIR/context-orchestrator/ledgers.json',
+    '$ARTIFACTS_DIR/context-orchestrator/compile-result.json',
+  ],
+  blockers: ['graph-waiver.bmad-plugins-marketplace', 'graph-waiver.bmad-sample-data'],
+  requiredNextAction:
+    'Resolve evidence blockers or preserve waivers through the explicit ACO approval flow.',
+};
+
 export type AcoAdversarialContextArtifact = z.infer<typeof acoAdversarialContextArtifactSchema>;
 export type AcoContextRef = z.infer<typeof acoContextRefSchema>;
 export type AcoAdversarialReadinessInput = z.infer<typeof acoAdversarialReadinessInputSchema>;
@@ -204,6 +259,10 @@ export type AcoAdversarialGeneratedStoryPayload = z.infer<
 export type AcoAdversarialGeneratorReport = z.infer<typeof acoAdversarialGeneratorReportSchema>;
 export type AcoAdversarialFindingSeverity = z.infer<typeof acoAdversarialFindingSeveritySchema>;
 export type AcoAdversarialFinding = z.infer<typeof acoAdversarialFindingSchema>;
+export type AcoAdversarialGoalCompletionStatus = z.infer<
+  typeof acoAdversarialGoalCompletionStatusSchema
+>;
+export type AcoAdversarialGoalCompletion = z.infer<typeof acoAdversarialGoalCompletionSchema>;
 export type AcoAdversarialVerdictKind = z.infer<typeof acoAdversarialVerdictKindSchema>;
 export type AcoAdversarialEvaluatorVerdict = z.infer<typeof acoAdversarialEvaluatorVerdictSchema>;
 export type AcoAdversarialFeedbackArtifact = z.infer<typeof acoAdversarialFeedbackArtifactSchema>;
