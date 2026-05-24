@@ -30,7 +30,7 @@ function getLog(): ReturnType<typeof createLogger> {
   if (!cachedLog) cachedLog = createLogger('workflow.validator');
   return cachedLog;
 }
-import { isScriptNode } from './schemas';
+import { isBashNode, isScriptNode } from './schemas';
 import type { WorkflowDefinition, DagNode } from './schemas';
 import type { ScriptRuntime } from './script-discovery';
 import { discoverScriptsForCwd } from './script-discovery';
@@ -303,6 +303,21 @@ function resolveProvider(
   return workflowProvider ?? defaultProvider;
 }
 
+function hasOptionalMcpFileGuard(
+  workflow: WorkflowDefinition,
+  node: DagNode,
+  mcpPath: string
+): boolean {
+  if (!node.when || !node.depends_on || node.depends_on.length === 0) return false;
+
+  return workflow.nodes.some(candidate => {
+    if (!node.depends_on?.includes(candidate.id)) return false;
+    if (!node.when?.includes(`$${candidate.id}.output`)) return false;
+    if (!isBashNode(candidate)) return false;
+    return candidate.bash.includes('test -f') && candidate.bash.includes(mcpPath);
+  });
+}
+
 /**
  * Validate a workflow's external resource references (Level 3).
  *
@@ -357,6 +372,16 @@ export async function validateWorkflowResources(
       const mcpPath = isAbsolute(node.mcp) ? node.mcp : resolve(cwd, node.mcp);
 
       if (!(await fileExists(mcpPath))) {
+        if (hasOptionalMcpFileGuard(workflow, node, node.mcp)) {
+          issues.push({
+            level: 'warning',
+            nodeId: node.id,
+            field: 'mcp',
+            message: `Optional MCP config file not found: '${node.mcp}'`,
+            hint: 'This MCP config is guarded by an upstream file-existence check and the node will be skipped when absent.',
+          });
+          continue;
+        }
         issues.push({
           level: 'error',
           nodeId: node.id,

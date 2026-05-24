@@ -191,6 +191,27 @@ describe('validateWorkflowResources — MCP validation', () => {
     expect(issues.some(i => i.field === 'mcp' && i.level === 'error')).toBe(true);
   });
 
+  test('warning when missing MCP config is guarded by a file-existence check', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'check-ntfy',
+        bash: "test -f .archon/mcp/ntfy.json && echo 'true' || echo 'false'",
+      } as unknown as DagNode,
+      {
+        id: 'notify',
+        prompt: 'send notification',
+        mcp: '.archon/mcp/ntfy.json',
+        depends_on: ['check-ntfy'],
+        when: "$check-ntfy.output == 'true'",
+      } as unknown as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+
+    expect(issues.some(i => i.field === 'mcp' && i.level === 'error')).toBe(false);
+    expect(issues.some(i => i.field === 'mcp' && i.level === 'warning')).toBe(true);
+  });
+
   test('error when MCP config has invalid JSON', async () => {
     const mcpPath = join(tmpDir, 'bad.json');
     await writeFile(mcpPath, '{bad json');
