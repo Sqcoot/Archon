@@ -65,6 +65,7 @@ aco_codex_conversation_transfer.md
 .agents/rca-reports/
 .agents/plans/
 .agents/pr-reviews
+_bmad-output/
 .claude/PRPs/
 .claude/archon/
 .claude/mockups/
@@ -121,3 +122,7 @@ packages/server/.env
 skills-lock.json
 test-results/
 .archon/ralph/
+
+# BMAD local user configuration
+_bmad/**/*.user.toml
+_bmad/**/config.user.toml
