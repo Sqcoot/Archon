@@ -156,6 +156,48 @@
       "status": "enforced"
     },
     {
+      "requirement_id": "ACO-ADV-006",
+      "kind": "workflow",
+      "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/workflow.acceptance.test.ts",
+        "markers": ["ACO-ADV-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/archon-aco-adversarial-loop.yaml",
+          "markers": [
+            "ACO-ADV-006 Coordinator/Triage role.",
+            "ACO-ADV-006 Skill Curator role.",
+            "ACO-ADV-006 BMAD Reviewer role.",
+            "ACO-ADV-006 Agentic Search role.",
+            "ACO-ADV-006 QA/Verifier role."
+          ],
+          "summary": "Adversarial loop has explicit nodes for routing, tool curation, BMAD advisory review, evidence search, and verification role boundaries."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/check-role-contracts.ts",
+          "markers": [
+            "ROLE_CONTRACTS",
+            "Skill Curator",
+            "BMAD Reviewer",
+            "aco:role-contracts"
+          ],
+          "summary": "Role-contract gate verifies all adversarial-loop roles and unsupported-claim boundaries."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "package.json",
+          "markers": ["aco:role-contracts"],
+          "summary": "Root validation includes the reusable role-contract command."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
       "requirement_id": "ACO-ADV-007",
       "kind": "workflow",
       "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",

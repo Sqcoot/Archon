@@ -51,6 +51,56 @@ describe('ACO workflow acceptance', () => {
     expect(contextOrchestrate?.issues).toEqual([]);
   });
 
+  test('Spec: 014-workflow-contracts.md Acceptance: ACO-ADV-006 role contracts are enforced', async () => {
+    const workflowSource = await readFile(
+      join(process.cwd(), '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml'),
+      'utf8'
+    );
+    const specSource = await readFile(
+      join(process.cwd(), 'docs/context-orchestrator/specs/014-workflow-contracts.md'),
+      'utf8'
+    );
+
+    for (const evidence of [
+      'ACO-ADV-006 Coordinator/Triage role.',
+      'ACO-ADV-006 Skill Curator role.',
+      'ACO-ADV-006 BMAD Reviewer role.',
+      'ACO-ADV-006 Agentic Search role.',
+      'ACO-ADV-006 Planner role.',
+      'ACO-ADV-006 Contract role.',
+      'ACO-ADV-004 ACO-ADV-006 Generator role.',
+      'ACO-ADV-006 QA/Verifier role.',
+      'ACO-ADV-006 Feedback/Handoff role.',
+      'Reject unsupported runtime claims explicitly.',
+      'BMAD Reviewer is advisory only',
+      'certification: "not-certified-by-generator"',
+    ]) {
+      expect(workflowSource).toContain(evidence);
+    }
+
+    for (const evidence of [
+      'ACO-ADV-006',
+      'Coordinator/Triage',
+      'Agentic Search',
+      'Planner',
+      'Skill Curator',
+      'Generator',
+      'QA/Verifier',
+      'BMAD Reviewer',
+      'Feedback/Handoff',
+    ]) {
+      expect(specSource).toContain(evidence);
+    }
+
+    const report = await validateWorkflow('archon-aco-adversarial-loop');
+    const adversarialLoop = report.results.find(
+      result => result.workflowName === 'archon-aco-adversarial-loop'
+    );
+    expect(report.summary).toMatchObject({ total: 1, valid: 1, errors: 0, warnings: 0 });
+    expect(adversarialLoop?.valid).toBe(true);
+    expect(adversarialLoop?.issues).toEqual([]);
+  });
+
   test('Spec: 014-workflow-contracts.md Acceptance: ACO-ADV-007 Evaluator judges original goal completion', async () => {
     const workflowSource = await readFile(
       join(process.cwd(), '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml'),

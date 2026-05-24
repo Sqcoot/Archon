@@ -187,6 +187,64 @@ nodes:
     depends_on: [explicit-approval-record]
     when: "$explicit-approval-record.output.generatorAllowed == 'true'"
 
+  - id: coordinator-triage
+    prompt: |
+      ACO-ADV-006 Coordinator/Triage role.
+
+      Read:
+      - `$ARTIFACTS_DIR/context-orchestrator/status.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/ledgers.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/readiness-input.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/explicit-approval-record.json`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/coordinator-triage.md`
+
+      Route the current request, identify decision-grade ambiguity, choose the ACO/BMAD path,
+      and record which role owns the final handoff after the Evaluator verdict. Do not edit
+      product source, run shell commands, or certify final readiness.
+    allowed_tools: [Read, Write, Glob, Grep]
+    depends_on: [initialize-loop-artifacts]
+
+  - id: skill-curator
+    prompt: |
+      ACO-ADV-006 Skill Curator role.
+
+      Read:
+      - `$ARTIFACTS_DIR/context-orchestrator/status.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/ledgers.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/coordinator-triage.md`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/skill-curator.md`
+
+      Select only repo-available skills, commands, workflows, and tools for the current ACO
+      objective. Reject unsupported runtime claims explicitly. Mark non-native capabilities as
+      advisory, deferred, or unavailable instead of presenting them as executable support. Do not
+      implement code or certify final readiness.
+    allowed_tools: [Read, Write, Glob, Grep]
+    depends_on: [coordinator-triage]
+
+  - id: bmad-reviewer
+    prompt: |
+      ACO-ADV-006 BMAD Reviewer role.
+
+      Read:
+      - `$ARTIFACTS_DIR/context-orchestrator/status.json`
+      - `$ARTIFACTS_DIR/context-orchestrator/compile-result.json`
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/coordinator-triage.md`
+
+      Write only:
+      - `$ARTIFACTS_DIR/aco-adversarial-loop/bmad-reviewer.md`
+
+      Review whether the selected BMAD advisory route is methodologically appropriate and whether
+      any ACO/BMAD sequence step is missing. BMAD Reviewer is advisory only and must not override
+      ACO readiness, validation, approval gates, or the Evaluator goal-completion verdict.
+    allowed_tools: [Read, Write, Glob, Grep]
+    depends_on: [coordinator-triage]
+
   - id: agentic-search
     prompt: |
       ACO-ADV-006 Agentic Search role.
@@ -204,7 +262,7 @@ nodes:
       evidence gaps for the current ACO objective. Do not edit product source, run shell
       commands, certify readiness, or expand beyond the compiled ACO context.
     allowed_tools: [Read, Write, Glob, Grep]
-    depends_on: [initialize-loop-artifacts]
+    depends_on: [coordinator-triage]
 
   - id: planner
     prompt: |
@@ -226,7 +284,7 @@ nodes:
       pointing at the ACO compile/status/ledger artifacts. Do not implement code and do not
       certify readiness.
     allowed_tools: [Read, Write, Glob, Grep]
-    depends_on: [agentic-search]
+    depends_on: [agentic-search, skill-curator, bmad-reviewer]
 
   - id: contract
     prompt: |
@@ -331,6 +389,7 @@ nodes:
     allowed_tools: [Read, Write, Glob, Grep]
     depends_on: [qa-verifier]
 
+  # ACO-ADV-006 Feedback/Handoff role.
   - id: feedback
     bash: |
       set -euo pipefail
@@ -410,6 +469,9 @@ nodes:
           "",
           "## Loop Artifacts",
           "",
+          `Coordinator/Triage: ${process.env.LOOP_DIR}/coordinator-triage.md`,
+          `Skill Curator: ${process.env.LOOP_DIR}/skill-curator.md`,
+          `BMAD Reviewer: ${process.env.LOOP_DIR}/bmad-reviewer.md`,
           `Agentic search: ${process.env.LOOP_DIR}/agentic-search.md`,
           `Plan: ${process.env.LOOP_DIR}/aco-adversarial-plan.md`,
           `Sprint plan: ${process.env.LOOP_DIR}/sprint-plan.json`,
