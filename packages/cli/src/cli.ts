@@ -81,7 +81,7 @@ import {
   contextStatusCommand,
   contextValidateCommand,
 } from './commands/context';
-import { acoBootstrapCodexCommand, acoStatusCommand } from './commands/aco';
+import { acoBootstrapCodexCommand, acoCleanupCodexCommand, acoStatusCommand } from './commands/aco';
 import type {
   AcoBootstrapEvent,
   AcoBootstrapFormat,
@@ -131,6 +131,7 @@ Commands:
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
   aco status                 Show productized ACO status and graph confidence limits
   aco bootstrap-codex        Emit a Codex-ready ACO bootstrap capsule
+  aco cleanup-codex          Dry-run or apply cleanup for ACO-owned Codex bootstrap artifacts
   context route <prompt>     Select an ACO BMAD route
   context analytics capture <prompt> Capture ACO route analytics
   context analytics report   Report ACO route analytics
@@ -179,6 +180,7 @@ Examples:
   archon aco status --cwd /path/to/repo --json
   archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact
   archon aco bootstrap-codex --event Stop --format json --evaluator "Continue validation"
+  archon aco cleanup-codex --run-id aco-bootstrap-codex-20260524 --apply --json
   archon context route --cwd /path/to/repo "Plan this feature"
   archon context analytics capture --cwd /path/to/repo "Plan this feature"
   archon context analytics report --cwd /path/to/repo --json
@@ -347,6 +349,10 @@ async function main(): Promise<number> {
         force: { type: 'boolean' },
         'archive-root': { type: 'string' },
         'artifact-root': { type: 'string' },
+        'artifacts-dir': { type: 'string' },
+        manifest: { type: 'string' },
+        'dry-run': { type: 'boolean' },
+        apply: { type: 'boolean' },
         timestamp: { type: 'string' },
         caveman: { type: 'string' },
         limit: { type: 'string' },
@@ -797,13 +803,37 @@ async function main(): Promise<number> {
             });
           }
 
+          case 'cleanup-codex':
+          case 'cleanup': {
+            const aliasOffset = subcommand === 'cleanup' && positionals[2] === 'codex' ? 3 : 2;
+            if (subcommand === 'cleanup' && positionals[2] !== 'codex') {
+              console.error('Usage: archon aco cleanup-codex [options]');
+              console.error('Alias: archon aco cleanup codex [options]');
+              return 1;
+            }
+            if (positionals.slice(aliasOffset).length > 0) {
+              console.error('Usage: archon aco cleanup-codex [options]');
+              return 1;
+            }
+            return await acoCleanupCodexCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              timestamp: values.timestamp as string | undefined,
+              runId: values['run-id'] as string | undefined,
+              manifest: values.manifest as string | undefined,
+              artifactsDir: values['artifacts-dir'] as string | undefined,
+              dryRun: values['dry-run'] as boolean | undefined,
+              apply: values.apply as boolean | undefined,
+            });
+          }
+
           default:
             if (subcommand === undefined) {
               console.error('Missing aco subcommand');
             } else {
               console.error(`Unknown aco subcommand: ${subcommand}`);
             }
-            console.error('Available: status, bootstrap-codex');
+            console.error('Available: status, bootstrap-codex, cleanup-codex');
             return 1;
         }
         break;

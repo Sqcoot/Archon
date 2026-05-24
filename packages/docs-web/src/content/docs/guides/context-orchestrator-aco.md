@@ -91,10 +91,24 @@ Slash-compatible Codex paste workflow:
 Markdown mode is sized for direct paste into Codex. JSON mode is attachable by
 automation/workflow consumers and carries the same event and snapshot identity.
 Artifacts are written under `.archon/artifacts/context-orchestrator/` and include
-the capsule, CapabilitySnapshot sidecar, and bootstrap command evidence row.
+the capsule, CapabilitySnapshot sidecar, bootstrap command evidence row, and
+cleanup manifest.
 Hook activation, graph refresh, auth/config mutation, MCP OAuth changes, and
 provider credential changes remain approval-gated and are not performed by this
 command.
+
+Use `archon aco cleanup-codex` to reset one ACO-owned run before rerunning a
+clean-room bootstrap or real-Codex hook smoke:
+
+```bash
+archon aco cleanup-codex --run-id aco-bootstrap-codex-20260524 --dry-run --json
+archon aco cleanup-codex --run-id aco-bootstrap-codex-20260524 --apply --json
+```
+
+Cleanup defaults to dry-run, deletes only matching manifest entries with
+`ownedBy: "aco"`, and refuses active Codex config, auth, MCP OAuth, provider
+credentials, graph evidence, graph waivers, unmanaged `.codex` files, and paths
+outside the run root after symlink resolution.
 
 Use `archon context` for the lower-level ACO surfaces:
 

@@ -23,6 +23,7 @@ import {
   getContextOrchestratorLedgers,
   getContextOrchestratorReadiness,
   getContextOrchestratorStatus,
+  runAcoCleanupCodexCommand,
   runAcoBootstrapCodexCommand,
   routeBmad,
 } from '@archon/context-orchestrator';
@@ -1053,6 +1054,45 @@ async function handleAcoBootstrapCodexCommand(
   };
 }
 
+async function handleAcoCleanupCodexCommand(
+  conversation: Conversation,
+  args: string[]
+): Promise<CommandResult> {
+  if (!conversation.codebase_id) {
+    return {
+      success: false,
+      message: 'No project configured. Register a project first with /register-project.',
+    };
+  }
+
+  const codebase = await codebaseDb.getCodebase(conversation.codebase_id);
+  if (!codebase) {
+    return {
+      success: false,
+      message: 'Configured project was not found. Register a project first with /register-project.',
+    };
+  }
+
+  const parsed = parseAcoCleanupSlashArgs(args);
+  if (!parsed.success) {
+    return parsed;
+  }
+
+  const result = await runAcoCleanupCodexCommand({
+    cwd: codebase.default_cwd,
+    runId: parsed.runId,
+    manifest: parsed.manifest,
+    artifactsDir: parsed.artifactsDir,
+    dryRun: parsed.dryRun,
+    apply: parsed.apply,
+    json: parsed.json,
+  });
+  return {
+    success: result.status === 'passed',
+    message: result.output.text,
+  };
+}
+
 function parseAcoBootstrapSlashArgs(args: string[]):
   | {
       success: true;
@@ -1179,6 +1219,75 @@ function isAcoBootstrapEvent(value: string | undefined): value is AcoBootstrapEv
     value === 'SubagentStop' ||
     value === 'Stop'
   );
+}
+
+function parseAcoCleanupSlashArgs(args: string[]):
+  | {
+      success: true;
+      runId?: string;
+      manifest?: string;
+      artifactsDir?: string;
+      dryRun?: boolean;
+      apply?: boolean;
+      json?: boolean;
+    }
+  | { success: false; message: string } {
+  const parsed: {
+    runId?: string;
+    manifest?: string;
+    artifactsDir?: string;
+    dryRun?: boolean;
+    apply?: boolean;
+    json?: boolean;
+  } = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (arg === '--dry-run') {
+      parsed.dryRun = true;
+      continue;
+    }
+    if (arg === '--apply') {
+      parsed.apply = true;
+      continue;
+    }
+    if (arg === '--json') {
+      parsed.json = true;
+      continue;
+    }
+    if (arg === '--run-id') {
+      const value = args[(index += 1)];
+      if (!value) {
+        return { success: false, message: 'Usage: /aco:cleanup-codex --run-id <runId>' };
+      }
+      parsed.runId = value;
+      continue;
+    }
+    if (arg === '--manifest') {
+      const value = args[(index += 1)];
+      if (!value) {
+        return { success: false, message: 'Usage: /aco:cleanup-codex --manifest <path>' };
+      }
+      parsed.manifest = value;
+      continue;
+    }
+    if (arg === '--artifacts-dir') {
+      const value = args[(index += 1)];
+      if (!value) {
+        return { success: false, message: 'Usage: /aco:cleanup-codex --artifacts-dir <path>' };
+      }
+      parsed.artifactsDir = value;
+      continue;
+    }
+    return {
+      success: false,
+      message:
+        'Usage: /aco:cleanup-codex --run-id <runId> [--manifest <path>] [--dry-run|--apply] [--json]',
+    };
+  }
+
+  return { success: true, ...parsed };
 }
 
 function renderContextStatus(status: ContextOrchestratorStatus): string {
@@ -1309,6 +1418,7 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 
 **Context Orchestrator**
 - \`/aco:bootstrap-codex\` — Emit a Codex-ready ACO bootstrap capsule
+- \`/aco:cleanup-codex\` — Dry-run or apply cleanup for ACO-owned Codex artifacts
 - \`/context status [request]\` — Show route readiness, ledgers, and approval state
 - \`/context route <request>\` — Pick the BMAD route
 - \`/context ledgers [request]\` — Show tool and command ledger coverage
@@ -1465,6 +1575,9 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
     case 'aco:bootstrap-codex':
       return handleAcoBootstrapCodexCommand(conversation, args);
 
+    case 'aco:cleanup-codex':
+      return handleAcoCleanupCodexCommand(conversation, args);
+
     case 'aco':
       if (args[0] === 'bootstrap-codex') {
         return handleAcoBootstrapCodexCommand(conversation, args.slice(1));
@@ -1472,10 +1585,16 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
       if (args[0] === 'bootstrap' && args[1] === 'codex') {
         return handleAcoBootstrapCodexCommand(conversation, args.slice(2));
       }
+      if (args[0] === 'cleanup-codex') {
+        return handleAcoCleanupCodexCommand(conversation, args.slice(1));
+      }
+      if (args[0] === 'cleanup' && args[1] === 'codex') {
+        return handleAcoCleanupCodexCommand(conversation, args.slice(2));
+      }
       return {
         success: false,
         message:
-          'Usage:\n  /aco:bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact\n  /aco bootstrap-codex [options] [request]',
+          'Usage:\n  /aco:bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact\n  /aco:cleanup-codex --run-id <runId> [--dry-run|--apply]\n  /aco bootstrap-codex [options] [request]',
       };
 
     case 'context':

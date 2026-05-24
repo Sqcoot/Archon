@@ -1,5 +1,6 @@
 import {
   getContextOrchestratorStatus,
+  runAcoCleanupCodexCommand,
   runAcoBootstrapCodexCommand,
   type AcoBootstrapEvent,
   type AcoBootstrapFormat,
@@ -19,6 +20,14 @@ export interface AcoBootstrapCodexCommandOptions extends ContextCommandOptions {
   nextGoalObjective?: string;
   archiveRoot?: string;
   runId?: string;
+}
+
+export interface AcoCleanupCodexCommandOptions extends ContextCommandOptions {
+  runId?: string;
+  manifest?: string;
+  artifactsDir?: string;
+  dryRun?: boolean;
+  apply?: boolean;
 }
 
 export async function acoStatusCommand(options: ContextCommandOptions): Promise<void> {
@@ -62,6 +71,33 @@ export async function acoBootstrapCodexCommand(
       console.log(JSON.stringify({ error: 'aco-bootstrap-codex-failed', message }, null, 2));
     } else {
       console.error(`ACO Codex bootstrap failed: ${message}`);
+    }
+    return 1;
+  }
+}
+
+export async function acoCleanupCodexCommand(
+  options: AcoCleanupCodexCommandOptions
+): Promise<number> {
+  try {
+    const result = await runAcoCleanupCodexCommand({
+      cwd: options.cwd,
+      runId: options.runId,
+      manifest: options.manifest,
+      artifactsDir: options.artifactsDir,
+      dryRun: options.dryRun,
+      apply: options.apply,
+      json: options.json,
+      timestamp: options.timestamp,
+    });
+    console.log(result.output.text);
+    return result.status === 'passed' ? 0 : 1;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.json) {
+      console.log(JSON.stringify({ error: 'aco-cleanup-codex-failed', message }, null, 2));
+    } else {
+      console.error(`ACO Codex cleanup failed: ${message}`);
     }
     return 1;
   }

@@ -14,6 +14,23 @@ export {
   acoBootstrapFormats,
   runAcoBootstrapCodexCommand,
 } from './bootstrap-command';
+export {
+  ACO_CLEANUP_CODEX_COMMAND,
+  ACO_CLEANUP_CODEX_COMMAND_SCHEMA_VERSION,
+  ACO_CLEANUP_CODEX_MANIFEST_SCHEMA_VERSION,
+  runAcoCleanupCodexCommand,
+} from './cleanup-codex';
+export { ACO_CODEX_HOOK_RUNNER_SCHEMA_VERSION, runAcoCodexHook } from './aco-codex-hook-runner';
+export {
+  ACO_CODEX_HOOK_MANIFEST_TEMPLATE_SCHEMA_VERSION,
+  ACO_CODEX_HOOK_TEMPLATE_SCHEMA_VERSION,
+  ACO_CODEX_RESEARCHED_RELEASE,
+  acoCodexCurrentCommandHookEvents,
+  buildAcoCodexHookManifestTemplate,
+  buildAcoCodexHookTemplates,
+  supportsCodexCommandHook,
+} from './aco-codex-hook-templates';
+export { runRealCodexHookSmoke } from './real-codex-harness';
 export type {
   AcoBootstrapContext,
   AcoBootstrapContextJson,
@@ -25,6 +42,8 @@ export type {
   CapabilityBudget,
   CapabilityClaimStatus,
   CapabilityConfidence,
+  CapabilityDomainCoverage,
+  CapabilityDomainStatus,
   CapabilityEvidenceClaim,
   CapabilityGraphSnapshot,
   CapabilityItem,
@@ -47,6 +66,31 @@ export type {
   AcoBootstrapFormat,
   RunAcoBootstrapCodexCommandOptions,
 } from './bootstrap-command';
+export type {
+  AcoCleanupBeforeAfterDigest,
+  AcoCleanupCodexCommandResult,
+  AcoCleanupLedgerRow,
+  AcoCleanupManifest,
+  AcoCleanupManifestEntry,
+  AcoCleanupPathRefusal,
+  AcoCleanupSkippedPath,
+  RunAcoCleanupCodexCommandOptions,
+} from './cleanup-codex';
+export type {
+  AcoCodexHookReleaseSupport,
+  AcoCodexHookRunResult,
+  RunAcoCodexHookOptions,
+} from './aco-codex-hook-runner';
+export type {
+  AcoCodexHookManifestTemplate,
+  AcoCodexHookSupport,
+  AcoCodexHookTemplate,
+} from './aco-codex-hook-templates';
+export type {
+  RealCodexEvidence,
+  RealCodexHookSmokeOptions,
+  RealCodexHookSmokeResult,
+} from './real-codex-harness';
 export {
   APPROVAL_CAPSULE_JSON,
   APPROVAL_CAPSULE_MARKDOWN,

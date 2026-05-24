@@ -13,6 +13,10 @@ import {
   type CapabilitySnapshot,
 } from './capability-snapshot';
 import {
+  ACO_CLEANUP_CODEX_MANIFEST_SCHEMA_VERSION,
+  type AcoCleanupManifest,
+} from './cleanup-codex';
+import {
   containsSecretLikeValue,
   prepareArchiveDirectory,
   redactSecrets,
@@ -48,6 +52,7 @@ export interface AcoBootstrapCodexArtifactRefs {
   capsuleJson: string;
   snapshotJson: string;
   evidenceJsonl: string;
+  cleanupManifest: string;
 }
 
 export interface AcoBootstrapCodexSnapshotRef {
@@ -372,6 +377,7 @@ async function makeArtifactPaths(input: {
     capsuleJson: join(archivePath, `aco-codex-bootstrap-${timestampSlug}.json`),
     snapshotJson: join(archivePath, `capability-snapshot-${timestampSlug}.json`),
     evidenceJsonl: join(archivePath, `bootstrap-command-evidence-${timestampSlug}.jsonl`),
+    cleanupManifest: join(archivePath, 'cleanup-manifest.json'),
   };
   return {
     refs: {
@@ -380,6 +386,7 @@ async function makeArtifactPaths(input: {
       capsuleJson: toRepoRelative(input.cwd, filenames.capsuleJson),
       snapshotJson: toRepoRelative(input.cwd, filenames.snapshotJson),
       evidenceJsonl: toRepoRelative(input.cwd, filenames.evidenceJsonl),
+      cleanupManifest: toRepoRelative(input.cwd, filenames.cleanupManifest),
     },
     absolute: filenames,
   };
@@ -408,6 +415,11 @@ async function writeArtifacts(input: {
     input.archiveRoot,
     input.paths.evidenceJsonl,
     `${JSON.stringify(toEvidenceRow(input.result))}\n`
+  );
+  await writeFileNoFollow(
+    input.archiveRoot,
+    input.paths.cleanupManifest,
+    `${JSON.stringify(toCleanupManifest(input.paths, input.result.generatedAt), null, 2)}\n`
   );
 }
 
@@ -447,6 +459,31 @@ function toEvidenceRow(result: AcoBootstrapCodexCommandResult): Record<string, u
     continuation: result.continuation,
     mutationReport: result.mutationReport,
     outputBytes: result.output.bytes,
+  };
+}
+
+function toCleanupManifest(
+  paths: AcoBootstrapCodexArtifactRefs,
+  createdAt: string
+): AcoCleanupManifest {
+  const runId = paths.root.split('/').filter(Boolean).at(-1) ?? 'unknown';
+  return {
+    schemaVersion: ACO_CLEANUP_CODEX_MANIFEST_SCHEMA_VERSION,
+    runId,
+    createdAt,
+    root: paths.root,
+    entries: [
+      paths.capsuleMarkdown,
+      paths.capsuleJson,
+      paths.snapshotJson,
+      paths.evidenceJsonl,
+      paths.cleanupManifest,
+    ].map(path => ({
+      path,
+      ownedBy: 'aco',
+      runId,
+      kind: path.endsWith('cleanup-manifest.json') ? 'manifest' : 'artifact',
+    })),
   };
 }
 
@@ -499,6 +536,7 @@ function renderCommandMarkdown(core: ResultCore, bootstrapMarkdown: string): str
           `- capsule json: ${core.artifacts.capsuleJson}`,
           `- snapshot json: ${core.artifacts.snapshotJson}`,
           `- evidence jsonl: ${core.artifacts.evidenceJsonl}`,
+          `- cleanup manifest: ${core.artifacts.cleanupManifest}`,
         ]
       : ['- not written']),
     '',

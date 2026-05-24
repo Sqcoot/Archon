@@ -7,7 +7,8 @@
       "ACO-EVENTS-",
       "ACO-TRACE-",
       "ACO-ADV-",
-      "ACO-BOOTSTRAP-"
+      "ACO-BOOTSTRAP-",
+      "ACO-CODEX-REAL-"
     ]
   },
   "requirements": [
@@ -612,6 +613,202 @@
           "ref": "packages/workflows/src/defaults/bundled-defaults.generated.ts",
           "markers": ["aco-bootstrap-codex"],
           "summary": "Generated bundled defaults include the command manifest."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-001",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/real-codex-harness.ts",
+          "markers": ["runPreflight", "codex --version", "codex login status"],
+          "summary": "Real-Codex harness discovers the installed binary, version, exec help, and auth status, and blocks with evidence if unavailable."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-002",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/real-codex-harness.ts",
+          "markers": ["--ignore-user-config", "trust_level", "inlineHookConfigArgs"],
+          "summary": "Real smoke uses a temp repo, session-only hook config, and session-only project trust while ignoring active user config."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-003",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-cleanup.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["cleanupManifest", "toCleanupManifest", "writeArtifacts"],
+          "summary": "Bootstrap artifact writes include an ACO-owned cleanup manifest alongside capsule, snapshot, and evidence rows."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-004",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-cleanup.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/cleanup-codex.ts",
+          "markers": ["runAcoCleanupCodexCommand", "dryRun", "deletedPaths"],
+          "summary": "Cleanup defaults to dry-run, deletes only manifest-owned ACO paths when applied, and reports idempotent no-op repeats."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-005",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/aco-codex-hook-templates.ts",
+          "markers": ["buildAcoCodexHookManifestTemplate", "activeHooksJson", "acoCodexCurrentCommandHookEvents"],
+          "summary": "Hook manifest builder emits only installed Codex command-hook events for active temp harness use."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-006",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/aco-codex-hook-templates.ts",
+          "markers": ["buildAcoCodexHookTemplates", "acoBootstrapEvents", "simulated"],
+          "summary": "All ten ACO lifecycle events have inert templates; unsupported current-release events are explicit simulations."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/aco-codex-hook-runner.ts",
+          "markers": ["buildAcoBootstrapContext", "runAcoCodexHook", "PermissionRequest"],
+          "summary": "Hook runner dispatches lifecycle input through the bootstrap context builder and emits installed hook schema responses."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-007",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": ["buildDomainCoverage", "domains", "mcp-tools"],
+          "summary": "Capability snapshots enumerate required coverage domains with evidence or explicit unknown/blocked/deferred state."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-008",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": ["context7-docs", "BMAD", "subagents-roles"],
+          "summary": "MCP, Context7/docs, BMAD, subagent/role, provider, graph, hook, and plugin categories are covered in snapshot domains."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-009",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-009"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/real-codex-harness.ts",
+          "markers": ["for (const index of [1, 2])", "cleanupRuns", "runIds"],
+          "summary": "Real smoke repeats setup, hook execution, cleanup, and setup again with separate run IDs."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-REAL-010",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/025-aco-codex-real-bootstrap-cleanup-hooks.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-cleanup.acceptance.test.ts",
+        "markers": ["ACO-CODEX-REAL-010"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/cleanup-codex.ts",
+          "markers": [".codex/hooks.json", "symlink escapes cwd", "graphMutated: false"],
+          "summary": "Cleanup refuses active config, auth/OAuth/credential, graph evidence, and symlink escape paths."
         }
       ],
       "status": "enforced"

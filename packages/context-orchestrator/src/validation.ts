@@ -49,6 +49,26 @@ const selectedAcceptanceSurfaces = [
       'ACO-BOOTSTRAP-005',
     ],
   },
+  {
+    id: 'ACO-CODEX-REAL-CLEANUP',
+    label: 'Codex cleanup',
+    path: 'tests/acceptance/context-orchestrator/bootstrap-cleanup.acceptance.test.ts',
+    markers: ['ACO-CODEX-REAL-003', 'ACO-CODEX-REAL-004', 'ACO-CODEX-REAL-010'],
+  },
+  {
+    id: 'ACO-CODEX-REAL-SMOKE',
+    label: 'real Codex smoke',
+    path: 'tests/acceptance/context-orchestrator/bootstrap-real-codex.acceptance.test.ts',
+    markers: [
+      'ACO-CODEX-REAL-001',
+      'ACO-CODEX-REAL-002',
+      'ACO-CODEX-REAL-005',
+      'ACO-CODEX-REAL-006',
+      'ACO-CODEX-REAL-007',
+      'ACO-CODEX-REAL-008',
+      'ACO-CODEX-REAL-009',
+    ],
+  },
 ] as const;
 const VALIDATION_COMMAND_TIMEOUT_MS = 10_000;
 
@@ -129,7 +149,7 @@ async function acceptanceRealityCheck(cwd: string): Promise<ValidationCheck> {
     id: 'aco-acceptance',
     status: 'passed',
     message:
-      'ACO acceptance reality check passed for API, slash command, workflow, events, traceability, and bootstrap.',
+      'ACO acceptance reality check passed for API, slash command, workflow, events, traceability, bootstrap, cleanup, and real-Codex smoke.',
   };
 }
 

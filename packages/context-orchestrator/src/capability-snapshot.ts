@@ -25,6 +25,7 @@ export const acoBootstrapEvents = [
 export type AcoBootstrapEvent = (typeof acoBootstrapEvents)[number];
 export type AcoGoalStatus = 'complete' | 'incomplete' | 'unknown';
 export type CapabilityClaimStatus = 'verified' | 'unknown' | 'blocked' | 'deferred';
+export type CapabilityDomainStatus = 'available' | 'unknown' | 'blocked' | 'deferred';
 export type CapabilityConfidence = 'high' | 'medium' | 'low' | 'unknown';
 export type CapabilitySourceKind =
   | 'adapter'
@@ -81,6 +82,14 @@ export interface CapabilityItem {
   budget: CapabilityBudget;
 }
 
+export interface CapabilityDomainCoverage {
+  id: string;
+  label: string;
+  status: CapabilityDomainStatus;
+  evidence: string[];
+  summary: string;
+}
+
 export interface CapabilityRisk {
   id: string;
   status: Exclude<CapabilityClaimStatus, 'verified'>;
@@ -120,6 +129,7 @@ export interface CapabilitySnapshot {
   risks: CapabilityRisk[];
   unknowns: CapabilityRisk[];
   evidenceClaims: CapabilityEvidenceClaim[];
+  domains: CapabilityDomainCoverage[];
 }
 
 export interface BuildCapabilitySnapshotOptions {
@@ -273,6 +283,7 @@ export async function buildCapabilitySnapshot(
     risks: sortById(draft.risks),
     unknowns: sortById(draft.unknowns),
     evidenceClaims: sortById(draft.claims),
+    domains: buildDomainCoverage(draft, graphContext),
   };
 }
 
@@ -1085,7 +1096,227 @@ function snapshotCounts(snapshot: CapabilitySnapshot): Record<string, number> {
     docsTargets: snapshot.docsTargets.length,
     risks: snapshot.risks.length,
     unknowns: snapshot.unknowns.length,
+    domains: snapshot.domains.length,
   };
+}
+
+function buildDomainCoverage(
+  draft: SnapshotDraft,
+  graphContext: GraphContext
+): CapabilityDomainCoverage[] {
+  const sourceById = new Map(draft.sourceRefs.map(sourceRef => [sourceRef.id, sourceRef]));
+  const evidenceForItems = (items: CapabilityItem[]): string[] =>
+    unique(
+      items
+        .slice(0, 8)
+        .map(item => {
+          const sourceRef = sourceById.get(item.sourceRef);
+          return `${item.id}: ${item.sourceArtifact ?? item.command ?? sourceRef?.path ?? sourceRef?.description ?? item.sourceRef}`;
+        })
+        .filter(Boolean)
+    );
+  const evidenceForUnknown = (idPart: string): string[] =>
+    unique(
+      [...draft.unknowns, ...draft.risks]
+        .filter(item => item.id.includes(idPart))
+        .map(item => {
+          const sourceRef = sourceById.get(item.sourceRef);
+          return `${item.id}: ${sourceRef?.path ?? sourceRef?.description ?? item.sourceRef}`;
+        })
+    );
+  const domain = (
+    id: string,
+    label: string,
+    items: CapabilityItem[],
+    fallbackEvidence: string[],
+    summary: string,
+    preferredStatus?: CapabilityDomainStatus
+  ): CapabilityDomainCoverage => ({
+    id,
+    label,
+    status: preferredStatus ?? (items.length > 0 ? 'available' : 'unknown'),
+    evidence: evidenceForItems(items).concat(fallbackEvidence).slice(0, 12),
+    summary: redactSecrets(summary),
+  });
+
+  const context7Evidence = [
+    ...evidenceForItems(draft.collections.docsTargets),
+    ...evidenceForItems(draft.collections.mcpServers.filter(item => item.id.includes('context7'))),
+    ...evidenceForUnknown('docs'),
+    'Context7/docs adapter: planDocumentation()',
+  ];
+  const hookEvidence = [
+    ...evidenceForItems(draft.collections.hooks),
+    'Codex 0.128.0 hook source: codex-rs/hooks/src',
+  ];
+  const roleItems = draft.collections.roles;
+  const bmadItems = [
+    ...draft.collections.plugins.filter(item => item.id.includes('bmad')),
+    ...roleItems.filter(item => item.id.includes('bmad')),
+  ];
+  const providerItems = [
+    ...draft.collections.providers,
+    ...draft.collections.providers.filter(item => item.category.includes('future')),
+  ];
+
+  const domains: CapabilityDomainCoverage[] = [
+    domain(
+      'commands',
+      'Archon commands',
+      draft.collections.commands,
+      evidenceForUnknown('commands'),
+      'Command registry, defaults, package scripts, and validators.'
+    ),
+    domain(
+      'workflows',
+      'Archon workflows',
+      draft.collections.workflows,
+      evidenceForUnknown('workflows'),
+      'Workflow manifests, defaults, and validation surfaces.'
+    ),
+    domain(
+      'artifacts',
+      'Artifacts',
+      draft.collections.artifacts,
+      evidenceForUnknown('artifact'),
+      'Bootstrap capsules, cleanup manifests, handoffs, and sidecars.'
+    ),
+    domain(
+      'tools',
+      'Tools',
+      [...draft.collections.commands, ...draft.collections.mcpServers, ...draft.collections.hooks],
+      evidenceForUnknown('tools'),
+      'CLI, hook, and MCP tool surfaces.'
+    ),
+    domain(
+      'adapters',
+      'Adapters',
+      [
+        ...draft.collections.providers,
+        ...draft.collections.mcpServers,
+        ...draft.collections.roles,
+        ...draft.collections.docsTargets,
+      ],
+      ['Adapter source refs: Codex, plugin, MCP, Archon, BMAD, graph, docs, providers.'],
+      'Read-only adapters and fixture-backed capability discovery.'
+    ),
+    domain(
+      'gates',
+      'Gates',
+      [],
+      [
+        'ACO gates: forbidden ledgers, graph refresh, destructive ops, secret exposure, auth/config mutation.',
+      ],
+      'Safety gates are enforced by bootstrap guardrails and cleanup refusals.',
+      'available'
+    ),
+    domain(
+      'manifests',
+      'Manifests',
+      [
+        ...draft.collections.plugins,
+        ...draft.collections.providers,
+        ...draft.collections.mcpServers,
+        ...draft.collections.workflows,
+      ],
+      evidenceForUnknown('manifest'),
+      'Commands, workflows, plugins, providers, hooks, MCP, and BMAD manifests.'
+    ),
+    domain(
+      'mcp-tools',
+      'MCP/tools',
+      draft.collections.mcpServers,
+      ['MCP evidence: committed config only; OAuth state intentionally not read.'],
+      'Codex/Archon MCP config and tools with OAuth-safe evidence.'
+    ),
+    domain(
+      'context7-docs',
+      'Context7/docs',
+      draft.collections.docsTargets,
+      context7Evidence,
+      'Context7/docs targets and documentation readiness.'
+    ),
+    domain(
+      'bmad',
+      'BMAD',
+      bmadItems,
+      ['BMAD role and skill manifest coverage.', ...evidenceForUnknown('bmad')],
+      'BMAD roles, skill manifests, and role-aware routing.'
+    ),
+    domain(
+      'subagents-roles',
+      'Subagents/roles',
+      roleItems,
+      [
+        'Subagent lifecycle uses ACO role contracts; unsupported Codex subagent hooks are simulated.',
+      ],
+      'Codex agents, Archon/BMAD roles, and role contracts.'
+    ),
+    domain(
+      'research-agentic-search',
+      'Research/Agentic Search',
+      draft.collections.docsTargets.filter(item => /research|docs/i.test(item.category)),
+      [
+        'Research/Agentic Search manifests are available when committed; otherwise explicit unknown.',
+      ],
+      'Research provider and Agentic Search awareness.',
+      draft.collections.docsTargets.length > 0 ? 'available' : 'unknown'
+    ),
+    domain(
+      'context-bootload',
+      'Context/bootload',
+      draft.collections.commands.filter(item => item.id.includes('bootstrap')),
+      ['Context bootload: /aco:bootstrap-codex and buildAcoBootstrapContext().'],
+      'ACO bootstrap command, context builder, and bootload artifacts.',
+      'available'
+    ),
+    domain(
+      'hooks',
+      'Hooks',
+      draft.collections.hooks,
+      hookEvidence,
+      'Hook templates, schemas, runner, and real smoke support.'
+    ),
+    domain(
+      'plugins',
+      'Plugins',
+      draft.collections.plugins,
+      evidenceForUnknown('plugin'),
+      'Plugin manifests, plugin hooks, MCP, and app evidence.'
+    ),
+    domain(
+      'ledgers',
+      'Ledgers',
+      draft.collections.ledgers,
+      evidenceForUnknown('ledger'),
+      'Evidence rows and cleanup ledger idempotency proof.'
+    ),
+    {
+      id: 'graph-graphify',
+      label: 'Graph/Graphify',
+      status: graphContext.status === 'available' ? 'available' : 'unknown',
+      evidence: [
+        'docs/context-orchestrator/research/upstream-manifest.json',
+        `graph status=${graphContext.status} waivers=${String(graphContext.waiverCount)}`,
+      ],
+      summary: 'Committed graph evidence only; no graph refresh.',
+    },
+    domain(
+      'providers-future',
+      'Providers/future',
+      providerItems,
+      evidenceForUnknown('provider'),
+      'Provider registry and future extension manifests.'
+    ),
+  ];
+
+  return domains.map(
+    (item): CapabilityDomainCoverage => ({
+      ...item,
+      evidence:
+        item.evidence.length > 0 ? unique(item.evidence) : ['explicit unknown: no evidence'],
+    })
+  );
 }
 
 async function collectFiles(
@@ -1240,6 +1471,10 @@ function normalizePath(path: string): string {
 
 function sortById<T extends { id: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function unique(items: string[]): string[] {
+  return [...new Set(items.map(item => redactSecrets(item)).filter(item => item.trim()))];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
