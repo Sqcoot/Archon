@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Archon ACO API Contract
+  version: 0.3.12
+paths:
+  /api/aco/status:
+    get:
+      summary: Return Context Orchestrator status for a registered codebase.
+      x-acceptance-id: AC-P1-API
+  /api/aco/ledgers:
+    get:
+      summary: Return the read-only ACO ledger bundle.
+      x-acceptance-id: AC-P1-API
+  /api/aco/route:
+    post:
+      summary: Route an ACO prompt through BMAD advisory selection.
+      x-acceptance-id: AC-P1-API
+  /api/aco/compile:
+    post:
+      summary: Compile an ACO prompt package archive for a registered codebase.
+      x-acceptance-id: AC-P1-API
+  /api/aco/artifact-packages/{runId}:
+    get:
+      summary: Return a manifest-backed ACO artifact package without path traversal.
+      x-acceptance-id: AC-P1-API

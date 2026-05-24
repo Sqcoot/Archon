@@ -31,6 +31,12 @@ const selectedAcceptanceSurfaces = [
     path: 'tests/acceptance/context-orchestrator/events.acceptance.test.ts',
     markers: ['ACO-EVENTS-001'],
   },
+  {
+    id: 'ACO-TRACE',
+    label: 'traceability',
+    path: 'tests/acceptance/context-orchestrator/traceability.acceptance.test.ts',
+    markers: ['ACO-TRACE-001', 'ACO-TRACE-002', 'ACO-TRACE-003'],
+  },
 ] as const;
 const VALIDATION_COMMAND_TIMEOUT_MS = 10_000;
 
@@ -46,18 +52,12 @@ export async function validateContextOrchestrator(
     )
   );
   checks.push(
-    await fileCheck(
-      'aco-upstream-manifest',
-      join(options.cwd, 'docs/context-orchestrator/research/upstream-manifest.json')
-    )
-  );
-  checks.push(
     await packageScriptCheck(options.cwd, [
-      'research:bootstrap',
-      'research:update-upstreams',
-      'research:graph',
-      'research:merge-graphs',
-      'research:validate-corpus',
+      'aco:context-intake',
+      'aco:completion-preconditions',
+      'aco:target-intent',
+      'aco:goal-bound-evidence',
+      'aco:gates:test',
       'aco:policy:test',
       'aco:policy:fixtures',
       'aco:policy',
@@ -116,7 +116,8 @@ async function acceptanceRealityCheck(cwd: string): Promise<ValidationCheck> {
   return {
     id: 'aco-acceptance',
     status: 'passed',
-    message: 'ACO acceptance reality check passed for API, slash command, workflow, and events.',
+    message:
+      'ACO acceptance reality check passed for API, slash command, workflow, events, and traceability.',
   };
 }
 
@@ -261,7 +262,7 @@ async function packageScriptCheck(cwd: string, scripts: string[]): Promise<Valid
     return {
       id: 'aco-package-scripts',
       status: 'passed',
-      message: 'Required ACO research and validation package scripts exist.',
+      message: 'Required ACO gate and validation package scripts exist.',
     };
   } catch {
     return {

@@ -1,0 +1,159 @@
+{
+  "schema_version": "aco.traceability.v1",
+  "scope": {
+    "enforced_prefixes": ["AC-P1-", "AC-P3-", "ACO-EVENTS-", "ACO-TRACE-"]
+  },
+  "requirements": [
+    {
+      "requirement_id": "AC-P1-API",
+      "kind": "api",
+      "spec": "docs/context-orchestrator/specs/013-api-contract.openapi.yaml",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/api.acceptance.test.ts",
+        "markers": ["AC-P1-API"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/server/src/routes/api.aco.test.ts",
+          "markers": ["AC-P1-API", "/api/aco/status", "/api/aco/compile"],
+          "summary": "Server route tests exercise the selected native ACO API behavior."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/server/src/routes/api.ts",
+          "markers": ["/api/aco/status", "/api/aco/ledgers", "/api/aco/route", "/api/aco/compile"],
+          "summary": "OpenAPI route declarations expose the selected ACO endpoints."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P1-SLASH",
+      "kind": "slash-command",
+      "spec": "docs/context-orchestrator/specs/012-cli-contract.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/command.acceptance.test.ts",
+        "markers": ["AC-P1-SLASH"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/core/src/handlers/command-handler.ts",
+          "markers": ["handleContextCommand", "context-orchestrate"],
+          "summary": "Command handler exposes the slash entry point and workflow handoff."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/core/src/handlers/command-handler.test.ts",
+          "markers": ["AC-P1-SLASH", "runs bundled context-orchestrate workflow"],
+          "summary": "Command-handler tests cover the slash-command surface."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "AC-P3-WF",
+      "kind": "workflow",
+      "spec": "docs/context-orchestrator/specs/014-workflow-contracts.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/workflow.acceptance.test.ts",
+        "markers": ["AC-P3-WF"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/workflows/defaults/context-orchestrate.yaml",
+          "markers": ["name: context-orchestrate", "graph-validation-gate.json", "capture_response: true"],
+          "summary": "Workflow default compiles context, writes the graph gate, and pauses for explicit approval."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-EVENTS-001",
+      "kind": "events",
+      "spec": "docs/context-orchestrator/specs/019-observability-and-events-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/events.acceptance.test.ts",
+        "markers": ["ACO-EVENTS-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/workflows/src/dag-executor.ts",
+          "markers": ["event_type: 'approval_requested'", "pauseWorkflowRun", "node_started", "node_completed"],
+          "summary": "DAG executor emits approval and node lifecycle events through existing workflow infrastructure."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/workflows/src/store.ts",
+          "markers": ["'approval_requested'", "'approval_received'", "pauseWorkflowRun"],
+          "summary": "Workflow store preserves approval events and pause state."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-001",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/traceability.acceptance.test.ts",
+        "markers": ["ACO-TRACE-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/validate-traceability.ts",
+          "markers": ["aco.traceability.v1", "validateTraceability"],
+          "summary": "Traceability validator checks the committed manifest."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-002",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/traceability.acceptance.test.ts",
+        "markers": ["ACO-TRACE-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "scripts/context-orchestrator/validate-traceability.ts",
+          "markers": ["--manifest", "missing marker"],
+          "summary": "Traceability validator supports alternate manifests and reports missing markers."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-TRACE-003",
+      "kind": "traceability-gate",
+      "spec": "docs/context-orchestrator/specs/022-sdd-atdd-traceability-gate-spec.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/traceability.acceptance.test.ts",
+        "markers": ["ACO-TRACE-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/validation.ts",
+          "markers": ["aco-traceability", "traceabilityCheck", "aco-acceptance"],
+          "summary": "Aggregate validation reports traceability and acceptance checks."
+        }
+      ],
+      "status": "enforced"
+    }
+  ]
+}

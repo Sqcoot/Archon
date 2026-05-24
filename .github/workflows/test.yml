@@ -43,6 +43,12 @@ jobs:
       - name: Validate ACO policy
         run: bun run aco:policy
 
+      - name: Validate ACO traceability
+        run: bun run aco:traceability
+
+      - name: Run ACO acceptance tests
+        run: bun run aco:test:acceptance
+
       - name: Type check
         run: bun run type-check
 

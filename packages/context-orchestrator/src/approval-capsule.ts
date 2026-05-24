@@ -461,7 +461,7 @@ function buildArtifactRefs(input: {
     ref(
       'graph-validation-gate',
       'Graph validation gate output',
-      root ? join(root, 'graph-validation-gate.txt') : undefined,
+      root ? join(root, 'graph-validation-gate.json') : undefined,
       'graph-validation-gate'
     ),
     ref(

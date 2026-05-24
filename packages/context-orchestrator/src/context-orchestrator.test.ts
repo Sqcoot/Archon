@@ -461,6 +461,11 @@ describe('context orchestrator core', () => {
           'research:graph': 'true',
           'research:merge-graphs': 'true',
           'research:validate-corpus': 'true',
+          'aco:context-intake': 'true',
+          'aco:completion-preconditions': 'true',
+          'aco:target-intent': 'true',
+          'aco:goal-bound-evidence': 'true',
+          'aco:gates:test': 'true',
           'aco:policy:test': 'true',
           'aco:policy:fixtures': 'true',
           'aco:policy': 'true',
@@ -488,6 +493,11 @@ describe('context orchestrator core', () => {
     await writeFile(
       join(cwd, 'tests/acceptance/context-orchestrator/events.acceptance.test.ts'),
       "import { test } from 'bun:test';\ntest('ACO-EVENTS-001 executable', () => {});\n",
+      'utf8'
+    );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/traceability.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest('ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003 executable', () => {});\n",
       'utf8'
     );
 
@@ -686,6 +696,11 @@ async function writeValidationFixture(): Promise<string> {
         'research:graph': 'bun --version',
         'research:merge-graphs': 'bun --version',
         'research:validate-corpus': 'bun --version',
+        'aco:context-intake': 'bun --version',
+        'aco:completion-preconditions': 'bun --version',
+        'aco:target-intent': 'bun --version',
+        'aco:goal-bound-evidence': 'bun --version',
+        'aco:gates:test': 'bun --version',
         'aco:policy:test': 'bun --version',
         'aco:policy:fixtures': 'bun --version',
         'aco:policy': 'bun --version',
@@ -699,6 +714,11 @@ async function writeValidationFixture(): Promise<string> {
   await writeValidationAcceptanceSurface(cwd, 'command.acceptance.test.ts', 'AC-P1-SLASH');
   await writeValidationAcceptanceSurface(cwd, 'workflow.acceptance.test.ts', 'AC-P3-WF');
   await writeValidationAcceptanceSurface(cwd, 'events.acceptance.test.ts', 'ACO-EVENTS-001');
+  await writeValidationAcceptanceSurface(
+    cwd,
+    'traceability.acceptance.test.ts',
+    'ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003'
+  );
 
   return cwd;
 }

@@ -355,6 +355,11 @@ async function writeAcoGraphFixture(): Promise<string> {
   await writeAcceptanceSurface(cwd, 'command.acceptance.test.ts', 'AC-P1-SLASH');
   await writeAcceptanceSurface(cwd, 'workflow.acceptance.test.ts', 'AC-P3-WF');
   await writeAcceptanceSurface(cwd, 'events.acceptance.test.ts', 'ACO-EVENTS-001');
+  await writeAcceptanceSurface(
+    cwd,
+    'traceability.acceptance.test.ts',
+    'ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003'
+  );
 
   return cwd;
 }
@@ -427,6 +432,11 @@ async function writePackageJson(cwd: string): Promise<void> {
           'research:graph': 'bun --version',
           'research:merge-graphs': 'bun --version',
           'research:validate-corpus': 'bun --version',
+          'aco:context-intake': 'bun --version',
+          'aco:completion-preconditions': 'bun --version',
+          'aco:target-intent': 'bun --version',
+          'aco:goal-bound-evidence': 'bun --version',
+          'aco:gates:test': 'bun --version',
           'aco:policy:test': 'bun --version',
           'aco:policy:fixtures': 'bun --version',
           'aco:policy': 'bun --version',
