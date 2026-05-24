@@ -10,6 +10,7 @@ export type ContextIntakeCode =
   | 'branch_specific_assumption'
   | 'undeclared_private_tool'
   | 'provider_specific_default'
+  | 'tracked_runtime_or_user_local_artifact'
   | 'static_runtime_readiness_claim'
   | 'generated_artifact_without_lifecycle'
   | 'readiness_claim_without_evidence'
@@ -184,11 +185,15 @@ async function readTrackedReusableSurfaces(cwd: string): Promise<{
   const paths = stdout
     .split('\0')
     .map(normalizePath)
-    .filter(path => path.length > 0 && isReusableSurface(path) && textFilePattern.test(path));
+    .filter(path => path.length > 0 && isReusableSurface(path));
   const surfaces: ContextIntakeSurface[] = [];
   const scanErrors: { path: string; message: string }[] = [];
 
   for (const path of paths) {
+    if (!textFilePattern.test(path)) {
+      if (isTrackedRuntimeOrUserLocalArtifact(path)) surfaces.push({ path, content: '' });
+      continue;
+    }
     try {
       surfaces.push({ path, content: await readFile(join(cwd, path), 'utf8') });
     } catch (error) {
@@ -204,6 +209,9 @@ function inspectSurface(surface: ContextIntakeSurface): ContextIntakeFinding[] {
   const path = normalizePath(surface.path);
   const lines = surface.content.split(/\r?\n/);
   const findings: ContextIntakeFinding[] = [];
+
+  const trackedLocalFinding = trackedRuntimeOrUserLocalArtifactFinding(path);
+  if (trackedLocalFinding !== null) findings.push(trackedLocalFinding);
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? '';
@@ -324,7 +332,36 @@ function finding(
 }
 
 function isReusableSurface(path: string): boolean {
-  return reusableFiles.has(path) || reusablePrefixes.some(prefix => path.startsWith(prefix));
+  return (
+    reusableFiles.has(path) ||
+    reusablePrefixes.some(prefix => path.startsWith(prefix)) ||
+    isTrackedRuntimeOrUserLocalArtifact(path)
+  );
+}
+
+function trackedRuntimeOrUserLocalArtifactFinding(path: string): ContextIntakeFinding | null {
+  if (!isTrackedRuntimeOrUserLocalArtifact(path)) return null;
+
+  return {
+    code: 'tracked_runtime_or_user_local_artifact',
+    severity: 'blocker',
+    path,
+    line: 1,
+    excerpt: excerpt(path),
+    message: messageForCode('tracked_runtime_or_user_local_artifact'),
+  };
+}
+
+function isTrackedRuntimeOrUserLocalArtifact(path: string): boolean {
+  return (
+    path === '_bmad/config.user.toml' ||
+    /^_bmad\/custom\/[^/]+\.user\.toml$/u.test(path) ||
+    path.startsWith('_bmad-output/') ||
+    path.startsWith('.archon/mcp/') ||
+    path === '.codex/auth.json' ||
+    path === '.claude/settings.local.json' ||
+    path === 'aco_codex_conversation_transfer.md'
+  );
 }
 
 function isExecutableSurface(path: string): boolean {
@@ -489,6 +526,8 @@ function messageForCode(code: ContextIntakeCode): string {
       return 'Private/local tool is referenced as runnable without explicit opt-in capability.';
     case 'provider_specific_default':
       return 'Provider-specific hook/config default is committed without explicit opt-in.';
+    case 'tracked_runtime_or_user_local_artifact':
+      return 'Runtime, auth, MCP, or user-local artifact is tracked instead of remaining local.';
     case 'static_runtime_readiness_claim':
       return 'Runtime readiness is claimed from static text without verification evidence.';
     case 'generated_artifact_without_lifecycle':

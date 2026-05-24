@@ -132,6 +132,37 @@ describe('ACO Context Intake gate', () => {
     expect((await evaluateContextIntake({ cwd: allowed })).state).toBe('ready');
   });
 
+  test('tracked user-local and runtime artifacts are blocked by path', async () => {
+    const repo = await fixtureRepo({
+      '_bmad/config.user.toml': '[agents]\n',
+      '_bmad/custom/local.user.toml': '[preferences]\n',
+      '_bmad-output/run.md': '# Local BMAD output\n',
+      '.archon/mcp/context7.json': '{}\n',
+      '.codex/auth.json': '{}\n',
+      '.claude/settings.local.json': '{}\n',
+      'aco_codex_conversation_transfer.md': '# Local handoff\n',
+    });
+
+    const report = await evaluateContextIntake({ cwd: repo });
+
+    expect(report.state).toBe('blocked');
+    expect(
+      codes(report.blockers).filter(code => code === 'tracked_runtime_or_user_local_artifact')
+    ).toHaveLength(7);
+  });
+
+  test('team-scoped inert BMAD configuration is not treated as user-local runtime state', async () => {
+    const repo = await fixtureRepo({
+      '_bmad/config.toml': '[agents]\n',
+      '_bmad/custom/config.toml': '[preferences]\n',
+      '_bmad/core/config.yaml': 'communication_language: English\n',
+    });
+
+    const report = await evaluateContextIntake({ cwd: repo });
+
+    expect(report.state).toBe('ready');
+  });
+
   test('readiness claim without evidence is blocked', async () => {
     const repo = await fixtureRepo({
       'docs/aco-readiness.md': 'Readiness: ready. Validation passed.\n',
@@ -181,7 +212,7 @@ async function fixtureRepo(files: Record<string, string>): Promise<string> {
     await Bun.write(fullPath, content);
   }
   await run(root, ['git', 'init']);
-  await run(root, ['git', 'add', '.']);
+  await run(root, ['git', 'add', '-f', '.']);
   return root;
 }
 
