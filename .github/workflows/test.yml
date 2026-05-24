@@ -30,6 +30,9 @@ jobs:
       - name: Check bundled defaults
         run: bun run check:bundled
 
+      - name: Test ACO gates
+        run: bun run aco:gates:test
+
       - name: Type check
         run: bun run type-check
 

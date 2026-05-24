@@ -25,6 +25,7 @@
     "aco:goal-bound-evidence:test": "bun test ./scripts/context-orchestrator/validate-goal-bound-evidence.test.ts",
     "aco:target-intent": "bun scripts/context-orchestrator/validate-target-intent-boundary.ts",
     "aco:target-intent:test": "bun test ./scripts/context-orchestrator/validate-target-intent-boundary.test.ts",
+    "aco:gates:test": "bun run aco:context-intake:test && bun run aco:completion-preconditions:test && bun run aco:target-intent:test && bun run aco:goal-bound-evidence:test",
     "test": "bun --filter '*' --parallel test",
     "test:watch": "bun --filter @archon/server test:watch",
     "type-check": "bun --filter '*' type-check && bun x tsc --noEmit -p scripts/tsconfig.json",
@@ -36,7 +37,7 @@
     "build:web": "bun --filter @archon/web build",
     "dev:docs": "bun --filter @archon/docs-web dev",
     "build:docs": "bun --filter @archon/docs-web build",
-    "validate": "bun run check:bundled && bun run check:bundled-skill && bun run aco:context-intake --json && bun run type-check && bun run lint --max-warnings 0 && bun run format:check && bun run test",
+    "validate": "bun run check:bundled && bun run check:bundled-skill && bun run aco:context-intake --json && bun run aco:gates:test && bun run type-check && bun run lint --max-warnings 0 && bun run format:check && bun run test",
     "prepare": "husky",
     "setup-auth": "bun --filter @archon/server setup-auth"
   },
