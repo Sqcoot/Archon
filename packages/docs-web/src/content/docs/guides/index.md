@@ -15,6 +15,7 @@ How-to guides for building and running AI coding workflows with Archon.
 
 - [Authoring Workflows](/guides/authoring-workflows/) — Create multi-step YAML workflows with DAG nodes, conditional branching, and parallel execution
 - [Authoring Commands](/guides/authoring-commands/) — Write prompt templates that serve as building blocks for workflow nodes
+- [Context Orchestrator (ACO)](/guides/context-orchestrator-aco/) — Inspect readiness, compile context packages, and keep approval-sensitive handoffs explicit
 
 ## Node Types
 
@@ -46,6 +47,8 @@ Archon ships with ready-to-use workflows that cover common coding tasks. You do 
 | `archon-interactive-prd` | Create a PRD through guided conversation |
 | `archon-piv-loop` | Guided Plan-Implement-Validate with human-in-the-loop |
 | `archon-adversarial-dev` | Build a complete application from scratch using adversarial development |
+| `context-orchestrate` | Compile ACO status, ledgers, context package, approval state, and handoff |
+| `archon-aco-adversarial-loop` | Run a contracted adversarial loop grounded in ACO artifacts |
 
 For the full list with descriptions, see the [Available Workflows table](/getting-started/overview/#available-workflows) in the Overview.
 

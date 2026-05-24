@@ -183,6 +183,55 @@ Returns the isolation environments (worktrees) associated with a codebase.
 
 ---
 
+## Context Orchestrator (ACO)
+
+ACO endpoints expose the same status, ledger, routing, compile, and artifact
+package surfaces used by the Web UI. See
+[Context Orchestrator (ACO)](/guides/context-orchestrator-aco/) for workflow
+usage and readiness semantics.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/aco/status?cwd={path}` | Return readiness, validation, graph waiver, evidence, and next-decision state |
+| GET | `/api/aco/ledgers?cwd={path}` | Return tool availability and command ledgers |
+| POST | `/api/aco/route` | Route a prompt through BMAD advisory selection |
+| POST | `/api/aco/compile` | Compile a Context Orchestrator prompt package |
+| GET | `/api/aco/artifact-packages/{runId}?cwd={path}` | Read a manifest-backed artifact package |
+
+### Status
+
+```bash
+curl "http://localhost:3090/api/aco/status?cwd=/path/to/repo&objective=Plan%20the%20change"
+```
+
+Returns the context intent, readiness, graph status, graph waiver IDs, evidence
+resolution items, ledger summary, and next decision. `needs_approval` is the
+public API/UI state for approval-required graph evidence; it is not equivalent
+to ready.
+
+### Route
+
+```bash
+curl -X POST http://localhost:3090/api/aco/route \
+  -H "Content-Type: application/json" \
+  -d '{"cwd": "/path/to/repo", "prompt": "Plan the change"}'
+```
+
+Returns the BMAD advisory route and any decision requirement for the prompt.
+
+### Compile
+
+```bash
+curl -X POST http://localhost:3090/api/aco/compile \
+  -H "Content-Type: application/json" \
+  -d '{"cwd": "/path/to/repo", "prompt": "Plan the change", "runId": "plan-change"}'
+```
+
+Returns the compiled context package summary, including archive path, files,
+route, readiness, validation, evidence resolution, and next decision.
+
+---
+
 ## Workflows
 
 ### Definitions

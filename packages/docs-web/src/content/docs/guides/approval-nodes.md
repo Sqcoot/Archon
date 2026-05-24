@@ -14,6 +14,10 @@ until a human approves or rejects the gate. Use approval nodes to insert human
 review steps between AI-driven nodes — for example, reviewing a generated plan
 before committing to expensive implementation work.
 
+[Context Orchestrator (ACO)](/guides/context-orchestrator-aco/) uses approval
+nodes when graph evidence needs an explicit waiver-preserving handoff. In that
+case, review the generated approval capsule before approving the workflow gate.
+
 ## Quick Start
 
 > **Web UI users:** Add `interactive: true` at the workflow level. Without it, the

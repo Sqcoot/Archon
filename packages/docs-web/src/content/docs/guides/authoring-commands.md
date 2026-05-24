@@ -84,6 +84,10 @@ Step 1: investigate-issue    Step 2: implement-issue
 - **Auditability**: Artifacts create a paper trail of AI decisions
 - **Handoff quality**: The artifact determines if the next step succeeds
 
+The same rule powers [Context Orchestrator (ACO)](/guides/context-orchestrator-aco/):
+ACO compiles status, ledgers, prompt packages, approval capsules, and handoff
+files so later agents can work from evidence instead of conversation memory.
+
 ### What Makes a Good Artifact
 
 The artifact must contain **everything the next agent needs**:

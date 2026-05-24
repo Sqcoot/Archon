@@ -35,11 +35,16 @@ nodes:
     context: fresh
 ```
 
-> **Using defaults as templates:** Archon ships default workflows in `.archon/workflows/defaults/` (12 bundled into the binary, plus additional ones available on disk in source builds). Browse them for real-world examples, then copy and modify:
+> **Using defaults as templates:** Archon ships default workflows in `.archon/workflows/defaults/` (bundled into the binary, plus additional ones available on disk in source builds). Browse them for real-world examples, then copy and modify:
 > ```bash
 > cp .archon/workflows/defaults/archon-fix-github-issue.yaml .archon/workflows/my-fix-issue.yaml
 > ```
 > Same-named files in `.archon/workflows/` override the bundled defaults.
+
+> **Context-heavy work:** Use the bundled `context-orchestrate` workflow when a
+> request needs ACO status, ledgers, a compiled context package, graph-waiver
+> approval state, and a handoff before implementation. See
+> [Context Orchestrator (ACO)](/guides/context-orchestrator-aco/).
 
 ---
 

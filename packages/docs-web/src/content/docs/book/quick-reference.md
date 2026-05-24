@@ -29,6 +29,20 @@ This chapter collects every CLI command, variable, and YAML option in one place.
 | `archon workflow abandon <run-id>` | Abandon a non-terminal workflow run |
 | `archon workflow cleanup [days]` | Delete old workflow run records (default: 7 days) |
 
+### `archon aco` and `archon context`
+
+| Command | Description |
+|---------|-------------|
+| `archon aco status [prompt]` | Show productized Context Orchestrator status |
+| `archon context status [prompt]` | Show readiness, evidence resolution, and next decision |
+| `archon context validate` | Run Context Orchestrator validation checks |
+| `archon context ledgers [prompt]` | Show tool and command ledgers |
+| `archon context route <prompt>` | Select the BMAD advisory route |
+| `archon context compile <prompt>` | Compile an ACO context package |
+| `archon context approval-capsule <prompt>` | Create an approval capsule |
+| `archon context approval-capsule-verify` | Verify an approval contract |
+| `archon context graph-waivers` | Inspect graph waiver closure state |
+
 ### `archon isolation`
 
 | Command | Description |

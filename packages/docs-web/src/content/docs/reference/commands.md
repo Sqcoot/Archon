@@ -42,6 +42,19 @@ These commands are handled deterministically by the orchestrator — they always
 
 > **Note:** Workflows are YAML files in `.archon/workflows/`
 
+## Context Orchestrator
+
+These commands require a registered project. They expose the chat-facing ACO
+surfaces described in [Context Orchestrator (ACO)](/guides/context-orchestrator-aco/).
+
+| Command | Description |
+|---------|-------------|
+| `/context status [request]` | Show route readiness, ledgers, and approval state |
+| `/context route <request>` | Pick the BMAD route |
+| `/context ledgers [request]` | Show tool and command ledger coverage |
+| `/context compile <request>` | Compile the context package |
+| `/context run <request>` | Run the bundled `context-orchestrate` workflow |
+
 ## Session Management
 
 | Command | Description |

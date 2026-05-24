@@ -96,6 +96,40 @@ Exit code 0 if all checks pass or are skipped; 1 if any critical check fails. Ad
 
 Also runs automatically at the end of `archon setup` (optional).
 
+### `aco status`
+
+Show productized [Context Orchestrator (ACO)](/guides/context-orchestrator-aco/)
+status for a repository.
+
+```bash
+archon aco status --cwd /path/to/repo "Plan the change"
+archon aco status --cwd /path/to/repo --json "Plan the change"
+```
+
+The output includes readiness, validation status, graph state, graph waiver IDs,
+ledger counts, and evidence blockers.
+
+### `context`
+
+Run lower-level ACO and context package commands.
+
+| Command | Description |
+|---------|-------------|
+| `archon context status [message]` | Show readiness, evidence resolution, and next decision |
+| `archon context validate` | Run Context Orchestrator validation checks |
+| `archon context ledgers [message]` | Show tool availability and command ledgers |
+| `archon context route <message>` | Select the BMAD advisory route |
+| `archon context compile <message>` | Compile an ACO context package |
+| `archon context approval-capsule <message>` | Create an approval capsule for a package |
+| `archon context approval-capsule-verify` | Verify the approval contract for a package |
+| `archon context graph-waivers` | Inspect graph waiver closure state |
+| `archon context analytics capture <message>` | Record route analytics for a message |
+| `archon context analytics report` | Summarize captured route analytics |
+
+Most context commands accept `--cwd <path>` and `--json`. Compile and approval
+commands also support artifact options such as `--archive-root`, `--artifact-root`,
+and `--run-id`.
+
 ### `workflow list`
 
 List workflows available in target directory.

@@ -16,6 +16,11 @@ GitHub, Linear, Postgres, etc. — without over-provisioning.
 MCP works with Codex and Claude workflow nodes. Pi nodes still warn and ignore
 the `mcp` field.
 
+[Context Orchestrator (ACO)](/guides/context-orchestrator-aco/) can report
+unresolved documentation or tool evidence and point the next step toward MCP or
+Context7-backed verification. The MCP server still has to be attached to the
+workflow node that needs the tool access.
+
 ## Quick Start
 
 1. Create an MCP config file (e.g., `.archon/mcp/github.json`):
