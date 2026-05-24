@@ -1,0 +1,188 @@
+name: context-orchestrate
+description: |
+  Use when: User wants the native Context Orchestrator loop for route, ledgers,
+            compiled context package, evidence, risks, approval state, and handoff.
+  Triggers: "context orchestrate", "compile context", "route context", "aco loop".
+  Does: Reads status and ledgers, compiles the package into workflow artifacts,
+        pauses when graph evidence needs approval, and writes a handoff summary.
+  NOT for: Direct implementation work without a compiled context package.
+
+nodes:
+  - id: status
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context status --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/status.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/status.json"
+
+  - id: ledgers
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context ledgers --cwd "$PWD" --json "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/ledgers.json"
+    depends_on: [status]
+
+  - id: compile
+    bash: |
+      set -euo pipefail
+      mkdir -p "$ARTIFACTS_DIR/context-orchestrator"
+      bun run cli context compile \
+        --cwd "$PWD" \
+        --archive-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json \
+        "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+    depends_on: [status, ledgers]
+
+  - id: graph-validation-gate
+    bash: |
+      set -euo pipefail
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json" bun -e '
+        const fs = await import("node:fs");
+        const data = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const approvalRequired =
+          data.approvalRequired === true ||
+          data.readiness === "needs_approval" ||
+          data.graphStatus === "forbidden" ||
+          data.graphStatus === "unavailable";
+        const capsuleRequired =
+          data.readiness === "needs_approval" && data.graphStatus === "forbidden";
+        console.log(JSON.stringify({ approvalRequired, capsuleRequired }));
+      ' | tee "$ARTIFACTS_DIR/context-orchestrator/graph-validation-gate.json"
+    depends_on: [compile]
+
+  - id: approval-capsule
+    bash: |
+      set -euo pipefail
+      bun run cli context approval-capsule \
+        --cwd "$PWD" \
+        --artifact-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json \
+        "$ARGUMENTS" > "$ARTIFACTS_DIR/context-orchestrator/approval-capsule-result.json"
+      cat "$ARTIFACTS_DIR/context-orchestrator/approval-capsule-result.json"
+    depends_on: [graph-validation-gate]
+    when: "$graph-validation-gate.output.capsuleRequired == 'true'"
+
+  - id: approval-capsule-verify
+    bash: |
+      set -euo pipefail
+      VERIFY_RESULT="$ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json"
+      set +e
+      bun run cli context approval-capsule-verify \
+        --cwd "$PWD" \
+        --artifact-root "$ARTIFACTS_DIR/context-orchestrator" \
+        --run-id "$WORKFLOW_ID" \
+        --json > "$VERIFY_RESULT"
+      VERIFY_EXIT=$?
+      set -e
+      if [ ! -s "$VERIFY_RESULT" ]; then
+        printf '{"schemaVersion":"aco.approval-contract-verification.v1","status":"invalid","contractId":"","contractHash":"","mismatches":[{"field":"approval-capsule-verify","reason":"verification command produced no JSON"}],"nextAction":"Regenerate the ACO approval capsule for the current evidence before approving handoff.","willRun":false}\n' > "$VERIFY_RESULT"
+      fi
+      cat "$VERIFY_RESULT"
+      exit 0
+    depends_on: [approval-capsule]
+    when: "$graph-validation-gate.output.capsuleRequired == 'true'"
+
+  - id: approve-graph-with-capsule
+    approval:
+      message: |
+        Context Orchestrator needs approval before handoff.
+
+        Run ID: $WORKFLOW_ID
+        Review: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/manifest.json
+        Approval capsule: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/approval-capsule.md
+        Approval contract verification: $ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json
+        Reason: graph evidence is forbidden, unavailable, or otherwise approval-required.
+        Scope: approval preserves the listed waivers for this run only. It does not approve graph refresh or waiver cleanup.
+      capture_response: true
+    depends_on: [approval-capsule-verify]
+    when: "$graph-validation-gate.output.capsuleRequired == 'true' && $approval-capsule-verify.output.status == 'valid'"
+
+  - id: approve-graph-generic
+    approval:
+      message: |
+        Context Orchestrator needs approval before handoff.
+
+        Run ID: $WORKFLOW_ID
+        Review: $ARTIFACTS_DIR/context-orchestrator/$WORKFLOW_ID/manifest.json
+        Approval capsule: not generated for this graph state.
+        Reason: graph evidence is unavailable or otherwise approval-required.
+      capture_response: true
+    depends_on: [graph-validation-gate]
+    when: "$graph-validation-gate.output.approvalRequired == 'true' && $graph-validation-gate.output.capsuleRequired != 'true'"
+
+  - id: handoff
+    bash: |
+      set -euo pipefail
+      HANDOFF="$ARTIFACTS_DIR/context-orchestrator/handoff.md"
+      STATUS_JSON="$ARTIFACTS_DIR/context-orchestrator/status.json"
+      COMPILE_RESULT="$ARTIFACTS_DIR/context-orchestrator/compile-result.json"
+      VERIFY_RESULT="$ARTIFACTS_DIR/context-orchestrator/approval-capsule-verification.json"
+      HANDOFF="$HANDOFF" STATUS_JSON="$STATUS_JSON" COMPILE_RESULT="$COMPILE_RESULT" VERIFY_RESULT="$VERIFY_RESULT" bun -e '
+        const fs = await import("node:fs");
+        const status = JSON.parse(fs.readFileSync(process.env.STATUS_JSON, "utf8"));
+        const compiled = JSON.parse(fs.readFileSync(process.env.COMPILE_RESULT, "utf8"));
+        const verification = fs.existsSync(process.env.VERIFY_RESULT)
+          ? JSON.parse(fs.readFileSync(process.env.VERIFY_RESULT, "utf8"))
+          : { status: "not-required", contractId: "", mismatches: [], nextAction: "" };
+        const readiness = compiled.readiness ?? status.readiness ?? "unknown";
+        const capsuleExpected = readiness === "needs_approval" && compiled.graphStatus === "forbidden";
+        const contextIntent = compiled.contextIntent ?? status.contextIntent ?? {};
+        const blockers = compiled.evidenceBlockers ?? status.evidenceBlockers ?? [];
+        const evidenceResolution = compiled.evidenceResolution ?? status.evidenceResolution ?? { required: false, items: [] };
+        const blockerLines = blockers.length > 0
+          ? blockers.map((blocker) => `- ${blocker.id}: ${blocker.nextVerificationAction}`)
+          : ["- none"];
+        const resolutionLines = evidenceResolution.items.length > 0
+          ? evidenceResolution.items.map((item) => `- ${item.evidenceId}: ${item.resolver} -> ${item.targetName}; approval=${item.requiresApproval === true ? "yes" : "no"}; ${item.nextAction}`)
+          : ["- none"];
+        const lines = [
+          "# Context Orchestrator Handoff",
+          "",
+          `Run ID: ${compiled.runId}`,
+          `Intent: ${contextIntent.intentHash ?? "unknown"}`,
+          `Objective: ${contextIntent.normalizedObjective ?? "unknown"}`,
+          `Readiness: ${readiness}`,
+          `Approval required: ${compiled.approvalRequired === true ? "yes" : "no"}`,
+          `Route: ${compiled.route}`,
+          `Validation: ${compiled.validationStatus}`,
+          `Graph: ${compiled.graphStatus}`,
+          `Context package: ${compiled.archivePath}`,
+          `Approval capsule: ${capsuleExpected ? `${compiled.archivePath}/approval-capsule.md` : "not generated"}`,
+          `Approval contract: ${verification.contractId || "not generated"}`,
+          `Approval contract verification: ${verification.status}`,
+          "",
+          "## Evidence",
+          "",
+          `Ledger schema: ${compiled.ledgerSchemaVersion}`,
+          `Ledger rows: ${compiled.ledgerSummary?.combined?.total ?? "unknown"}`,
+          `Evidence blockers: ${blockers.length}`,
+          ...blockerLines,
+          `Evidence resolution required: ${evidenceResolution.required === true ? "yes" : "no"}`,
+          ...resolutionLines,
+          `Waivers: ${(compiled.graphWaiverIds ?? []).join(", ") || "none"}`,
+          "",
+          "## Next Action",
+          "",
+          capsuleExpected && verification.status !== "valid"
+            ? `Approval contract verification failed. ${verification.nextAction || "Regenerate the approval capsule before handoff."}`
+            : readiness === "needs_approval"
+            ? capsuleExpected
+              ? "Review the approval capsule, then approve or reject the graph gate. Approval preserves listed waivers for this run only; readiness remains Needs approval while waivers remain."
+              : "Approve or reject the graph gate. Readiness remains Needs approval while waivers remain."
+            : "Use the compiled context package for the next implementation prompt.",
+        ];
+        fs.writeFileSync(process.env.HANDOFF, `${lines.join("\n")}\n`);
+        console.log(fs.readFileSync(process.env.HANDOFF, "utf8"));
+      '
+    depends_on: [graph-validation-gate, approval-capsule, approval-capsule-verify, approve-graph-with-capsule, approve-graph-generic]
+    trigger_rule: all_done
+
+  - id: final-summary
+    bash: |
+      set -euo pipefail
+      cat "$ARTIFACTS_DIR/context-orchestrator/handoff.md"
+    depends_on: [handoff]
