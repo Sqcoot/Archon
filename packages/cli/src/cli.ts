@@ -68,6 +68,20 @@ import { skillInstallCommand } from './commands/skill';
 import { validateWorkflowsCommand, validateCommandsCommand } from './commands/validate';
 import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
+import {
+  contextAnalyticsCaptureCommand,
+  contextAnalyticsReportCommand,
+  contextApprovalCapsuleCommand,
+  contextApprovalCapsuleVerifyCommand,
+  contextCompileCommand,
+  contextDossierCommand,
+  contextGraphWaiversCommand,
+  contextLedgersCommand,
+  contextRouteCommand,
+  contextStatusCommand,
+  contextValidateCommand,
+} from './commands/context';
+import { acoStatusCommand } from './commands/aco';
 import { closeDatabase } from '@archon/core';
 import {
   setLogLevel,
@@ -110,6 +124,18 @@ Commands:
   isolation cleanup --merged Remove environments with branches merged into main
   continue <branch> [msg]    Continue work on an existing worktree with prior context
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
+  aco status                 Show productized ACO status and graph confidence limits
+  context route <prompt>     Select an ACO BMAD route
+  context analytics capture <prompt> Capture ACO route analytics
+  context analytics report   Report ACO route analytics
+  context dossier <prompt>   Show ACO decision dossier for a prompt
+  context compile <prompt>   Compile an ACO Codex-ready prompt package
+  context graph-waivers      Diagnose failed ACO graph waivers
+  context ledgers [prompt]   Show ACO Tool Availability and Commands ledgers
+  context approval-capsule <prompt> Show/write ACO approval capsule for a run
+  context approval-capsule-verify Verify ACO approval capsule contract
+  context status [prompt]    Show ACO research and validation status
+  context validate           Validate ACO research/spec readiness
   serve                      Start the web UI server (downloads web UI on first run)
   skill install [path]       Install the bundled Archon skill into .claude/skills/archon
   doctor                     Verify your Archon setup (Claude binary, gh auth, DB, adapters)
@@ -133,6 +159,7 @@ Options:
   --port <port>              Override server port for 'serve' (default: 3090)
   --download-only            Download web UI without starting the server
   --force                    Overwrite existing file (for workflow install)
+  --limit <n>                Limit recent records for context analytics report
 
 Examples:
   archon chat "What does the orchestrator do?"
@@ -142,6 +169,17 @@ Examples:
   archon workflow run implement --branch feature-auth "Implement auth"
   archon workflow run quick-fix --no-worktree "Fix typo"
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
+  archon aco status --cwd /path/to/repo --json
+  archon context route --cwd /path/to/repo "Plan this feature"
+  archon context analytics capture --cwd /path/to/repo "Plan this feature"
+  archon context analytics report --cwd /path/to/repo --json
+  archon context dossier --cwd /path/to/repo "Plan this feature"
+  archon context compile --cwd /path/to/repo "Plan this feature"
+  archon context graph-waivers --cwd /path/to/repo --json
+  archon context ledgers --cwd /path/to/repo --json "Plan this feature"
+  archon context approval-capsule --cwd /path/to/repo --run-id run-1 --json "Plan this feature"
+  archon context approval-capsule-verify --cwd /path/to/repo --artifact-root /tmp/artifacts --run-id run-1 --json
+  archon context validate --cwd /path/to/repo
   archon skill install
   archon skill install /path/to/project
   archon workflow search "pr review"
@@ -190,6 +228,15 @@ async function printUpdateNotice(quiet: boolean | undefined): Promise<void> {
 function isVersionRequest(args: string[]): boolean {
   if (args.length === 1 && args[0] === '-v') return true;
   return args.some(arg => arg === '--version' || arg === '-V' || arg === '-version');
+}
+
+function parseOptionalNonNegativeInteger(value: string | undefined): number | undefined | null {
+  if (value === undefined) return undefined;
+  if (!/^\d+$/.test(value)) {
+    console.error(`Error: --limit must be a non-negative integer: ${value}`);
+    return null;
+  }
+  return Number(value);
 }
 
 async function main(): Promise<number> {
@@ -242,6 +289,11 @@ async function main(): Promise<number> {
         'download-only': { type: 'boolean' },
         scope: { type: 'string' },
         force: { type: 'boolean' },
+        'archive-root': { type: 'string' },
+        'artifact-root': { type: 'string' },
+        timestamp: { type: 'string' },
+        caveman: { type: 'string' },
+        limit: { type: 'string' },
       },
       allowPositionals: true,
       strict: false, // Allow unknown flags to pass through
@@ -608,6 +660,208 @@ async function main(): Promise<number> {
             console.error('Available: workflows, commands');
             return 1;
         }
+
+      case 'aco':
+        switch (subcommand) {
+          case 'status': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            await acoStatusCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
+            break;
+          }
+
+          default:
+            if (subcommand === undefined) {
+              console.error('Missing aco subcommand');
+            } else {
+              console.error(`Unknown aco subcommand: ${subcommand}`);
+            }
+            console.error('Available: status');
+            return 1;
+        }
+        break;
+
+      case 'context':
+        switch (subcommand) {
+          case 'analytics': {
+            const analyticsAction = positionals[2];
+            if (analyticsAction === 'capture') {
+              const prompt = positionals.slice(3).join(' ');
+              if (!prompt) {
+                console.error(
+                  'Usage: archon context analytics capture [--cwd <repo>] [--json] <prompt>'
+                );
+                return 1;
+              }
+              return await contextAnalyticsCaptureCommand(prompt, {
+                cwd: effectiveCwd,
+                json: jsonFlag,
+                timestamp: values.timestamp as string | undefined,
+              });
+            }
+
+            if (analyticsAction === 'report') {
+              const limit = parseOptionalNonNegativeInteger(values.limit as string | undefined);
+              if (limit === null) return 1;
+              return await contextAnalyticsReportCommand({
+                cwd: effectiveCwd,
+                json: jsonFlag,
+                limit,
+              });
+            }
+
+            if (analyticsAction === undefined) {
+              console.error('Missing context analytics subcommand');
+            } else {
+              console.error(`Unknown context analytics subcommand: ${analyticsAction}`);
+            }
+            console.error('Available: capture, report');
+            return 1;
+          }
+
+          case 'route': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context route [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            await contextRouteCommand(prompt, { cwd: effectiveCwd, json: jsonFlag });
+            break;
+          }
+
+          case 'dossier': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context dossier [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            return await contextDossierCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
+          case 'status': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            await contextStatusCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
+            break;
+          }
+
+          case 'validate':
+            return await contextValidateCommand({ cwd: effectiveCwd, json: jsonFlag });
+
+          case 'ledgers': {
+            const objective = positionals.slice(2).join(' ').trim() || undefined;
+            return await contextLedgersCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              objective,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
+          case 'graph-waivers':
+            return await contextGraphWaiversCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              timestamp: values.timestamp as string | undefined,
+            });
+
+          case 'approval-capsule': {
+            const prompt = positionals.slice(2).join(' ');
+            const runId = values['run-id'] as string | undefined;
+            if (!runId) {
+              console.error(
+                'Usage: archon context approval-capsule [--cwd <repo>] --run-id <id> [--artifact-root <dir>] [--json] <prompt>'
+              );
+              console.error('Error: --run-id is required');
+              return 1;
+            }
+            if (!prompt) {
+              console.error(
+                'Usage: archon context approval-capsule [--cwd <repo>] --run-id <id> [--artifact-root <dir>] [--json] <prompt>'
+              );
+              return 1;
+            }
+            return await contextApprovalCapsuleCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              artifactRoot: values['artifact-root'] as string | undefined,
+              runId,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
+          case 'approval-capsule-verify': {
+            const runId = values['run-id'] as string | undefined;
+            const artifactRoot = values['artifact-root'] as string | undefined;
+            if (!runId || !artifactRoot) {
+              console.error(
+                'Usage: archon context approval-capsule-verify [--cwd <repo>] --artifact-root <dir> --run-id <id> [--json]'
+              );
+              if (!runId) console.error('Error: --run-id is required');
+              if (!artifactRoot) console.error('Error: --artifact-root is required');
+              return 1;
+            }
+            return await contextApprovalCapsuleVerifyCommand({
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              artifactRoot,
+              runId,
+              timestamp: values.timestamp as string | undefined,
+            });
+          }
+
+          case 'compile': {
+            const prompt = positionals.slice(2).join(' ');
+            if (!prompt) {
+              console.error('Usage: archon context compile [--cwd <repo>] [--json] <prompt>');
+              return 1;
+            }
+            const cavemanMode = values.caveman as string | undefined;
+            if (
+              cavemanMode !== undefined &&
+              cavemanMode !== 'off' &&
+              cavemanMode !== 'lite' &&
+              cavemanMode !== 'full' &&
+              cavemanMode !== 'ultra'
+            ) {
+              console.error('Error: --caveman must be one of: off, lite, full, ultra');
+              return 1;
+            }
+            await contextCompileCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              archiveRoot: values['archive-root'] as string | undefined,
+              runId: values['run-id'] as string | undefined,
+              timestamp: values.timestamp as string | undefined,
+              cavemanMode,
+            });
+            break;
+          }
+
+          default:
+            if (subcommand === undefined) {
+              console.error('Missing context subcommand');
+            } else {
+              console.error(`Unknown context subcommand: ${subcommand}`);
+            }
+            console.error(
+              'Available: analytics, route, dossier, approval-capsule, approval-capsule-verify, compile, graph-waivers, ledgers, status, validate'
+            );
+            return 1;
+        }
+        break;
 
       case 'complete': {
         const branches = positionals.slice(1);
