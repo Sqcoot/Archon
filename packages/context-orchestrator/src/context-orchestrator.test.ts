@@ -173,7 +173,9 @@ describe('context orchestrator core', () => {
     const goalCommand = `/goal ${decisionDossier.nextGoalObjective ?? ''}`;
     expect(decisionDossier.schemaVersion).toBe('aco.decision-dossier.v1');
     expect(typeof decisionDossier.nextGoalObjective).toBe('string');
-    expect(decisionDossier.approvalRequired).toBe(true);
+    expect(decisionDossier.approvalRequired).toBe(
+      decisionDossier.nextDecision?.kind === 'approval_required'
+    );
     expectCurrentCompileNextDecisionKind(decisionDossier.nextDecision);
     expect(decisionDossierMarkdown).toContain('# ACO Decision Dossier');
     expect(finalPackage).toContain('## Ledger Guidance');

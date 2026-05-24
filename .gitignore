@@ -123,6 +123,12 @@ skills-lock.json
 test-results/
 .archon/ralph/
 
+# ACO research corpus and generated graph caches
+research/upstreams/
+research/graphs/
+research/merged/
+graphify-out/
+
 # BMAD local user configuration
 _bmad/**/*.user.toml
 _bmad/**/config.user.toml
