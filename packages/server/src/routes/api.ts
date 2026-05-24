@@ -55,6 +55,15 @@ import {
 } from '@archon/workflows/schemas/workflow-run';
 import type { ApprovalContext, WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import { findMarkdownFilesRecursive } from '@archon/core/utils/commands';
+import {
+  compilePromptPackage,
+  getContextOrchestratorLedgers,
+  getContextOrchestratorReadiness,
+  getContextOrchestratorStatus,
+  readArtifactPackageManifest,
+  routeBmad,
+  serializeLedgerBundle,
+} from '@archon/context-orchestrator';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -122,7 +131,21 @@ import {
   codebaseEnvironmentsResponseSchema,
 } from './schemas/config.schemas';
 import { providerListResponseSchema } from './schemas/provider.schemas';
+import {
+  acoArtifactPackageParamsSchema,
+  acoArtifactPackageQuerySchema,
+  acoArtifactPackageResponseSchema,
+  acoCompileBodySchema,
+  acoCompileResponseSchema,
+  acoLedgersQuerySchema,
+  acoLedgersResponseSchema,
+  acoRouteBodySchema,
+  acoRouteResponseSchema,
+  acoStatusQuerySchema,
+  acoStatusResponseSchema,
+} from './schemas/aco.schemas';
 import { getProviderInfoList, isRegisteredProvider } from '@archon/providers';
+import type { PromptPackageResult } from '@archon/context-orchestrator';
 
 // Read app version: use build-time constant in binary, package.json in dev
 let appVersion = 'unknown';
@@ -158,6 +181,104 @@ function jsonError(description: string): {
 const cwdQuerySchema = z.object({ cwd: z.string().optional() });
 const workflowTargetQuerySchema = cwdQuerySchema.extend({
   source: z.enum(['project', 'global']).optional(),
+});
+
+const getAcoStatusRoute = createRoute({
+  method: 'get',
+  path: '/api/aco/status',
+  tags: ['ACO'],
+  summary: 'Show Context Orchestrator status',
+  request: { query: acoStatusQuerySchema },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoStatusResponseSchema } },
+      description: 'Raw ACO status contract',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd is not registered'),
+    500: jsonError('ACO status read failed'),
+  },
+});
+
+const getAcoLedgersRoute = createRoute({
+  method: 'get',
+  path: '/api/aco/ledgers',
+  tags: ['ACO'],
+  summary: 'Show Context Orchestrator ledgers',
+  request: { query: acoLedgersQuerySchema },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoLedgersResponseSchema } },
+      description: 'Context Orchestrator ledger bundle',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd is not registered'),
+    500: jsonError('Context Orchestrator ledgers read failed'),
+  },
+});
+
+const postAcoRouteRoute = createRoute({
+  method: 'post',
+  path: '/api/aco/route',
+  tags: ['ACO'],
+  summary: 'Route a request through Context Orchestrator BMAD routing',
+  request: {
+    body: {
+      content: { 'application/json': { schema: acoRouteBodySchema } },
+      required: true,
+    },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoRouteResponseSchema } },
+      description: 'BMAD route',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd is not registered'),
+    500: jsonError('Context Orchestrator route failed'),
+  },
+});
+
+const postAcoCompileRoute = createRoute({
+  method: 'post',
+  path: '/api/aco/compile',
+  tags: ['ACO'],
+  summary: 'Compile a Context Orchestrator prompt package',
+  request: {
+    body: {
+      content: { 'application/json': { schema: acoCompileBodySchema } },
+      required: true,
+    },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoCompileResponseSchema } },
+      description: 'Compiled Context Orchestrator package summary',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd is not registered'),
+    500: jsonError('Context Orchestrator compile failed'),
+  },
+});
+
+const getAcoArtifactPackageRoute = createRoute({
+  method: 'get',
+  path: '/api/aco/artifact-packages/{runId}',
+  tags: ['ACO'],
+  summary: 'Read a Context Orchestrator artifact package manifest',
+  request: {
+    params: acoArtifactPackageParamsSchema,
+    query: acoArtifactPackageQuerySchema,
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoArtifactPackageResponseSchema } },
+      description: 'Manifest-backed Context Orchestrator artifact package lookup',
+    },
+    400: jsonError('Bad request'),
+    404: jsonError('cwd or artifact package was not found'),
+    500: jsonError('Context Orchestrator artifact package lookup failed'),
+  },
 });
 
 const getWorkflowsRoute = createRoute({
@@ -882,6 +1003,65 @@ export function registerApiRoutes(
     });
   }
 
+  async function resolveRegisteredCodebaseCwd(cwd: string): Promise<string | null> {
+    const codebases = await codebaseDb.listCodebases();
+    const normalizedCwd = normalize(cwd);
+    const matches = codebases
+      .filter(cb => {
+        const base = normalize(cb.default_cwd);
+        return normalizedCwd === base || normalizedCwd.startsWith(base + sep);
+      })
+      .sort((a, b) => b.default_cwd.length - a.default_cwd.length);
+    return matches[0]?.default_cwd ?? null;
+  }
+
+  function toAcoCompileResponse(result: PromptPackageResult): {
+    runId: string;
+    contextIntent: PromptPackageResult['package']['contextIntent'];
+    archivePath: string;
+    files: Record<string, string>;
+    route: PromptPackageResult['package']['bmadRoute'];
+    graphStatus: string;
+    graphWaivers: number;
+    graphWaiverIds: string[];
+    waivers: PromptPackageResult['package']['graphContext']['waivers'];
+    approvalRequired: boolean;
+    readiness: ReturnType<typeof getContextOrchestratorReadiness>;
+    validationStatus: string;
+    ledgerSchemaVersion: string;
+    ledgerSummary: PromptPackageResult['package']['ledgerBundle']['summary'];
+    evidenceBlockers: PromptPackageResult['package']['ledgerBundle']['evidenceBlockers'];
+    evidenceResolution: PromptPackageResult['package']['evidenceResolution'];
+    nextDecision: PromptPackageResult['package']['nextDecision'];
+  } {
+    const promptPackage = result.package;
+    const readiness = getContextOrchestratorReadiness(
+      promptPackage.graphContext,
+      promptPackage.validationReport,
+      promptPackage.ledgerBundle.evidenceBlockers,
+      { route: promptPackage.bmadRoute }
+    );
+    return {
+      runId: promptPackage.runId,
+      contextIntent: promptPackage.contextIntent,
+      archivePath: result.archivePath,
+      files: result.files,
+      route: promptPackage.bmadRoute,
+      graphStatus: promptPackage.graphContext.status,
+      graphWaivers: promptPackage.graphContext.waiverCount,
+      graphWaiverIds: promptPackage.graphContext.waivers.map(waiver => waiver.id),
+      waivers: promptPackage.graphContext.waivers,
+      approvalRequired: readiness === 'needs_approval',
+      readiness,
+      validationStatus: promptPackage.validationReport.status,
+      ledgerSchemaVersion: promptPackage.ledgerBundle.schemaVersion,
+      ledgerSummary: promptPackage.ledgerBundle.summary,
+      evidenceBlockers: promptPackage.ledgerBundle.evidenceBlockers,
+      evidenceResolution: promptPackage.evidenceResolution,
+      nextDecision: promptPackage.nextDecision,
+    };
+  }
+
   // CORS for Web UI — allow-all is fine for a single-developer tool.
   // Override with WEB_UI_ORIGIN env var to restrict if exposing publicly.
   app.use('/api/*', cors({ origin: process.env.WEB_UI_ORIGIN || '*' }));
@@ -1127,6 +1307,121 @@ export function registerApiRoutes(
       return false;
     }
   }
+
+  // GET /api/aco/status - Context Orchestrator status for Web UI
+  registerOpenApiRoute(getAcoStatusRoute, async c => {
+    const cwd = c.req.query('cwd')?.trim();
+    const objective = c.req.query('objective')?.trim() || undefined;
+    if (!cwd) {
+      return apiError(c, 400, 'cwd is required');
+    }
+    try {
+      const registeredCwd = await resolveRegisteredCodebaseCwd(cwd);
+      if (!registeredCwd) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      const status = await getContextOrchestratorStatus(registeredCwd, { objective });
+      return c.json(status);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      getLog().error({ err: error, cwd }, 'aco_status_failed');
+      return apiError(c, 500, 'Context Orchestrator status read failed', message);
+    }
+  });
+
+  registerOpenApiRoute(getAcoLedgersRoute, async c => {
+    const cwd = c.req.query('cwd')?.trim();
+    const objective = c.req.query('objective')?.trim() || undefined;
+    if (!cwd) {
+      return apiError(c, 400, 'cwd is required');
+    }
+    try {
+      const registeredCwd = await resolveRegisteredCodebaseCwd(cwd);
+      if (!registeredCwd) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      const ledgers = await getContextOrchestratorLedgers(registeredCwd, { objective });
+      return c.json(serializeLedgerBundle(ledgers));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      getLog().error({ err: error, cwd }, 'aco_ledgers_failed');
+      return apiError(c, 500, 'Context Orchestrator ledgers read failed', message);
+    }
+  });
+
+  registerOpenApiRoute(postAcoRouteRoute, async c => {
+    const body = getValidatedBody(c, acoRouteBodySchema);
+    const cwd = body.cwd.trim();
+    try {
+      const registeredCwd = await resolveRegisteredCodebaseCwd(cwd);
+      if (!registeredCwd) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      return c.json(routeBmad({ prompt: body.prompt }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      getLog().error({ err: error, cwd }, 'aco_route_failed');
+      return apiError(c, 500, 'Context Orchestrator route failed', message);
+    }
+  });
+
+  registerOpenApiRoute(postAcoCompileRoute, async c => {
+    const body = getValidatedBody(c, acoCompileBodySchema);
+    const cwd = body.cwd.trim();
+    try {
+      const registeredCwd = await resolveRegisteredCodebaseCwd(cwd);
+      if (!registeredCwd) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      const result = await compilePromptPackage({
+        cwd: registeredCwd,
+        prompt: body.prompt,
+        runId: body.runId,
+        timestamp: body.timestamp,
+        cavemanMode: body.cavemanMode,
+      });
+      return c.json(toAcoCompileResponse(result));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith('Invalid ACO archive runId')) {
+        return apiError(c, 400, 'invalid runId', message);
+      }
+      getLog().error({ err: error, cwd }, 'aco_compile_failed');
+      return apiError(c, 500, 'Context Orchestrator compile failed', message);
+    }
+  });
+
+  registerOpenApiRoute(getAcoArtifactPackageRoute, async c => {
+    const cwd = c.req.query('cwd')?.trim();
+    const runId = c.req.param('runId')?.trim();
+    if (!cwd) {
+      return apiError(c, 400, 'cwd is required');
+    }
+    if (!runId) {
+      return apiError(c, 400, 'runId is required');
+    }
+    try {
+      const registeredCwd = await resolveRegisteredCodebaseCwd(cwd);
+      if (!registeredCwd) {
+        return apiError(c, 404, 'cwd is not registered');
+      }
+      return c.json(await readArtifactPackageManifest(registeredCwd, runId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith('Invalid ACO archive runId')) {
+        return apiError(c, 400, 'invalid runId', message);
+      }
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+      ) {
+        return apiError(c, 404, 'artifact package not found', message);
+      }
+      getLog().error({ err: error, cwd, runId }, 'aco_artifact_package_failed');
+      return apiError(c, 500, 'Context Orchestrator artifact package lookup failed', message);
+    }
+  });
 
   // GET /api/conversations - List conversations
   registerOpenApiRoute(getConversationsRoute, async c => {
