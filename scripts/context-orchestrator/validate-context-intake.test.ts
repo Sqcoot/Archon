@@ -72,6 +72,33 @@ describe('ACO Context Intake gate', () => {
     expect(codes(report.blockers)).toContain('branch_specific_assumption');
   });
 
+  test('research graph paths that include codex repository names are not branch assumptions', async () => {
+    const repo = await fixtureRepo({
+      'docs/context-orchestrator/research/codex-graph-report.md': [
+        '# codex Graph Evidence',
+        '',
+        'Graph: research/graphs/codex/graph.json',
+        '',
+        'Report: research/graphs/codex/GRAPH_REPORT.md',
+        '',
+        'Metadata: research/graphs/codex/graph-metadata.json',
+        '',
+        '## Artifact Lifecycle',
+        '',
+        '- Consumer: Context Orchestrator ACO research evidence and graph waiver closure checks.',
+        '- Source input: `docs/context-orchestrator/research/upstream-manifest.json` and ignored `research/graphs/` graph cache.',
+        '- Regeneration command: `bun scripts/research/render-graph-evidence-docs.ts --json` after approved graph evidence refresh.',
+        '- Drift/removal policy: update when upstream manifest or graph evidence changes.',
+        '- Owner surface: `docs/context-orchestrator/research/README.md`.',
+        '',
+      ].join('\n'),
+    });
+
+    const report = await evaluateContextIntake({ cwd: repo });
+
+    expect(report.state).toBe('ready');
+  });
+
   test('runtime-readiness claim based only on prompt text is blocked', async () => {
     const repo = await fixtureRepo({
       'docs/ai/bootstrap.md':

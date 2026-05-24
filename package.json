@@ -22,6 +22,7 @@
     "research:update-upstreams": "bun scripts/research/bootstrap-upstreams.ts --fetch-only",
     "research:validate-upstreams": "bun scripts/research/bootstrap-upstreams.ts --validate-only",
     "research:graph": "bun scripts/research/graph-upstreams.ts",
+    "research:merge-graphs": "bun scripts/research/merge-graphs.ts",
     "research:render-graph-docs": "bun scripts/research/render-graph-evidence-docs.ts",
     "research:validate-corpus": "bun scripts/research/validate-research-corpus.ts",
     "aco:context-intake": "bun scripts/context-orchestrator/validate-context-intake.ts",

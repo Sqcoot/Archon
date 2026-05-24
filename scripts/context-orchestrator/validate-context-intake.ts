@@ -226,7 +226,11 @@ function inspectSurface(surface: ContextIntakeSurface): ContextIntakeFinding[] {
     if (matches(localPathPattern, line) && !isClearlyMarkedFixture(context)) {
       findings.push(finding(context, 'developer_local_path', 'blocker'));
     }
-    if (matches(branchPattern, line) && !isClearlyMarkedFixture(context)) {
+    if (
+      matches(branchPattern, line) &&
+      !isClearlyMarkedFixture(context) &&
+      !isResearchGraphEvidenceReference(context)
+    ) {
       findings.push(
         finding(
           context,
@@ -387,6 +391,13 @@ function isClearlyMarkedFixture(context: InspectionContext): boolean {
   if (!markedPath) return false;
   return /\b(?:fixture|example|e\.g\.|mock|fake|test|redaction|rejection|path traversal)\b/i.test(
     context.window
+  );
+}
+
+function isResearchGraphEvidenceReference(context: InspectionContext): boolean {
+  if (!context.path.startsWith('docs/context-orchestrator/research/')) return false;
+  return /\bresearch\/(?:graphs\/[A-Za-z0-9._-]+\/(?:graph\.json|GRAPH_REPORT\.md|graph-metadata\.json)|merged\/ecosystem\.graph\.json)\b/.test(
+    context.line
   );
 }
 

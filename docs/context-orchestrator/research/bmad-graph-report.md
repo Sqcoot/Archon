@@ -17,3 +17,12 @@ BMAD evidence is aggregated across the BMAD method, module, testing, automation,
 ## Evidence Use
 
 Use this evidence to choose BMAD routing, assumption gates, ATDD traceability expectations, and correct-course triggers. Failed or waived graph entries remain evidence gaps, not blockers unless an architecture decision depends on them.
+
+## Artifact Lifecycle
+
+- Consumer: Context Orchestrator ACO research evidence and graph waiver closure checks.
+- Source input: `docs/context-orchestrator/research/upstream-manifest.json` and ignored `research/graphs/` graph cache.
+- Regeneration command: `bun scripts/research/render-graph-evidence-docs.ts --json` after approved graph evidence refresh.
+- Drift/removal policy: update when upstream manifest or graph evidence changes; remove only if Context Orchestrator no longer consumes graph evidence.
+- Owner surface: `docs/context-orchestrator/research/README.md` and `context-orchestrator` package research gates.
+- Artifact: `bmad-graph-report.md`
