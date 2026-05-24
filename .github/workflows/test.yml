@@ -40,6 +40,9 @@ jobs:
       - name: Test ACO gates
         run: bun run aco:gates:test
 
+      - name: Validate ACO policy
+        run: bun run aco:policy
+
       - name: Type check
         run: bun run type-check
 
