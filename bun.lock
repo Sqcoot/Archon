@@ -47,6 +47,7 @@
       },
       "dependencies": {
         "@archon/adapters": "workspace:*",
+        "@archon/context-orchestrator": "workspace:*",
         "@archon/core": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/isolation": "workspace:*",
@@ -81,6 +82,7 @@
       "name": "@archon/core",
       "version": "0.3.12",
       "dependencies": {
+        "@archon/context-orchestrator": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/isolation": "workspace:*",
         "@archon/paths": "workspace:*",
@@ -163,6 +165,7 @@
       "version": "0.3.12",
       "dependencies": {
         "@archon/adapters": "workspace:*",
+        "@archon/context-orchestrator": "workspace:*",
         "@archon/core": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/paths": "workspace:*",
