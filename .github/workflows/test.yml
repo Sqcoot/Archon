@@ -31,6 +31,17 @@ jobs:
         with:
           version: ${{ env.OPA_VERSION }}
 
+      - name: Ensure OPA is available
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          if ! command -v opa >/dev/null 2>&1; then
+            echo "OPA not found after setup-opa; installing fallback binary..." >&2
+            curl -fsSL "https://openpolicyagent.org/downloads/v${OPA_VERSION}/opa_linux_amd64_static" -o /usr/local/bin/opa
+            chmod +x /usr/local/bin/opa
+          fi
+          opa version
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
