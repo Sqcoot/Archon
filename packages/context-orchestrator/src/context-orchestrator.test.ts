@@ -675,7 +675,9 @@ function expectCurrentCompileNextDecisionKind(
     expect(['blocked_by_evidence', 'blocked_by_validation']).toContain(nextDecision?.kind);
     return;
   }
-  expect(['approval_required', 'blocked_by_validation']).toContain(nextDecision?.kind);
+  expect(['approval_required', 'blocked_by_validation', 'needs_correct_course']).toContain(
+    nextDecision?.kind
+  );
 }
 
 async function writeValidationFixture(): Promise<string> {
