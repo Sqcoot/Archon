@@ -1,8 +1,25 @@
 import {
   getContextOrchestratorStatus,
+  runAcoBootstrapCodexCommand,
+  type AcoBootstrapEvent,
+  type AcoBootstrapFormat,
+  type AcoGoalStatus,
   type ContextOrchestratorStatus,
 } from '@archon/context-orchestrator';
 import type { ContextCommandOptions } from './context';
+
+export interface AcoBootstrapCodexCommandOptions extends ContextCommandOptions {
+  event?: AcoBootstrapEvent;
+  maxBytes?: number;
+  format?: AcoBootstrapFormat;
+  writeArtifact?: boolean;
+  strict?: boolean;
+  evaluator?: boolean;
+  goalStatus?: AcoGoalStatus;
+  nextGoalObjective?: string;
+  archiveRoot?: string;
+  runId?: string;
+}
 
 export async function acoStatusCommand(options: ContextCommandOptions): Promise<void> {
   const status = await getContextOrchestratorStatus(options.cwd, {
@@ -15,6 +32,39 @@ export async function acoStatusCommand(options: ContextCommandOptions): Promise<
   }
 
   console.log(formatAcoStatusText(status));
+}
+
+export async function acoBootstrapCodexCommand(
+  prompt: string | undefined,
+  options: AcoBootstrapCodexCommandOptions
+): Promise<number> {
+  try {
+    const result = await runAcoBootstrapCodexCommand({
+      cwd: options.cwd,
+      prompt,
+      event: options.event,
+      maxBytes: options.maxBytes,
+      format: options.format,
+      writeArtifact: options.writeArtifact,
+      strict: options.strict,
+      evaluator: options.evaluator,
+      timestamp: options.timestamp,
+      goalStatus: options.goalStatus,
+      nextGoalObjective: options.nextGoalObjective,
+      archiveRoot: options.archiveRoot,
+      runId: options.runId,
+    });
+    console.log(result.output.text);
+    return 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.json || options.format === 'json') {
+      console.log(JSON.stringify({ error: 'aco-bootstrap-codex-failed', message }, null, 2));
+    } else {
+      console.error(`ACO Codex bootstrap failed: ${message}`);
+    }
+    return 1;
+  }
 }
 
 export function formatAcoStatusText(status: ContextOrchestratorStatus): string {

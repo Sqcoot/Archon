@@ -81,7 +81,12 @@ import {
   contextStatusCommand,
   contextValidateCommand,
 } from './commands/context';
-import { acoStatusCommand } from './commands/aco';
+import { acoBootstrapCodexCommand, acoStatusCommand } from './commands/aco';
+import type {
+  AcoBootstrapEvent,
+  AcoBootstrapFormat,
+  AcoGoalStatus,
+} from '@archon/context-orchestrator';
 import { closeDatabase } from '@archon/core';
 import {
   setLogLevel,
@@ -125,6 +130,7 @@ Commands:
   continue <branch> [msg]    Continue work on an existing worktree with prior context
   complete <branch> [...]    Complete branch lifecycle (remove worktree + branches)
   aco status                 Show productized ACO status and graph confidence limits
+  aco bootstrap-codex        Emit a Codex-ready ACO bootstrap capsule
   context route <prompt>     Select an ACO BMAD route
   context analytics capture <prompt> Capture ACO route analytics
   context analytics report   Report ACO route analytics
@@ -171,6 +177,8 @@ Examples:
   archon workflow run quick-fix --no-worktree "Fix typo"
   archon continue fix/issue-42 --workflow archon-smart-pr-review "Review the changes"
   archon aco status --cwd /path/to/repo --json
+  archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact
+  archon aco bootstrap-codex --event Stop --format json --evaluator "Continue validation"
   archon context route --cwd /path/to/repo "Plan this feature"
   archon context analytics capture --cwd /path/to/repo "Plan this feature"
   archon context analytics report --cwd /path/to/repo --json
@@ -240,6 +248,52 @@ function parseOptionalNonNegativeInteger(value: string | undefined): number | un
   return Number(value);
 }
 
+function parseOptionalMinInteger(
+  flag: string,
+  value: string | undefined,
+  min: number
+): number | undefined | null {
+  if (value === undefined) return undefined;
+  if (!/^\d+$/.test(value) || Number(value) < min) {
+    console.error(`Error: ${flag} must be an integer >= ${String(min)}: ${value}`);
+    return null;
+  }
+  return Number(value);
+}
+
+function parseAcoBootstrapFormat(value: string | undefined): AcoBootstrapFormat | undefined | null {
+  if (value === undefined) return undefined;
+  if (value === 'markdown' || value === 'json') return value;
+  console.error(`Error: --format must be markdown or json: ${value}`);
+  return null;
+}
+
+function parseAcoBootstrapEvent(value: string | undefined): AcoBootstrapEvent | undefined | null {
+  if (value === undefined) return undefined;
+  const events: AcoBootstrapEvent[] = [
+    'SessionStart',
+    'UserPromptSubmit',
+    'PreToolUse',
+    'PermissionRequest',
+    'PostToolUse',
+    'PreCompact',
+    'PostCompact',
+    'SubagentStart',
+    'SubagentStop',
+    'Stop',
+  ];
+  if (events.includes(value as AcoBootstrapEvent)) return value as AcoBootstrapEvent;
+  console.error(`Error: --event must be one of: ${events.join(', ')}`);
+  return null;
+}
+
+function parseAcoGoalStatus(value: string | undefined): AcoGoalStatus | undefined | null {
+  if (value === undefined) return undefined;
+  if (value === 'complete' || value === 'incomplete' || value === 'unknown') return value;
+  console.error(`Error: --goal-status must be complete, incomplete, or unknown: ${value}`);
+  return null;
+}
+
 async function main(): Promise<number> {
   const args = process.argv.slice(2);
 
@@ -296,6 +350,16 @@ async function main(): Promise<number> {
         timestamp: { type: 'string' },
         caveman: { type: 'string' },
         limit: { type: 'string' },
+        event: { type: 'string' },
+        'max-bytes': { type: 'string' },
+        format: { type: 'string' },
+        'write-artifact': { type: 'boolean' },
+        'no-write-artifact': { type: 'boolean' },
+        strict: { type: 'boolean' },
+        evaluator: { type: 'boolean' },
+        'no-evaluator': { type: 'boolean' },
+        'goal-status': { type: 'string' },
+        'next-goal': { type: 'string' },
       },
       allowPositionals: true,
       strict: false, // Allow unknown flags to pass through
@@ -683,13 +747,63 @@ async function main(): Promise<number> {
             break;
           }
 
+          case 'bootstrap-codex':
+          case 'bootstrap': {
+            const aliasOffset = subcommand === 'bootstrap' && positionals[2] === 'codex' ? 3 : 2;
+            if (subcommand === 'bootstrap' && positionals[2] !== 'codex') {
+              console.error('Usage: archon aco bootstrap-codex [options] [prompt]');
+              console.error('Alias: archon aco bootstrap codex [options] [prompt]');
+              return 1;
+            }
+            const maxBytes = parseOptionalMinInteger(
+              '--max-bytes',
+              values['max-bytes'] as string | undefined,
+              500
+            );
+            if (maxBytes === null) return 1;
+            const format = parseAcoBootstrapFormat(values.format as string | undefined);
+            if (format === null) return 1;
+            const event = parseAcoBootstrapEvent(values.event as string | undefined);
+            if (event === null) return 1;
+            const goalStatus = parseAcoGoalStatus(values['goal-status'] as string | undefined);
+            if (goalStatus === null) return 1;
+            const writeArtifact =
+              values['no-write-artifact'] === true
+                ? false
+                : values['write-artifact'] === true
+                  ? true
+                  : undefined;
+            const evaluator =
+              values['no-evaluator'] === true
+                ? false
+                : values.evaluator === true
+                  ? true
+                  : undefined;
+            const prompt = positionals.slice(aliasOffset).join(' ').trim() || undefined;
+            return await acoBootstrapCodexCommand(prompt, {
+              cwd: effectiveCwd,
+              json: jsonFlag,
+              event,
+              maxBytes,
+              format: format ?? (jsonFlag ? 'json' : undefined),
+              writeArtifact,
+              strict: values.strict as boolean | undefined,
+              evaluator,
+              timestamp: values.timestamp as string | undefined,
+              goalStatus,
+              nextGoalObjective: values['next-goal'] as string | undefined,
+              archiveRoot: values['archive-root'] as string | undefined,
+              runId: values['run-id'] as string | undefined,
+            });
+          }
+
           default:
             if (subcommand === undefined) {
               console.error('Missing aco subcommand');
             } else {
               console.error(`Unknown aco subcommand: ${subcommand}`);
             }
-            console.error('Available: status');
+            console.error('Available: status, bootstrap-codex');
             return 1;
         }
         break;

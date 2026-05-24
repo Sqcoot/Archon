@@ -74,6 +74,28 @@ archon aco status --cwd /path/to/repo "Investigate the change"
 archon aco status --cwd /path/to/repo --json "Investigate the change"
 ```
 
+Use `archon aco bootstrap-codex` when a Codex session needs the compact ACO
+capsule and durable sidecars:
+
+```bash
+archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact
+archon aco bootstrap-codex --event Stop --format json --evaluator "Continue validation and handoff"
+```
+
+Slash-compatible Codex paste workflow:
+
+```bash
+/aco:bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact
+```
+
+Markdown mode is sized for direct paste into Codex. JSON mode is attachable by
+automation/workflow consumers and carries the same event and snapshot identity.
+Artifacts are written under `.archon/artifacts/context-orchestrator/` and include
+the capsule, CapabilitySnapshot sidecar, and bootstrap command evidence row.
+Hook activation, graph refresh, auth/config mutation, MCP OAuth changes, and
+provider credential changes remain approval-gated and are not performed by this
+command.
+
 Use `archon context` for the lower-level ACO surfaces:
 
 | Command | Description |

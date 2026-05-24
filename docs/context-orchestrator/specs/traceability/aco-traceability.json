@@ -413,6 +413,208 @@
         }
       ],
       "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-001",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": ".archon/commands/defaults/aco-bootstrap-codex.md",
+          "markers": ["/aco:bootstrap-codex", "archon aco bootstrap-codex"],
+          "summary": "Default command manifest documents canonical slash and CLI usage."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/core/src/handlers/command-handler.ts",
+          "markers": ["case 'aco:bootstrap-codex'", "handleAcoBootstrapCodexCommand"],
+          "summary": "Slash command handler exposes the canonical command and alias path."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-002",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["buildCapabilitySnapshot", "buildAcoBootstrapContext", "snapshot: capabilitySnapshot"],
+          "summary": "Command runner delegates discovery and bootstrap rendering to prior slice APIs."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-003",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["maxBytes", "renderCommandMarkdown", "Evidence Summary", "Risks and Unknowns"],
+          "summary": "Markdown renderer enforces the requested compact budget and event capsule sections."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-004",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["writeArtifacts", "writeFileNoFollow", "mutationReport"],
+          "summary": "Artifact writer emits capsule, snapshot, and evidence row with no-follow secret checks and explicit no-mutation report."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-005",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["summarizeEvidence", "verificationSource", "sourceArtifact", "statusCounts"],
+          "summary": "Command output summarizes claim evidence, status counts, confidence, and safe injection metadata."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-006",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-006"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/bootstrap-command.ts",
+          "markers": ["acoBootstrapFormats", "toJsonPayload", "format: core.format"],
+          "summary": "Markdown and JSON modes share one result core and attach payload identity."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-007",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-007"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": ["continuationFor", "nextGoal", "Evaluator continuation"],
+          "summary": "Stop bootstrap context continues incomplete goals with next /goal output."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-008",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-008"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": ["PermissionRequest", "Block forbidden ledger commands.", "Approval capsule"],
+          "summary": "PreToolUse and PermissionRequest guardrails cover forbidden commands, graph refresh, destructive operations, and approval capsules."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-009",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-009"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": ["adaptCapabilityManifests", "manifestKeys", "providers"],
+          "summary": "Capability manifests populate snapshot sections without router source edits."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-CODEX-CMD-010",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/024-aco-codex-bootstrap-command.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap-command.acceptance.test.ts",
+        "markers": ["ACO-CODEX-CMD-010"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/docs-web/src/content/docs/guides/context-orchestrator-aco.md",
+          "markers": ["/aco:bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact"],
+          "summary": "Docs include exact slash usage and explain markdown/JSON sidecar workflow."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/workflows/src/defaults/bundled-defaults.generated.ts",
+          "markers": ["aco-bootstrap-codex"],
+          "summary": "Generated bundled defaults include the command manifest."
+        }
+      ],
+      "status": "enforced"
     }
   ]
 }

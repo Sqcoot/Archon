@@ -8,6 +8,12 @@ export {
   buildCapabilitySnapshot,
   CAPABILITY_SNAPSHOT_SCHEMA_VERSION,
 } from './capability-snapshot';
+export {
+  ACO_BOOTSTRAP_CODEX_COMMAND,
+  ACO_BOOTSTRAP_CODEX_COMMAND_SCHEMA_VERSION,
+  acoBootstrapFormats,
+  runAcoBootstrapCodexCommand,
+} from './bootstrap-command';
 export type {
   AcoBootstrapContext,
   AcoBootstrapContextJson,
@@ -28,6 +34,19 @@ export type {
   CapabilitySourceKind,
   CapabilitySourceRef,
 } from './capability-snapshot';
+export type {
+  AcoBootstrapCodexArtifactRefs,
+  AcoBootstrapCodexBudget,
+  AcoBootstrapCodexCommandResult,
+  AcoBootstrapCodexEvidenceClaimSummary,
+  AcoBootstrapCodexEvidenceSummary,
+  AcoBootstrapCodexMutationReport,
+  AcoBootstrapCodexOutput,
+  AcoBootstrapCodexRisksUnknowns,
+  AcoBootstrapCodexSnapshotRef,
+  AcoBootstrapFormat,
+  RunAcoBootstrapCodexCommandOptions,
+} from './bootstrap-command';
 export {
   APPROVAL_CAPSULE_JSON,
   APPROVAL_CAPSULE_MARKDOWN,

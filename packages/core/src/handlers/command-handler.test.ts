@@ -119,6 +119,17 @@ const mockCompilePromptPackage = mock(async (_input: { cwd: string; prompt: stri
     evidenceResolution: testEvidenceResolution,
   },
 }));
+const mockRunAcoBootstrapCodexCommand = mock(async (input: { cwd: string; event?: string }) => ({
+  schemaVersion: 'aco.bootstrap-codex-command.v1',
+  command: '/aco:bootstrap-codex',
+  event: input.event ?? 'SessionStart',
+  output: {
+    format: 'markdown',
+    text: `# ACO Codex Bootstrap Capsule\n\nEvent: ${input.event ?? 'SessionStart'}`,
+    bytes: 64,
+    truncated: false,
+  },
+}));
 
 function zeroLedgerCounts(): Record<string, number> {
   return {
@@ -189,6 +200,7 @@ mock.module('@archon/context-orchestrator', () => ({
   getContextOrchestratorLedgers: mockGetContextOrchestratorLedgers,
   routeBmad: mockRouteBmad,
   compilePromptPackage: mockCompilePromptPackage,
+  runAcoBootstrapCodexCommand: mockRunAcoBootstrapCodexCommand,
   getContextOrchestratorReadiness: () => 'needs_approval',
 }));
 
@@ -337,6 +349,7 @@ function clearAllMocks(): void {
   mockGetContextOrchestratorLedgers.mockClear();
   mockRouteBmad.mockClear();
   mockCompilePromptPackage.mockClear();
+  mockRunAcoBootstrapCodexCommand.mockClear();
   // Workflow db mocks
   mockGetActiveWorkflowRun.mockClear();
   mockCancelWorkflowRun.mockClear();
@@ -1860,6 +1873,69 @@ describe('CommandHandler', () => {
         expect(result.success).toBe(false);
         expect(result.message).toContain('No project configured');
         expect(mockGetContextOrchestratorStatus).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('/aco:bootstrap-codex', () => {
+      const conversationWithCodebase: Conversation = {
+        ...baseConversation,
+        codebase_id: 'codebase-123',
+      };
+
+      beforeEach(() => {
+        mockGetCodebase.mockResolvedValue({
+          id: 'codebase-123',
+          name: 'test-repo',
+          repository_url: 'https://github.com/test/repo',
+          default_cwd: '/workspace/my-repo',
+          ai_assistant_type: 'claude',
+          commands: {},
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+      });
+
+      test('ACO-CODEX-CMD-001 emits bootstrap capsule through canonical slash command', async () => {
+        const result = await handleCommand(
+          conversationWithCodebase,
+          '/aco:bootstrap-codex --event PreToolUse --max-bytes 4000 --format markdown --write-artifact "Guard graph refresh"'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('ACO Codex Bootstrap Capsule');
+        expect(mockRunAcoBootstrapCodexCommand).toHaveBeenCalledWith({
+          cwd: '/workspace/my-repo',
+          prompt: 'Guard graph refresh',
+          event: 'PreToolUse',
+          maxBytes: 4000,
+          format: 'markdown',
+          writeArtifact: true,
+          strict: undefined,
+          evaluator: undefined,
+          goalStatus: undefined,
+          nextGoalObjective: undefined,
+        });
+      });
+
+      test('ACO-CODEX-CMD-001 supports /aco bootstrap codex alias', async () => {
+        const result = await handleCommand(
+          conversationWithCodebase,
+          '/aco bootstrap codex --event Stop --goal-status incomplete --next-goal "Continue validation"'
+        );
+
+        expect(result.success).toBe(true);
+        expect(mockRunAcoBootstrapCodexCommand).toHaveBeenCalledWith({
+          cwd: '/workspace/my-repo',
+          event: 'Stop',
+          goalStatus: 'incomplete',
+          nextGoalObjective: 'Continue validation',
+          prompt: undefined,
+          maxBytes: undefined,
+          format: undefined,
+          writeArtifact: undefined,
+          strict: undefined,
+          evaluator: undefined,
+        });
       });
     });
 

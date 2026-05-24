@@ -23,9 +23,13 @@ import {
   getContextOrchestratorLedgers,
   getContextOrchestratorReadiness,
   getContextOrchestratorStatus,
+  runAcoBootstrapCodexCommand,
   routeBmad,
 } from '@archon/context-orchestrator';
 import type {
+  AcoBootstrapEvent,
+  AcoBootstrapFormat,
+  AcoGoalStatus,
   ContextOrchestratorReadiness,
   ContextOrchestratorStatus,
   EvidenceBlocker,
@@ -1007,6 +1011,176 @@ async function handleContextCommand(
   }
 }
 
+async function handleAcoBootstrapCodexCommand(
+  conversation: Conversation,
+  args: string[]
+): Promise<CommandResult> {
+  if (!conversation.codebase_id) {
+    return {
+      success: false,
+      message: 'No project configured. Register a project first with /register-project.',
+    };
+  }
+
+  const codebase = await codebaseDb.getCodebase(conversation.codebase_id);
+  if (!codebase) {
+    return {
+      success: false,
+      message: 'Configured project was not found. Register a project first with /register-project.',
+    };
+  }
+
+  const parsed = parseAcoBootstrapSlashArgs(args);
+  if (!parsed.success) {
+    return parsed;
+  }
+
+  const result = await runAcoBootstrapCodexCommand({
+    cwd: codebase.default_cwd,
+    prompt: parsed.prompt,
+    event: parsed.event,
+    maxBytes: parsed.maxBytes,
+    format: parsed.format,
+    writeArtifact: parsed.writeArtifact,
+    strict: parsed.strict,
+    evaluator: parsed.evaluator,
+    goalStatus: parsed.goalStatus,
+    nextGoalObjective: parsed.nextGoalObjective,
+  });
+  return {
+    success: true,
+    message: result.output.text,
+  };
+}
+
+function parseAcoBootstrapSlashArgs(args: string[]):
+  | {
+      success: true;
+      prompt?: string;
+      event?: AcoBootstrapEvent;
+      maxBytes?: number;
+      format?: AcoBootstrapFormat;
+      writeArtifact?: boolean;
+      strict?: boolean;
+      evaluator?: boolean;
+      goalStatus?: AcoGoalStatus;
+      nextGoalObjective?: string;
+    }
+  | { success: false; message: string } {
+  const promptParts: string[] = [];
+  const parsed: {
+    prompt?: string;
+    event?: AcoBootstrapEvent;
+    maxBytes?: number;
+    format?: AcoBootstrapFormat;
+    writeArtifact?: boolean;
+    strict?: boolean;
+    evaluator?: boolean;
+    goalStatus?: AcoGoalStatus;
+    nextGoalObjective?: string;
+  } = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (arg === '--write-artifact') {
+      parsed.writeArtifact = true;
+      continue;
+    }
+    if (arg === '--no-write-artifact') {
+      parsed.writeArtifact = false;
+      continue;
+    }
+    if (arg === '--strict') {
+      parsed.strict = true;
+      continue;
+    }
+    if (arg === '--evaluator') {
+      parsed.evaluator = true;
+      continue;
+    }
+    if (arg === '--no-evaluator') {
+      parsed.evaluator = false;
+      continue;
+    }
+    if (arg === '--event') {
+      const value = args[(index += 1)];
+      if (!isAcoBootstrapEvent(value)) {
+        return {
+          success: false,
+          message:
+            'Usage: /aco:bootstrap-codex --event <SessionStart|UserPromptSubmit|PreToolUse|PermissionRequest|PostToolUse|PreCompact|PostCompact|SubagentStart|SubagentStop|Stop>',
+        };
+      }
+      parsed.event = value;
+      continue;
+    }
+    if (arg === '--max-bytes') {
+      const value = args[(index += 1)];
+      if (value === undefined || !/^\d+$/.test(value) || Number(value) < 500) {
+        return {
+          success: false,
+          message: 'Usage: /aco:bootstrap-codex --max-bytes <integer >= 500>',
+        };
+      }
+      parsed.maxBytes = Number(value);
+      continue;
+    }
+    if (arg === '--format') {
+      const value = args[(index += 1)];
+      if (value !== 'markdown' && value !== 'json') {
+        return {
+          success: false,
+          message: 'Usage: /aco:bootstrap-codex --format <markdown|json>',
+        };
+      }
+      parsed.format = value;
+      continue;
+    }
+    if (arg === '--goal-status') {
+      const value = args[(index += 1)];
+      if (value !== 'complete' && value !== 'incomplete' && value !== 'unknown') {
+        return {
+          success: false,
+          message: 'Usage: /aco:bootstrap-codex --goal-status <complete|incomplete|unknown>',
+        };
+      }
+      parsed.goalStatus = value;
+      continue;
+    }
+    if (arg === '--next-goal') {
+      const value = args[(index += 1)];
+      if (!value) {
+        return {
+          success: false,
+          message: 'Usage: /aco:bootstrap-codex --next-goal "<objective>"',
+        };
+      }
+      parsed.nextGoalObjective = value;
+      continue;
+    }
+    promptParts.push(arg);
+  }
+
+  const prompt = promptParts.join(' ').trim();
+  return { success: true, ...parsed, ...(prompt ? { prompt } : {}) };
+}
+
+function isAcoBootstrapEvent(value: string | undefined): value is AcoBootstrapEvent {
+  return (
+    value === 'SessionStart' ||
+    value === 'UserPromptSubmit' ||
+    value === 'PreToolUse' ||
+    value === 'PermissionRequest' ||
+    value === 'PostToolUse' ||
+    value === 'PreCompact' ||
+    value === 'PostCompact' ||
+    value === 'SubagentStart' ||
+    value === 'SubagentStop' ||
+    value === 'Stop'
+  );
+}
+
 function renderContextStatus(status: ContextOrchestratorStatus): string {
   return [
     '## Context Orchestrator Status',
@@ -1134,6 +1308,7 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 - \`/workflow reject <id>\` — Reject a paused run
 
 **Context Orchestrator**
+- \`/aco:bootstrap-codex\` — Emit a Codex-ready ACO bootstrap capsule
 - \`/context status [request]\` — Show route readiness, ledgers, and approval state
 - \`/context route <request>\` — Pick the BMAD route
 - \`/context ledgers [request]\` — Show tool and command ledger coverage
@@ -1286,6 +1461,22 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 
     case 'workflow':
       return handleWorkflowCommand(conversation, args);
+
+    case 'aco:bootstrap-codex':
+      return handleAcoBootstrapCodexCommand(conversation, args);
+
+    case 'aco':
+      if (args[0] === 'bootstrap-codex') {
+        return handleAcoBootstrapCodexCommand(conversation, args.slice(1));
+      }
+      if (args[0] === 'bootstrap' && args[1] === 'codex') {
+        return handleAcoBootstrapCodexCommand(conversation, args.slice(2));
+      }
+      return {
+        success: false,
+        message:
+          'Usage:\n  /aco:bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact\n  /aco bootstrap-codex [options] [request]',
+      };
 
     case 'context':
       return handleContextCommand(conversation, args);

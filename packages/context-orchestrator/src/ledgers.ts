@@ -578,6 +578,32 @@ function buildToolAvailabilityEntries(
       confidence: 'declared',
     }),
     toolEntry({
+      id: 'tool.aco-bootstrap-codex',
+      name: 'ACO Codex bootstrap command',
+      category: 'aco',
+      status: 'available',
+      sourceEvidence: 'packages/context-orchestrator/src/bootstrap-command.ts',
+      invocationPath:
+        'archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact',
+      scope:
+        'Emit Codex-ready ACO bootstrap capsule, CapabilitySnapshot sidecar, and evidence row.',
+      preconditions:
+        'Repository files are readable; artifact root must pass no-follow path checks when writing.',
+      verification:
+        'Command module delegates to buildCapabilitySnapshot and buildAcoBootstrapContext.',
+      primaryUse:
+        'Load ACO into Codex sessions, compaction, subagents, tool loops, and Stop continuation.',
+      failureMode:
+        'Unsupported event, unsafe output, artifact path rejection, or unknown evidence.',
+      fallback: 'Use buildAcoBootstrapContext package API and record artifact write as deferred.',
+      owner: 'context-orchestrator',
+      lastVerified,
+      lastVerifiedAt,
+      notes:
+        'Writes only repo-conventional ACO artifacts; hook activation and graph refresh remain approval-gated.',
+      confidence: 'declared',
+    }),
+    toolEntry({
       id: 'tool.command-default-sync',
       name: 'Command/default synchronization',
       category: 'defaults',
@@ -893,6 +919,33 @@ function buildCommandEntries(
       requiresApproval: false,
       safety: 'read-only',
       notes: 'Does not activate hooks; produces inert context artifacts.',
+      confidence: 'declared',
+    }),
+    commandEntry({
+      id: 'cmd.aco-bootstrap-codex',
+      command:
+        'archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact',
+      category: 'aco',
+      status: 'available',
+      sourceEvidence:
+        'packages/context-orchestrator/src/bootstrap-command.ts; packages/cli/src/commands/aco.ts; .archon/commands/defaults/aco-bootstrap-codex.md',
+      invocationPath: 'repo root',
+      scope: 'Emit Codex-ready ACO bootstrap capsule and durable snapshot/evidence artifacts.',
+      preconditions: 'Writable ACO artifact root when artifact writes are enabled.',
+      verification:
+        'Acceptance tests validate command registration, markdown/JSON output, artifacts, and Stop continuation.',
+      primaryUse: 'Bootstrap ACO into Codex sessions and lifecycle handoffs.',
+      failureMode:
+        'Invalid event/format, unsafe output, strict evidence failure, or artifact write denial.',
+      fallback: 'Run with --no-write-artifact or use the package API directly.',
+      owner: 'context-orchestrator',
+      lastVerified,
+      lastVerifiedAt,
+      mutatesTrackedFiles: false,
+      requiresApproval: false,
+      safety: 'writes-artifacts',
+      notes:
+        'Artifact writes are repo-conventional; auth/config mutation, hook activation, and graph refresh are never attempted.',
       confidence: 'declared',
     }),
     commandEntry({

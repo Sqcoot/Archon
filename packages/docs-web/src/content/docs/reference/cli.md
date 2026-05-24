@@ -109,6 +109,21 @@ archon aco status --cwd /path/to/repo --json "Plan the change"
 The output includes readiness, validation status, graph state, graph waiver IDs,
 ledger counts, and evidence blockers.
 
+### `aco bootstrap-codex`
+
+Emit a Codex-ready ACO bootstrap capsule plus CapabilitySnapshot and evidence
+artifacts.
+
+```bash
+archon aco bootstrap-codex --event SessionStart --max-bytes 4000 --format markdown --write-artifact
+archon aco bootstrap-codex --event Stop --format json --evaluator "Continue validation and handoff"
+```
+
+Use markdown mode for Codex paste workflow and JSON mode for attach/workflow
+sidecars. The command performs read-only capability discovery and writes only
+repo-conventional ACO artifacts unless hook activation, graph refresh, or auth
+changes are separately approved.
+
 ### `context`
 
 Run lower-level ACO and context package commands.

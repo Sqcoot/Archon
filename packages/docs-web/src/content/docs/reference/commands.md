@@ -49,6 +49,7 @@ surfaces described in [Context Orchestrator (ACO)](/guides/context-orchestrator-
 
 | Command | Description |
 |---------|-------------|
+| `/aco:bootstrap-codex` | Emit a Codex-ready ACO bootstrap capsule |
 | `/context status [request]` | Show route readiness, ledgers, and approval state |
 | `/context route <request>` | Pick the BMAD route |
 | `/context ledgers [request]` | Show tool and command ledger coverage |

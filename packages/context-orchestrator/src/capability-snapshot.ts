@@ -961,12 +961,15 @@ function guardrailsFor(event: AcoBootstrapEvent): string[] {
     'Preserve graph waivers and committed graph evidence.',
     'Do not refresh graph evidence or activate hooks without approval.',
   ];
-  if (event === 'PreToolUse') {
+  if (event === 'PreToolUse' || event === 'PermissionRequest') {
     return [
       ...base,
       'Block forbidden ledger commands.',
       'Block destructive operations unless explicitly approved.',
       'Block graph refresh commands unless explicitly approved.',
+      event === 'PermissionRequest'
+        ? 'Approval capsule must name the requested command, risk, ledger reason, and willRun=false until approved.'
+        : 'Guard capsule must stop approval-sensitive actions before tool execution.',
     ];
   }
   return base;

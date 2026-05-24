@@ -34,6 +34,7 @@ This chapter collects every CLI command, variable, and YAML option in one place.
 | Command | Description |
 |---------|-------------|
 | `archon aco status [prompt]` | Show productized Context Orchestrator status |
+| `archon aco bootstrap-codex` | Emit a Codex-ready ACO bootstrap capsule |
 | `archon context status [prompt]` | Show readiness, evidence resolution, and next decision |
 | `archon context validate` | Run Context Orchestrator validation checks |
 | `archon context ledgers [prompt]` | Show tool and command ledgers |
