@@ -37,6 +37,18 @@ const selectedAcceptanceSurfaces = [
     path: 'tests/acceptance/context-orchestrator/traceability.acceptance.test.ts',
     markers: ['ACO-TRACE-001', 'ACO-TRACE-002', 'ACO-TRACE-003'],
   },
+  {
+    id: 'ACO-BOOTSTRAP',
+    label: 'bootstrap',
+    path: 'tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts',
+    markers: [
+      'ACO-BOOTSTRAP-001',
+      'ACO-BOOTSTRAP-002',
+      'ACO-BOOTSTRAP-003',
+      'ACO-BOOTSTRAP-004',
+      'ACO-BOOTSTRAP-005',
+    ],
+  },
 ] as const;
 const VALIDATION_COMMAND_TIMEOUT_MS = 10_000;
 
@@ -117,7 +129,7 @@ async function acceptanceRealityCheck(cwd: string): Promise<ValidationCheck> {
     id: 'aco-acceptance',
     status: 'passed',
     message:
-      'ACO acceptance reality check passed for API, slash command, workflow, events, and traceability.',
+      'ACO acceptance reality check passed for API, slash command, workflow, events, traceability, and bootstrap.',
   };
 }
 

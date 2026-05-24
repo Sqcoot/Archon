@@ -1,7 +1,14 @@
 {
   "schema_version": "aco.traceability.v1",
   "scope": {
-    "enforced_prefixes": ["AC-P1-", "AC-P3-", "ACO-EVENTS-", "ACO-TRACE-", "ACO-ADV-"]
+    "enforced_prefixes": [
+      "AC-P1-",
+      "AC-P3-",
+      "ACO-EVENTS-",
+      "ACO-TRACE-",
+      "ACO-ADV-",
+      "ACO-BOOTSTRAP-"
+    ]
   },
   "requirements": [
     {
@@ -256,6 +263,153 @@
             "Generator report cannot certify readiness or pass/fail"
           ],
           "summary": "Schema tests enforce evaluator and generator role boundaries."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-BOOTSTRAP-001",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/023-always-on-aco-bootstrap-and-capability-discovery.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+        "markers": ["ACO-BOOTSTRAP-001"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": [
+            "CAPABILITY_SNAPSHOT_SCHEMA_VERSION",
+            "CapabilityEvidenceClaim",
+            "CapabilityClaimStatus",
+            "buildCapabilitySnapshot"
+          ],
+          "summary": "CapabilitySnapshot model and builder require evidence claim status, confidence, source, safe injection, and budget metadata."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.test.ts",
+          "markers": [
+            "builds deterministic fixture-backed capability claims",
+            "evidenceClaims.every"
+          ],
+          "summary": "Package tests cover fixture-backed capability claims and budget metadata."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-BOOTSTRAP-002",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/023-always-on-aco-bootstrap-and-capability-discovery.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+        "markers": ["ACO-BOOTSTRAP-002"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": [
+            "acoBootstrapEvents",
+            "eventGuidanceFor",
+            "PreToolUse",
+            "SubagentStart",
+            "Stop"
+          ],
+          "summary": "Bootstrap context maps each lifecycle event to compact event-specific guidance and guardrails."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-BOOTSTRAP-003",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/023-always-on-aco-bootstrap-and-capability-discovery.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+        "markers": ["ACO-BOOTSTRAP-003"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": [
+            "adaptCapabilityManifests",
+            "manifestKeys",
+            "adaptProviderRegistry",
+            "adaptArchonLedgersAndArtifacts"
+          ],
+          "summary": "Adapters discover new capabilities from manifests, provider sources, and ledgers without router rewrites."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+          "markers": [
+            "future-provider.fixture",
+            "routerSource",
+            "not.toContain('future-provider.fixture')"
+          ],
+          "summary": "Acceptance test proves fixture future providers register through manifests while the router remains unchanged."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-BOOTSTRAP-004",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/023-always-on-aco-bootstrap-and-capability-discovery.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+        "markers": ["ACO-BOOTSTRAP-004"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": [
+            "redactSecrets",
+            "readTextFile",
+            "Do not print or archive secrets."
+          ],
+          "summary": "Snapshot and bootstrap context redact source text and include secret exposure guardrails."
+        },
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.test.ts",
+          "markers": [
+            "redacts secrets and keeps active config unknown",
+            "codex.active-config"
+          ],
+          "summary": "Package tests prove prompt secrets are redacted and active user config remains unknown."
+        }
+      ],
+      "status": "enforced"
+    },
+    {
+      "requirement_id": "ACO-BOOTSTRAP-005",
+      "kind": "bootstrap",
+      "spec": "docs/context-orchestrator/specs/023-always-on-aco-bootstrap-and-capability-discovery.md",
+      "matrix": "docs/context-orchestrator/specs/spec-traceability-matrix.md",
+      "acceptance": {
+        "ref": "tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts",
+        "markers": ["ACO-BOOTSTRAP-005"]
+      },
+      "evidence": [
+        {
+          "label": "VERIFIED",
+          "ref": "packages/context-orchestrator/src/capability-snapshot.ts",
+          "markers": [
+            "continuationFor",
+            "Evaluator continuation",
+            "nextGoal"
+          ],
+          "summary": "Stop bootstrap context emits evaluator continuation and next /goal when completion is incomplete or unknown."
         }
       ],
       "status": "enforced"

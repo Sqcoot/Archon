@@ -28,6 +28,36 @@ const fixtureStatus: ContextOrchestratorStatus = {
   readiness: 'needs_approval',
   ledgerSchemaVersion: 'aco.ledger-bundle.v1',
   evidenceBlockers: [],
+  capabilityDiscovery: {
+    schemaVersion: 'aco.capability-snapshot.v1',
+    generatedAt: '2026-05-18T12:00:00.000Z',
+    sourceRefs: 3,
+    providers: 2,
+    commands: 4,
+    workflows: 2,
+    mcpServers: 1,
+    plugins: 1,
+    hooks: 10,
+    roles: 2,
+    ledgers: 1,
+    artifacts: 1,
+    docsTargets: 1,
+    evidenceClaims: 24,
+    unknowns: ['codex.active-config'],
+    risks: ['graph.waivers-present'],
+  },
+  bootstrapEvents: [
+    'SessionStart',
+    'UserPromptSubmit',
+    'PreToolUse',
+    'PermissionRequest',
+    'PostToolUse',
+    'PreCompact',
+    'PostCompact',
+    'SubagentStart',
+    'SubagentStop',
+    'Stop',
+  ],
   ledgerSummary: {
     toolAvailability: {
       total: 20,
@@ -89,6 +119,8 @@ describe('aco commands', () => {
     expect(output).toContain(
       'ledger counts: total=39 available=26 partial=2 deferred=3 forbidden=8 unknown=0'
     );
+    expect(output).toContain('capability snapshot: aco.capability-snapshot.v1 claims=24');
+    expect(output).toContain('bootstrap events: SessionStart, UserPromptSubmit');
   });
 
   it('AC-ACO-STATUS-007 AC-FORBIDDEN-GRAPH-001 keeps forbidden waiver IDs visible', () => {

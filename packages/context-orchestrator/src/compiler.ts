@@ -1,5 +1,6 @@
 import { join, resolve } from 'path';
 import { createAcceptancePlan } from './acceptance';
+import { buildAcoBootstrapContext, buildCapabilitySnapshot } from './capability-snapshot';
 import { routeBmad } from './bmad';
 import { applyCavemanPolicy } from './caveman';
 import { selectCapabilities } from './capabilities';
@@ -61,6 +62,9 @@ const archiveFiles = [
   'capability-route.json',
   'caveman-policy.md',
   'validation-report.md',
+  'capability-snapshot.json',
+  'aco-bootstrap-context.json',
+  'aco-bootstrap-context.md',
 ];
 
 export async function compilePromptPackage(
@@ -115,6 +119,23 @@ async function compilePromptPackageWithoutTelemetry(
     selectedCapabilities,
     validationReport,
     ledgerBundle,
+  });
+  const capabilitySnapshot = await buildCapabilitySnapshot({
+    cwd: options.cwd,
+    prompt: options.prompt,
+    timestamp,
+    graphContext,
+    documentationPlan,
+  });
+  const bootstrapContext = await buildAcoBootstrapContext({
+    cwd: options.cwd,
+    prompt: options.prompt,
+    event: 'SessionStart',
+    maxBytes: 4_000,
+    timestamp,
+    graphContext,
+    documentationPlan,
+    snapshot: capabilitySnapshot,
   });
   const targetIntentBoundary = await createTargetIntentBoundary({
     cwd: options.cwd,
@@ -199,6 +220,8 @@ async function compilePromptPackageWithoutTelemetry(
     evidenceResolution,
     nextDecision: decisionDossier.nextDecision,
     decisionDossier,
+    capabilitySnapshot,
+    bootstrapContext,
   };
 
   const files = Object.fromEntries(archiveFiles.map(file => [file, join(archivePath, file)]));
@@ -243,6 +266,11 @@ function toCompileSpanAttributes(result: PromptPackageResult): AcoSpanAttributes
       check => check.id === 'aco-traceability' && check.status === 'passed'
     ),
     'archon.aco.archive.files.count': Object.keys(result.files).length,
+    'archon.aco.capability_snapshot.claims.count':
+      promptPackage.capabilitySnapshot.evidenceClaims.length,
+    'archon.aco.bootstrap.max_bytes': promptPackage.bootstrapContext.maxBytes,
+    'archon.aco.bootstrap.truncated': promptPackage.bootstrapContext.truncated,
+    'archon.aco.bootstrap.event': promptPackage.bootstrapContext.event,
   };
 }
 
@@ -444,6 +472,21 @@ async function writeArchiveFiles(
     files['validation-report.md'],
     `${renderValidationReport(promptPackage)}\n`
   );
+  await writeFileNoFollow(
+    archivePath,
+    files['capability-snapshot.json'],
+    `${JSON.stringify(promptPackage.capabilitySnapshot, null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['aco-bootstrap-context.json'],
+    `${JSON.stringify(toBootstrapContextArtifact(promptPackage.bootstrapContext), null, 2)}\n`
+  );
+  await writeFileNoFollow(
+    archivePath,
+    files['aco-bootstrap-context.md'],
+    `${promptPackage.bootstrapContext.markdown}\n`
+  );
 }
 
 function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
@@ -477,6 +520,13 @@ function toManifest(promptPackage: PromptPackage): Record<string, unknown> {
     ],
     decisionDossierSchemaVersion: promptPackage.decisionDossier.schemaVersion,
     decisionDossierArtifacts: ['decision-dossier.json', 'decision-dossier.md'],
+    capabilitySnapshotSchemaVersion: promptPackage.capabilitySnapshot.schemaVersion,
+    capabilitySnapshotArtifact: 'capability-snapshot.json',
+    bootstrapContextSchemaVersion: promptPackage.bootstrapContext.schemaVersion,
+    bootstrapContextArtifacts: ['aco-bootstrap-context.json', 'aco-bootstrap-context.md'],
+    bootstrapEvent: promptPackage.bootstrapContext.event,
+    bootstrapMaxBytes: promptPackage.bootstrapContext.maxBytes,
+    capabilityEvidenceClaims: promptPackage.capabilitySnapshot.evidenceClaims.length,
     nextArchonCommand: promptPackage.nextArchonCommand,
   };
 }
@@ -522,8 +572,25 @@ function toPolicyInput(promptPackage: PromptPackage): PromptPackagePolicyInput {
         string,
         unknown
       >,
+      capabilitySnapshot: promptPackage.capabilitySnapshot as unknown as Record<string, unknown>,
+      bootstrapContext: toBootstrapContextArtifact(
+        promptPackage.bootstrapContext
+      ) as unknown as Record<string, unknown>,
     },
     validation: promptPackage.validationReport as unknown as Record<string, unknown>,
+  };
+}
+
+function toBootstrapContextArtifact(
+  bootstrapContext: PromptPackage['bootstrapContext']
+): Record<string, unknown> {
+  return {
+    schemaVersion: bootstrapContext.schemaVersion,
+    generatedAt: bootstrapContext.generatedAt,
+    event: bootstrapContext.event,
+    maxBytes: bootstrapContext.maxBytes,
+    truncated: bootstrapContext.truncated,
+    json: bootstrapContext.json,
   };
 }
 
@@ -583,6 +650,17 @@ function renderFinalPackage(promptPackage: PromptPackage): string {
     '- commands-ledger.md',
     '- decision-dossier.json',
     '- decision-dossier.md',
+    '- capability-snapshot.json',
+    '- aco-bootstrap-context.json',
+    '- aco-bootstrap-context.md',
+    '',
+    '## ACO Bootstrap',
+    '',
+    `Bootstrap event: ${promptPackage.bootstrapContext.event}`,
+    `Bootstrap max bytes: ${promptPackage.bootstrapContext.maxBytes}`,
+    `Bootstrap truncated: ${promptPackage.bootstrapContext.truncated ? 'yes' : 'no'}`,
+    `Capability snapshot: ${promptPackage.capabilitySnapshot.schemaVersion}`,
+    `Capability evidence claims: ${promptPackage.capabilitySnapshot.evidenceClaims.length}`,
     '',
     '## Decision Dossier',
     '',

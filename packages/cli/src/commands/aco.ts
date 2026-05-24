@@ -39,6 +39,8 @@ export function formatAcoStatusText(status: ContextOrchestratorStatus): string {
     `waivers: ${String(status.graphWaivers)}`,
     `schema: ${status.ledgerSchemaVersion}`,
     `ledger counts: total=${String(combined.total)} available=${String(combined.counts.available)} partial=${String(combined.counts.partial)} deferred=${String(combined.counts.deferred)} forbidden=${String(combined.counts.forbidden)} unknown=${String(combined.counts.unknown)}`,
+    `capability snapshot: ${status.capabilityDiscovery.schemaVersion} claims=${String(status.capabilityDiscovery.evidenceClaims)} providers=${String(status.capabilityDiscovery.providers)} commands=${String(status.capabilityDiscovery.commands)} workflows=${String(status.capabilityDiscovery.workflows)}`,
+    `bootstrap events: ${status.bootstrapEvents.join(', ')}`,
     `evidence blockers: ${String(status.evidenceBlockers.length)}`,
     ...waiverLines,
   ].join('\n');

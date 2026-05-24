@@ -1,5 +1,6 @@
 import type { NextDecision } from './schemas/next-decision';
 import type { TargetIntentBoundaryArtifact } from './schemas/target-intent-boundary';
+import type { AcoBootstrapContext, CapabilitySnapshot } from './capability-snapshot';
 export type { NextDecision } from './schemas/next-decision';
 
 export type IntegrationVerificationState =
@@ -443,6 +444,8 @@ export interface PromptPackagePolicyInput {
     decisionDossier?: Record<string, unknown>;
     nextDecision?: Record<string, unknown>;
     targetIntentBoundary?: Record<string, unknown>;
+    capabilitySnapshot?: Record<string, unknown>;
+    bootstrapContext?: Record<string, unknown>;
   };
   validation: Record<string, unknown>;
 }
@@ -522,6 +525,8 @@ export interface PromptPackage {
   evidenceResolution: EvidenceClosurePlan;
   nextDecision: NextDecision;
   decisionDossier: DecisionDossier;
+  capabilitySnapshot: CapabilitySnapshot;
+  bootstrapContext: AcoBootstrapContext;
 }
 
 export interface CompilePromptPackageOptions {

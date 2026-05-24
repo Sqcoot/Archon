@@ -12,6 +12,7 @@ const REQUIRED_SCRIPT = 'aco:traceability';
 const VALID_LABELS = new Set(['VERIFIED', 'INFERRED', 'HYPOTHESIS']);
 const VALID_KINDS = new Set([
   'api',
+  'bootstrap',
   'events',
   'policy',
   'policy-decision',
@@ -57,6 +58,7 @@ interface TraceabilityRequirement {
   requirement_id: string;
   kind:
     | 'api'
+    | 'bootstrap'
     | 'events'
     | 'policy'
     | 'policy-decision'

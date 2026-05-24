@@ -2,6 +2,33 @@ export { createAcceptancePlan } from './acceptance';
 export { routeBmad } from './bmad';
 export { applyCavemanPolicy } from './caveman';
 export {
+  ACO_BOOTSTRAP_CONTEXT_SCHEMA_VERSION,
+  acoBootstrapEvents,
+  buildAcoBootstrapContext,
+  buildCapabilitySnapshot,
+  CAPABILITY_SNAPSHOT_SCHEMA_VERSION,
+} from './capability-snapshot';
+export type {
+  AcoBootstrapContext,
+  AcoBootstrapContextJson,
+  AcoBootstrapContinuation,
+  AcoBootstrapEvent,
+  AcoGoalStatus,
+  BuildAcoBootstrapContextOptions,
+  BuildCapabilitySnapshotOptions,
+  CapabilityBudget,
+  CapabilityClaimStatus,
+  CapabilityConfidence,
+  CapabilityEvidenceClaim,
+  CapabilityGraphSnapshot,
+  CapabilityItem,
+  CapabilityRegistration,
+  CapabilityRisk,
+  CapabilitySnapshot,
+  CapabilitySourceKind,
+  CapabilitySourceRef,
+} from './capability-snapshot';
+export {
   APPROVAL_CAPSULE_JSON,
   APPROVAL_CAPSULE_MARKDOWN,
   APPROVAL_CAPSULE_SCHEMA_VERSION,

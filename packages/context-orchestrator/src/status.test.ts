@@ -163,6 +163,11 @@ async function writeStatusFixture(): Promise<string> {
     'traceability.acceptance.test.ts',
     'ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003'
   );
+  await writeAcceptanceSurface(
+    cwd,
+    'bootstrap.acceptance.test.ts',
+    'ACO-BOOTSTRAP-001 ACO-BOOTSTRAP-002 ACO-BOOTSTRAP-003 ACO-BOOTSTRAP-004 ACO-BOOTSTRAP-005'
+  );
 
   return cwd;
 }

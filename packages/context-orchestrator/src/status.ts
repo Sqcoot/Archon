@@ -1,5 +1,6 @@
 import { createAcceptancePlan } from './acceptance';
 import { routeBmad } from './bmad';
+import { acoBootstrapEvents, buildCapabilitySnapshot } from './capability-snapshot';
 import { selectCapabilities } from './capabilities';
 import { createEvidenceClosurePlan } from './evidence-closure';
 import { planDocumentation } from './docs';
@@ -22,6 +23,7 @@ import type {
   NextDecision,
   ValidationReport,
 } from './types';
+import type { AcoBootstrapEvent, CapabilitySnapshot } from './capability-snapshot';
 
 export interface ContextEvidenceOptions {
   objective?: string;
@@ -44,6 +46,27 @@ export interface ContextOrchestratorStatus {
   evidenceBlockers: EvidenceBlocker[];
   evidenceResolution: EvidenceClosurePlan;
   nextDecision: NextDecision;
+  capabilityDiscovery: CapabilityDiscoveryStatus;
+  bootstrapEvents: AcoBootstrapEvent[];
+}
+
+export interface CapabilityDiscoveryStatus {
+  schemaVersion: CapabilitySnapshot['schemaVersion'];
+  generatedAt: string;
+  sourceRefs: number;
+  providers: number;
+  commands: number;
+  workflows: number;
+  mcpServers: number;
+  plugins: number;
+  hooks: number;
+  roles: number;
+  ledgers: number;
+  artifacts: number;
+  docsTargets: number;
+  evidenceClaims: number;
+  unknowns: string[];
+  risks: string[];
 }
 
 export async function getContextOrchestratorStatus(
@@ -58,6 +81,7 @@ export async function getContextOrchestratorStatus(
     evidenceResolution,
     nextDecision,
     readiness,
+    capabilitySnapshot,
   } = await buildContextLedgerEvidence(cwd, options);
   return {
     cwd,
@@ -74,6 +98,8 @@ export async function getContextOrchestratorStatus(
     evidenceBlockers: ledgerBundle.evidenceBlockers,
     evidenceResolution,
     nextDecision,
+    capabilityDiscovery: summarizeCapabilityDiscovery(capabilitySnapshot),
+    bootstrapEvents: [...acoBootstrapEvents],
   };
 }
 
@@ -116,6 +142,7 @@ async function buildContextLedgerEvidence(
   evidenceResolution: EvidenceClosurePlan;
   nextDecision: NextDecision;
   readiness: ContextOrchestratorReadiness;
+  capabilitySnapshot: CapabilitySnapshot;
 }> {
   const contextIntent =
     options.contextIntent ??
@@ -158,6 +185,13 @@ async function buildContextLedgerEvidence(
     ledgerBundle.evidenceBlockers,
     { route: bmadRoute }
   );
+  const capabilitySnapshot = await buildCapabilitySnapshot({
+    cwd,
+    prompt,
+    timestamp: contextIntent.generatedAt,
+    graphContext,
+    documentationPlan,
+  });
   const nextDecision = buildNextDecision({
     contextIntent,
     route: bmadRoute,
@@ -178,6 +212,28 @@ async function buildContextLedgerEvidence(
     evidenceResolution,
     nextDecision,
     readiness,
+    capabilitySnapshot,
+  };
+}
+
+function summarizeCapabilityDiscovery(snapshot: CapabilitySnapshot): CapabilityDiscoveryStatus {
+  return {
+    schemaVersion: snapshot.schemaVersion,
+    generatedAt: snapshot.generatedAt,
+    sourceRefs: snapshot.sourceRefs.length,
+    providers: snapshot.providers.length,
+    commands: snapshot.commands.length,
+    workflows: snapshot.workflows.length,
+    mcpServers: snapshot.mcpServers.length,
+    plugins: snapshot.plugins.length,
+    hooks: snapshot.hooks.length,
+    roles: snapshot.roles.length,
+    ledgers: snapshot.ledgers.length,
+    artifacts: snapshot.artifacts.length,
+    docsTargets: snapshot.docsTargets.length,
+    evidenceClaims: snapshot.evidenceClaims.length,
+    unknowns: snapshot.unknowns.map(item => item.id),
+    risks: snapshot.risks.map(item => item.id),
   };
 }
 

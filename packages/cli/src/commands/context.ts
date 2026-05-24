@@ -363,5 +363,10 @@ function toCompileJson(result: PromptPackageResult): Record<string, unknown> {
     decisionDossierSchemaVersion: result.package.decisionDossier.schemaVersion,
     decisionDossierDecision: result.package.decisionDossier.decision.id,
     decisionDossierReadiness: result.package.decisionDossier.readiness,
+    capabilitySnapshotSchemaVersion: result.package.capabilitySnapshot.schemaVersion,
+    capabilityEvidenceClaims: result.package.capabilitySnapshot.evidenceClaims.length,
+    bootstrapContextSchemaVersion: result.package.bootstrapContext.schemaVersion,
+    bootstrapEvent: result.package.bootstrapContext.event,
+    bootstrapTruncated: result.package.bootstrapContext.truncated,
   };
 }

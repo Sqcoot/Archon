@@ -180,9 +180,15 @@ describe('context orchestrator telemetry', () => {
     expect(compileSpan?.attributes).toMatchObject({
       'archon.aco.operation': 'compile',
       'archon.aco.result': 'success',
-      'archon.aco.archive.files.count': 24,
+      'archon.aco.archive.files.count': 27,
       'archon.aco.docs.unresolved.count': 0,
+      'archon.aco.bootstrap.event': 'SessionStart',
+      'archon.aco.bootstrap.max_bytes': 4000,
+      'archon.aco.bootstrap.truncated': false,
     });
+    expect(compileSpan?.attributes['archon.aco.capability_snapshot.claims.count']).toBeGreaterThan(
+      0
+    );
     expect(policySpan?.attributes).toMatchObject({
       'archon.aco.operation': 'policy.archive',
       'archon.aco.result': 'success',

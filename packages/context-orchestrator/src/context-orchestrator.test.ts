@@ -70,7 +70,10 @@ describe('context orchestrator core', () => {
     expect(result.files['tool-availability-ledger.md']).toContain('tool-availability-ledger.md');
     expect(result.files['commands-ledger.json']).toContain('commands-ledger.json');
     expect(result.files['commands-ledger.md']).toContain('commands-ledger.md');
-    expect(Object.keys(result.files)).toHaveLength(24);
+    expect(result.files['capability-snapshot.json']).toContain('capability-snapshot.json');
+    expect(result.files['aco-bootstrap-context.json']).toContain('aco-bootstrap-context.json');
+    expect(result.files['aco-bootstrap-context.md']).toContain('aco-bootstrap-context.md');
+    expect(Object.keys(result.files)).toHaveLength(27);
 
     const policyInput = JSON.parse(await readFile(result.files['prompt-package.json'], 'utf8')) as {
       schema_version: string;
@@ -88,6 +91,8 @@ describe('context orchestrator core', () => {
           schemaVersion?: string;
           scope?: { nonEnforcementBoundary?: true };
         };
+        capabilitySnapshot?: { schemaVersion?: string; evidenceClaims?: unknown[] };
+        bootstrapContext?: { schemaVersion?: string; event?: string };
       };
     };
     expect(policyInput.schema_version).toBe('aco.prompt-package.policy-input.v1');
@@ -102,6 +107,12 @@ describe('context orchestrator core', () => {
     expect(policyInput.evidence.targetIntentBoundary?.schemaVersion).toBe(
       'aco.target-intent-boundary.v1'
     );
+    expect(policyInput.evidence.capabilitySnapshot?.schemaVersion).toBe(
+      'aco.capability-snapshot.v1'
+    );
+    expect(policyInput.evidence.capabilitySnapshot?.evidenceClaims?.length).toBeGreaterThan(0);
+    expect(policyInput.evidence.bootstrapContext?.schemaVersion).toBe('aco.bootstrap-context.v1');
+    expect(policyInput.evidence.bootstrapContext?.event).toBe('SessionStart');
     expect(policyInput.evidence.targetIntentBoundary?.scope?.nonEnforcementBoundary).toBe(true);
     expectCurrentCompileNextDecisionKind(policyInput.evidence.nextDecision);
     expect(policyInput.evidence.ledgers?.toolAvailability?.length).toBeGreaterThan(0);
@@ -116,6 +127,12 @@ describe('context orchestrator core', () => {
     expect(policyInput.artifacts.map(artifact => artifact.path)).toContain(
       'target-intent-boundary.json'
     );
+    expect(policyInput.artifacts.map(artifact => artifact.path)).toContain(
+      'capability-snapshot.json'
+    );
+    expect(policyInput.artifacts.map(artifact => artifact.path)).toContain(
+      'aco-bootstrap-context.json'
+    );
 
     const manifest = JSON.parse(await readFile(result.files['manifest.json'], 'utf8')) as {
       ledgerSchemaVersion?: string;
@@ -124,6 +141,11 @@ describe('context orchestrator core', () => {
       decisionDossierArtifacts?: string[];
       targetIntentBoundaryArtifact?: string;
       targetIntentBoundarySchemaVersion?: string;
+      capabilitySnapshotSchemaVersion?: string;
+      capabilitySnapshotArtifact?: string;
+      bootstrapContextSchemaVersion?: string;
+      bootstrapContextArtifacts?: string[];
+      bootstrapEvent?: string;
       nextDecision?: { schemaVersion?: string; kind?: string; evidenceBlockerIds?: string[] };
       ledgerSummary?: unknown;
     };
@@ -141,6 +163,14 @@ describe('context orchestrator core', () => {
     ]);
     expect(manifest.targetIntentBoundaryArtifact).toBe('target-intent-boundary.json');
     expect(manifest.targetIntentBoundarySchemaVersion).toBe('aco.target-intent-boundary.v1');
+    expect(manifest.capabilitySnapshotSchemaVersion).toBe('aco.capability-snapshot.v1');
+    expect(manifest.capabilitySnapshotArtifact).toBe('capability-snapshot.json');
+    expect(manifest.bootstrapContextSchemaVersion).toBe('aco.bootstrap-context.v1');
+    expect(manifest.bootstrapContextArtifacts).toEqual([
+      'aco-bootstrap-context.json',
+      'aco-bootstrap-context.md',
+    ]);
+    expect(manifest.bootstrapEvent).toBe('SessionStart');
     expect(manifest.nextDecision?.schemaVersion).toBe('aco.next-decision.v1');
     expectCurrentCompileNextDecisionKind(manifest.nextDecision);
     expect(manifest.ledgerSummary).toBeDefined();
@@ -182,6 +212,9 @@ describe('context orchestrator core', () => {
     expect(finalPackage).toContain('tool-availability-ledger.json');
     expect(finalPackage).toContain('## Decision Dossier');
     expect(finalPackage).toContain('## Next Decision');
+    expect(finalPackage).toContain('## ACO Bootstrap');
+    expect(finalPackage).toContain('capability-snapshot.json');
+    expect(finalPackage).toContain('aco-bootstrap-context.json');
     expect(finalPackage).toContain('decision-dossier.json');
     expect(codexPrompt).toContain('Ledger requirements');
     expect(codexPrompt).toContain('Avoid commands marked `forbidden`');
@@ -502,6 +535,11 @@ describe('context orchestrator core', () => {
       "import { test } from 'bun:test';\ntest('ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003 executable', () => {});\n",
       'utf8'
     );
+    await writeFile(
+      join(cwd, 'tests/acceptance/context-orchestrator/bootstrap.acceptance.test.ts'),
+      "import { test } from 'bun:test';\ntest('ACO-BOOTSTRAP-001 ACO-BOOTSTRAP-002 ACO-BOOTSTRAP-003 ACO-BOOTSTRAP-004 ACO-BOOTSTRAP-005 executable', () => {});\n",
+      'utf8'
+    );
 
     const originalSkip = process.env.ARCHON_SKIP_OPA;
     try {
@@ -722,6 +760,11 @@ async function writeValidationFixture(): Promise<string> {
     cwd,
     'traceability.acceptance.test.ts',
     'ACO-TRACE-001 ACO-TRACE-002 ACO-TRACE-003'
+  );
+  await writeValidationAcceptanceSurface(
+    cwd,
+    'bootstrap.acceptance.test.ts',
+    'ACO-BOOTSTRAP-001 ACO-BOOTSTRAP-002 ACO-BOOTSTRAP-003 ACO-BOOTSTRAP-004 ACO-BOOTSTRAP-005'
   );
 
   return cwd;
