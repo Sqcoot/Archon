@@ -44,6 +44,7 @@ implementation_artifacts:
     - artifacts/08_hook_event_mapping.md
     - artifacts/09_live_hook_install_validation.md
     - artifacts/10_rollout_smoke_decision.md
+    - artifacts/11_genericity_review.md
   examples:
     - examples/config_profile_party_mode.toml
     - examples/expected_output_tree.txt
@@ -95,6 +96,7 @@ implemented_behavior:
     - "Real Codex explicit party-mode prompt wrote active router state."
     - "Real Codex mutation-denial prompt surfaced PreToolUse denial and left the temp file unchanged."
     - "Rollout decision recorded: keep user-level only for now; do not promote to managed or project-standard hooks yet."
+    - "Genericity review recorded: reusable handoffs use placeholders; evidence reports keep exact observed facts."
   risks:
     - risk: "Codex hook interception does not cover every possible tool path."
       mitigation: "Use hooks with Codex permission profiles or sandboxing."

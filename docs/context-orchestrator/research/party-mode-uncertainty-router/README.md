@@ -20,22 +20,23 @@ The intended operating pattern is:
 - `artifacts/06_next_goal_template.md` — implementation handoff goal shape.
 - `artifacts/07_party_mode_integration_design.md` - architecture and hook placement.
 - `artifacts/10_rollout_smoke_decision.md` - live Codex smoke evidence and rollout decision.
+- `artifacts/11_genericity_review.md` - reusable-vs-evidence artifact policy.
 - `hooks/hooks.json` - example Codex hook config.
 - `hooks/party_mode_router.py` — sample hook script for uncertainty detection and read-only enforcement.
 - `schemas/party_mode_state.schema.json` — small schema for persisted hook state.
 - `prompts/party_mode_investigation_prompt.md` — prompt to start a read-only party-mode run.
 - `examples/expected_output_tree.txt` — expected output zip contents from an investigation run.
 
-## Installation status
+## Installation Status Template
 
-The router has been installed for this Codex user:
+For a live install, record the resolved paths in the validation artifact:
 
-- `${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py`
-- `${CODEX_HOME:-$HOME/.codex}/hooks.json`
+- Installed router: `<installed-router-path>`
+- User hook config: `<user-hook-config-path>`
 
 The hook command is portable: it uses `PARTY_MODE_ROUTER` when set, otherwise `${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py`.
 
-Trust status and live validation are recorded in `artifacts/09_live_hook_install_validation.md`.
+Live install status and validation evidence belong in `artifacts/09_live_hook_install_validation.md`, not in this reusable README.
 
 ## Installation sketch
 
@@ -72,6 +73,6 @@ Covered checks:
 - `SubagentStart` receives the read-only contract.
 - `Stop` blocks missing handoff zips and allows valid complete zips.
 
-Live rollout smoke is recorded in `artifacts/10_rollout_smoke_decision.md`. Current decision: keep the router as a user-level hook; do not promote it to managed or project-standard hooks yet.
+Example live rollout smoke is recorded in `artifacts/10_rollout_smoke_decision.md`. Treat the recorded decision as local validation evidence, then make a fresh rollout decision for each target install.
 
 This pack is a hook implementation/handoff artifact. Installing the hook into a live user or project config is a separate trust decision.

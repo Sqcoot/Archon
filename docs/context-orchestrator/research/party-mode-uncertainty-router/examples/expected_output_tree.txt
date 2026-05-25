@@ -13,7 +13,8 @@ party_mode_uncertainty_router_implementation.zip
 │   ├── 07_party_mode_integration_design.md
 │   ├── 08_hook_event_mapping.md
 │   ├── 09_live_hook_install_validation.md
-│   └── 10_rollout_smoke_decision.md
+│   ├── 10_rollout_smoke_decision.md
+│   └── 11_genericity_review.md
 ├── hooks/
 │   ├── hooks.json
 │   └── party_mode_router.py

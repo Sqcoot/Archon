@@ -28,8 +28,8 @@ Out of scope:
 
 ## Inputs from current package
 
-- Installed router: `${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py`
-- User hook config: `${CODEX_HOME:-$HOME/.codex}/hooks.json`
+- Installed router: `<installed-router-path>`
+- User hook config: `<user-hook-config-path>`
 - Router command override: `PARTY_MODE_ROUTER`
 - Validation report: `artifacts/09_live_hook_install_validation.md`
 - Tests: `tests/test_party_mode_router.py`
@@ -53,6 +53,6 @@ Out of scope:
 
 ## Rollback / safety notes
 
-- Restore `${CODEX_HOME:-$HOME/.codex}/hooks.json.party-mode-backup-20260524-204843`.
-- Restore `${CODEX_HOME:-$HOME/.codex}/config.toml.party-mode-backup-20260524-204843`.
-- Remove `${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py`.
+- Restore `<hooks-json-backup-path>`.
+- Restore `<config-toml-backup-path>`.
+- Remove `<installed-router-path>`.
