@@ -26,8 +26,12 @@ describe('CLI argument parsing', () => {
         spawn: { type: 'boolean' },
         quiet: { type: 'boolean', short: 'q' },
         verbose: { type: 'boolean', short: 'v' },
+        json: { type: 'boolean' },
         scope: { type: 'string' },
         force: { type: 'boolean' },
+        event: { type: 'string' },
+        format: { type: 'string' },
+        'write-artifact': { type: 'boolean' },
       },
       allowPositionals: true,
       strict: false,
@@ -217,6 +221,25 @@ describe('CLI argument parsing', () => {
       // Typo is ignored, --cwd defaults to process.cwd()
       expect(result.values.cwd).toBe(process.cwd());
       expect(result.positionals).toContain('/path'); // /path becomes positional
+    });
+  });
+
+  describe('ACO command flags', () => {
+    it('parses bootstrap-codex event, format, and write-artifact flags', () => {
+      const result = parseCliArgs([
+        'aco',
+        'bootstrap-codex',
+        '--event',
+        'SessionStart',
+        '--format',
+        'json',
+        '--write-artifact',
+      ]);
+
+      expect(result.positionals).toEqual(['aco', 'bootstrap-codex']);
+      expect(result.values.event).toBe('SessionStart');
+      expect(result.values.format).toBe('json');
+      expect(result.values['write-artifact']).toBe(true);
     });
   });
 

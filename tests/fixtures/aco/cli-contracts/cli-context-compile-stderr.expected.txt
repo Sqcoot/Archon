@@ -1,0 +1,1 @@
+Denied ACO command: archon context compile <prompt>. readonly context forbids requested mutations: writes-artifacts.

@@ -66,6 +66,7 @@ import { chatCommand } from './commands/chat';
 import { setupCommand } from './commands/setup';
 import { skillInstallCommand } from './commands/skill';
 import { validateWorkflowsCommand, validateCommandsCommand } from './commands/validate';
+import { acoCommand } from './commands/aco';
 import { serveCommand } from './commands/serve';
 import { doctorCommand } from './commands/doctor';
 import { closeDatabase } from '@archon/core';
@@ -105,6 +106,9 @@ Commands:
   workflow status            Show status of running workflows
   workflow search [query]    Search the workflow marketplace
   workflow install <slug>    Install a workflow from the marketplace
+  aco status                 Show ACO command parity status
+  aco bootstrap-codex        Emit Codex bootstrap context without writing artifacts
+  context <subcommand>       Inspect ACO/context command parity
   isolation list             List all active worktrees/environments
   isolation cleanup [days]   Remove stale environments (default: 7 days)
   isolation cleanup --merged Remove environments with branches merged into main
@@ -128,6 +132,9 @@ Options:
   --quiet, -q                Reduce log verbosity to warnings and errors only
   --verbose, -v              Show debug-level output
   --json                     Output machine-readable JSON (for workflow list)
+  --event <event>            Codex lifecycle event for 'aco bootstrap-codex'
+  --format <markdown|json>   Output format for ACO/context commands
+  --write-artifact           Request artifact write path (denied by S7 safety gates)
   --workflow <name>          Workflow to run for 'continue' (default: archon-assist)
   --no-context               Skip context injection for 'continue'
   --port <port>              Override server port for 'serve' (default: 3090)
@@ -242,6 +249,9 @@ async function main(): Promise<number> {
         'download-only': { type: 'boolean' },
         scope: { type: 'string' },
         force: { type: 'boolean' },
+        event: { type: 'string' },
+        format: { type: 'string' },
+        'write-artifact': { type: 'boolean' },
       },
       allowPositionals: true,
       strict: false, // Allow unknown flags to pass through
@@ -608,6 +618,16 @@ async function main(): Promise<number> {
             console.error('Available: workflows, commands');
             return 1;
         }
+
+      case 'aco':
+      case 'context': {
+        return await acoCommand(effectiveCwd, positionals, {
+          json: jsonFlag,
+          event: values.event as string | undefined,
+          format: values.format as string | undefined,
+          writeArtifact: values['write-artifact'] as boolean | undefined,
+        });
+      }
 
       case 'complete': {
         const branches = positionals.slice(1);

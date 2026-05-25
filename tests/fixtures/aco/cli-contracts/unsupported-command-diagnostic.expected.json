@@ -1,0 +1,22 @@
+{
+  "commandId": "archon context nope",
+  "data": {
+    "reason": "command is not present in the S7 descriptor catalog"
+  },
+  "display": "archon context nope",
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.cli.command-ledger",
+      "source": "ledgers/command-ledger.csv",
+      "summary": "Readonly command ledger defines the preserved ACO/context command surface"
+    }
+  ],
+  "exitCode": 1,
+  "kind": "aco-cli-command-result",
+  "schemaVersion": "aco.cli-command-result.v1",
+  "status": "unsupported",
+  "stderr": "Unsupported ACO command: archon context nope.",
+  "stdout": ""
+}

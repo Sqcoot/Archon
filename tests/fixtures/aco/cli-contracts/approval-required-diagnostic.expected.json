@@ -1,0 +1,30 @@
+{
+  "commandId": "bun.research.graph",
+  "data": {
+    "reason": "write, network, graph-cache, or artifact mutation risk requires approval",
+    "requestedMutations": ["writes-graph-cache"]
+  },
+  "display": "bun run research:graph",
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.cli.command-ledger",
+      "source": "ledgers/command-ledger.csv",
+      "summary": "Readonly command ledger defines the preserved ACO/context command surface"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.cli.s7-consensus",
+      "source": "party-mode-output-s7-consensus/next_goal_4000chars.txt",
+      "summary": "S7 consensus selected contract-first CLI parity with thin adapters"
+    }
+  ],
+  "exitCode": 2,
+  "kind": "aco-cli-command-result",
+  "schemaVersion": "aco.cli-command-result.v1",
+  "status": "approval_required",
+  "stderr": "Approval required for bun run research:graph: writes-graph-cache.",
+  "stdout": ""
+}

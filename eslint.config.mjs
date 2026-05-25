@@ -445,5 +445,77 @@ export default tseslint.config(
         },
       ],
     },
+  },
+
+  // ACO CLI contracts are pure command metadata; runtime CLI wiring lives in @archon/cli.
+  {
+    files: ['packages/aco-cli-contracts/src/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      '@typescript-eslint/no-floating-promises': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'fs',
+              message: 'ACO CLI contracts production source must not import filesystem APIs.',
+            },
+            {
+              name: 'fs/promises',
+              message: 'ACO CLI contracts production source must not import filesystem APIs.',
+            },
+            {
+              name: 'node:fs',
+              message: 'ACO CLI contracts production source must not import filesystem APIs.',
+            },
+            {
+              name: 'node:fs/promises',
+              message: 'ACO CLI contracts production source must not import filesystem APIs.',
+            },
+            {
+              name: 'path',
+              message: 'ACO CLI contracts production source must not import path APIs.',
+            },
+            {
+              name: 'node:path',
+              message: 'ACO CLI contracts production source must not import path APIs.',
+            },
+            {
+              name: 'process',
+              message: 'ACO CLI contracts production source must not read process-global config.',
+            },
+            {
+              name: 'node:process',
+              message: 'ACO CLI contracts production source must not read process-global config.',
+            },
+            {
+              name: 'child_process',
+              message: 'ACO CLI contracts production source must not spawn.',
+            },
+            {
+              name: 'node:child_process',
+              message: 'ACO CLI contracts production source must not spawn.',
+            },
+          ],
+          patterns: [
+            {
+              group: [
+                '@archon/adapters*',
+                '@archon/cli*',
+                '@archon/server*',
+                '@archon/web*',
+                '@archon/workflows*',
+                '@archon/providers*',
+              ],
+              message: 'ACO CLI contracts must not import runtime package adapters.',
+            },
+          ],
+        },
+      ],
+    },
   }
 );

@@ -1,0 +1,126 @@
+{
+  "commands": [
+    {
+      "approvalRequired": false,
+      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "id": "archon.aco.bootstrap-codex",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-codex",
+      "safetyClasses": ["read-only", "writes-artifacts"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon aco status --cwd <repo> [--json]",
+      "id": "archon.aco.status",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-cli",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": true,
+      "display": "archon context approval-capsule <prompt>",
+      "id": "archon.context.approval-capsule",
+      "implementationStatus": "deferred",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "safetyClasses": ["writes-artifacts"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context approval-capsule-verify",
+      "id": "archon.context.approval-capsule-verify",
+      "implementationStatus": "deferred",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": true,
+      "display": "archon context compile <prompt>",
+      "id": "archon.context.compile",
+      "implementationStatus": "deferred",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "safetyClasses": ["writes-artifacts"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context graph-waivers",
+      "id": "archon.context.graph-waivers",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-research",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context ledgers [prompt]",
+      "id": "archon.context.ledgers",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-ledgers",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context route <prompt>",
+      "id": "archon.context.route",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-bmad",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context status [prompt]",
+      "id": "archon.context.status",
+      "implementationStatus": "deferred",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context validate",
+      "id": "archon.context.validate",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "safetyClasses": ["read-only"],
+      "surface": "cli"
+    },
+    {
+      "approvalRequired": false,
+      "display": "bun run aco:role-contracts",
+      "id": "bun.aco.role-contracts",
+      "implementationStatus": "deferred",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "safetyClasses": ["read-only"],
+      "surface": "script"
+    },
+    {
+      "approvalRequired": true,
+      "display": "bun run research:graph",
+      "id": "bun.research.graph",
+      "implementationStatus": "approval-required",
+      "mutates": "writes-graph-cache",
+      "owner": "aco-research",
+      "safetyClasses": ["network", "writes-graph-cache"],
+      "surface": "script"
+    }
+  ],
+  "kind": "aco-cli-command-catalog",
+  "schemaVersion": "aco.cli-command-catalog.v1"
+}

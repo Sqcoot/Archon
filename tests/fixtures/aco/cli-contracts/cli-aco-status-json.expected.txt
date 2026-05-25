@@ -1,0 +1,34 @@
+{
+  "commandId": "archon.aco.status",
+  "data": {
+    "approvalRequired": 1,
+    "commands": 12,
+    "cwd": "/repo",
+    "deferred": 5,
+    "schemaVersion": "aco.cli-command-catalog.v1",
+    "supported": 6
+  },
+  "display": "archon aco status --cwd <repo> [--json]",
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.cli.command-ledger",
+      "source": "ledgers/command-ledger.csv",
+      "summary": "Readonly command ledger defines the preserved ACO/context command surface"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.cli.s7-consensus",
+      "source": "party-mode-output-s7-consensus/next_goal_4000chars.txt",
+      "summary": "S7 consensus selected contract-first CLI parity with thin adapters"
+    }
+  ],
+  "exitCode": 0,
+  "kind": "aco-cli-command-result",
+  "schemaVersion": "aco.cli-command-result.v1",
+  "status": "ok",
+  "stderr": "",
+  "stdout": "# ACO CLI Status\n\ncwd: /repo\nschemaVersion: aco.cli-command-catalog.v1\ncommands: 12\nsupported: 6\ndeferred: 5\napprovalRequired: 1\n\nS7 exposes command parity through @archon/aco-cli-contracts and thin CLI adapters.\n"
+}
