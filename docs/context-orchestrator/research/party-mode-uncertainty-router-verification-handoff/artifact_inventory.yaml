@@ -1,0 +1,40 @@
+version: 1
+purpose: "Expected source artifacts for verifying the party-mode uncertainty router implementation pack."
+target_root: "docs/context-orchestrator/research/party-mode-uncertainty-router"
+required_files:
+  package_overview:
+    - README.md
+    - investigation_report.md
+    - next_goal.md
+    - evidence_manifest.yaml
+    - readonly_policy_result.md
+  hooks:
+    - hooks/party_mode_router.py
+    - hooks/hooks.json
+  schemas:
+    - schemas/party_mode_state.schema.json
+  tests:
+    - tests/test_party_mode_router.py
+  prompts:
+    - prompts/party_mode_investigation_prompt.md
+  examples:
+    - examples/config_profile_party_mode.toml
+    - examples/expected_output_tree.txt
+  policy_and_design_artifacts:
+    - artifacts/01_goal_end_condition_4000_chars.md
+    - artifacts/02_uncertainty_trigger_matrix.yaml
+    - artifacts/03_readonly_tool_policy.yaml
+    - artifacts/04_investigation_manifest_template.yaml
+    - artifacts/05_output_report_template.md
+    - artifacts/06_next_goal_template.md
+    - artifacts/07_party_mode_integration_design.md
+    - artifacts/08_hook_event_mapping.md
+    - artifacts/09_live_hook_install_validation.md
+    - artifacts/10_rollout_smoke_decision.md
+    - artifacts/11_genericity_review.md
+  archive:
+    - party_mode_uncertainty_router_implementation.zip
+verification_notes:
+  - "The implementation zip should contain the implementation-pack files, not this verification handoff."
+  - "This verification handoff zip should contain only verification files and should not copy router source code."
+  - "If files have moved, record the new repo-relative paths in the findings report instead of assuming failure solely from relocation."

@@ -1,0 +1,54 @@
+version: 1
+purpose: "Fresh-session verification expectations for the party-mode uncertainty router implementation pack."
+target:
+  implementation_pack_dir: "docs/context-orchestrator/research/party-mode-uncertainty-router"
+  implementation_zip_name: "party_mode_uncertainty_router_implementation.zip"
+  path_policy: "Use repo-relative paths or env-var overrides; do not rely on user-local absolute paths."
+environment_overrides:
+  state_dir: PARTY_MODE_STATE_DIR
+  artifact_dir: PARTY_MODE_ARTIFACT_DIR
+  artifact_zip: PARTY_MODE_ZIP_PATH
+  force_mode: "PARTY_MODE=force"
+  disable_mode: "PARTY_MODE=off"
+  threshold: PARTY_MODE_THRESHOLD
+required_final_zip_entries:
+  - investigation_report.md
+  - next_goal.md
+  - evidence_manifest.yaml
+  - readonly_policy_result.md
+  - artifacts/
+events:
+  UserPromptSubmit:
+    expected:
+      - "Explicit party-mode wording activates party-mode investigation context."
+      - "Inferred uncertainty activates when the score reaches the configured threshold."
+      - "Normal low-risk edit prompts do not activate strict party mode."
+      - "Injected context states that the run is read-only investigation and identifies artifact/zip paths."
+  PreToolUse:
+    expected:
+      - "Denies source edits, generated-code writes, dependency changes, migrations, commits, destructive shell commands, and mutating MCP/tool calls while active."
+      - "Allows read-only commands and artifact writes under PARTY_MODE_ARTIFACT_DIR or to PARTY_MODE_ZIP_PATH."
+      - "Adds evidence-capture guidance for allowed read-only tool use while active."
+  PermissionRequest:
+    expected:
+      - "Denies approval requests that would break the read-only investigation contract."
+      - "Returns a clear denial reason that identifies party-mode read-only enforcement."
+  PostToolUse:
+    expected:
+      - "Adds evidence-capture guidance after useful read-only output."
+      - "Flags accidental mutation or output suggesting file changes."
+      - "Directs the session to record mutation concerns in readonly_policy_result.md."
+  SubagentStart:
+    expected:
+      - "Passes the same read-only investigation contract and artifact requirements to delegated agents."
+  SubagentStop:
+    expected:
+      - "Continues the subagent when required evidence, read-only confirmation, or artifact-ready summary is missing."
+  Stop:
+    expected:
+      - "Continues the run when the required handoff zip is missing or incomplete."
+      - "Accepts a complete zip containing the required top-level artifacts and supporting artifacts directory."
+genericity:
+  expected:
+    - "Reusable handoff templates do not mention one chat session, one local home path, or stale commit-specific implementation wording."
+    - "Literal paths, dates, and hashes appear only where they are clearly labeled as evidence."
