@@ -1,0 +1,96 @@
+[
+  {
+    "description": "Use when: S9 needs read-only orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.\nDoes: Runs only read-only context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff.\nContract source: @archon/aco-workflows S9 workflow parity.\n",
+    "model": "gpt-5.3-codex",
+    "mutates_checkout": false,
+    "name": "context-orchestrate",
+    "nodes": [
+      {
+        "bash": "archon context status \"$ARGUMENTS\" --json\n",
+        "id": "status",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context ledgers \"$ARGUMENTS\" --json\n",
+        "depends_on": ["status"],
+        "id": "ledgers",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context route \"$ARGUMENTS\" --json\n",
+        "depends_on": ["ledgers"],
+        "id": "route",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context compile \"$ARGUMENTS\" --json\n",
+        "depends_on": ["route"],
+        "id": "compile",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context approval-capsule \"$ARGUMENTS\" --json\n",
+        "depends_on": ["compile"],
+        "id": "approval-capsule",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context approval-capsule-verify --json\n",
+        "depends_on": ["approval-capsule"],
+        "id": "verification",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context status \"$ARGUMENTS\" --json\n",
+        "depends_on": ["verification"],
+        "id": "handoff",
+        "timeout": 30000
+      }
+    ],
+    "provider": "codex"
+  },
+  {
+    "description": "Use when: S9 needs a conservative adversarial loop contract without claiming autonomous runtime parity.\nDoes: Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using read-only context outputs.\nContract source: @archon/aco-workflows S9 workflow parity.\n",
+    "model": "gpt-5.3-codex",
+    "mutates_checkout": false,
+    "name": "archon-aco-adversarial-loop",
+    "nodes": [
+      {
+        "bash": "archon context route \"$ARGUMENTS\" --json\n",
+        "id": "coordinator",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context compile \"$ARGUMENTS\" --json\n",
+        "depends_on": ["coordinator"],
+        "id": "skill-bmad-review",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context graph-waivers --json\n",
+        "depends_on": ["skill-bmad-review"],
+        "id": "search-evidence",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context compile \"$ARGUMENTS\" --json\n",
+        "depends_on": ["search-evidence"],
+        "id": "planner-contract",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context approval-capsule-verify --json\n",
+        "depends_on": ["planner-contract"],
+        "id": "generator-qa-evaluator",
+        "timeout": 30000
+      },
+      {
+        "bash": "archon context status \"$ARGUMENTS\" --json\n",
+        "depends_on": ["generator-qa-evaluator"],
+        "id": "feedback-handoff",
+        "timeout": 30000
+      }
+    ],
+    "provider": "codex"
+  }
+]

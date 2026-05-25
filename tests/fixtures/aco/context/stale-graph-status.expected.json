@@ -82,12 +82,7 @@
       "owner": "aco-research"
     }
   ],
-  "deferredSurfaces": [
-    "archon-aco-adversarial-loop workflow parity",
-    "bun run aco:role-contracts",
-    "bun run research:graph",
-    "context-orchestrate workflow parity"
-  ],
+  "deferredSurfaces": ["bun run aco:role-contracts", "bun run research:graph"],
   "evidence": [
     {
       "confidence": "high",
@@ -99,9 +94,9 @@
     {
       "confidence": "high",
       "freshness": "fresh",
-      "id": "evidence.context.workflow-deferral",
-      "source": "party-mode-output-s8-consensus/consensus_report.md",
-      "summary": "Workflow parity is deferred until context primitives are implemented"
+      "id": "evidence.context.workflow-parity",
+      "source": "party-mode-output-s9-consensus/next_goal_4000chars.txt",
+      "summary": "S9 made context-orchestrate and archon-aco-adversarial-loop contractual defaults"
     },
     {
       "confidence": "high",
@@ -113,7 +108,7 @@
   ],
   "findings": [
     "graph waiver closure requires approval before graph refresh",
-    "4 surfaces remain deferred or approval-gated"
+    "2 surfaces remain deferred or approval-gated"
   ],
   "graphWaiver": {
     "command": "bun run research:graph",
@@ -128,7 +123,7 @@
   },
   "id": "aco.context.s8.status",
   "kind": "aco-context-status",
-  "nextSlice": "S9 workflow parity after context contracts are committed",
+  "nextSlice": "S10 API/UI parity after workflow contracts are committed",
   "prompt": "Implement S8 context contracts",
   "promptDigest": "496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000",
   "readiness": "approval_required",

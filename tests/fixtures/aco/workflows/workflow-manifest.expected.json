@@ -1,0 +1,565 @@
+{
+  "approvalRequiredCommands": [
+    {
+      "commandId": "bun.research.graph",
+      "display": "bun run research:graph",
+      "mutationScope": ["network", "writes-graph-cache"],
+      "reason": "graph refresh remains approval-required and is never triggered implicitly",
+      "required": true,
+      "status": "approval-required"
+    }
+  ],
+  "contracts": [
+    {
+      "approvalRequirements": [
+        {
+          "commandId": "bun.aco.role-contracts",
+          "display": "bun run aco:role-contracts",
+          "mutationScope": [],
+          "reason": "role contract execution remains deferred outside S9 workflow parity",
+          "required": false,
+          "status": "deferred"
+        },
+        {
+          "commandId": "bun.research.graph",
+          "display": "bun run research:graph",
+          "mutationScope": ["network", "writes-graph-cache"],
+          "reason": "graph refresh remains approval-required and is never triggered implicitly",
+          "required": true,
+          "status": "approval-required"
+        }
+      ],
+      "artifactContracts": [
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/status.json",
+          "producerNodeId": "status",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/ledgers.json",
+          "producerNodeId": "ledgers",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/route.json",
+          "producerNodeId": "route",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/compile.json",
+          "producerNodeId": "compile",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/approval-capsule.json",
+          "producerNodeId": "approval-capsule",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["handoff"],
+          "path": "artifacts/context-orchestrate/verification.json",
+          "producerNodeId": "verification",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": [],
+          "path": "artifacts/context-orchestrate/handoff.json",
+          "producerNodeId": "handoff",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        }
+      ],
+      "bundledDefault": {
+        "checksum": "628debe01239c7bd401dbffc36c7eac4628debe01239c7bd401dbffc36c7eac4",
+        "fileName": "context-orchestrate.yaml",
+        "name": "context-orchestrate",
+        "nodeIds": [
+          "status",
+          "ledgers",
+          "route",
+          "compile",
+          "approval-capsule",
+          "verification",
+          "handoff"
+        ]
+      },
+      "capabilityConstraints": [
+        "uses only supported S1-S8 read-only context command surfaces",
+        "does not refresh graph evidence",
+        "does not request write-artifact flags",
+        "does not install or mutate workflow configuration"
+      ],
+      "contextCommandBindings": [
+        {
+          "commandId": "archon.context.status",
+          "display": "archon context status [prompt]",
+          "implementationStatus": "supported",
+          "nodeId": "status",
+          "outputModes": ["markdown", "json"],
+          "reason": "status consumes archon context status [prompt] without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.ledgers",
+          "display": "archon context ledgers [prompt]",
+          "implementationStatus": "supported",
+          "nodeId": "ledgers",
+          "outputModes": ["markdown", "json"],
+          "reason": "ledgers consumes archon context ledgers [prompt] without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.route",
+          "display": "archon context route <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "route",
+          "outputModes": ["markdown", "json", "yaml"],
+          "reason": "route consumes archon context route <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.compile",
+          "display": "archon context compile <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "compile",
+          "outputModes": ["markdown", "json"],
+          "reason": "compile consumes archon context compile <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.approval-capsule",
+          "display": "archon context approval-capsule <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "approval-capsule",
+          "outputModes": ["markdown", "json"],
+          "reason": "approval-capsule consumes archon context approval-capsule <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.approval-capsule-verify",
+          "display": "archon context approval-capsule-verify",
+          "implementationStatus": "supported",
+          "nodeId": "verification",
+          "outputModes": ["markdown", "json"],
+          "reason": "verification consumes archon context approval-capsule-verify without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.status",
+          "display": "archon context status [prompt]",
+          "implementationStatus": "supported",
+          "nodeId": "handoff",
+          "outputModes": ["markdown", "json"],
+          "reason": "handoff consumes archon context status [prompt] without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        }
+      ],
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "fresh",
+          "id": "evidence.workflows.s9-consensus",
+          "source": "party-mode-output-s9-consensus/next_goal_4000chars.txt",
+          "summary": "S9 consensus selected workflow parity contracts after S8 context contracts"
+        },
+        {
+          "confidence": "high",
+          "freshness": "fresh",
+          "id": "evidence.workflows.s8-context-contracts",
+          "source": "party-mode-output-s8-consensus/next_goal_4000chars.txt",
+          "summary": "S8 made context status, compile, approval capsule, and verification commands real"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.workflows.workflow-ledger",
+          "source": "ledgers/workflow-ledger.csv",
+          "summary": "Readonly workflow ledger lists context-orchestrate and adversarial loop parity"
+        }
+      ],
+      "id": "context-orchestrate",
+      "kind": "aco-workflow-parity-contract",
+      "name": "context-orchestrate",
+      "purpose": "Preserve context orchestration as a bundled workflow contract",
+      "requiredNodes": [
+        {
+          "completionEvidence": ["status output is present", "status contract remains read-only"],
+          "contextCommandIds": ["archon.context.status"],
+          "dependsOn": [],
+          "id": "status",
+          "purpose": "Compute context readiness and next-slice state",
+          "requiredArtifacts": ["artifacts/context-orchestrate/status.json"],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": ["ledgers output is present", "ledgers contract remains read-only"],
+          "contextCommandIds": ["archon.context.ledgers"],
+          "dependsOn": ["status"],
+          "id": "ledgers",
+          "purpose": "Expose command and ledger coverage for routing",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": ["route output is present", "route contract remains read-only"],
+          "contextCommandIds": ["archon.context.route"],
+          "dependsOn": ["ledgers"],
+          "id": "route",
+          "purpose": "Select the read-only advisory route for the prompt",
+          "requiredArtifacts": [],
+          "role": "planner"
+        },
+        {
+          "completionEvidence": ["compile output is present", "compile contract remains read-only"],
+          "contextCommandIds": ["archon.context.compile"],
+          "dependsOn": ["route"],
+          "id": "compile",
+          "purpose": "Compile deterministic context package output",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": [
+            "approval-capsule output is present",
+            "approval-capsule contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.approval-capsule"],
+          "dependsOn": ["compile"],
+          "id": "approval-capsule",
+          "purpose": "Record requested mutation scope without granting approval",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": [
+            "verification output is present",
+            "verification contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.approval-capsule-verify"],
+          "dependsOn": ["approval-capsule"],
+          "id": "verification",
+          "purpose": "Verify approval capsule evidence and checksum",
+          "requiredArtifacts": [],
+          "role": "evaluator"
+        },
+        {
+          "completionEvidence": ["handoff output is present", "handoff contract remains read-only"],
+          "contextCommandIds": ["archon.context.status"],
+          "dependsOn": ["verification"],
+          "id": "handoff",
+          "purpose": "Summarize verified context package for the next slice",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        }
+      ],
+      "roleConstraints": [
+        "workflow cannot claim implementation completion without evaluator evidence",
+        "approval capsule records requested scope only and cannot grant approval",
+        "handoff must carry context digest and verification status"
+      ],
+      "schemaVersion": "aco.workflow-parity-contract.v1",
+      "status": "contractual",
+      "triggerDescription": "S9 needs read-only orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.",
+      "workflowDescription": "Runs only read-only context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff."
+    },
+    {
+      "approvalRequirements": [
+        {
+          "commandId": "bun.aco.role-contracts",
+          "display": "bun run aco:role-contracts",
+          "mutationScope": [],
+          "reason": "role contract execution remains deferred outside S9 workflow parity",
+          "required": false,
+          "status": "deferred"
+        },
+        {
+          "commandId": "bun.research.graph",
+          "display": "bun run research:graph",
+          "mutationScope": ["network", "writes-graph-cache"],
+          "reason": "graph refresh remains approval-required and is never triggered implicitly",
+          "required": true,
+          "status": "approval-required"
+        }
+      ],
+      "artifactContracts": [
+        {
+          "consumerNodeIds": ["feedback-handoff"],
+          "path": "artifacts/archon-aco-adversarial-loop/coordinator.json",
+          "producerNodeId": "coordinator",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["feedback-handoff"],
+          "path": "artifacts/archon-aco-adversarial-loop/skill-bmad-review.json",
+          "producerNodeId": "skill-bmad-review",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["feedback-handoff"],
+          "path": "artifacts/archon-aco-adversarial-loop/search-evidence.json",
+          "producerNodeId": "search-evidence",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["feedback-handoff"],
+          "path": "artifacts/archon-aco-adversarial-loop/planner-contract.json",
+          "producerNodeId": "planner-contract",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": ["feedback-handoff"],
+          "path": "artifacts/archon-aco-adversarial-loop/generator-qa-evaluator.json",
+          "producerNodeId": "generator-qa-evaluator",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        },
+        {
+          "consumerNodeIds": [],
+          "path": "artifacts/archon-aco-adversarial-loop/feedback-handoff.json",
+          "producerNodeId": "feedback-handoff",
+          "required": true,
+          "schemaVersion": "aco.workflow-node-artifact.v1"
+        }
+      ],
+      "bundledDefault": {
+        "checksum": "a0e32a1ed176e70543bc1c4a8a5de632a0e32a1ed176e70543bc1c4a8a5de632",
+        "fileName": "archon-aco-adversarial-loop.yaml",
+        "name": "archon-aco-adversarial-loop",
+        "nodeIds": [
+          "coordinator",
+          "skill-bmad-review",
+          "search-evidence",
+          "planner-contract",
+          "generator-qa-evaluator",
+          "feedback-handoff"
+        ]
+      },
+      "capabilityConstraints": [
+        "does not execute provider adapters or autonomous subagents",
+        "does not run bun run aco:role-contracts in S9",
+        "does not run bun run research:graph or write graph cache",
+        "does not grant approval or mutate provider configuration"
+      ],
+      "contextCommandBindings": [
+        {
+          "commandId": "archon.context.route",
+          "display": "archon context route <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "coordinator",
+          "outputModes": ["markdown", "json", "yaml"],
+          "reason": "coordinator consumes archon context route <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.compile",
+          "display": "archon context compile <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "skill-bmad-review",
+          "outputModes": ["markdown", "json"],
+          "reason": "skill-bmad-review consumes archon context compile <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.graph-waivers",
+          "display": "archon context graph-waivers",
+          "implementationStatus": "supported",
+          "nodeId": "search-evidence",
+          "outputModes": ["markdown", "json"],
+          "reason": "search-evidence consumes archon context graph-waivers without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.compile",
+          "display": "archon context compile <prompt>",
+          "implementationStatus": "supported",
+          "nodeId": "planner-contract",
+          "outputModes": ["markdown", "json"],
+          "reason": "planner-contract consumes archon context compile <prompt> without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.approval-capsule-verify",
+          "display": "archon context approval-capsule-verify",
+          "implementationStatus": "supported",
+          "nodeId": "generator-qa-evaluator",
+          "outputModes": ["markdown", "json"],
+          "reason": "generator-qa-evaluator consumes archon context approval-capsule-verify without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        },
+        {
+          "commandId": "archon.context.status",
+          "display": "archon context status [prompt]",
+          "implementationStatus": "supported",
+          "nodeId": "feedback-handoff",
+          "outputModes": ["markdown", "json"],
+          "reason": "feedback-handoff consumes archon context status [prompt] without mutation flags",
+          "requestedMutationClasses": ["read-only"]
+        }
+      ],
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "fresh",
+          "id": "evidence.workflows.s9-consensus",
+          "source": "party-mode-output-s9-consensus/next_goal_4000chars.txt",
+          "summary": "S9 consensus selected workflow parity contracts after S8 context contracts"
+        },
+        {
+          "confidence": "high",
+          "freshness": "fresh",
+          "id": "evidence.workflows.s8-context-contracts",
+          "source": "party-mode-output-s8-consensus/next_goal_4000chars.txt",
+          "summary": "S8 made context status, compile, approval capsule, and verification commands real"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.workflows.workflow-ledger",
+          "source": "ledgers/workflow-ledger.csv",
+          "summary": "Readonly workflow ledger lists context-orchestrate and adversarial loop parity"
+        }
+      ],
+      "id": "archon-aco-adversarial-loop",
+      "kind": "aco-workflow-parity-contract",
+      "name": "archon-aco-adversarial-loop",
+      "purpose": "Preserve adversarial loop planning and review as a bundled workflow contract",
+      "requiredNodes": [
+        {
+          "completionEvidence": [
+            "coordinator output is present",
+            "coordinator contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.route"],
+          "dependsOn": [],
+          "id": "coordinator",
+          "purpose": "Route the objective through supported context contracts",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": [
+            "skill-bmad-review output is present",
+            "skill-bmad-review contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.compile"],
+          "dependsOn": ["coordinator"],
+          "id": "skill-bmad-review",
+          "purpose": "Represent BMAD review boundaries without running role contracts",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        },
+        {
+          "completionEvidence": [
+            "search-evidence output is present",
+            "search-evidence contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.graph-waivers"],
+          "dependsOn": ["skill-bmad-review"],
+          "id": "search-evidence",
+          "purpose": "Read graph waiver state without refreshing graph cache",
+          "requiredArtifacts": [],
+          "role": "researcher"
+        },
+        {
+          "completionEvidence": [
+            "planner-contract output is present",
+            "planner-contract contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.compile"],
+          "dependsOn": ["search-evidence"],
+          "id": "planner-contract",
+          "purpose": "Compile planner contract evidence for generator and QA review",
+          "requiredArtifacts": [],
+          "role": "planner"
+        },
+        {
+          "completionEvidence": [
+            "generator-qa-evaluator output is present",
+            "generator-qa-evaluator contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.approval-capsule-verify"],
+          "dependsOn": ["planner-contract"],
+          "id": "generator-qa-evaluator",
+          "purpose": "Require QA and evaluator verification before completion claims",
+          "requiredArtifacts": [],
+          "role": "evaluator"
+        },
+        {
+          "completionEvidence": [
+            "feedback-handoff output is present",
+            "feedback-handoff contract remains read-only"
+          ],
+          "contextCommandIds": ["archon.context.status"],
+          "dependsOn": ["generator-qa-evaluator"],
+          "id": "feedback-handoff",
+          "purpose": "Carry unresolved risks and evaluator status into handoff",
+          "requiredArtifacts": [],
+          "role": "coordinator"
+        }
+      ],
+      "roleConstraints": [
+        "planner proposes criteria but cannot declare final completion",
+        "generator output remains subject to QA and evaluator review",
+        "evaluator verdict is required before any completion claim",
+        "feedback handoff must preserve unresolved risks"
+      ],
+      "schemaVersion": "aco.workflow-parity-contract.v1",
+      "status": "contractual",
+      "triggerDescription": "S9 needs a conservative adversarial loop contract without claiming autonomous runtime parity.",
+      "workflowDescription": "Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using read-only context outputs."
+    }
+  ],
+  "deferredCommands": [
+    {
+      "commandId": "bun.aco.role-contracts",
+      "display": "bun run aco:role-contracts",
+      "mutationScope": [],
+      "reason": "role contract execution remains deferred outside S9 workflow parity",
+      "required": false,
+      "status": "deferred"
+    }
+  ],
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.workflows.s9-consensus",
+      "source": "party-mode-output-s9-consensus/next_goal_4000chars.txt",
+      "summary": "S9 consensus selected workflow parity contracts after S8 context contracts"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.workflows.workflow-ledger",
+      "source": "ledgers/workflow-ledger.csv",
+      "summary": "Readonly workflow ledger lists context-orchestrate and adversarial loop parity"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.workflows.default-bundle",
+      "source": ".archon/workflows/defaults",
+      "summary": "Bundled default workflows are regenerated into @archon/workflows defaults"
+    }
+  ],
+  "id": "aco.workflows.s9.workflow-parity",
+  "kind": "aco-workflow-parity-bundle",
+  "nextSlice": "S10 API/UI parity after workflow contracts are committed",
+  "schemaVersion": "aco.workflow-parity-bundle.v1",
+  "status": "contractual"
+}

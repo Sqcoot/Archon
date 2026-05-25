@@ -4,7 +4,7 @@ schemaVersion: aco.context-status.v1
 id: aco.context.s8.status
 readiness: degraded
 promptDigest: 496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000
-nextSlice: S9 workflow parity after context contracts are committed
+nextSlice: S10 API/UI parity after workflow contracts are committed
 
 ## Required Ledgers
 
@@ -23,11 +23,9 @@ command: none
 
 ## Deferred Surfaces
 
-- archon-aco-adversarial-loop workflow parity
 - bun run aco:role-contracts
 - bun run research:graph
-- context-orchestrate workflow parity
 
 ## Findings
 
-- 4 surfaces remain deferred or approval-gated
+- 2 surfaces remain deferred or approval-gated

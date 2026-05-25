@@ -90,8 +90,14 @@ export function checkCompiledContextPackage(input: unknown): readonly string[] {
   if (context.statusFindings.length === 0) {
     errors.push('context package must carry status findings');
   }
-  if (!context.deferredItems.includes('workflow parity deferred to the next slice')) {
-    errors.push('context package must keep workflow parity explicitly deferred');
+  if (context.deferredItems.some(item => item.includes('workflow parity'))) {
+    errors.push('context package must not defer workflow parity after S9');
+  }
+  if (!context.deferredItems.includes('bun run aco:role-contracts remains deferred')) {
+    errors.push('context package must keep role-contracts explicitly deferred');
+  }
+  if (!context.deferredItems.includes('bun run research:graph remains approval-required')) {
+    errors.push('context package must keep research graph approval-required');
   }
 
   return errors;

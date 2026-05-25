@@ -1,0 +1,33 @@
+{
+  "defaults": [
+    {
+      "checksum": "628debe01239c7bd401dbffc36c7eac4628debe01239c7bd401dbffc36c7eac4",
+      "fileName": "context-orchestrate.yaml",
+      "name": "context-orchestrate",
+      "nodeIds": [
+        "status",
+        "ledgers",
+        "route",
+        "compile",
+        "approval-capsule",
+        "verification",
+        "handoff"
+      ]
+    },
+    {
+      "checksum": "a0e32a1ed176e70543bc1c4a8a5de632a0e32a1ed176e70543bc1c4a8a5de632",
+      "fileName": "archon-aco-adversarial-loop.yaml",
+      "name": "archon-aco-adversarial-loop",
+      "nodeIds": [
+        "coordinator",
+        "skill-bmad-review",
+        "search-evidence",
+        "planner-contract",
+        "generator-qa-evaluator",
+        "feedback-handoff"
+      ]
+    }
+  ],
+  "kind": "aco-workflow-bundled-default-inventory",
+  "schemaVersion": "aco.workflow-bundled-default-inventory.v1"
+}

@@ -32,22 +32,24 @@ describe('ACO context contracts', () => {
       verifyApprovalCapsule({ capsule, expectedContext: contextPackage, expectedPrompt: PROMPT })
     );
 
-    expect(renderContextStatusJson(status)).toBe(await loadGolden('status.expected.json'));
+    expect(JSON.parse(renderContextStatusJson(status))).toEqual(
+      await loadGoldenJson('status.expected.json')
+    );
     expect(renderContextStatusMarkdown(status)).toBe(await loadGolden('status.expected.md'));
-    expect(renderCompiledContextPackageJson(contextPackage)).toBe(
-      await loadGolden('context-package.expected.json')
+    expect(JSON.parse(renderCompiledContextPackageJson(contextPackage))).toEqual(
+      await loadGoldenJson('context-package.expected.json')
     );
     expect(renderCompiledContextPackageMarkdown(contextPackage)).toBe(
       await loadGolden('context-package.expected.md')
     );
-    expect(renderApprovalCapsuleJson(capsule)).toBe(
-      await loadGolden('approval-capsule.expected.json')
+    expect(JSON.parse(renderApprovalCapsuleJson(capsule))).toEqual(
+      await loadGoldenJson('approval-capsule.expected.json')
     );
     expect(renderApprovalCapsuleMarkdown(capsule)).toBe(
       await loadGolden('approval-capsule.expected.md')
     );
-    expect(renderApprovalCapsuleVerificationJson(verification)).toBe(
-      await loadGolden('approval-capsule-verification-pass.expected.json')
+    expect(JSON.parse(renderApprovalCapsuleVerificationJson(verification))).toEqual(
+      await loadGoldenJson('approval-capsule-verification-pass.expected.json')
     );
     expect(renderApprovalCapsuleVerificationMarkdown(verification)).toBe(
       await loadGolden('approval-capsule-verification-pass.expected.md')
@@ -55,13 +57,13 @@ describe('ACO context contracts', () => {
   });
 
   test('fails closed on missing prompt, malformed capsule, tampering, missing ledger, and stale graph evidence', async () => {
-    expect(serializeStableJson(compileContextPackage({ prompt: '' }))).toBe(
-      await loadGolden('missing-prompt.expected.json')
+    expect(JSON.parse(serializeStableJson(compileContextPackage({ prompt: '' })))).toEqual(
+      await loadGoldenJson('missing-prompt.expected.json')
     );
 
     const malformed = unwrap(verifyApprovalCapsule({ capsule: { kind: 'bad-capsule' } }));
-    expect(renderApprovalCapsuleVerificationJson(malformed)).toBe(
-      await loadGolden('malformed-capsule.expected.json')
+    expect(JSON.parse(renderApprovalCapsuleVerificationJson(malformed))).toEqual(
+      await loadGoldenJson('malformed-capsule.expected.json')
     );
 
     const contextPackage = unwrap(compileContextPackage({ prompt: PROMPT }));
@@ -74,16 +76,16 @@ describe('ACO context contracts', () => {
         expectedPrompt: PROMPT,
       })
     );
-    expect(renderApprovalCapsuleVerificationJson(tamperedVerification)).toBe(
-      await loadGolden('approval-capsule-verification-fail.expected.json')
+    expect(JSON.parse(renderApprovalCapsuleVerificationJson(tamperedVerification))).toEqual(
+      await loadGoldenJson('approval-capsule-verification-fail.expected.json')
     );
 
     const missingLedger = buildContextStatus({
       prompt: PROMPT,
       ledgerSummaries: defaultLedgerSummaries().filter(ledger => ledger.name !== 'command'),
     });
-    expect(serializeStableJson(missingLedger)).toBe(
-      await loadGolden('missing-ledger.expected.json')
+    expect(JSON.parse(serializeStableJson(missingLedger))).toEqual(
+      await loadGoldenJson('missing-ledger.expected.json')
     );
 
     const graph = graphEvidenceRef('archon', 'complete');
@@ -95,8 +97,8 @@ describe('ACO context contracts', () => {
       })
     );
     const staleStatus = unwrap(buildContextStatus({ prompt: PROMPT, graphWaiver: staleClosure }));
-    expect(renderContextStatusJson(staleStatus)).toBe(
-      await loadGolden('stale-graph-status.expected.json')
+    expect(JSON.parse(renderContextStatusJson(staleStatus))).toEqual(
+      await loadGoldenJson('stale-graph-status.expected.json')
     );
   });
 
@@ -115,6 +117,10 @@ describe('ACO context contracts', () => {
 async function loadGolden(fileName: string): Promise<string> {
   const root = new URL('../../../tests/fixtures/aco/context/', import.meta.url);
   return Bun.file(new URL(fileName, root)).text();
+}
+
+async function loadGoldenJson(fileName: string): Promise<unknown> {
+  return JSON.parse(await loadGolden(fileName));
 }
 
 function unwrap<T>(

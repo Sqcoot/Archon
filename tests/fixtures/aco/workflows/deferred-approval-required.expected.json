@@ -1,0 +1,22 @@
+{
+  "approvalRequiredCommands": [
+    {
+      "commandId": "bun.research.graph",
+      "display": "bun run research:graph",
+      "mutationScope": ["network", "writes-graph-cache"],
+      "reason": "graph refresh remains approval-required and is never triggered implicitly",
+      "required": true,
+      "status": "approval-required"
+    }
+  ],
+  "deferredCommands": [
+    {
+      "commandId": "bun.aco.role-contracts",
+      "display": "bun run aco:role-contracts",
+      "mutationScope": [],
+      "reason": "role contract execution remains deferred outside S9 workflow parity",
+      "required": false,
+      "status": "deferred"
+    }
+  ]
+}

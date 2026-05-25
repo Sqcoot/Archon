@@ -10,7 +10,7 @@ import { buildGraphWaiverClosure, type GraphWaiverClosure } from '@archon/aco-re
 import {
   CONTEXT_ARTIFACT_EVIDENCE,
   CONTEXT_COMMAND_LEDGER_EVIDENCE,
-  CONTEXT_WORKFLOW_DEFERRAL_EVIDENCE,
+  CONTEXT_WORKFLOW_PARITY_EVIDENCE,
   REQUIRED_CONTEXT_LEDGER_NAMES,
   S8_CONSENSUS_EVIDENCE,
 } from './constants';
@@ -81,11 +81,11 @@ export function buildContextStatus(input: ContextBuildInput = {}): ParseResult<C
     graphWaiver: graphWaiverSummary(graphWaiver),
     approvalReadiness: approvalRequirements(catalog),
     deferredSurfaces,
-    nextSlice: 'S9 workflow parity after context contracts are committed',
+    nextSlice: 'S10 API/UI parity after workflow contracts are committed',
     findings,
     evidence: [
       CONTEXT_COMMAND_LEDGER_EVIDENCE,
-      CONTEXT_WORKFLOW_DEFERRAL_EVIDENCE,
+      CONTEXT_WORKFLOW_PARITY_EVIDENCE,
       S8_CONSENSUS_EVIDENCE,
     ],
   } as const;
@@ -123,7 +123,7 @@ export function compileContextPackage(
     roleConstraints: [
       'generators cannot claim goal completion',
       'evaluator verdicts are required for completion claims',
-      'workflow parity is deferred until context primitives are stable',
+      'workflow completion claims require S9 workflow contract evidence',
     ],
     capabilityConstraints: [
       'research graph refresh requires explicit approval',
@@ -132,11 +132,15 @@ export function compileContextPackage(
     ],
     approvalRequirements: status.value.approvalReadiness,
     deferredItems: [
-      'workflow parity deferred to the next slice',
       'bun run aco:role-contracts remains deferred',
       'bun run research:graph remains approval-required',
     ],
-    evidence: [CONTEXT_COMMAND_LEDGER_EVIDENCE, CONTEXT_ARTIFACT_EVIDENCE, S8_CONSENSUS_EVIDENCE],
+    evidence: [
+      CONTEXT_COMMAND_LEDGER_EVIDENCE,
+      CONTEXT_ARTIFACT_EVIDENCE,
+      CONTEXT_WORKFLOW_PARITY_EVIDENCE,
+      S8_CONSENSUS_EVIDENCE,
+    ],
   } as const;
 
   const context = {
@@ -353,13 +357,10 @@ function approvalRequirements(catalog: AcoCommandCatalog): readonly ContextAppro
 }
 
 function deferredSurfaceDisplays(catalog: AcoCommandCatalog): readonly string[] {
-  return [
-    ...catalog.descriptors
-      .filter(descriptor => descriptor.implementationStatus !== 'supported')
-      .map(descriptor => descriptor.display),
-    'context-orchestrate workflow parity',
-    'archon-aco-adversarial-loop workflow parity',
-  ].sort();
+  return catalog.descriptors
+    .filter(descriptor => descriptor.implementationStatus !== 'supported')
+    .map(descriptor => descriptor.display)
+    .sort();
 }
 
 function contextFindings(
@@ -415,6 +416,7 @@ function contextEvidenceRefs(status: ContextStatus): readonly EvidenceRef[] {
     for (const evidence of ledger.evidence) refs.set(evidence.id, evidence);
   }
   refs.set(CONTEXT_ARTIFACT_EVIDENCE.id, CONTEXT_ARTIFACT_EVIDENCE);
+  refs.set(CONTEXT_WORKFLOW_PARITY_EVIDENCE.id, CONTEXT_WORKFLOW_PARITY_EVIDENCE);
   refs.set(S8_CONSENSUS_EVIDENCE.id, S8_CONSENSUS_EVIDENCE);
   return [...refs.values()].sort((left, right) => left.id.localeCompare(right.id));
 }

@@ -25,7 +25,7 @@ command: none
 
 - generators cannot claim goal completion
 - evaluator verdicts are required for completion claims
-- workflow parity is deferred until context primitives are stable
+- workflow completion claims require S9 workflow contract evidence
 
 ## Capability Constraints
 
@@ -39,6 +39,5 @@ command: none
 
 ## Deferred Items
 
-- workflow parity deferred to the next slice
 - bun run aco:role-contracts remains deferred
 - bun run research:graph remains approval-required

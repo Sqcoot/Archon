@@ -24,10 +24,10 @@ export const CONTEXT_ARTIFACT_EVIDENCE = {
   freshness: 'unknown',
 } as const satisfies EvidenceRef;
 
-export const CONTEXT_WORKFLOW_DEFERRAL_EVIDENCE = {
-  id: 'evidence.context.workflow-deferral',
-  source: 'party-mode-output-s8-consensus/consensus_report.md',
-  summary: 'Workflow parity is deferred until context primitives are implemented',
+export const CONTEXT_WORKFLOW_PARITY_EVIDENCE = {
+  id: 'evidence.context.workflow-parity',
+  source: 'party-mode-output-s9-consensus/next_goal_4000chars.txt',
+  summary: 'S9 made context-orchestrate and archon-aco-adversarial-loop contractual defaults',
   confidence: 'high',
   freshness: 'fresh',
 } as const satisfies EvidenceRef;

@@ -1,0 +1,39 @@
+name: archon-aco-adversarial-loop
+description: |
+  Use when: S9 needs a conservative adversarial loop contract without claiming autonomous runtime parity.
+  Does: Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using read-only context outputs.
+  Contract source: @archon/aco-workflows S9 workflow parity.
+provider: codex
+model: gpt-5.3-codex
+mutates_checkout: false
+
+nodes:
+  - id: coordinator
+    bash: |
+      archon context route "$ARGUMENTS" --json
+    timeout: 30000
+  - id: skill-bmad-review
+    depends_on: [coordinator]
+    bash: |
+      archon context compile "$ARGUMENTS" --json
+    timeout: 30000
+  - id: search-evidence
+    depends_on: [skill-bmad-review]
+    bash: |
+      archon context graph-waivers --json
+    timeout: 30000
+  - id: planner-contract
+    depends_on: [search-evidence]
+    bash: |
+      archon context compile "$ARGUMENTS" --json
+    timeout: 30000
+  - id: generator-qa-evaluator
+    depends_on: [planner-contract]
+    bash: |
+      archon context approval-capsule-verify --json
+    timeout: 30000
+  - id: feedback-handoff
+    depends_on: [generator-qa-evaluator]
+    bash: |
+      archon context status "$ARGUMENTS" --json
+    timeout: 30000
