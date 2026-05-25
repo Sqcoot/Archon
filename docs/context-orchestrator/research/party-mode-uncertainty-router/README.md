@@ -44,7 +44,7 @@ Copy `hooks/party_mode_router.py` to a trusted hook location, wire it from `hook
 
 Use the optional profile sketch in `examples/config_profile_party_mode.toml` to select Codex's built-in `:read-only` permission profile when your installed version supports permission profiles. Hooks are enabled by default in current Codex builds, but the router still expects review/trust through `/hooks` before a non-managed command hook runs.
 
-By default, the router writes small per-turn state under `~/.local/state/codex-party-mode`, writes party-mode artifacts under `./party-mode-output`, and expects a final `./party-mode-output.zip`. Override these paths with:
+By default, the router writes small per-turn state under `~/.local/state/codex-party-mode`, writes party-mode artifacts under `./party-mode-output`, and expects a final `./party-mode-output.zip`. This pack includes `party-mode-output/` as an ignored local output directory so generated investigation files do not dirty the repository. Override these paths with:
 
 - `PARTY_MODE_STATE_DIR`
 - `PARTY_MODE_ARTIFACT_DIR`
