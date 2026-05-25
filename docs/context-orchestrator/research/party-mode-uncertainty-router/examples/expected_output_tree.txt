@@ -12,7 +12,8 @@ party_mode_uncertainty_router_implementation.zip
 │   ├── 06_next_goal_template.md
 │   ├── 07_party_mode_integration_design.md
 │   ├── 08_hook_event_mapping.md
-│   └── 09_live_hook_install_validation.md
+│   ├── 09_live_hook_install_validation.md
+│   └── 10_rollout_smoke_decision.md
 ├── hooks/
 │   ├── hooks.json
 │   └── party_mode_router.py

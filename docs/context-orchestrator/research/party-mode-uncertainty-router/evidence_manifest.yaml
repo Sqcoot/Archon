@@ -43,6 +43,7 @@ implementation_artifacts:
     - artifacts/07_party_mode_integration_design.md
     - artifacts/08_hook_event_mapping.md
     - artifacts/09_live_hook_install_validation.md
+    - artifacts/10_rollout_smoke_decision.md
   examples:
     - examples/config_profile_party_mode.toml
     - examples/expected_output_tree.txt
@@ -69,6 +70,10 @@ verification:
       result: "turn completed; router state active=false score=0"
     - command: "codex exec explicit party-mode prompt with isolated PARTY_MODE_STATE_DIR"
       result: "router state active=true score=99 reason=explicit_party_mode; smoke stopped after skill-triggered tool path"
+    - command: "codex exec mutation-denial prompt with PARTY_MODE=force and isolated PARTY_MODE_STATE_DIR"
+      result: "PreToolUse denied sed -i; temp sample.txt remained unchanged and no backup file was created"
+    - command: "codex app-server hooks/list recheck for SubagentStop"
+      result: "SubagentStop not exposed by installed codex-cli 0.128.0; no live hook to trust or validate"
     - command: "updated ${CODEX_HOME:-$HOME/.codex}/config.toml feature flags"
       result: "kept both features.codex_hooks and features.hooks for CLI/Desktop compatibility"
 
@@ -88,6 +93,8 @@ implemented_behavior:
     - "Trust hashes were persisted under [hooks.state] at install time; refresh through /hooks if a client marks the portable command as changed."
     - "Real Codex normal prompt wrote inactive router state."
     - "Real Codex explicit party-mode prompt wrote active router state."
+    - "Real Codex mutation-denial prompt surfaced PreToolUse denial and left the temp file unchanged."
+    - "Rollout decision recorded: keep user-level only for now; do not promote to managed or project-standard hooks yet."
   risks:
     - risk: "Codex hook interception does not cover every possible tool path."
       mitigation: "Use hooks with Codex permission profiles or sandboxing."

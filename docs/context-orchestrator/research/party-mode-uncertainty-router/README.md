@@ -18,8 +18,9 @@ The intended operating pattern is:
 - `artifacts/04_investigation_manifest_template.yaml` — what evidence to collect.
 - `artifacts/05_output_report_template.md` — final report shape.
 - `artifacts/06_next_goal_template.md` — implementation handoff goal shape.
-- `artifacts/07_party_mode_integration_design.md` — architecture and hook placement.
-- `hooks/hooks.json` — example Codex hook config.
+- `artifacts/07_party_mode_integration_design.md` - architecture and hook placement.
+- `artifacts/10_rollout_smoke_decision.md` - live Codex smoke evidence and rollout decision.
+- `hooks/hooks.json` - example Codex hook config.
 - `hooks/party_mode_router.py` — sample hook script for uncertainty detection and read-only enforcement.
 - `schemas/party_mode_state.schema.json` — small schema for persisted hook state.
 - `prompts/party_mode_investigation_prompt.md` — prompt to start a read-only party-mode run.
@@ -70,5 +71,7 @@ Covered checks:
 - Artifact-only writes are allowed.
 - `SubagentStart` receives the read-only contract.
 - `Stop` blocks missing handoff zips and allows valid complete zips.
+
+Live rollout smoke is recorded in `artifacts/10_rollout_smoke_decision.md`. Current decision: keep the router as a user-level hook; do not promote it to managed or project-standard hooks yet.
 
 This pack is a hook implementation/handoff artifact. Installing the hook into a live user or project config is a separate trust decision.

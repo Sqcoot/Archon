@@ -2,21 +2,20 @@
 
 ## Goal
 
-Run an end-to-end Codex turn smoke test for the installed party-mode router and decide whether to promote it from user-level hooks to managed or project-standard hooks.
+Revisit party-mode router promotion after a Codex upgrade or an explicit project request.
 
 ## Definition of done
 
-- One explicit party-mode prompt is run through Codex and confirms party-mode activation in the resulting state or model-visible context.
-- One normal low-risk prompt is run through Codex and confirms no party-mode activation.
-- One active party-mode turn attempts a mutating action and confirms the hook denial is surfaced correctly.
-- `SubagentStop` support is rechecked against the installed Codex version; if the event appears in `hooks/list`, it is trusted and validated.
-- A rollout decision is recorded: keep user-level only, install per-project, or promote to a managed hook path.
+- Installed Codex hook events are rechecked with `hooks/list`.
+- If `SubagentStart` or `SubagentStop` appears in the installed Codex build, live validation is added for those events.
+- A target project explicitly accepts the party-mode read-only policy before project-standard installation.
+- The rollout decision remains documented in `artifacts/10_rollout_smoke_decision.md`.
 
 ## Boundaries
 
 In scope:
 
-- Live Codex turn smoke testing.
+- Re-running live Codex turn smoke testing after a Codex upgrade or project request.
 - Hook trust/status checks with `hooks/list`.
 - Small compatibility patches if the live payload differs from documented behavior.
 - Documentation of rollout decision and rollback path.
@@ -39,11 +38,10 @@ Out of scope:
 ## Suggested implementation steps
 
 1. Run `hooks/list` for the target workspace and confirm enabled hooks; refresh trust through `/hooks` if the client reports the portable command as changed.
-2. Start a fresh Codex turn with an explicit party-mode prompt and inspect persisted router state.
-3. Start a fresh Codex turn with a normal low-risk prompt and inspect persisted router state.
-4. Trigger or simulate a mutating tool request under active party mode and confirm denial UX.
-5. Recheck schema and `hooks/list` for `SubagentStop`.
-6. Record rollout decision and any compatibility patch.
+2. Recheck schema and `hooks/list` for `SubagentStart` and `SubagentStop`.
+3. Re-run normal, explicit party-mode, and mutation-denial Codex turn smoke tests.
+4. If a project-standard install is requested, add a project-local hook config only after reviewing the read-only policy with the project owner.
+5. Record the new rollout decision and any compatibility patch.
 
 ## Verification
 
@@ -51,6 +49,7 @@ Out of scope:
 - `hooks/list` reports no warnings or errors.
 - Party-mode activation and normal non-activation are proven from current state.
 - Mutating action denial is visible in the live Codex turn or an equivalent app-server hook execution path.
+- Updated rollout decision is committed with the package artifacts.
 
 ## Rollback / safety notes
 

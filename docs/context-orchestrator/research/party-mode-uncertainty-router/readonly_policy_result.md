@@ -25,3 +25,7 @@ Implementation, installation, validation, and packaging used normal write permis
 ## Compatibility note
 
 Codex builds expose different hook event sets. The router contains `SubagentStart` and `SubagentStop` handlers; current live install can only trust and validate the hook events exposed by the active Codex build.
+
+## Rollout decision
+
+End-to-end Codex smoke validation passed for normal non-activation, explicit activation, and mutation denial. Keep the current rollout user-level only; do not promote to managed or project-standard hooks yet.

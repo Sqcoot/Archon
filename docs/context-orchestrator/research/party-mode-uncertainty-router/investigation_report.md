@@ -45,9 +45,12 @@ python3 -m zipfile -l party_mode_uncertainty_router_implementation.zip
 
 Additional live-install validation is recorded in `artifacts/09_live_hook_install_validation.md`. Result: all 9 tests passed, JSON files parsed, supported user-level hooks are enabled, and the installed router passed Codex-shaped hook-payload checks for activation, normal non-activation, mutation denial, subagent context, and Stop zip gates.
 
+End-to-end Codex smoke validation is recorded in `artifacts/10_rollout_smoke_decision.md`. Result: normal prompts remained inactive, explicit party-mode prompts activated the router, and a forced active party-mode turn surfaced a `PreToolUse` denial for `sed -i` while leaving the temp file unchanged.
+
 ## Notes
 
 - This package implements the hook router and artifacts, and the router has been installed into the user-level Codex hook directory.
 - Runtime party-mode behavior still intentionally blocks source mutation while party mode is active. The implementation work and packaging used normal write permissions.
 - Hooks are guardrails, not a full sandbox replacement. A Codex `:read-only` permission profile remains recommended for investigation-only runs.
 - Codex builds expose different hook event sets; the environment-specific differences are documented in `artifacts/09_live_hook_install_validation.md`.
+- Rollout decision: keep user-level only for now; do not promote to managed or project-standard hooks until a target project explicitly accepts the policy and the installed Codex event set is rechecked.
