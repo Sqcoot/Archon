@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "aco.migration-order-plan.v1",
+  "sourceBranch": "codex/aco-stabilization-slices",
+  "baseBranch": "dev",
+  "phases": [
+    {
+      "id": "S2",
+      "ownerPackage": "@archon/aco-core",
+      "goal": "Project reference surface plan into typed manifests and run the read-only compatibility gate.",
+      "dependsOn": ["S0", "S1"],
+      "parityGate": "reference-surface-compatibility-gate",
+      "mustRemainPure": true,
+      "runtimeMigrationAllowed": false
+    },
+    {
+      "id": "S3",
+      "ownerPackage": "@archon/aco-ledgers",
+      "goal": "First read-only compatibility migration slice for archon context ledgers.",
+      "dependsOn": ["S2"],
+      "parityGate": "ledger-fixture-parity-gate",
+      "mustRemainPure": true,
+      "runtimeMigrationAllowed": false
+    },
+    {
+      "id": "S4-plus",
+      "ownerPackage": "deferred",
+      "goal": "Defer remaining CLI, workflow, server, web, provider, graph, hook, auth, MCP, and artifact writer migrations until S2/S3 gates pass.",
+      "dependsOn": ["S2", "S3"],
+      "parityGate": "future-surface-parity-gate",
+      "mustRemainPure": false,
+      "runtimeMigrationAllowed": true
+    }
+  ],
+  "preservedSurfaces": [
+    {
+      "surface": "/aco:bootstrap-codex",
+      "owner": "aco-codex",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon aco status",
+      "owner": "aco-cli",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context status",
+      "owner": "aco-context",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context ledgers",
+      "owner": "aco-ledgers",
+      "capturePhase": "S2",
+      "migrationPhase": "S3",
+      "dependsOn": ["reference-surface-plan", "reference-surface-compatibility-gate"],
+      "parityGate": "ledger-fixture-parity-gate"
+    },
+    {
+      "surface": "archon context route",
+      "owner": "aco-bmad",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context compile",
+      "owner": "aco-context",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context approval-capsule",
+      "owner": "aco-context",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context approval-capsule-verify",
+      "owner": "aco-context",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context graph-waivers",
+      "owner": "aco-research",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon context validate",
+      "owner": "aco-gates",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "context-orchestrate",
+      "owner": "aco-workflows",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "archon-aco-adversarial-loop",
+      "owner": "aco-workflows",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "bun run research:graph",
+      "owner": "aco-research",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    },
+    {
+      "surface": "bun run aco:role-contracts",
+      "owner": "aco-gates",
+      "capturePhase": "S2",
+      "migrationPhase": "S4-plus",
+      "dependsOn": ["reference-surface-plan"],
+      "parityGate": "reference-surface-compatibility-gate"
+    }
+  ]
+}

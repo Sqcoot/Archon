@@ -64,6 +64,8 @@ e2e-screenshots/
 .agents/rca-reports/
 .agents/plans/
 .agents/pr-reviews
+party-mode-output*/
+party-mode-output*.zip
 .claude/PRPs/
 .claude/archon/
 .claude/mockups/

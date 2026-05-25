@@ -18,6 +18,7 @@ coverage/
 sessions/
 api_sessions/
 workspace/
+party-mode-output*/
 
 # Lock files (auto-generated)
 package-lock.json

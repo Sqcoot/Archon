@@ -11,8 +11,9 @@ export default tseslint.config(
       'packages/*/dist/**',
       'dist/**',
       'coverage/**',
-      '.agents/examples/**',
+      '.agents/**',
       'packages/docs-web/**',
+      'party-mode-output*/**',
       'workspace/**',
       'worktrees/**',
       '.claude/worktrees/**',
@@ -76,6 +77,17 @@ export default tseslint.config(
         { selector: 'variable', format: ['camelCase', 'UPPER_CASE'] },
       ],
       '@typescript-eslint/no-non-null-assertion': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@archon/*/src/*'],
+              message: 'Import through public package exports instead of package internals.',
+            },
+          ],
+        },
+      ],
 
       // === DISABLED RULES ===
 
@@ -108,6 +120,55 @@ export default tseslint.config(
       '@typescript-eslint/require-await': 'off',
       // Constructor style preference
       '@typescript-eslint/consistent-generic-constructors': 'off',
+    },
+  },
+
+  // ACO core is pure domain code: no runtime adapters, SDKs, process globals, or IO.
+  {
+    files: ['packages/aco-core/src/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      '@typescript-eslint/no-floating-promises': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'fs', message: 'ACO core must not import filesystem APIs.' },
+            { name: 'fs/promises', message: 'ACO core must not import filesystem APIs.' },
+            { name: 'node:fs', message: 'ACO core must not import filesystem APIs.' },
+            { name: 'node:fs/promises', message: 'ACO core must not import filesystem APIs.' },
+            { name: 'path', message: 'ACO core paths must use branded contracts.' },
+            { name: 'node:path', message: 'ACO core paths must use branded contracts.' },
+            { name: 'process', message: 'ACO core must not read process-global config.' },
+            { name: 'node:process', message: 'ACO core must not read process-global config.' },
+            { name: 'child_process', message: 'ACO core must not spawn processes.' },
+            { name: 'node:child_process', message: 'ACO core must not spawn processes.' },
+            { name: '@hono/zod-openapi', message: 'OpenAPI belongs in server adapters.' },
+            {
+              name: '@anthropic-ai/claude-agent-sdk',
+              message: 'Provider SDKs belong in provider adapters.',
+            },
+            { name: '@openai/codex-sdk', message: 'Provider SDKs belong in provider adapters.' },
+            {
+              name: '@mariozechner/pi-ai',
+              message: 'Provider SDKs belong in provider adapters.',
+            },
+            {
+              name: '@mariozechner/pi-coding-agent',
+              message: 'Provider SDKs belong in provider adapters.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@archon/*', '@archon/*/src/*'],
+              message: 'ACO core must not import Archon runtime packages or internals.',
+            },
+          ],
+        },
+      ],
     },
   }
 );

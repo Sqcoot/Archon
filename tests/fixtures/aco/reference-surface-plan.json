@@ -1,0 +1,293 @@
+{
+  "schemaVersion": "aco.reference-surface-plan.v1",
+  "sourceBranch": "codex/aco-stabilization-slices",
+  "baseBranch": "dev",
+  "generatedFrom": [
+    "/Users/edam/Downloads/aco_rewrite_readonly_artifacts (1)/ledgers/command-ledger.csv",
+    "/Users/edam/Downloads/aco_rewrite_readonly_artifacts (1)/ledgers/capability-inventory.csv"
+  ],
+  "commands": [
+    {
+      "command": "archon aco status --cwd <repo> [--json]",
+      "surface": "CLI",
+      "purpose": "Productized ACO status and graph confidence limits",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-cli",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "surface": "CLI/slash",
+      "purpose": "Emit Codex-ready bootstrap capsule",
+      "safety": "read-only or writes-artifacts",
+      "mutates": "artifact-only when flag set",
+      "approvalRequired": "no for artifact writes",
+      "owner": "aco-codex",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context status [prompt]",
+      "surface": "CLI",
+      "purpose": "Show readiness, evidence, next decision",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-context",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context ledgers [prompt]",
+      "surface": "CLI",
+      "purpose": "Show tool and command ledgers",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-ledgers",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context route <prompt>",
+      "surface": "CLI",
+      "purpose": "Select BMAD advisory route",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-bmad",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context compile <prompt>",
+      "surface": "CLI",
+      "purpose": "Compile context package and artifact archive",
+      "safety": "writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no unless graph/config mutation requested",
+      "owner": "aco-context",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context approval-capsule <prompt>",
+      "surface": "CLI",
+      "purpose": "Create approval capsule for approval-required package",
+      "safety": "writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no to create capsule",
+      "owner": "aco-context",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context approval-capsule-verify",
+      "surface": "CLI",
+      "purpose": "Verify approval contract against artifacts",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-context",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context graph-waivers",
+      "surface": "CLI",
+      "purpose": "Inspect graph waiver closure state",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-research",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "archon context validate",
+      "surface": "CLI",
+      "purpose": "Validate ACO research/spec readiness",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-gates",
+      "compatibility": "preserve"
+    },
+    {
+      "command": "bun run research:graph",
+      "surface": "script",
+      "purpose": "Generate graph evidence",
+      "safety": "network/writes-artifacts",
+      "mutates": "graph cache artifacts",
+      "approvalRequired": "yes in readonly contexts",
+      "owner": "aco-research",
+      "compatibility": "preserve-gated"
+    },
+    {
+      "command": "bun run aco:role-contracts",
+      "surface": "script",
+      "purpose": "Check role contracts",
+      "safety": "read-only",
+      "mutates": "no",
+      "approvalRequired": "no",
+      "owner": "aco-gates",
+      "compatibility": "preserve"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "commands",
+      "capability": "Slash and CLI commands",
+      "currentSurface": "aco bootstrap-codex; archon aco status; archon context *",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "CLI/command manifest",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "workflows",
+      "capability": "Default workflows",
+      "currentSurface": "context-orchestrate; archon-aco-adversarial-loop",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "workflow manifest + role contracts",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "artifacts",
+      "capability": "Prompt packages, capsules, ledgers, dossiers",
+      "currentSurface": "JSON + markdown artifacts",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "artifact manifest",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "tools",
+      "capability": "Tool availability ledger",
+      "currentSurface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "tool ledger",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "adapters",
+      "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
+      "currentSurface": "source/worktree/artifact separation",
+      "rewriteAction": "rewrite",
+      "requiredArtifact": "adapter tests",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "gates",
+      "capability": "ACO validation gates",
+      "currentSurface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "gate registry",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "manifests",
+      "capability": "Capability, provider, workflow, artifact manifests",
+      "currentSurface": "schema-first registry",
+      "rewriteAction": "rewrite",
+      "requiredArtifact": "manifest schemas",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "mcp-context7-docs",
+      "capability": "Docs evidence resolution",
+      "currentSurface": "OpenAI docs MCP, Context7, manual",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "docs evidence plan",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "bmad",
+      "capability": "BMAD routing and advisory roles",
+      "currentSurface": "route mapping and role contracts",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "BMAD role manifest",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "subagents",
+      "capability": "Role contracts and subagent boundaries",
+      "currentSurface": "contractual, not unsupported runtime claims",
+      "rewriteAction": "preserve-harden",
+      "requiredArtifact": "role contract checker",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "agentic-search",
+      "capability": "Research discovery",
+      "currentSurface": "surfaces/tests/evidence gaps",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "search report schema",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "bootload",
+      "capability": "Session context bootload",
+      "currentSurface": "capability snapshot and handoff",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "bootstrap context",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "hooks-plugins",
+      "capability": "Hooks/plugins/future extensions",
+      "currentSurface": "approval-gated manifests",
+      "rewriteAction": "rewrite",
+      "requiredArtifact": "extension registry",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "ledgers",
+      "capability": "Tool, command, workflow, evidence ledgers",
+      "currentSurface": "status/confidence/freshness/safety",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "ledger schemas",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "graphify",
+      "capability": "Graph evidence and waiver closure",
+      "currentSurface": "upstream graph reports",
+      "rewriteAction": "preserve",
+      "requiredArtifact": "graph evidence schema",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "providers",
+      "capability": "Claude/Codex/Pi/future providers",
+      "currentSurface": "generic provider contract",
+      "rewriteAction": "rewrite",
+      "requiredArtifact": "provider manifest",
+      "status": "planned",
+      "confidence": "medium"
+    },
+    {
+      "id": "codex-harness",
+      "capability": "Real Codex harness and bootstrap",
+      "currentSurface": "capsules/events/session handoff",
+      "rewriteAction": "preserve-harden",
+      "requiredArtifact": "Codex package",
+      "status": "planned",
+      "confidence": "medium"
+    }
+  ],
+  "requiredSurfaceAssertions": [
+    "/aco:bootstrap-codex",
+    "archon aco status",
+    "all archon context commands",
+    "context-orchestrate",
+    "archon-aco-adversarial-loop"
+  ]
+}
