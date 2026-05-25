@@ -54,6 +54,19 @@
         "typescript": "^5.0.0",
       },
     },
+    "packages/aco-context": {
+      "name": "@archon/aco-context",
+      "version": "0.3.12",
+      "dependencies": {
+        "@archon/aco-cli-contracts": "workspace:*",
+        "@archon/aco-core": "workspace:*",
+        "@archon/aco-research": "workspace:*",
+        "zod": "^3.25.28",
+      },
+      "peerDependencies": {
+        "typescript": "^5.0.0",
+      },
+    },
     "packages/aco-core": {
       "name": "@archon/aco-core",
       "version": "0.3.12",
@@ -113,6 +126,7 @@
       "dependencies": {
         "@archon/aco-cli-contracts": "workspace:*",
         "@archon/aco-codex": "workspace:*",
+        "@archon/aco-context": "workspace:*",
         "@archon/aco-research": "workspace:*",
         "@archon/adapters": "workspace:*",
         "@archon/core": "workspace:*",
@@ -333,6 +347,8 @@
     "@archon/aco-cli-contracts": ["@archon/aco-cli-contracts@workspace:packages/aco-cli-contracts"],
 
     "@archon/aco-codex": ["@archon/aco-codex@workspace:packages/aco-codex"],
+
+    "@archon/aco-context": ["@archon/aco-context@workspace:packages/aco-context"],
 
     "@archon/aco-core": ["@archon/aco-core@workspace:packages/aco-core"],
 

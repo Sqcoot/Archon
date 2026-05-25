@@ -21,6 +21,20 @@ import type {
   JsonValue,
 } from '@archon/aco-cli-contracts';
 import {
+  buildApprovalCapsule,
+  buildContextStatus,
+  compileContextPackage,
+  renderApprovalCapsuleJson,
+  renderApprovalCapsuleMarkdown,
+  renderApprovalCapsuleVerificationJson,
+  renderApprovalCapsuleVerificationMarkdown,
+  renderCompiledContextPackageJson,
+  renderCompiledContextPackageMarkdown,
+  renderContextStatusJson,
+  renderContextStatusMarkdown,
+  verifyApprovalCapsule,
+} from '@archon/aco-context';
+import {
   buildCodexBootstrapArtifacts,
   codexBootstrapEventTypeValues,
   defaultCodexBootstrapInput,
@@ -38,6 +52,8 @@ export interface AcoCliOptions {
 type AcoResolution =
   | { readonly ok: true; readonly invocation: CommandInvocation }
   | { readonly ok: false; readonly result: AcoCommandResultEnvelope };
+
+const DEFAULT_CONTEXT_PROMPT = 'Implement S8 context contracts';
 
 export async function acoCommand(
   cwd: string,
@@ -150,22 +166,20 @@ export function resolveAcoCommandInvocation(
         return invocation('archon.context.route', cwd, positionals, args, outputMode.value);
       }
       case 'compile':
-        return invocation(
+        return contextPromptInvocation(
           'archon.context.compile',
           cwd,
           positionals,
-          promptArgs(positionals, 2),
           outputMode.value,
-          ['writes-artifacts']
+          options.writeArtifact === true
         );
       case 'approval-capsule':
-        return invocation(
+        return contextPromptInvocation(
           'archon.context.approval-capsule',
           cwd,
           positionals,
-          promptArgs(positionals, 2),
           outputMode.value,
-          ['writes-artifacts']
+          options.writeArtifact === true
         );
       case 'approval-capsule-verify':
         return invocation(
@@ -203,6 +217,11 @@ function createAcoCliHandlers(cwd: string): readonly CommandHandlerRegistration[
       handler: invocationItem => renderBootstrapCodex(invocationItem),
     },
     {
+      commandId: 'archon.context.status',
+      handler: (invocationItem, descriptor): AcoCommandResultEnvelope =>
+        renderContextStatusCommand(invocationItem, descriptor),
+    },
+    {
       commandId: 'archon.context.ledgers',
       handler: (_invocation, descriptor): AcoCommandResultEnvelope => {
         const catalog = buildCatalogOrThrow();
@@ -223,6 +242,21 @@ function createAcoCliHandlers(cwd: string): readonly CommandHandlerRegistration[
           data: { prompt },
         });
       },
+    },
+    {
+      commandId: 'archon.context.compile',
+      handler: (invocationItem, descriptor): AcoCommandResultEnvelope =>
+        renderContextPackageCommand(invocationItem, descriptor),
+    },
+    {
+      commandId: 'archon.context.approval-capsule',
+      handler: (invocationItem, descriptor): AcoCommandResultEnvelope =>
+        renderApprovalCapsuleCommand(invocationItem, descriptor),
+    },
+    {
+      commandId: 'archon.context.approval-capsule-verify',
+      handler: (invocationItem, descriptor): AcoCommandResultEnvelope =>
+        renderApprovalCapsuleVerificationCommand(invocationItem, descriptor),
     },
     {
       commandId: 'archon.context.graph-waivers',
@@ -251,6 +285,124 @@ function createAcoCliHandlers(cwd: string): readonly CommandHandlerRegistration[
       },
     },
   ];
+}
+
+function renderContextStatusCommand(
+  invocationItem: CommandInvocation,
+  descriptor: AcoCommandDescriptor
+): AcoCommandResultEnvelope {
+  const prompt = stringArg(invocationItem.args.prompt, '');
+  const status = buildContextStatus({ prompt });
+  if (!status.ok)
+    return deniedCommandResult(descriptor.id, descriptor.display, status.issues.join('; '));
+
+  return okCommandResult({
+    descriptor,
+    stdout:
+      invocationItem.outputMode === 'json'
+        ? renderContextStatusJson(status.value)
+        : renderContextStatusMarkdown(status.value),
+    data: {
+      readiness: status.value.readiness,
+      promptDigest: status.value.promptDigest,
+      requiredLedgers: status.value.requiredLedgers.length,
+      deferredSurfaces: status.value.deferredSurfaces.length,
+    },
+  });
+}
+
+function renderContextPackageCommand(
+  invocationItem: CommandInvocation,
+  descriptor: AcoCommandDescriptor
+): AcoCommandResultEnvelope {
+  const prompt = stringArg(invocationItem.args.prompt, '');
+  const context = compileContextPackage({ prompt });
+  if (!context.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, context.issues.join('; '));
+  }
+
+  return okCommandResult({
+    descriptor,
+    stdout:
+      invocationItem.outputMode === 'json'
+        ? renderCompiledContextPackageJson(context.value)
+        : renderCompiledContextPackageMarkdown(context.value),
+    data: {
+      contextDigest: context.value.contextDigest,
+      promptDigest: context.value.promptDigest,
+      statusReadiness: context.value.statusReadiness,
+      ledgerSummaries: context.value.ledgerSummaries.length,
+      deferredItems: context.value.deferredItems.length,
+    },
+  });
+}
+
+function renderApprovalCapsuleCommand(
+  invocationItem: CommandInvocation,
+  descriptor: AcoCommandDescriptor
+): AcoCommandResultEnvelope {
+  const prompt = stringArg(invocationItem.args.prompt, '');
+  const context = compileContextPackage({ prompt });
+  if (!context.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, context.issues.join('; '));
+  }
+
+  const capsule = buildApprovalCapsule({ contextPackage: context.value });
+  if (!capsule.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, capsule.issues.join('; '));
+  }
+
+  return okCommandResult({
+    descriptor,
+    stdout:
+      invocationItem.outputMode === 'json'
+        ? renderApprovalCapsuleJson(capsule.value)
+        : renderApprovalCapsuleMarkdown(capsule.value),
+    data: {
+      capsuleId: capsule.value.id,
+      checksum: capsule.value.checksum,
+      contextDigest: capsule.value.contextDigest,
+      approvalStatus: capsule.value.approvalStatus,
+    },
+  });
+}
+
+function renderApprovalCapsuleVerificationCommand(
+  invocationItem: CommandInvocation,
+  descriptor: AcoCommandDescriptor
+): AcoCommandResultEnvelope {
+  const context = compileContextPackage({ prompt: DEFAULT_CONTEXT_PROMPT });
+  if (!context.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, context.issues.join('; '));
+  }
+
+  const capsule = buildApprovalCapsule({ contextPackage: context.value });
+  if (!capsule.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, capsule.issues.join('; '));
+  }
+
+  const verification = verifyApprovalCapsule({
+    capsule: capsule.value,
+    expectedContext: context.value,
+    expectedPrompt: DEFAULT_CONTEXT_PROMPT,
+  });
+  if (!verification.ok) {
+    return deniedCommandResult(descriptor.id, descriptor.display, verification.issues.join('; '));
+  }
+
+  return okCommandResult({
+    descriptor,
+    stdout:
+      invocationItem.outputMode === 'json'
+        ? renderApprovalCapsuleVerificationJson(verification.value)
+        : renderApprovalCapsuleVerificationMarkdown(verification.value),
+    data: {
+      verificationStatus: verification.value.status,
+      capsuleId: verification.value.capsuleId,
+      canGrantApproval: verification.value.canGrantApproval,
+      issueCount: verification.value.issues.length,
+    },
+  });
 }
 
 function renderBootstrapCodex(invocationItem: CommandInvocation): AcoCommandResultEnvelope {
@@ -336,7 +488,7 @@ function renderAcoStatusMarkdown(cwd: string): string {
     `deferred: ${deferred}`,
     `approvalRequired: ${approvalRequired}`,
     '',
-    'S7 exposes command parity through @archon/aco-cli-contracts and thin CLI adapters.',
+    'S8 exposes context parity through @archon/aco-context and thin CLI adapters.',
     '',
   ].join('\n');
 }
@@ -400,6 +552,31 @@ function invocation(
       approval: null,
     },
   };
+}
+
+function contextPromptInvocation(
+  commandId: Extract<AcoCommandId, 'archon.context.compile' | 'archon.context.approval-capsule'>,
+  cwd: string,
+  positionals: readonly string[],
+  outputMode: AcoCommandOutputMode,
+  writeArtifact: boolean
+): AcoResolution {
+  const args = promptArgs(positionals, 2);
+  if (args.prompt.length === 0) {
+    const descriptor = descriptorOrThrow(commandId);
+    return {
+      ok: false,
+      result: deniedCommandResult(descriptor.id, descriptor.display, 'missing required <prompt>'),
+    };
+  }
+  return invocation(
+    commandId,
+    cwd,
+    positionals,
+    { ...args, writeArtifact },
+    outputMode,
+    writeArtifact ? ['writes-artifacts'] : []
+  );
 }
 
 function promptArgs(

@@ -36,7 +36,7 @@ describe('ACO CLI command contracts', () => {
 
   test('renders supported and deferred command plans deterministically', async () => {
     const supported = descriptorOrThrow('archon.aco.status');
-    const deferred = descriptorOrThrow('archon.context.compile');
+    const deferred = descriptorOrThrow('bun.aco.role-contracts');
 
     expect(renderCommandPlanMarkdown(supported)).toBe(
       await loadGolden('supported-command-plan.expected.md')
@@ -109,8 +109,8 @@ describe('ACO CLI command contracts', () => {
     if (result.status !== 'passed') throw new Error('fixture gate did not pass');
     expect(result.value.descriptorCount).toBe(REQUIRED_ACO_COMMAND_SURFACES.length);
     expect(result.value.statusCounts).toEqual({
-      supported: 6,
-      deferred: 5,
+      supported: 10,
+      deferred: 1,
       'approval-required': 1,
     });
 
@@ -124,7 +124,7 @@ describe('ACO CLI command contracts', () => {
   });
 
   test('approval-required helper uses descriptor evidence and stable exit code', () => {
-    const descriptor = descriptorOrThrow('archon.context.compile');
+    const descriptor = descriptorOrThrow('bun.research.graph');
     const result = approvalRequiredCommandResult(descriptor, ['writes-artifacts']);
 
     expect(result.status).toBe('approval_required');

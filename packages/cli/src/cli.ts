@@ -134,7 +134,7 @@ Options:
   --json                     Output machine-readable JSON (for workflow list)
   --event <event>            Codex lifecycle event for 'aco bootstrap-codex'
   --format <markdown|json>   Output format for ACO/context commands
-  --write-artifact           Request artifact write path (denied by S7 safety gates)
+  --write-artifact           Request artifact write path (denied without approval)
   --workflow <name>          Workflow to run for 'continue' (default: archon-assist)
   --no-context               Skip context injection for 'continue'
   --port <port>              Override server port for 'serve' (default: 3090)

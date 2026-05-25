@@ -1,5 +1,5 @@
 import type { Gate, GateRunResult, MutationClass } from '@archon/aco-core';
-import { COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE } from './constants';
+import { COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE, S8_CONSENSUS_EVIDENCE } from './constants';
 import type { CommandInvocation } from './router';
 import type {
   AcoApproval,
@@ -41,7 +41,7 @@ export const acoCliContractsFixtureGate: Gate<
     input: readonly AcoCommandDescriptor[] | undefined
   ): Promise<GateRunResult<AcoCliContractsFixtureResult>> {
     const catalog = buildCommandCatalog(input);
-    const evidence = [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE];
+    const evidence = [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE, S8_CONSENSUS_EVIDENCE];
     if (!catalog.ok) {
       return Promise.resolve({ status: 'failed', errors: catalog.issues, evidence });
     }
@@ -153,7 +153,7 @@ export function deniedCommandResult(
     stdout: '',
     stderr: `Denied ACO command: ${display}. ${reason}.`,
     data: { reason },
-    evidence: [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE],
+    evidence: [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE, S8_CONSENSUS_EVIDENCE],
   });
 }
 

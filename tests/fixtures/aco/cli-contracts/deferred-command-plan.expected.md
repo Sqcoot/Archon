@@ -1,18 +1,18 @@
 # ACO Command Plan
 
-command: archon context compile <prompt>
-id: archon.context.compile
-surface: cli
-owner: aco-context
+command: bun run aco:role-contracts
+id: bun.aco.role-contracts
+surface: script
+owner: aco-gates
 status: deferred
-mutates: writes-artifacts
-safety: writes-artifacts
-approvalRequired: true
-outputModes: markdown, json
+mutates: read-only
+safety: read-only
+approvalRequired: false
+outputModes: text, json
 
 ## Arguments
 
-- prompt: required, variadic; Prompt to compile into a context package
+- none
 
 ## Options
 

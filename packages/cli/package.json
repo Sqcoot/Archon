@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@archon/aco-cli-contracts": "workspace:*",
+    "@archon/aco-context": "workspace:*",
     "@archon/aco-codex": "workspace:*",
     "@archon/aco-research": "workspace:*",
     "@archon/adapters": "workspace:*",

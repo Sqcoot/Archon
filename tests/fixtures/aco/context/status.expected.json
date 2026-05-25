@@ -1,0 +1,229 @@
+{
+  "approvalReadiness": [
+    {
+      "commandId": "bun.research.graph",
+      "display": "bun run research:graph",
+      "mutationScope": ["network", "writes-graph-cache"],
+      "reason": "graph refresh remains approval-required and is never triggered implicitly",
+      "required": true
+    }
+  ],
+  "commandCoverage": [
+    {
+      "commandId": "archon.aco.bootstrap-codex",
+      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "implementationStatus": "supported",
+      "owner": "aco-codex"
+    },
+    {
+      "commandId": "archon.aco.status",
+      "display": "archon aco status --cwd <repo> [--json]",
+      "implementationStatus": "supported",
+      "owner": "aco-cli"
+    },
+    {
+      "commandId": "archon.context.approval-capsule",
+      "display": "archon context approval-capsule <prompt>",
+      "implementationStatus": "supported",
+      "owner": "aco-context"
+    },
+    {
+      "commandId": "archon.context.approval-capsule-verify",
+      "display": "archon context approval-capsule-verify",
+      "implementationStatus": "supported",
+      "owner": "aco-context"
+    },
+    {
+      "commandId": "archon.context.compile",
+      "display": "archon context compile <prompt>",
+      "implementationStatus": "supported",
+      "owner": "aco-context"
+    },
+    {
+      "commandId": "archon.context.graph-waivers",
+      "display": "archon context graph-waivers",
+      "implementationStatus": "supported",
+      "owner": "aco-research"
+    },
+    {
+      "commandId": "archon.context.ledgers",
+      "display": "archon context ledgers [prompt]",
+      "implementationStatus": "supported",
+      "owner": "aco-ledgers"
+    },
+    {
+      "commandId": "archon.context.route",
+      "display": "archon context route <prompt>",
+      "implementationStatus": "supported",
+      "owner": "aco-bmad"
+    },
+    {
+      "commandId": "archon.context.status",
+      "display": "archon context status [prompt]",
+      "implementationStatus": "supported",
+      "owner": "aco-context"
+    },
+    {
+      "commandId": "archon.context.validate",
+      "display": "archon context validate",
+      "implementationStatus": "supported",
+      "owner": "aco-gates"
+    },
+    {
+      "commandId": "bun.aco.role-contracts",
+      "display": "bun run aco:role-contracts",
+      "implementationStatus": "deferred",
+      "owner": "aco-gates"
+    },
+    {
+      "commandId": "bun.research.graph",
+      "display": "bun run research:graph",
+      "implementationStatus": "approval-required",
+      "owner": "aco-research"
+    }
+  ],
+  "deferredSurfaces": [
+    "archon-aco-adversarial-loop workflow parity",
+    "bun run aco:role-contracts",
+    "bun run research:graph",
+    "context-orchestrate workflow parity"
+  ],
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.context.command-ledger",
+      "source": "ledgers/command-ledger.csv#aco-context",
+      "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.context.workflow-deferral",
+      "source": "party-mode-output-s8-consensus/consensus_report.md",
+      "summary": "Workflow parity is deferred until context primitives are implemented"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.context.s8-consensus",
+      "source": "party-mode-output-s8-consensus/next_goal_4000chars.txt",
+      "summary": "S8 consensus selected ACO context contracts before workflow parity"
+    }
+  ],
+  "findings": ["4 surfaces remain deferred or approval-gated"],
+  "graphWaiver": {
+    "command": null,
+    "findings": ["all required graph evidence is closed"],
+    "required": true,
+    "safetyClass": null,
+    "status": "closed"
+  },
+  "id": "aco.context.s8.status",
+  "kind": "aco-context-status",
+  "nextSlice": "S9 workflow parity after context contracts are committed",
+  "prompt": "Implement S8 context contracts",
+  "promptDigest": "496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000",
+  "readiness": "degraded",
+  "requiredLedgers": [
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "artifact",
+      "rowCount": 12,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "capability",
+      "rowCount": 17,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "command",
+      "rowCount": 12,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "risk",
+      "rowCount": 8,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "tool",
+      "rowCount": 10,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "unknowns",
+      "rowCount": 6,
+      "status": "present"
+    },
+    {
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.context.command-ledger",
+          "source": "ledgers/command-ledger.csv#aco-context",
+          "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+        }
+      ],
+      "name": "workflow",
+      "rowCount": 5,
+      "status": "present"
+    }
+  ],
+  "schemaVersion": "aco.context-status.v1"
+}

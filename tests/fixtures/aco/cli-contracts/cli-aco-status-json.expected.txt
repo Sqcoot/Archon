@@ -4,9 +4,9 @@
     "approvalRequired": 1,
     "commands": 12,
     "cwd": "/repo",
-    "deferred": 5,
+    "deferred": 1,
     "schemaVersion": "aco.cli-command-catalog.v1",
-    "supported": 6
+    "supported": 10
   },
   "display": "archon aco status --cwd <repo> [--json]",
   "evidence": [
@@ -30,5 +30,5 @@
   "schemaVersion": "aco.cli-command-result.v1",
   "status": "ok",
   "stderr": "",
-  "stdout": "# ACO CLI Status\n\ncwd: /repo\nschemaVersion: aco.cli-command-catalog.v1\ncommands: 12\nsupported: 6\ndeferred: 5\napprovalRequired: 1\n\nS7 exposes command parity through @archon/aco-cli-contracts and thin CLI adapters.\n"
+  "stdout": "# ACO CLI Status\n\ncwd: /repo\nschemaVersion: aco.cli-command-catalog.v1\ncommands: 12\nsupported: 10\ndeferred: 1\napprovalRequired: 1\n\nS8 exposes context parity through @archon/aco-context and thin CLI adapters.\n"
 }

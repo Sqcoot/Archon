@@ -27,6 +27,7 @@ package-lock.json
 **/*.generated.ts
 
 # Agent commands and documentation (user-managed)
+artifacts/
 .agents/
 .claude/
 .archon/

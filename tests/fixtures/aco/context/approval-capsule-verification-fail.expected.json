@@ -1,0 +1,28 @@
+{
+  "canGrantApproval": false,
+  "capsuleId": "aco.context.s8.approval-capsule.archon.context.compile",
+  "commandId": "archon.context.compile",
+  "contextDigest": "61636f2e636f6e746578742d7061636b6167652e76317c61636f2e636f6e7465",
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.context.artifact-contracts",
+      "source": "architecture/artifact-contracts.md",
+      "summary": "Artifact contracts require deterministic schema, evidence, checksum, and freshness"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.context.s8-consensus",
+      "source": "party-mode-output-s8-consensus/next_goal_4000chars.txt",
+      "summary": "S8 consensus selected ACO context contracts before workflow parity"
+    }
+  ],
+  "id": "aco.context.s8.approval-capsule-verification.aco.context.s8.approval-capsule.archon.context.compile",
+  "issues": ["approval capsule checksum mismatch"],
+  "kind": "aco-approval-capsule-verification",
+  "promptDigest": "496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000",
+  "schemaVersion": "aco.approval-capsule-verification.v1",
+  "status": "failed"
+}

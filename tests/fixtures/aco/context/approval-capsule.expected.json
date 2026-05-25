@@ -1,0 +1,61 @@
+{
+  "approvalScope": ["writes-artifacts"],
+  "approvalStatus": "not-granted",
+  "checksum": "61636f2e617070726f76616c2d63617073756c652e76317c61636f2e636f6e74",
+  "contextDigest": "61636f2e636f6e746578742d7061636b6167652e76317c61636f2e636f6e7465",
+  "evidenceRefs": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.context.artifact-contracts",
+      "source": "architecture/artifact-contracts.md",
+      "summary": "Artifact contracts require deterministic schema, evidence, checksum, and freshness"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.context.command-ledger",
+      "source": "ledgers/command-ledger.csv#aco-context",
+      "summary": "Command ledger assigns status, compile, and approval capsule surfaces to aco-context"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.context.s8-consensus",
+      "source": "party-mode-output-s8-consensus/next_goal_4000chars.txt",
+      "summary": "S8 consensus selected ACO context contracts before workflow parity"
+    },
+    {
+      "confidence": "high",
+      "freshness": "fresh",
+      "id": "evidence.context.workflow-deferral",
+      "source": "party-mode-output-s8-consensus/consensus_report.md",
+      "summary": "Workflow parity is deferred until context primitives are implemented"
+    }
+  ],
+  "expiresWhen": "prompt digest, context digest, command, mutation scope, or evidence refs change",
+  "graphRequirements": {
+    "command": null,
+    "findings": ["all required graph evidence is closed"],
+    "required": true,
+    "safetyClass": null,
+    "status": "closed"
+  },
+  "id": "aco.context.s8.approval-capsule.archon.context.compile",
+  "invalidatesWhen": [
+    "prompt changes",
+    "context package digest changes",
+    "requested command changes",
+    "mutation scope changes",
+    "evidence refs change"
+  ],
+  "kind": "aco-approval-capsule",
+  "mutationClass": "writes-artifacts",
+  "promptDigest": "496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000",
+  "requestedCommand": {
+    "display": "archon context compile <prompt>",
+    "id": "archon.context.compile"
+  },
+  "roleAuthority": "approval capsule records requested scope only; it cannot grant approval",
+  "schemaVersion": "aco.approval-capsule.v1"
+}

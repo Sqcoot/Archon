@@ -21,33 +21,33 @@
       "surface": "cli"
     },
     {
-      "approvalRequired": true,
+      "approvalRequired": false,
       "display": "archon context approval-capsule <prompt>",
       "id": "archon.context.approval-capsule",
-      "implementationStatus": "deferred",
-      "mutates": "writes-artifacts",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
       "owner": "aco-context",
-      "safetyClasses": ["writes-artifacts"],
+      "safetyClasses": ["read-only", "writes-artifacts"],
       "surface": "cli"
     },
     {
       "approvalRequired": false,
       "display": "archon context approval-capsule-verify",
       "id": "archon.context.approval-capsule-verify",
-      "implementationStatus": "deferred",
+      "implementationStatus": "supported",
       "mutates": "read-only",
       "owner": "aco-context",
       "safetyClasses": ["read-only"],
       "surface": "cli"
     },
     {
-      "approvalRequired": true,
+      "approvalRequired": false,
       "display": "archon context compile <prompt>",
       "id": "archon.context.compile",
-      "implementationStatus": "deferred",
-      "mutates": "writes-artifacts",
+      "implementationStatus": "supported",
+      "mutates": "read-only",
       "owner": "aco-context",
-      "safetyClasses": ["writes-artifacts"],
+      "safetyClasses": ["read-only", "writes-artifacts"],
       "surface": "cli"
     },
     {
@@ -84,7 +84,7 @@
       "approvalRequired": false,
       "display": "archon context status [prompt]",
       "id": "archon.context.status",
-      "implementationStatus": "deferred",
+      "implementationStatus": "supported",
       "mutates": "read-only",
       "owner": "aco-context",
       "safetyClasses": ["read-only"],

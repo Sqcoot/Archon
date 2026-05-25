@@ -3,6 +3,7 @@ import {
   ACO_COMMAND_DESCRIPTORS,
   COMMAND_LEDGER_EVIDENCE,
   S7_CONSENSUS_EVIDENCE,
+  S8_CONSENSUS_EVIDENCE,
 } from './constants';
 import { acoCommandCatalogSchema, acoCommandDescriptorSchema } from './schemas';
 import type { AcoCommandCatalog, AcoCommandDescriptor } from './schemas';
@@ -19,7 +20,7 @@ export function buildCommandCatalog(
     kind: 'aco-cli-command-catalog',
     schemaVersion: 'aco.cli-command-catalog.v1',
     descriptors: [...descriptors].sort((left, right) => left.display.localeCompare(right.display)),
-    evidence: [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE],
+    evidence: [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE, S8_CONSENSUS_EVIDENCE],
   } as const;
 
   const parsed = acoCommandCatalogSchema.safeParse(catalog);

@@ -4,6 +4,7 @@ export {
   COMMAND_ROUTER_TEMPLATE_EVIDENCE,
   REQUIRED_ACO_COMMAND_SURFACES,
   S7_CONSENSUS_EVIDENCE,
+  S8_CONSENSUS_EVIDENCE,
 } from './constants';
 export {
   buildCommandCatalog,

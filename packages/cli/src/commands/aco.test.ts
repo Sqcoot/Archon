@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { acoCommand, resolveAcoCommandInvocation } from './aco';
 
+const CONTEXT_PROMPT_ARGS = ['Implement', 'S8', 'context', 'contracts'] as const;
+
 describe('ACO CLI adapter', () => {
   let logSpy: ReturnType<typeof spyOn>;
   let errorSpy: ReturnType<typeof spyOn>;
@@ -36,8 +38,42 @@ describe('ACO CLI adapter', () => {
     );
   });
 
-  test('denies write commands in readonly context before side effects', async () => {
-    const exitCode = await acoCommand('/repo', ['context', 'compile', 'build', 'bundle']);
+  test('renders S8 context status, package, capsule, and verification fixtures', async () => {
+    const cases = [
+      {
+        argv: ['context', 'status', ...CONTEXT_PROMPT_ARGS],
+        golden: 'status.expected.md',
+      },
+      {
+        argv: ['context', 'compile', ...CONTEXT_PROMPT_ARGS],
+        golden: 'context-package.expected.md',
+      },
+      {
+        argv: ['context', 'approval-capsule', ...CONTEXT_PROMPT_ARGS],
+        golden: 'approval-capsule.expected.md',
+      },
+      {
+        argv: ['context', 'approval-capsule-verify'],
+        golden: 'approval-capsule-verification-pass.expected.md',
+      },
+    ] as const;
+
+    for (const item of cases) {
+      const exitCode = await acoCommand('/repo', item.argv);
+      expect(exitCode).toBe(0);
+    }
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledTimes(cases.length);
+    for (const [index, item] of cases.entries()) {
+      expect(logSpy.mock.calls[index]?.[0]).toBe((await loadContextGolden(item.golden)).trimEnd());
+    }
+  });
+
+  test('denies requested context artifact writes before side effects', async () => {
+    const exitCode = await acoCommand('/repo', ['context', 'compile', 'build', 'bundle'], {
+      writeArtifact: true,
+    });
 
     expect(exitCode).toBe(2);
     expect(logSpy).not.toHaveBeenCalled();
@@ -71,5 +107,10 @@ describe('ACO CLI adapter', () => {
 
 async function loadGolden(fileName: string): Promise<string> {
   const root = new URL('../../../../tests/fixtures/aco/cli-contracts/', import.meta.url);
+  return Bun.file(new URL(fileName, root)).text();
+}
+
+async function loadContextGolden(fileName: string): Promise<string> {
+  const root = new URL('../../../../tests/fixtures/aco/context/', import.meta.url);
   return Bun.file(new URL(fileName, root)).text();
 }
