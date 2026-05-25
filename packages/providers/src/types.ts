@@ -33,6 +33,11 @@ export interface CodexProviderDefaults {
   additionalDirectories?: string[];
   /** Path to the Codex CLI binary. Overrides auto-detection in compiled Archon builds. */
   codexBinaryPath?: string;
+  /**
+   * Default-off canary for Codex patch-progress events. Current SDK evidence only
+   * exposes final file_change items; this flag must not synthesize progress.
+   */
+  applyPatchStreamingEvents?: boolean;
 }
 
 /**
@@ -114,6 +119,33 @@ export interface TokenUsage {
   cost?: number;
 }
 
+export type PatchChangeKind = 'add' | 'delete' | 'update' | 'unknown';
+export type PatchEventPhase = 'progress' | 'final';
+export type PatchEventStatus = 'pending' | 'applied' | 'failed';
+
+export interface PatchEventChange {
+  path?: string;
+  kind: PatchChangeKind;
+  diff?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface PatchEventChunk {
+  type: 'patch_event';
+  provider: string;
+  phase: PatchEventPhase;
+  itemId?: string;
+  callId?: string;
+  changes: PatchEventChange[];
+  path?: string;
+  kind?: PatchChangeKind;
+  diff?: string;
+  message?: string;
+  error?: string;
+  status: PatchEventStatus;
+}
+
 /**
  * Message chunk from AI assistant.
  * Discriminated union with per-type required fields for type safety.
@@ -162,6 +194,7 @@ export type MessageChunk =
       /** Matching ID for the originating `tool` chunk. See `tool` variant above. */
       toolCallId?: string;
     }
+  | PatchEventChunk
   | { type: 'workflow_dispatch'; workerConversationId: string; workflowName: string };
 
 /**

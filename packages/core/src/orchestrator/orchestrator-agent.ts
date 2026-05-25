@@ -1107,6 +1107,10 @@ async function handleStreamMode(
       if (!commandDetected && platform.sendStructuredEvent) {
         await platform.sendStructuredEvent(conversationId, msg);
       }
+    } else if (msg.type === 'patch_event') {
+      if (!commandDetected && platform.sendStructuredEvent) {
+        await platform.sendStructuredEvent(conversationId, msg);
+      }
     } else if (msg.type === 'result') {
       if (msg.isError && msg.errorSubtype === 'error_during_execution') {
         getLog().warn(
@@ -1284,6 +1288,10 @@ async function handleBatchMode(
         const toolMessage = formatToolCall(msg.toolName, msg.toolInput);
         allChunks.push({ type: 'tool', content: toolMessage });
         getLog().debug({ toolName: msg.toolName }, 'tool_call');
+      }
+    } else if (msg.type === 'patch_event') {
+      if (!commandDetected && platform.sendStructuredEvent) {
+        await platform.sendStructuredEvent(conversationId, msg);
       }
     } else if (msg.type === 'result') {
       if (msg.isError && msg.errorSubtype === 'error_during_execution') {

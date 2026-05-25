@@ -13,6 +13,9 @@ import type {
   IAgentProvider,
   SendQueryOptions,
   MessageChunk,
+  PatchChangeKind,
+  PatchEventChange,
+  PatchEventChunk,
   TokenUsage,
   ProviderCapabilities,
 } from '../types';
@@ -36,6 +39,8 @@ interface ProviderWarning {
   code: string;
   message: string;
 }
+
+const PATCH_CHANGE_KINDS = new Set<PatchChangeKind>(['add', 'delete', 'update']);
 
 // Singleton Codex instance (async because binary path resolution is async)
 let codexInstance: Codex | null = null;
@@ -204,6 +209,28 @@ function buildCodexMcpConfigOverrides(
   return { mcp_servers: mcpServers };
 }
 
+function mergeCodexConfigOverrides(
+  ...overrides: (CodexConfigOverrides | undefined)[]
+): CodexConfigOverrides | undefined {
+  const result: CodexConfigOverrides = {};
+
+  for (const override of overrides) {
+    if (!override) continue;
+    for (const [key, value] of Object.entries(override)) {
+      result[key] = value;
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function buildCodexCanaryConfigOverrides(
+  config: ReturnType<typeof parseCodexConfig>
+): CodexConfigOverrides | undefined {
+  if (config.applyPatchStreamingEvents !== true) return undefined;
+  return { features: { apply_patch_streaming_events: true } };
+}
+
 const CODEX_MODEL_FALLBACKS: Record<string, string> = {
   'gpt-5.3-codex': 'gpt-5.2-codex',
 };
@@ -264,6 +291,69 @@ function extractUsageFromCodexEvent(event: TurnCompletedEvent): TokenUsage {
   return {
     input: event.usage.input_tokens,
     output: event.usage.output_tokens,
+  };
+}
+
+function getFileChangeErrorMessage(item: Record<string, unknown>): string | undefined {
+  const rawError = item.error;
+  if (typeof rawError === 'string' && rawError.trim()) return rawError;
+  if (typeof rawError === 'object' && rawError !== null && 'message' in rawError) {
+    const message = (rawError as { message: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+    if (typeof message === 'number' || typeof message === 'boolean') return String(message);
+  }
+  if (typeof item.message === 'string' && item.message.trim()) return item.message;
+  return undefined;
+}
+
+function normalizePatchKind(kind: unknown): PatchChangeKind {
+  return typeof kind === 'string' && PATCH_CHANGE_KINDS.has(kind as PatchChangeKind)
+    ? (kind as PatchChangeKind)
+    : 'unknown';
+}
+
+function normalizeFileChange(item: Record<string, unknown>): PatchEventChunk {
+  const status = item.status === 'completed' ? 'applied' : 'failed';
+  const error = status === 'failed' ? getFileChangeErrorMessage(item) : undefined;
+  const rawChanges = Array.isArray(item.changes) ? item.changes : [];
+  const changes: PatchEventChange[] = [];
+
+  for (const rawChange of rawChanges) {
+    if (typeof rawChange !== 'object' || rawChange === null) {
+      changes.push({ kind: 'unknown' });
+      continue;
+    }
+
+    const change = rawChange as Record<string, unknown>;
+    const path = typeof change.path === 'string' && change.path.trim() ? change.path : undefined;
+    const diff = typeof change.diff === 'string' ? change.diff : undefined;
+    const message = typeof change.message === 'string' ? change.message : undefined;
+    const changeError = typeof change.error === 'string' ? change.error : undefined;
+    changes.push({
+      kind: normalizePatchKind(change.kind),
+      ...(path ? { path } : {}),
+      ...(diff !== undefined ? { diff } : {}),
+      ...(message ? { message } : {}),
+      ...(changeError ? { error: changeError } : {}),
+    });
+  }
+
+  const firstChange = changes[0];
+  return {
+    type: 'patch_event',
+    provider: 'codex',
+    phase: 'final',
+    ...(typeof item.id === 'string' ? { itemId: item.id } : {}),
+    ...(typeof item.call_id === 'string' ? { callId: item.call_id } : {}),
+    changes,
+    ...(firstChange?.path ? { path: firstChange.path } : {}),
+    ...(firstChange?.kind ? { kind: firstChange.kind } : {}),
+    ...(firstChange?.diff !== undefined ? { diff: firstChange.diff } : {}),
+    ...(status === 'applied'
+      ? { message: changes.length > 0 ? 'File changes applied' : 'File change completed' }
+      : {}),
+    ...(error ? { error } : {}),
+    status,
   };
 }
 
@@ -452,43 +542,16 @@ async function* streamCodexEvents(
         }
 
         case 'file_change': {
-          const statusIcon = (item.status as string) === 'failed' ? '❌' : '✅';
-          const rawError = 'error' in item ? (item as { error?: unknown }).error : undefined;
-          const fileErrorMessage =
-            typeof rawError === 'string'
-              ? rawError
-              : typeof rawError === 'object' && rawError !== null && 'message' in rawError
-                ? String((rawError as { message: unknown }).message)
-                : undefined;
-
-          const changes = item.changes as { kind: string; path?: string }[] | undefined;
-          if (Array.isArray(changes) && changes.length > 0) {
-            const changeList = changes
-              .map(c => {
-                const icon = c.kind === 'add' ? '➕' : c.kind === 'delete' ? '➖' : '📝';
-                return `${icon} ${c.path ?? '(unknown file)'}`;
-              })
-              .join('\n');
-            const errorSuffix =
-              (item.status as string) === 'failed' && fileErrorMessage
-                ? `\n${fileErrorMessage}`
-                : '';
-            yield {
-              type: 'system',
-              content: `${statusIcon} File changes:\n${changeList}${errorSuffix}`,
-            };
-          } else if ((item.status as string) === 'failed') {
+          const patchEvent = normalizeFileChange(item);
+          if (patchEvent.status === 'failed' && patchEvent.changes.length === 0) {
             getLog().warn(
               { itemId: item.id, status: item.status },
               'file_change_failed_no_changes'
             );
-            const failMsg = fileErrorMessage
-              ? `❌ File change failed: ${fileErrorMessage}`
-              : '❌ File change failed';
-            yield { type: 'system', content: failMsg };
-          } else {
+          } else if (patchEvent.status === 'applied' && patchEvent.changes.length === 0) {
             getLog().debug({ itemId: item.id, status: item.status }, 'file_change_no_changes');
           }
+          yield patchEvent;
           break;
         }
 
@@ -681,6 +744,7 @@ export class CodexProvider implements IAgentProvider {
     const codexConfig = parseCodexConfig(assistantConfig);
     const providerWarnings: ProviderWarning[] = [];
     let codexConfigOverrides: CodexConfigOverrides | undefined;
+    const codexCanaryOverrides = buildCodexCanaryConfigOverrides(codexConfig);
 
     if (requestOptions?.nodeConfig?.mcp) {
       const mcpPath = requestOptions.nodeConfig.mcp;
@@ -700,6 +764,8 @@ export class CodexProvider implements IAgentProvider {
         });
       }
     }
+
+    codexConfigOverrides = mergeCodexConfigOverrides(codexConfigOverrides, codexCanaryOverrides);
 
     for (const warning of providerWarnings) {
       yield { type: 'system', content: `⚠️ ${warning.message}` };

@@ -42,5 +42,9 @@ export function parseCodexConfig(raw: Record<string, unknown>): CodexProviderDef
     result.codexBinaryPath = raw.codexBinaryPath;
   }
 
+  if (raw.applyPatchStreamingEvents === true || raw.apply_patch_streaming_events === true) {
+    result.applyPatchStreamingEvents = true;
+  }
+
   return result;
 }

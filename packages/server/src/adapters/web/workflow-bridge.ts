@@ -130,6 +130,25 @@ export function mapWorkflowEvent(event: WorkflowEmitterEvent): string | null {
         timestamp: Date.now(),
       });
 
+    case 'patch_event':
+      return JSON.stringify({
+        type: 'patch_event',
+        runId: event.runId,
+        stepName: event.stepName,
+        provider: event.patch.provider,
+        phase: event.patch.phase,
+        itemId: event.patch.itemId,
+        callId: event.patch.callId,
+        changes: event.patch.changes,
+        path: event.patch.path,
+        kind: event.patch.kind,
+        diff: event.patch.diff,
+        message: event.patch.message,
+        error: event.patch.error,
+        status: event.patch.status,
+        timestamp: Date.now(),
+      });
+
     case 'approval_pending':
       return JSON.stringify({
         type: 'workflow_status',

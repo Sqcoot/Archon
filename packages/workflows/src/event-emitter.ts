@@ -11,6 +11,7 @@
  */
 import { EventEmitter } from 'events';
 import type { ArtifactType } from './schemas';
+import type { PatchEventChunk } from '@archon/providers/types';
 import { createLogger } from '@archon/paths';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
@@ -128,6 +129,13 @@ interface ToolCompletedEvent {
   durationMs: number;
 }
 
+interface PatchWorkflowEvent {
+  type: 'patch_event';
+  runId: string;
+  stepName: string;
+  patch: PatchEventChunk;
+}
+
 interface ApprovalPendingEvent {
   type: 'approval_pending';
   runId: string;
@@ -156,6 +164,7 @@ export type WorkflowEmitterEvent =
   | WorkflowArtifactEvent
   | ToolStartedEvent
   | ToolCompletedEvent
+  | PatchWorkflowEvent
   | ApprovalPendingEvent
   | WorkflowCancelledEvent;
 

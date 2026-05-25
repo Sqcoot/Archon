@@ -22,6 +22,7 @@ export const WORKFLOW_EVENT_TYPES = [
   'loop_iteration_failed',
   'tool_called',
   'tool_completed',
+  'patch_event',
   'ralph_story_started',
   'ralph_story_completed',
   'approval_requested',

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { MessageBubble } from './MessageBubble';
 import { ToolCallCard } from './ToolCallCard';
 import { ErrorCard } from './ErrorCard';
+import { PatchEventCard } from './PatchEventCard';
 import { WorkflowProgressCard } from './WorkflowProgressCard';
 import { ArtifactViewerModal } from '@/components/workflows/ArtifactViewerModal';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
@@ -399,7 +400,12 @@ function MessageListRaw({
                   />
                 ) : (
                   <>
-                    <MessageBubble message={msg} />
+                    {(msg.content || msg.isStreaming || msg.files?.length) && (
+                      <MessageBubble message={msg} />
+                    )}
+                    {msg.patchEvents?.map(event => (
+                      <PatchEventCard key={event.id} event={event} />
+                    ))}
                     {msg.toolCalls?.map(tool => (
                       <ToolCallCard key={tool.id} tool={tool} />
                     ))}

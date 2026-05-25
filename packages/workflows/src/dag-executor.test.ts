@@ -2341,6 +2341,61 @@ describe('executeDagWorkflow -- tool_called event persistence', () => {
       toolInput: { path: '/bar', content: 'x' },
     });
   });
+
+  it('persists provider patch events during DAG node execution', async () => {
+    const mockStore = createMockStore();
+    const mockDeps = createMockDeps(mockStore);
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    mockSendQueryDag.mockImplementation(function* () {
+      yield { type: 'assistant', content: 'Updated files.' };
+      yield {
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        itemId: 'patch-1',
+        changes: [{ kind: 'update', path: 'src/app.ts' }],
+        path: 'src/app.ts',
+        kind: 'update',
+        status: 'applied',
+      };
+      yield { type: 'result', sessionId: 'dag-session-patch' };
+    });
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-dag-patch',
+      testDir,
+      { name: 'dag-patch-test', nodes: [node('my-cmd')] },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const eventCalls = (mockStore.createWorkflowEvent as ReturnType<typeof mock>).mock.calls;
+    const patchEvent = eventCalls.find(
+      (call: unknown[]) => (call[0] as Record<string, unknown>).event_type === 'patch_event'
+    )?.[0] as Record<string, unknown> | undefined;
+
+    expect(patchEvent).toBeDefined();
+    expect(patchEvent?.step_name).toBe('my-cmd');
+    expect(patchEvent?.data).toEqual({
+      provider: 'codex',
+      phase: 'final',
+      status: 'applied',
+      changes: [{ kind: 'update', path: 'src/app.ts' }],
+      itemId: 'patch-1',
+      path: 'src/app.ts',
+      kind: 'update',
+    });
+  });
 });
 
 describe('executeDagWorkflow -- tool_completed event emission', () => {

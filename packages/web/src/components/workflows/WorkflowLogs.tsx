@@ -6,8 +6,9 @@ import { getMessages } from '@/lib/api';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
 import type { MessageResponse } from '@/lib/api';
 import { workflowSSEHandlers } from '@/stores/workflow-store';
-import type { ChatMessage, ToolCallDisplay, ErrorDisplay } from '@/lib/types';
-import type { ToolEvent } from './WorkflowExecution';
+import type { ChatMessage, ToolCallDisplay, ErrorDisplay, PatchEvent } from '@/lib/types';
+import { applyPatchEvent } from '@/lib/patch-events';
+import type { ToolEvent, PatchEventLog } from './WorkflowExecution';
 
 interface WorkflowLogsProps {
   conversationId: string;
@@ -19,12 +20,14 @@ interface WorkflowLogsProps {
   scrollToNodeTimestamp?: number | null;
   /** Incremented on every user node click to trigger scroll. */
   nodeScrollTrigger?: number;
+  patchEvents?: PatchEventLog[];
 }
 
 function hydrateMessages(
   rows: MessageResponse[],
   startedAt?: number,
-  toolEvents?: ToolEvent[]
+  toolEvents?: ToolEvent[],
+  patchEvents?: PatchEventLog[]
 ): ChatMessage[] {
   const hydrated: ChatMessage[] = rows.map(row => {
     let meta: {
@@ -167,6 +170,29 @@ function hydrateMessages(
     }
   }
 
+  if (patchEvents && patchEvents.length > 0) {
+    const seenPatchIds = new Set<string>();
+    for (const msg of filtered) {
+      for (const event of msg.patchEvents ?? []) {
+        seenPatchIds.add(event.id);
+      }
+    }
+
+    for (const event of patchEvents) {
+      if (seenPatchIds.has(event.id)) continue;
+      filtered.push({
+        id: `patch-${event.id}`,
+        role: 'assistant',
+        content: '',
+        patchEvents: [event],
+        timestamp: event.timestamp,
+        isStreaming: false,
+      });
+      seenPatchIds.add(event.id);
+    }
+    filtered.sort((a, b) => a.timestamp - b.timestamp);
+  }
+
   return filtered;
 }
 
@@ -182,6 +208,7 @@ export function WorkflowLogs({
   toolEvents,
   scrollToNodeTimestamp,
   nodeScrollTrigger,
+  patchEvents,
 }: WorkflowLogsProps): React.ReactElement {
   const [sseMessages, setSseMessages] = useState<ChatMessage[]>([]);
   const queryClient = useQueryClient();
@@ -207,7 +234,7 @@ export function WorkflowLogs({
     queryKey: ['workflowMessages', conversationId],
     queryFn: async (): Promise<ChatMessage[]> => {
       const rows = await getMessages(conversationId);
-      return hydrateMessages(rows, startedAt, toolEvents);
+      return hydrateMessages(rows, startedAt, toolEvents, patchEvents);
     },
     refetchInterval: isRunning || gracePolling ? 3000 : false,
     staleTime: 0,
@@ -557,6 +584,10 @@ export function WorkflowLogs({
     });
   }, []);
 
+  const onPatchEvent = useCallback((event: PatchEvent): void => {
+    setSseMessages(prev => applyPatchEvent(prev, event, () => `msg-${String(Date.now())}`));
+  }, []);
+
   const onLockChange = useCallback((isLocked: boolean): void => {
     if (!isLocked) {
       const now = Date.now();
@@ -592,6 +623,7 @@ export function WorkflowLogs({
     onError,
     onLockChange,
     onSessionInfo,
+    onPatchEvent,
     ...workflowSSEHandlers,
   });
 

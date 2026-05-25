@@ -283,12 +283,13 @@ describe('CodexProvider', () => {
       });
     });
 
-    test('yields file change summary for file_change items', async () => {
+    test('yields patch_event for completed file_change items', async () => {
       mockRunStreamed.mockResolvedValue({
         events: (async function* () {
           yield {
             type: 'item.completed',
             item: {
+              id: 'patch-1',
               type: 'file_change',
               status: 'completed',
               changes: [
@@ -308,17 +309,29 @@ describe('CodexProvider', () => {
       }
 
       expect(chunks[0]).toEqual({
-        type: 'system',
-        content: '\u2705 File changes:\n\u2795 src/new.ts\n\u{1F4DD} src/app.ts\n\u2796 src/old.ts',
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        itemId: 'patch-1',
+        changes: [
+          { kind: 'add', path: 'src/new.ts' },
+          { kind: 'update', path: 'src/app.ts' },
+          { kind: 'delete', path: 'src/old.ts' },
+        ],
+        path: 'src/new.ts',
+        kind: 'add',
+        message: 'File changes applied',
+        status: 'applied',
       });
     });
 
-    test('yields failed file change with error message', async () => {
+    test('yields failed patch_event with error message', async () => {
       mockRunStreamed.mockResolvedValue({
         events: (async function* () {
           yield {
             type: 'item.completed',
             item: {
+              id: 'patch-2',
               type: 'file_change',
               status: 'failed',
               error: { message: 'Permission denied' },
@@ -335,12 +348,19 @@ describe('CodexProvider', () => {
       }
 
       expect(chunks[0]).toEqual({
-        type: 'system',
-        content: '\u274C File changes:\n\u{1F4DD} src/locked.ts\nPermission denied',
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        itemId: 'patch-2',
+        changes: [{ kind: 'update', path: 'src/locked.ts' }],
+        path: 'src/locked.ts',
+        kind: 'update',
+        error: 'Permission denied',
+        status: 'failed',
       });
     });
 
-    test('yields failed file change without changes array', async () => {
+    test('yields failed patch_event without changes array', async () => {
       mockRunStreamed.mockResolvedValue({
         events: (async function* () {
           yield {
@@ -361,8 +381,12 @@ describe('CodexProvider', () => {
       }
 
       expect(chunks[0]).toEqual({
-        type: 'system',
-        content: '\u274C File change failed: Disk full',
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        changes: [],
+        error: 'Disk full',
+        status: 'failed',
       });
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'failed' }),
@@ -370,7 +394,7 @@ describe('CodexProvider', () => {
       );
     });
 
-    test('yields failed file change without error message', async () => {
+    test('yields failed patch_event without error message', async () => {
       mockRunStreamed.mockResolvedValue({
         events: (async function* () {
           yield {
@@ -387,8 +411,42 @@ describe('CodexProvider', () => {
       }
 
       expect(chunks[0]).toEqual({
-        type: 'system',
-        content: '\u274C File change failed',
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        changes: [],
+        status: 'failed',
+      });
+    });
+
+    test('normalizes file_change with unknown kind and missing path safely', async () => {
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield {
+            type: 'item.completed',
+            item: {
+              type: 'file_change',
+              status: 'completed',
+              changes: [{ kind: 'rename' }, null, 'bad-change'],
+            },
+          };
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      const chunks = [];
+      for await (const chunk of client.sendQuery('test', '/workspace')) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks[0]).toEqual({
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        changes: [{ kind: 'unknown' }, { kind: 'unknown' }, { kind: 'unknown' }],
+        kind: 'unknown',
+        message: 'File changes applied',
+        status: 'applied',
       });
     });
 
@@ -656,6 +714,30 @@ describe('CodexProvider', () => {
           modelReasoningEffort: 'medium',
           webSearchMode: 'live',
           additionalDirectories: ['/other/repo'],
+        })
+      );
+    });
+
+    test('passes default-off apply patch streaming canary only when explicitly enabled', async () => {
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      for await (const _ of client.sendQuery('test prompt', '/workspace', undefined, {
+        assistantConfig: {
+          applyPatchStreamingEvents: true,
+        },
+      })) {
+        // consume
+      }
+
+      expect(MockCodex).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config: {
+            features: { apply_patch_streaming_events: true },
+          },
         })
       );
     });
@@ -1324,9 +1406,16 @@ describe('CodexProvider', () => {
         chunks.push(chunk);
       }
 
-      // Only the result should be yielded
-      expect(chunks).toHaveLength(1);
+      expect(chunks).toHaveLength(2);
       expect(chunks[0]).toEqual({
+        type: 'patch_event',
+        provider: 'codex',
+        phase: 'final',
+        changes: [],
+        message: 'File change completed',
+        status: 'applied',
+      });
+      expect(chunks[1]).toEqual({
         type: 'result',
         sessionId: 'new-thread-id',
         tokens: { input: 10, output: 5 },

@@ -8,6 +8,7 @@ import type {
   WorkflowDispatchEvent,
   WorkflowOutputPreviewEvent,
   DagNodeEvent,
+  PatchEvent,
 } from '@/lib/types';
 import { SSE_BASE_URL } from '@/lib/api';
 
@@ -41,6 +42,7 @@ interface SSEHandlers {
   onLoopIteration?: (event: LoopIterationEvent) => void;
   onWorkflowDispatch?: (event: WorkflowDispatchEvent) => void;
   onWorkflowOutputPreview?: (event: WorkflowOutputPreviewEvent) => void;
+  onPatchEvent?: (event: PatchEvent) => void;
   onWarning?: (message: string) => void;
   onRetract?: () => void;
   onSystemStatus?: (content: string) => void;
@@ -207,6 +209,16 @@ export function useSSE(
             break;
           case 'workflow_output_preview':
             h.onWorkflowOutputPreview?.(data);
+            break;
+          case 'patch_event':
+            if (textBufferRef.current) {
+              if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
+                flushTimerRef.current = null;
+              }
+              flushText();
+            }
+            h.onPatchEvent?.(data);
             break;
           case 'warning':
             h.onWarning?.(data.message);

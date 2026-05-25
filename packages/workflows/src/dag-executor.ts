@@ -19,6 +19,7 @@ import type {
 import type {
   SendQueryOptions,
   NodeConfig,
+  PatchEventChunk,
   ProviderCapabilities,
   TokenUsage,
 } from '@archon/providers/types';
@@ -115,6 +116,52 @@ export function parseMcpFailureServerNames(message: string): McpFailureEntry[] {
     }
   }
   return entries;
+}
+
+function patchEventData(event: PatchEventChunk): Record<string, unknown> {
+  return {
+    provider: event.provider,
+    phase: event.phase,
+    status: event.status,
+    changes: event.changes.map(change => ({
+      kind: change.kind,
+      ...(change.path ? { path: change.path } : {}),
+      ...(change.diff !== undefined ? { diff: change.diff } : {}),
+      ...(change.message ? { message: change.message } : {}),
+      ...(change.error ? { error: change.error } : {}),
+    })),
+    ...(event.itemId ? { itemId: event.itemId } : {}),
+    ...(event.callId ? { callId: event.callId } : {}),
+    ...(event.path ? { path: event.path } : {}),
+    ...(event.kind ? { kind: event.kind } : {}),
+    ...(event.diff !== undefined ? { diff: event.diff } : {}),
+    ...(event.message ? { message: event.message } : {}),
+    ...(event.error ? { error: event.error } : {}),
+  };
+}
+
+function emitWorkflowPatchEvent(
+  deps: WorkflowDeps,
+  workflowRunId: string,
+  nodeId: string,
+  event: PatchEventChunk,
+  onPersistError: (err: Error) => void
+): void {
+  getWorkflowEventEmitter().emit({
+    type: 'patch_event',
+    runId: workflowRunId,
+    stepName: nodeId,
+    patch: event,
+  });
+
+  deps.store
+    .createWorkflowEvent({
+      workflow_run_id: workflowRunId,
+      event_type: 'patch_event',
+      step_name: nodeId,
+      data: patchEventData(event),
+    })
+    .catch(onPersistError);
 }
 
 /**
@@ -868,6 +915,13 @@ async function executeNodeInternal(
         if (streamingMode === 'stream' && platform.sendStructuredEvent) {
           await platform.sendStructuredEvent(conversationId, msg);
         }
+      } else if (msg.type === 'patch_event') {
+        emitWorkflowPatchEvent(deps, workflowRun.id, node.id, msg, (err: Error) => {
+          getLog().error(
+            { err, workflowRunId: workflowRun.id, eventType: 'patch_event' },
+            'workflow_event_persist_failed'
+          );
+        });
       } else if (msg.type === 'result') {
         // Emit tool_completed for the last tool in the node
         if (lastToolStartedAt) {
@@ -2061,6 +2115,10 @@ async function executeLoopNode(
             });
         } else if (msg.type === 'tool_result' && platform.sendStructuredEvent) {
           await platform.sendStructuredEvent(conversationId, msg);
+        } else if (msg.type === 'patch_event') {
+          emitWorkflowPatchEvent(deps, workflowRun.id, node.id, msg, (err: Error) => {
+            logEventStoreError(err, i);
+          });
         }
         // rate_limit chunks: already log.warn'd in claude.ts; not surfaced to SSE per design
       }

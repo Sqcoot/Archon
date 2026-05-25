@@ -209,6 +209,22 @@ export class WebAdapter implements IWebPlatformAdapter {
         workflowName: chunk.workflowName,
         timestamp: Date.now(),
       });
+    } else if (chunk.type === 'patch_event') {
+      event = JSON.stringify({
+        type: 'patch_event',
+        provider: chunk.provider,
+        phase: chunk.phase,
+        itemId: chunk.itemId,
+        callId: chunk.callId,
+        changes: chunk.changes,
+        path: chunk.path,
+        kind: chunk.kind,
+        diff: chunk.diff,
+        message: chunk.message,
+        error: chunk.error,
+        status: chunk.status,
+        timestamp: Date.now(),
+      });
     } else if (chunk.type === 'system') {
       event = JSON.stringify({
         type: 'system_status',

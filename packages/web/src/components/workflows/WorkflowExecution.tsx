@@ -34,6 +34,10 @@ import type {
   DagNodeState,
   WorkflowStepStatus,
   LoopIterationInfo,
+  PatchEventDisplay,
+  PatchChangeKind,
+  PatchEventStatus,
+  PatchEventPhase,
 } from '@/lib/types';
 
 import type { AcoStatusResponse, WorkflowEventResponse } from '@/lib/api';
@@ -47,6 +51,11 @@ export interface ToolEvent {
   stepIndex?: number;
   createdAt: string;
   duration?: number;
+}
+
+/** Patch event extracted from workflow_events for display in WorkflowLogs. */
+export interface PatchEventLog extends PatchEventDisplay {
+  createdAt: string;
 }
 
 const TERMINAL_STATUSES: readonly WorkflowRunStatus[] = ['completed', 'failed', 'cancelled'];
@@ -269,6 +278,45 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           stepIndex: ev.step_index ?? undefined,
           createdAt: ev.created_at,
           duration: completed ? (completed.data.duration_ms as number | undefined) : undefined,
+        };
+      });
+  }, [queryData?.events]);
+
+  const patchEvents = useMemo((): PatchEventLog[] => {
+    const allEvents = queryData?.events ?? [];
+    return allEvents
+      .filter(ev => ev.event_type === 'patch_event')
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .map(ev => {
+        const d = ev.data;
+        const createdTs = new Date(ensureUtc(ev.created_at)).getTime();
+        return {
+          id: (d.itemId as string | undefined) ?? ev.id,
+          provider: (d.provider as string | undefined) ?? 'unknown',
+          phase: (d.phase as PatchEventPhase | undefined) ?? 'final',
+          status: (d.status as PatchEventStatus | undefined) ?? 'failed',
+          changes: Array.isArray(d.changes)
+            ? d.changes.map(change => {
+                const c = change as Record<string, unknown>;
+                return {
+                  kind: (c.kind as PatchChangeKind | undefined) ?? 'unknown',
+                  path: c.path as string | undefined,
+                  diff: c.diff as string | undefined,
+                  message: c.message as string | undefined,
+                  error: c.error as string | undefined,
+                };
+              })
+            : [],
+          timestamp: createdTs,
+          createdAt: ev.created_at,
+          ...(d.itemId ? { itemId: d.itemId as string } : {}),
+          ...(d.callId ? { callId: d.callId as string } : {}),
+          ...(ev.step_name ? { stepName: ev.step_name } : {}),
+          ...(d.path ? { path: d.path as string } : {}),
+          ...(d.kind ? { kind: d.kind as PatchChangeKind } : {}),
+          ...(d.diff !== undefined ? { diff: d.diff as string } : {}),
+          ...(d.message ? { message: d.message as string } : {}),
+          ...(d.error ? { error: d.error as string } : {}),
         };
       });
   }, [queryData?.events]);
@@ -563,6 +611,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
             isRunning={isRunning}
             currentlyExecuting={currentlyExecuting}
             toolEvents={toolEvents}
+            patchEvents={patchEvents}
             scrollToNodeTimestamp={scrollToNodeTimestamp}
             nodeScrollTrigger={nodeScrollTrigger}
           />

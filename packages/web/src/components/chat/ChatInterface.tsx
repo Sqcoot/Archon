@@ -27,8 +27,10 @@ import type {
   ToolCallDisplay,
   ErrorDisplay,
   WorkflowDispatchEvent,
+  PatchEvent,
 } from '@/lib/types';
 import { applyOnText } from '@/lib/chat-message-reducer';
+import { applyPatchEvent } from '@/lib/patch-events';
 import {
   getCachedMessages,
   setCachedMessages,
@@ -574,6 +576,10 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps): React.Rea
     ]);
   }, []);
 
+  const onPatchEvent = useCallback((event: PatchEvent): void => {
+    setMessages(prev => applyPatchEvent(prev, event, nextId));
+  }, []);
+
   const { connected } = useSSE(isNewChat ? null : conversationId, {
     onText,
     onToolCall,
@@ -585,6 +591,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps): React.Rea
     onWarning,
     onRetract,
     onSystemStatus,
+    onPatchEvent,
     ...workflowSSEHandlers,
   });
 

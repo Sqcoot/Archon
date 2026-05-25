@@ -8,6 +8,9 @@ import type { components } from '@/lib/api.generated';
 export type WorkflowRunStatus = components['schemas']['WorkflowRunStatus'];
 export type WorkflowStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 export type ArtifactType = 'pr' | 'commit' | 'file_created' | 'file_modified' | 'branch';
+export type PatchChangeKind = 'add' | 'delete' | 'update' | 'unknown';
+export type PatchEventStatus = 'pending' | 'applied' | 'failed';
+export type PatchEventPhase = 'progress' | 'final';
 
 // Base SSE event
 interface BaseSSEEvent {
@@ -131,6 +134,31 @@ export interface WorkflowToolActivityEvent extends BaseSSEEvent {
   durationMs?: number;
 }
 
+export interface PatchEventChange {
+  path?: string;
+  kind: PatchChangeKind;
+  diff?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface PatchEvent extends BaseSSEEvent {
+  type: 'patch_event';
+  provider: string;
+  phase: PatchEventPhase;
+  status: PatchEventStatus;
+  changes: PatchEventChange[];
+  itemId?: string;
+  callId?: string;
+  runId?: string;
+  stepName?: string;
+  path?: string;
+  kind?: PatchChangeKind;
+  diff?: string;
+  message?: string;
+  error?: string;
+}
+
 // Workflow artifact
 export interface WorkflowArtifactEvent extends BaseSSEEvent {
   type: 'workflow_artifact';
@@ -183,6 +211,7 @@ export type SSEEvent =
   | DagNodeEvent
   | LoopIterationEvent
   | WorkflowToolActivityEvent
+  | PatchEvent
   | WorkflowArtifactEvent
   | WorkflowDispatchEvent
   | WorkflowOutputPreviewEvent
@@ -220,6 +249,7 @@ export interface ChatMessage {
     workflowName: string;
     runId: string;
   };
+  patchEvents?: PatchEventDisplay[];
 }
 
 export interface ToolCallDisplay {
@@ -236,6 +266,24 @@ export interface ErrorDisplay {
   message: string;
   classification: 'transient' | 'fatal';
   suggestedActions: string[];
+}
+
+export interface PatchEventDisplay {
+  id: string;
+  provider: string;
+  phase: PatchEventPhase;
+  status: PatchEventStatus;
+  changes: PatchEventChange[];
+  timestamp: number;
+  itemId?: string;
+  callId?: string;
+  runId?: string;
+  stepName?: string;
+  path?: string;
+  kind?: PatchChangeKind;
+  diff?: string;
+  message?: string;
+  error?: string;
 }
 
 // Workflow UI State types
@@ -265,6 +313,7 @@ export interface WorkflowState {
   status: WorkflowRunStatus;
   dagNodes: DagNodeState[];
   artifacts: WorkflowArtifact[];
+  patchEvents?: PatchEventDisplay[];
   currentIteration?: number;
   maxIterations?: number;
   startedAt: number;
