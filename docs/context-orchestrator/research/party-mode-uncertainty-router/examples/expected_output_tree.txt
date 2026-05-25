@@ -1,0 +1,27 @@
+party_mode_uncertainty_router_implementation.zip
+├── investigation_report.md
+├── next_goal.md
+├── evidence_manifest.yaml
+├── readonly_policy_result.md
+├── artifacts/
+│   ├── 01_goal_end_condition_4000_chars.md
+│   ├── 02_uncertainty_trigger_matrix.yaml
+│   ├── 03_readonly_tool_policy.yaml
+│   ├── 04_investigation_manifest_template.yaml
+│   ├── 05_output_report_template.md
+│   ├── 06_next_goal_template.md
+│   ├── 07_party_mode_integration_design.md
+│   ├── 08_hook_event_mapping.md
+│   └── 09_live_hook_install_validation.md
+├── hooks/
+│   ├── hooks.json
+│   └── party_mode_router.py
+├── schemas/
+│   └── party_mode_state.schema.json
+├── tests/
+│   └── test_party_mode_router.py
+├── prompts/
+│   └── party_mode_investigation_prompt.md
+└── examples/
+    ├── config_profile_party_mode.toml
+    └── expected_output_tree.txt

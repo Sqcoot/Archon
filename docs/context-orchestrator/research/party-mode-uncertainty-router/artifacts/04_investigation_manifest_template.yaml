@@ -1,0 +1,61 @@
+version: 1
+run:
+  session_id: ""
+  turn_id: ""
+  repo_root: ""
+  started_at: ""
+  completed_at: ""
+  party_mode_reason: ""
+  confidence: "low|medium|high"
+
+scope:
+  user_request: ""
+  uncertainty_questions:
+    - id: Q1
+      question: ""
+      status: "answered|open|deferred"
+      answer_summary: ""
+  readonly_boundary:
+    source_code_edited: false
+    artifact_output_dir: ""
+
+inputs:
+  files_read:
+    - path: ""
+      reason: ""
+      key_lines_or_sections: ""
+  commands_run:
+    - command: ""
+      reason: ""
+      readonly: true
+      output_artifact: ""
+  tools_used:
+    - tool: ""
+      purpose: ""
+      readonly: true
+      output_artifact: ""
+  docs_or_research:
+    - source: ""
+      purpose: ""
+      key_takeaway: ""
+  subagents:
+    - role: ""
+      contract: ""
+      output_artifact: ""
+
+findings:
+  confirmed:
+    - ""
+  assumptions:
+    - ""
+  risks:
+    - risk: ""
+      mitigation: ""
+  rejected_paths:
+    - path: ""
+      reason: ""
+
+handoff:
+  recommended_path: ""
+  next_goal_file: "next_goal.md"
+  implementation_ready: false

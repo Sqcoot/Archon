@@ -1,0 +1,98 @@
+version: 1
+mode: party_mode_readonly
+principle: "Investigate and produce handoff artifacts; never implement during party mode."
+
+allowed:
+  bash_readonly:
+    examples:
+      - "pwd"
+      - "ls"
+      - "find . -maxdepth 4 -type f"
+      - "grep -R --line-number PATTERN ."
+      - "rg PATTERN"
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff -- FILE"
+      - "cat FILE"
+      - "sed -n '1,200p' FILE"
+      - "python - <<'PY' ... read-only analysis ... PY"
+  mcp_readonly:
+    examples:
+      - filesystem read_file
+      - docs lookup
+      - Context7/docs lookup
+      - graph read/export
+      - issue tracker read
+      - manifest/provider read
+  artifacts:
+    allowed_paths:
+      - "designated party-mode output directory from PARTY_MODE_ARTIFACT_DIR or ./party-mode-output"
+      - "final handoff zip from PARTY_MODE_ZIP_PATH or ./party-mode-output.zip"
+    forbidden_paths:
+      - "source code tree, except for reading"
+      - "dependency lockfiles"
+      - "generated source"
+      - "database migrations"
+
+denied:
+  shell_mutation_patterns:
+    - "apply_patch"
+    - "rm "
+    - "mv "
+    - "cp "
+    - ">"
+    - ">>"
+    - "tee "
+    - "sed -i"
+    - "perl -pi"
+    - "python.*open\(.*['"]w"
+    - "npm install"
+    - "pnpm add"
+    - "yarn add"
+    - "pip install"
+    - "uv add"
+    - "poetry add"
+    - "cargo add"
+    - "bundle add"
+    - "go get"
+    - "git add"
+    - "git commit"
+    - "git checkout"
+    - "git reset"
+    - "git clean"
+    - "git apply"
+    - "git push"
+    - "prisma migrate"
+    - "alembic upgrade"
+    - "python manage.py migrate"
+    - "python manage.py makemigrations"
+    - "protoc"
+    - "openapi-generator"
+    - "buf generate"
+    - "prisma generate"
+    - "go generate"
+    - "docker compose up"
+  hook_tools:
+    - "apply_patch"
+    - "Edit"
+    - "Write"
+  mcp_mutations:
+    - "tools with destructive/write annotations"
+    - "issue/comment creation unless explicitly part of artifact export"
+
+stop_gate_required_artifacts:
+  - investigation_report.md
+  - next_goal.md
+  - evidence_manifest.yaml
+  - readonly_policy_result.md
+
+stop_gate_zip_rules:
+  required: true
+  validate_contents: true
+  require_supporting_artifacts_prefix: "artifacts/"
+  candidate_locations:
+    - "path mentioned in final assistant message"
+    - "PARTY_MODE_ZIP_PATH"
+    - "./party-mode-output.zip"
+    - "./party_mode_output.zip"
+    - "./party_mode_uncertainty_handoff.zip"

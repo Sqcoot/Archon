@@ -1,0 +1,15 @@
+# Optional profile sketch for starting a party-mode run with least privilege.
+# Codex permission profiles are beta; keep this aligned with installed docs.
+
+[profiles.party_mode_readonly]
+default_permissions = ":read-only"
+
+# Older sandbox settings do not compose with permission profiles. If your
+# Codex version still uses sandbox_mode, choose this instead of
+# default_permissions:
+#
+# sandbox_mode = "read-only"
+# approval_policy = "on-request"
+
+[features]
+hooks = true

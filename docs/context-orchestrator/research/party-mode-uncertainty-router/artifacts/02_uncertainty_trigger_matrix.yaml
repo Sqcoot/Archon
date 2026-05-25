@@ -1,0 +1,79 @@
+# Party mode activates when uncertainty is high enough that editing would be premature.
+version: 1
+activation_score_threshold: 3
+signals:
+  explicit_uncertainty:
+    score: 3
+    examples:
+      - "not sure"
+      - "unclear"
+      - "uncertain"
+      - "ambiguous"
+      - "open question"
+      - "investigate"
+      - "figure out"
+      - "diagnose"
+      - "triage"
+      - "root cause"
+      - "why is this happening"
+      - "what should we do"
+      - "party mode"
+  ambiguous_goal:
+    score: 2
+    examples:
+      - missing target file or module
+      - unclear definition of done
+      - multiple plausible implementations
+      - user asks for broad architecture without naming scope
+  high_blast_radius:
+    score: 3
+    examples:
+      - migrations
+      - authentication or authorization
+      - billing, payments, ledgers, money movement
+      - security policy, secrets, sandboxing, permissions
+      - generated code or build system
+      - plugin, adapter, provider manifest, or MCP tool behavior
+  vague_target:
+    score: 2
+    examples:
+      - "fix it"
+      - "change this"
+      - "implement the thing"
+      - broad bug or issue text without target file or expected behavior
+  conflicting_context:
+    score: 3
+    examples:
+      - docs disagree with code
+      - tests imply different behavior than issue text
+      - stale TODOs or comments conflict with current implementation
+  missing_repro_or_verification:
+    score: 2
+    examples:
+      - bug report has no repro steps
+      - no test target identified
+      - no expected behavior stated
+  external_or_recent_dependency:
+    score: 2
+    examples:
+      - current API behavior required
+      - dependency docs may have changed
+      - provider manifests, MCP tools, plugins, or adapters may be version-sensitive
+  mutation_requested_under_uncertainty:
+    score: 4
+    examples:
+      - user asks to implement while also saying the approach is uncertain
+      - agent is about to edit before mapping code paths
+      - tool call would mutate files during investigation
+
+default_actions:
+  score_0_to_2: "normal agent flow"
+  score_3_to_5: "party_mode_readonly_investigation"
+  score_6_plus: "party_mode_readonly_investigation_with_stop_gate"
+
+router_defaults:
+  threshold_env: PARTY_MODE_THRESHOLD
+  force_env: PARTY_MODE=force
+  disable_env: PARTY_MODE=off
+  artifact_dir_env: PARTY_MODE_ARTIFACT_DIR
+  artifact_zip_env: PARTY_MODE_ZIP_PATH

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/party_mode_state.schema.json",
+  "title": "PartyModeState",
+  "type": "object",
+  "required": [
+    "version",
+    "active",
+    "score",
+    "reason",
+    "session_id",
+    "turn_id",
+    "cwd",
+    "artifact_dir",
+    "artifact_zip",
+    "required_artifacts"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reason": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "turn_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cwd": {
+      "type": "string"
+    },
+    "artifact_dir": {
+      "type": "string"
+    },
+    "artifact_zip": {
+      "type": "string"
+    },
+    "required_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blocked_mutations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "activated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  }
+}

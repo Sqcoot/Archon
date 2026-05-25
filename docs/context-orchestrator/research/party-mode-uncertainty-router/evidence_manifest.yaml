@@ -1,0 +1,106 @@
+version: 2
+run:
+  artifact_name: party_mode_uncertainty_router_implementation.zip
+  mode: implementation_package_with_live_install_validation
+  source_code_edited: true
+  confidence: high
+
+inputs:
+  user_goal:
+    - "Implement a party-mode uncertainty router for Codex."
+    - "Package the implementation artifacts and implementation goal in a zip."
+    - "Install the implemented router in a trusted Codex hook location and validate it against real Codex hook behavior."
+  official_docs_checked:
+    - title: Codex Hooks
+      source: "https://developers.openai.com/codex/hooks"
+      relevance: "Hook lifecycle, event inputs/outputs, denial decisions, context injection, Stop/SubagentStop continuation behavior."
+    - title: Codex Permissions
+      source: "https://developers.openai.com/codex/permissions"
+      relevance: "Built-in :read-only permission profile and relationship between permission profiles and older sandbox settings."
+    - title: Context7 /openai/codex
+      source: "ctx7 CLI"
+      relevance: "Resolved current Codex documentation source before implementation."
+
+implementation_artifacts:
+  required_package:
+    - investigation_report.md
+    - next_goal.md
+    - evidence_manifest.yaml
+    - readonly_policy_result.md
+  router:
+    - hooks/party_mode_router.py
+    - hooks/hooks.json
+    - schemas/party_mode_state.schema.json
+  tests:
+    - tests/test_party_mode_router.py
+  policy_and_templates:
+    - artifacts/01_goal_end_condition_4000_chars.md
+    - artifacts/02_uncertainty_trigger_matrix.yaml
+    - artifacts/03_readonly_tool_policy.yaml
+    - artifacts/04_investigation_manifest_template.yaml
+    - artifacts/05_output_report_template.md
+    - artifacts/06_next_goal_template.md
+    - artifacts/07_party_mode_integration_design.md
+    - artifacts/08_hook_event_mapping.md
+    - artifacts/09_live_hook_install_validation.md
+  examples:
+    - examples/config_profile_party_mode.toml
+    - examples/expected_output_tree.txt
+  prompt:
+    - prompts/party_mode_investigation_prompt.md
+
+verification:
+  commands_run:
+    - command: "python3 -m py_compile hooks/party_mode_router.py tests/test_party_mode_router.py"
+      result: "passed"
+    - command: "python3 -m unittest discover -s tests"
+      result: "9 tests passed"
+    - command: "python3 -m json.tool hooks/hooks.json"
+      result: "valid JSON"
+    - command: "python3 -m json.tool schemas/party_mode_state.schema.json"
+      result: "valid JSON"
+    - command: "python3 -m zipfile -l party_mode_uncertainty_router_implementation.zip"
+      result: "zip contents listed successfully"
+    - command: "codex app-server hooks/list for $PARTY_MODE_PACKAGE_DIR"
+      result: "supported party-mode hooks enabled; no hook-list warnings/errors"
+    - command: "installed router validation with Codex-shaped hook payloads"
+      result: "explicit activation, normal non-activation, mutation denial, SubagentStart context, and Stop gates passed"
+    - command: "codex exec normal prompt with isolated PARTY_MODE_STATE_DIR"
+      result: "turn completed; router state active=false score=0"
+    - command: "codex exec explicit party-mode prompt with isolated PARTY_MODE_STATE_DIR"
+      result: "router state active=true score=99 reason=explicit_party_mode; smoke stopped after skill-triggered tool path"
+    - command: "updated ${CODEX_HOME:-$HOME/.codex}/config.toml feature flags"
+      result: "kept both features.codex_hooks and features.hooks for CLI/Desktop compatibility"
+
+implemented_behavior:
+  confirmed:
+    - "Explicit party-mode prompts activate and inject context."
+    - "Normal low-risk prompts do not activate party mode."
+    - "Mutating shell commands are denied during active party mode."
+    - "apply_patch permission requests are denied during active party mode."
+    - "Artifact-only writes are allowed."
+    - "Mutating MCP tool calls are denied."
+    - "SubagentStart receives read-only contract."
+    - "Stop blocks when the handoff zip is missing."
+    - "Stop allows a complete valid handoff zip."
+    - "Router installed at ${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py."
+    - "User-level ${CODEX_HOME:-$HOME/.codex}/hooks.json now points supported party-mode events at the router through PARTY_MODE_ROUTER / CODEX_HOME / HOME resolution."
+    - "Trust hashes were persisted under [hooks.state] at install time; refresh through /hooks if a client marks the portable command as changed."
+    - "Real Codex normal prompt wrote inactive router state."
+    - "Real Codex explicit party-mode prompt wrote active router state."
+  risks:
+    - risk: "Codex hook interception does not cover every possible tool path."
+      mitigation: "Use hooks with Codex permission profiles or sandboxing."
+    - risk: "Live hook payloads may vary by Codex release."
+      mitigation: "Validate installed hook with /hooks and live test prompts."
+    - risk: "Codex builds expose different hook event sets."
+      mitigation: "Router retains SubagentStart and SubagentStop handlers; live validation records which events the local app-server exposes."
+    - risk: "Explicit party-mode prompt also triggers bmad-party-mode skill behavior."
+      mitigation: "Use direct hook-payload validation for denial checks; avoid using phrase 'party mode' for minimal smoke unless skill loading is intentionally included."
+
+handoff:
+  next_goal_file: next_goal.md
+  implementation_ready: true
+  installed_hook_path: "${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py"
+  user_hook_config: "${CODEX_HOME:-$HOME/.codex}/hooks.json"
+  validation_report: "artifacts/09_live_hook_install_validation.md"

@@ -1,0 +1,79 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Checking uncertainty for party mode"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Applying party-mode read-only guard"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Reviewing party-mode permission request"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Reviewing party-mode tool output"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Passing party-mode contract to subagent"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Checking party-mode handoff completeness"
+          }
+        ]
+      }
+    ]
+  }
+}
