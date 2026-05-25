@@ -129,6 +129,10 @@ research/graphs/
 research/merged/
 graphify-out/
 
+# Local verification handoff/output extracts
+docs/context-orchestrator/research/party-mode-uncertainty-router-verification-handoff/party_mode_uncertainty_router_verification_handoff/
+docs/context-orchestrator/research/party-mode-uncertainty-router/party_mode_uncertainty_router_implementation*/
+
 # BMAD local user configuration
 _bmad/**/*.user.toml
 _bmad/**/config.user.toml
