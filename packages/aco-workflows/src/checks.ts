@@ -102,8 +102,8 @@ export function checkWorkflowParityBundle(input: unknown): readonly string[] {
       ...bundle.approvalRequiredCommands,
     ])
   );
-  if (!bundle.nextSlice.toLowerCase().includes('s10')) {
-    errors.push('workflow parity bundle must advance nextSlice to S10');
+  if (bundle.nextSlice !== 'complete') {
+    errors.push('workflow parity bundle must be terminal after S10');
   }
   return errors;
 }
@@ -224,13 +224,13 @@ function checkRequirementDescriptor(requirement: WorkflowApprovalRequirement): r
     errors.push(`${requirement.commandId} requirement display does not match descriptor`);
   }
   if (requirement.commandId === REQUIRED_DEFERRED_COMMAND_ID && requirement.status !== 'deferred') {
-    errors.push(`${REQUIRED_DEFERRED_COMMAND_ID} must remain deferred in S9`);
+    errors.push(`${REQUIRED_DEFERRED_COMMAND_ID} must remain deferred after S10`);
   }
   if (
     requirement.commandId === REQUIRED_APPROVAL_COMMAND_ID &&
     requirement.status !== 'approval-required'
   ) {
-    errors.push(`${REQUIRED_APPROVAL_COMMAND_ID} must remain approval-required in S9`);
+    errors.push(`${REQUIRED_APPROVAL_COMMAND_ID} must remain approval-required after S10`);
   }
   return errors;
 }

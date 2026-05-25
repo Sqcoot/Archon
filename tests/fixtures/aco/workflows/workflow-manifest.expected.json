@@ -559,7 +559,7 @@
   ],
   "id": "aco.workflows.s9.workflow-parity",
   "kind": "aco-workflow-parity-bundle",
-  "nextSlice": "S10 API/UI parity after workflow contracts are committed",
+  "nextSlice": "complete",
   "schemaVersion": "aco.workflow-parity-bundle.v1",
   "status": "contractual"
 }

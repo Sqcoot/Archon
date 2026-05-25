@@ -3,7 +3,7 @@
 schemaVersion: aco.workflow-parity-bundle.v1
 id: aco.workflows.s9.workflow-parity
 status: contractual
-nextSlice: S10 API/UI parity after workflow contracts are committed
+nextSlice: complete
 
 ## Workflows
 

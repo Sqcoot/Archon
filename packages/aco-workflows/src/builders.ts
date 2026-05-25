@@ -68,7 +68,7 @@ export function buildWorkflowParityBundle(): ParseResult<WorkflowParityBundle> {
     approvalRequiredCommands: allRequirements.filter(
       requirement => requirement.status === 'approval-required'
     ),
-    nextSlice: 'S10 API/UI parity after workflow contracts are committed',
+    nextSlice: 'complete',
     evidence: [S9_CONSENSUS_EVIDENCE, WORKFLOW_LEDGER_EVIDENCE, DEFAULT_WORKFLOW_EVIDENCE],
   } as const;
 

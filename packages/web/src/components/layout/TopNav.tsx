@@ -1,6 +1,6 @@
 import { NavLink, Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { LayoutDashboard, MessageSquare, Workflow, Settings } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Workflow, Settings, ShieldCheck } from 'lucide-react';
 import { listDashboardRuns, getUpdateCheck } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -8,6 +8,7 @@ const tabs = [
   { to: '/chat', end: false, icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', end: true, icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/workflows', end: false, icon: Workflow, label: 'Workflows' },
+  { to: '/aco', end: true, icon: ShieldCheck, label: 'ACO' },
   { to: '/settings', end: false, icon: Settings, label: 'Settings' },
 ] as const;
 
@@ -31,9 +32,12 @@ export function TopNav(): React.ReactElement {
   });
 
   return (
-    <nav className="flex items-center gap-1 border-b border-border bg-surface px-4">
+    <nav className="flex min-h-12 items-center gap-1 overflow-x-auto border-b border-border bg-surface px-4">
       {/* Brand logo */}
-      <Link to="/chat" className="flex items-center gap-2 mr-4 hover:opacity-80 transition-opacity">
+      <Link
+        to="/chat"
+        className="mr-4 flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
+      >
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
           <span className="text-sm font-semibold text-primary-foreground">A</span>
         </div>
@@ -47,7 +51,7 @@ export function TopNav(): React.ReactElement {
           end={end}
           className={({ isActive }: { isActive: boolean }): string =>
             cn(
-              'flex items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors',
+              'flex shrink-0 items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors',
               isActive
                 ? 'border-primary text-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -66,7 +70,7 @@ export function TopNav(): React.ReactElement {
           )}
         </NavLink>
       ))}
-      <span className="ml-auto text-xs text-text-secondary">
+      <span className="ml-auto hidden shrink-0 text-xs text-text-secondary sm:inline">
         v{import.meta.env.VITE_APP_VERSION as string}
         {updateCheck?.updateAvailable && updateCheck.releaseUrl && (
           <a

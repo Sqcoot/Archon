@@ -81,7 +81,7 @@ export function buildContextStatus(input: ContextBuildInput = {}): ParseResult<C
     graphWaiver: graphWaiverSummary(graphWaiver),
     approvalReadiness: approvalRequirements(catalog),
     deferredSurfaces,
-    nextSlice: 'S10 API/UI parity after workflow contracts are committed',
+    nextSlice: 'complete',
     findings,
     evidence: [
       CONTEXT_COMMAND_LEDGER_EVIDENCE,

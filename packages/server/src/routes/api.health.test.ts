@@ -168,6 +168,7 @@ mock.module('@archon/core/utils/commands', () => ({
 }));
 
 import { registerApiRoutes } from './api';
+import { apiUiParityBundleSchema } from '@archon/aco-api-ui';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -362,6 +363,29 @@ describe('GET /api/health', () => {
 
     const body = (await response.json()) as { is_docker: boolean };
     expect(body.is_docker).toBe(true);
+  });
+});
+
+describe('GET /api/aco/parity', () => {
+  test('returns terminal read-only ACO parity bundle', async () => {
+    const app = makeApp();
+    const response = await app.request('/api/aco/parity');
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    const parsed = apiUiParityBundleSchema.safeParse(body);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) throw new Error(parsed.error.message);
+    expect(parsed.data.nextSlice).toBeNull();
+    expect(parsed.data.sourceTerminality.terminal).toBe(true);
+    expect(parsed.data.surfaceContracts.map(surface => surface.route).sort()).toEqual([
+      '/aco',
+      '/api/aco/parity',
+    ]);
+    expect(parsed.data.remainingApprovalGates.map(gate => gate.commandId).sort()).toEqual([
+      'bun.aco.role-contracts',
+      'bun.research.graph',
+    ]);
   });
 });
 

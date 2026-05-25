@@ -55,6 +55,7 @@ import {
 } from '@archon/workflows/schemas/workflow-run';
 import type { ApprovalContext, WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import { findMarkdownFilesRecursive } from '@archon/core/utils/commands';
+import { buildApiUiParityBundle, apiUiParityBundleSchema } from '@archon/aco-api-ui';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -71,6 +72,7 @@ import * as workflowEventDb from '@archon/core/db/workflow-events';
 import * as messageDb from '@archon/core/db/messages';
 import { errorSchema } from './schemas/common.schemas';
 import { updateCheckResponseSchema } from './schemas/system.schemas';
+import { acoParityResponseSchema } from './schemas/aco.schemas';
 import {
   workflowListResponseSchema,
   validateWorkflowBodySchema,
@@ -269,6 +271,20 @@ const getCommandsRoute = createRoute({
       description: 'OK',
     },
     400: jsonError('Bad request'),
+    500: jsonError('Server error'),
+  },
+});
+
+const getAcoParityRoute = createRoute({
+  method: 'get',
+  path: '/api/aco/parity',
+  tags: ['ACO'],
+  summary: 'Read-only ACO API/UI parity bundle',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: acoParityResponseSchema } },
+      description: 'ACO parity state',
+    },
     500: jsonError('Server error'),
   },
 });
@@ -1758,6 +1774,24 @@ export function registerApiRoutes(
   // =========================================================================
   // Workflow endpoints
   // =========================================================================
+
+  // GET /api/aco/parity - Read-only terminal ACO API/UI parity state
+  registerOpenApiRoute(getAcoParityRoute, c => {
+    const bundle = buildApiUiParityBundle();
+    if (!bundle.ok) {
+      return apiError(c, 500, 'ACO parity contract failed', bundle.issues.join('; '));
+    }
+    const parsed = apiUiParityBundleSchema.safeParse(bundle.value);
+    if (!parsed.success) {
+      return apiError(
+        c,
+        500,
+        'ACO parity response schema drift',
+        parsed.error.issues.map(issue => issue.message).join('; ')
+      );
+    }
+    return c.json(parsed.data);
+  });
 
   // GET /api/workflows - Discover available workflows
   registerOpenApiRoute(getWorkflowsRoute, async c => {

@@ -12,6 +12,7 @@
     "generate:types": "openapi-typescript http://localhost:3090/api/openapi.json -o src/lib/api.generated.d.ts"
   },
   "dependencies": {
+    "@archon/aco-api-ui": "workspace:*",
     "@dagrejs/dagre": "^2.0.4",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",

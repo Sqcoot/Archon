@@ -1,0 +1,118 @@
+{
+  "nextSlice": null,
+  "packageCoverage": [
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "manifest compatibility and pure gates",
+      "packageName": "@archon/aco-core",
+      "slice": "S1",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "ledger parity fixtures",
+      "packageName": "@archon/aco-ledgers",
+      "slice": "S2",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "Codex bootstrap contracts",
+      "packageName": "@archon/aco-codex",
+      "slice": "S3",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "BMAD role/adversarial contracts",
+      "packageName": "@archon/aco-bmad-contracts",
+      "slice": "S4",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "research graph waiver contracts",
+      "packageName": "@archon/aco-research",
+      "slice": "S5",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "command safety catalog",
+      "packageName": "@archon/aco-cli-contracts",
+      "slice": "S6",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "CLI router parity adapters",
+      "packageName": "@archon/aco-cli-contracts",
+      "slice": "S7",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "context package and approval capsule",
+      "packageName": "@archon/aco-context",
+      "slice": "S8",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "workflow parity contracts",
+      "packageName": "@archon/aco-workflows",
+      "slice": "S9",
+      "status": "committed"
+    },
+    {
+      "evidenceId": "evidence.api-ui.s10-consensus",
+      "ownerSurface": "terminal API/UI parity",
+      "packageName": "@archon/aco-api-ui",
+      "slice": "S10",
+      "status": "committed"
+    }
+  ],
+  "remainingApprovalGates": [
+    {
+      "commandId": "bun.aco.role-contracts",
+      "display": "bun run aco:role-contracts",
+      "mutationScope": ["read-only"],
+      "ownerSurface": "aco-gates",
+      "reason": "role-contract script remains outside terminal API/UI parity",
+      "status": "deferred",
+      "stopCondition": "implement only if a future explicit role-contract execution slice is approved"
+    },
+    {
+      "commandId": "bun.research.graph",
+      "display": "bun run research:graph",
+      "mutationScope": ["network", "writes-graph-cache"],
+      "ownerSurface": "aco-research",
+      "reason": "research graph refresh requires network and graph-cache writes",
+      "status": "approval-gated",
+      "stopCondition": "run only with explicit user approval for graph refresh"
+    }
+  ],
+  "terminalCriteria": [
+    "API exposes committed ACO parity state",
+    "UI consumes the API parity bundle without inventing policy",
+    "workflow and context parity are committed, not deferred",
+    "remaining work is limited to explicit approval/deferred gates",
+    "no S11 is planned unless S10 discovers a concrete missing public boundary"
+  ],
+  "workflowCoverage": [
+    {
+      "bundledDefaultChecksum": "628debe01239c7bd401dbffc36c7eac4628debe01239c7bd401dbffc36c7eac4",
+      "bundledDefaultFile": "context-orchestrate.yaml",
+      "name": "context-orchestrate",
+      "nodeCount": 7,
+      "status": "committed"
+    },
+    {
+      "bundledDefaultChecksum": "a0e32a1ed176e70543bc1c4a8a5de632a0e32a1ed176e70543bc1c4a8a5de632",
+      "bundledDefaultFile": "archon-aco-adversarial-loop.yaml",
+      "name": "archon-aco-adversarial-loop",
+      "nodeCount": 6,
+      "status": "committed"
+    }
+  ]
+}

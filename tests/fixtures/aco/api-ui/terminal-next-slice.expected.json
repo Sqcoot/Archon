@@ -1,0 +1,8 @@
+{
+  "nextSlice": null,
+  "sourceTerminality": {
+    "contextNextSlice": "complete",
+    "terminal": true,
+    "workflowNextSlice": "complete"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "kind": "aco-api-ui-view-model",
+  "route": "/aco",
+  "schemaVersion": "aco.api-ui-view-model.v1",
+  "sections": [
+    {
+      "id": "packages",
+      "rows": [
+        {
+          "label": "S1",
+          "status": "committed",
+          "value": "@archon/aco-core - manifest compatibility and pure gates"
+        },
+        {
+          "label": "S2",
+          "status": "committed",
+          "value": "@archon/aco-ledgers - ledger parity fixtures"
+        },
+        {
+          "label": "S3",
+          "status": "committed",
+          "value": "@archon/aco-codex - Codex bootstrap contracts"
+        },
+        {
+          "label": "S4",
+          "status": "committed",
+          "value": "@archon/aco-bmad-contracts - BMAD role/adversarial contracts"
+        },
+        {
+          "label": "S5",
+          "status": "committed",
+          "value": "@archon/aco-research - research graph waiver contracts"
+        },
+        {
+          "label": "S6",
+          "status": "committed",
+          "value": "@archon/aco-cli-contracts - command safety catalog"
+        },
+        {
+          "label": "S7",
+          "status": "committed",
+          "value": "@archon/aco-cli-contracts - CLI router parity adapters"
+        },
+        {
+          "label": "S8",
+          "status": "committed",
+          "value": "@archon/aco-context - context package and approval capsule"
+        },
+        {
+          "label": "S9",
+          "status": "committed",
+          "value": "@archon/aco-workflows - workflow parity contracts"
+        },
+        {
+          "label": "S10",
+          "status": "committed",
+          "value": "@archon/aco-api-ui - terminal API/UI parity"
+        }
+      ],
+      "title": "Committed Packages"
+    },
+    {
+      "id": "workflows",
+      "rows": [
+        {
+          "label": "context-orchestrate",
+          "status": "committed",
+          "value": "7 nodes; context-orchestrate.yaml"
+        },
+        {
+          "label": "archon-aco-adversarial-loop",
+          "status": "committed",
+          "value": "6 nodes; archon-aco-adversarial-loop.yaml"
+        }
+      ],
+      "title": "Workflow Parity"
+    },
+    {
+      "id": "gates",
+      "rows": [
+        {
+          "label": "bun run aco:role-contracts",
+          "status": "deferred",
+          "value": "role-contract script remains outside terminal API/UI parity"
+        },
+        {
+          "label": "bun run research:graph",
+          "status": "approval-gated",
+          "value": "research graph refresh requires network and graph-cache writes"
+        }
+      ],
+      "title": "Remaining Gates"
+    },
+    {
+      "id": "public-surfaces",
+      "rows": [
+        {
+          "label": "/api/aco/parity",
+          "status": "committed",
+          "value": "API GET; aco.api-ui-parity-bundle.v1"
+        },
+        {
+          "label": "/aco",
+          "status": "committed",
+          "value": "UI GET; aco.api-ui-view-model.v1"
+        }
+      ],
+      "title": "Public Surfaces"
+    }
+  ],
+  "statusLabel": "Complete with approval gates",
+  "summary": {
+    "packageCount": 10,
+    "readiness": "complete-with-approval-gates",
+    "remainingGateCount": 2,
+    "workflowCount": 2
+  },
+  "title": "ACO Parity"
+}

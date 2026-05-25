@@ -116,7 +116,7 @@
   },
   "id": "aco.context.s8.status",
   "kind": "aco-context-status",
-  "nextSlice": "S10 API/UI parity after workflow contracts are committed",
+  "nextSlice": "complete",
   "prompt": "Implement S8 context contracts",
   "promptDigest": "496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000",
   "readiness": "degraded",

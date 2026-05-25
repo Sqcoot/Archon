@@ -5,6 +5,7 @@
  */
 import type { WorkflowRunStatus } from '@/lib/types';
 import type { components } from '@/lib/api.generated';
+import type { ApiUiParityBundle } from '@archon/aco-api-ui';
 
 export type WorkflowDefinition = components['schemas']['WorkflowDefinition'];
 export type DagNode = components['schemas']['DagNode'];
@@ -20,6 +21,10 @@ export const SSE_BASE_URL = import.meta.env.DEV
   : '';
 
 export { getCodebaseInput } from '@/lib/codebase-input';
+
+export async function getAcoParity(): Promise<ApiUiParityBundle> {
+  return fetchJSON<ApiUiParityBundle>('/api/aco/parity');
+}
 
 export interface ConversationResponse {
   id: string;
