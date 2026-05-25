@@ -116,8 +116,8 @@ describe('ACO workflow acceptance', () => {
     );
 
     for (const evidence of [
-      'ACO role contracts remain workflow artifact/node contracts, not Codex subagents.',
-      'Codex agents and tool-restriction capabilities are unsupported runtime capabilities.',
+      'ACO role contracts remain workflow artifact/node contracts, not automatic Codex subagents.',
+      'Codex generated agents require explicit node-level agents; tool restrictions remain unsupported.',
       'ACO-ADV-006 Coordinator/Triage role.',
       'ACO-ADV-006 Skill Curator role.',
       'ACO-ADV-006 BMAD Reviewer role.',

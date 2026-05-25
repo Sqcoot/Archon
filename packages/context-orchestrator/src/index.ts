@@ -90,6 +90,7 @@ export type {
   RealCodexDomainEvidence,
   RealCodexDomainId,
   RealCodexEvidence,
+  RealCodexGeneratedAgentProof,
   RealCodexGraphifyInputMode,
   RealCodexGraphifyProof,
   RealCodexHookDiscoveryProof,

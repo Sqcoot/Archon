@@ -65,6 +65,22 @@ describe('ACO real Codex bootstrap and hook acceptance', () => {
     expect(result.domainEvidence['subagents-roles'].behaviorProof.join('\n')).toContain(
       'SubagentStart emits roleScope'
     );
+    expect(result.domainEvidence['subagents-roles'].behaviorProof.join('\n')).toContain(
+      'features.multi_agent=true'
+    );
+    expect(result.domainEvidence['subagents-roles'].behaviorProof.join('\n')).toContain(
+      'enable_fanout absent'
+    );
+    expect(result.generatedAgentProof).toHaveLength(1);
+    const agentProof = result.generatedAgentProof[0];
+    expect(agentProof.providerPath).toBe('CodexProvider.sendQuery');
+    expect(agentProof.mocked).toBe(false);
+    expect(agentProof.role).toBe('brief-gen');
+    expect(agentProof.featureFlags).toContain('multi_agent');
+    expect(agentProof.experimentalFeatureFlags).toEqual([]);
+    expect(agentProof.behaviorProof.join('\n')).toContain('features.multiAgent');
+    expect(agentProof.behaviorProof.join('\n')).toContain('features.multiAgentV2=false');
+    expect(agentProof.behaviorProof.join('\n')).toContain('features.enableFanout=false');
     expect(result.domainEvidence['research-agentic-search'].behaviorProof.join('\n')).toContain(
       'readOnly=true'
     );
@@ -100,14 +116,21 @@ describe('ACO real Codex bootstrap and hook acceptance', () => {
         expect(result.residueProof.every(proof => proof.remainingAcoOwnedPaths.length === 0)).toBe(
           true
         );
+        expect(agentProof.status).toBe('passed');
+        expect(agentProof.codexExecIncluded).toBe(true);
+        expect(agentProof.configFile).toContain('brief-gen.toml');
+        expect(agentProof.manifest).toContain('manifest.json');
+        expect(agentProof.fanoutPlan).toContain('fanout-plan.json');
       } else {
         expect(result.blockers.join('\n')).toMatch(
-          /temp CODEX_HOME|PermissionRequest real hook proof blocked|codex exec hook smoke failed/
+          /temp CODEX_HOME|PermissionRequest real hook proof blocked|codex exec hook smoke failed|generated-agent/
         );
       }
     } else {
       expect(result.status).toBe('blocked');
       expect(result.blockers.join('\n')).toContain('RUN_REAL_CODEX=1');
+      expect(agentProof.status).toBe('blocked');
+      expect(agentProof.codexExecIncluded).toBe(false);
     }
   }, 180_000);
 

@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { lstat, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { dirname, join, relative, resolve } from 'path';
+import { pathToFileURL } from 'url';
 import { runAcoBootstrapCodexCommand } from './bootstrap-command';
 import { buildAcoCodexHookManifestTemplate } from './aco-codex-hook-templates';
 import {
@@ -86,6 +87,25 @@ export interface RealCodexGraphifyProof {
   blockedReason?: string;
 }
 
+export interface RealCodexGeneratedAgentProof {
+  status: 'passed' | 'blocked';
+  providerPath: 'CodexProvider.sendQuery';
+  mocked: false;
+  role: string;
+  artifactDir: string;
+  configFile: string;
+  manifest: string;
+  fanoutPlan: string;
+  workerOutputs: string;
+  workerFailures: string;
+  reductionSummary: string;
+  featureFlags: string[];
+  experimentalFeatureFlags: string[];
+  codexExecIncluded: boolean;
+  behaviorProof: string[];
+  blocker?: string;
+}
+
 export interface RealCodexResidueProof {
   runId: string;
   checkedBeforeTempRootRemoval: boolean;
@@ -117,6 +137,7 @@ export interface RealCodexHookSmokeResult {
   residueProof: RealCodexResidueProof[];
   hookDiscoveryProof: RealCodexHookDiscoveryProof[];
   graphifyProof: RealCodexGraphifyProof;
+  generatedAgentProof: RealCodexGeneratedAgentProof[];
   domainEvidence: Record<RealCodexDomainId, RealCodexDomainEvidence>;
   blockers: string[];
 }
@@ -176,9 +197,23 @@ export async function runRealCodexHookSmoke(
 
   const cleanupRuns: AcoCleanupCodexCommandResult[] = [];
   const residueProof: RealCodexResidueProof[] = [];
+  const generatedAgentProof: RealCodexGeneratedAgentProof[] = [];
   const runIds: string[] = [];
   const observed = new Set<string>();
-  if (blockers.length === 0) {
+  const runtimeReady = blockers.length === 0;
+  if (runtimeReady) {
+    const providerRunId = `aco-real-codex-provider-agents-${Date.now()}`;
+    const providerSmoke = await runProviderGeneratedAgentSmoke({
+      runId: providerRunId,
+      timeoutMs,
+    });
+    generatedAgentProof.push(providerSmoke.proof);
+    if (providerSmoke.blocker !== undefined) blockers.push(providerSmoke.blocker);
+  } else {
+    generatedAgentProof.push(buildBlockedGeneratedAgentProof(blockers));
+  }
+
+  if (runtimeReady) {
     for (const index of [1, 2]) {
       const runId = `aco-real-codex-${String(index)}-${Date.now()}`;
       runIds.push(runId);
@@ -202,7 +237,7 @@ export async function runRealCodexHookSmoke(
     'PostToolUse',
     'Stop',
   ];
-  if (blockers.length === 0) {
+  if (runtimeReady) {
     const missing = requiredEvents.filter(event => !observed.has(event));
     if (missing.length > 0) {
       blockers.push(`real Codex hook smoke missing events: ${missing.join(', ')}`);
@@ -222,6 +257,7 @@ export async function runRealCodexHookSmoke(
     residueProof,
     hookDiscoveryProof,
     graphifyProof,
+    generatedAgentProof,
     domainFixture,
   });
   await rm(domainFixture.root, { recursive: true, force: true });
@@ -245,6 +281,7 @@ export async function runRealCodexHookSmoke(
     residueProof,
     hookDiscoveryProof,
     graphifyProof,
+    generatedAgentProof,
     domainEvidence,
     blockers: blockers.map(redactSecrets),
   };
@@ -333,6 +370,9 @@ interface DomainEvidenceFixture {
     disabledRequirementsToml: string;
     pluginHooksJson: string;
     pluginJson: string;
+    codexAgentConfig: string;
+    codexAgentManifest: string;
+    codexConfigOverride: string;
   };
 }
 
@@ -395,7 +435,17 @@ async function writeDomainEvidenceFixture(
     disabledRequirementsToml: join(repo, 'requirements-disabled.toml'),
     pluginHooksJson: join(repo, 'plugins/aco-fixture/hooks/hooks.json'),
     pluginJson: join(repo, 'plugins/aco-fixture/plugin.json'),
+    codexAgentConfig: join(
+      repo,
+      '.archon/artifacts/context-orchestrator/generated-codex-agents/code-reviewer.toml'
+    ),
+    codexAgentManifest: join(
+      repo,
+      '.archon/artifacts/context-orchestrator/generated-codex-agents/manifest.json'
+    ),
+    codexConfigOverride: join(repo, '.codex/generated-agents-config.toml'),
   };
+  await mkdir(dirname(sources.codexAgentConfig), { recursive: true });
 
   await writeFile(
     sources.packageJson,
@@ -557,6 +607,48 @@ async function writeDomainEvidenceFixture(
       null,
       2
     ) + '\n'
+  );
+  await writeFile(
+    sources.codexAgentConfig,
+    [
+      'name = "Code Reviewer"',
+      'description = "Read-only review role used by the real Codex harness fixture."',
+      'developer_instructions = """',
+      'Review only the generated temp fixture files. Do not edit files or inspect credentials.',
+      '"""',
+    ].join('\n') + '\n'
+  );
+  await writeFile(
+    sources.codexAgentManifest,
+    `${JSON.stringify(
+      {
+        schemaVersion: 'archon.codex.generated-agents.v1',
+        agentIds: ['code-reviewer'],
+        generatedBy: 'real-codex-harness-fixture',
+        featureFlags: ['multi_agent'],
+        experimentalFeatureFlags: [],
+      },
+      null,
+      2
+    )}\n`
+  );
+  await writeFile(
+    sources.codexConfigOverride,
+    [
+      '[features]',
+      'multi_agent = true',
+      '',
+      '[agents]',
+      'max_threads = 1',
+      'max_depth = 1',
+      '',
+      '[agents.code-reviewer]',
+      'description = "Read-only review role used by the real Codex harness fixture."',
+      `config_file = ${tomlString(
+        './.archon/artifacts/context-orchestrator/generated-codex-agents/code-reviewer.toml'
+      )}`,
+      'nickname_candidates = ["reviewer"]',
+    ].join('\n') + '\n'
   );
 
   const graphifyInputPath =
@@ -809,6 +901,7 @@ function buildDomainEvidence(input: {
   residueProof: RealCodexResidueProof[];
   hookDiscoveryProof: RealCodexHookDiscoveryProof[];
   graphifyProof: RealCodexGraphifyProof;
+  generatedAgentProof: RealCodexGeneratedAgentProof[];
   domainFixture: DomainEvidenceFixture;
 }): Record<RealCodexDomainId, RealCodexDomainEvidence> {
   const docsPromptOnly = planDocumentation({ prompt: 'Use Hono for request routing.' });
@@ -837,6 +930,10 @@ function buildDomainEvidence(input: {
     `featuresList=${input.preflight.featuresList.status}`,
     ...input.hookDiscoveryProof.map(proof => `${proof.sourceLayer}: ${proof.behavior}`),
   ];
+  const generatedAgentRuntimeProof =
+    input.generatedAgentProof.length > 0
+      ? input.generatedAgentProof.flatMap(proof => proof.behaviorProof)
+      : ['generated custom-agent runtime proof is gated by RUN_REAL_CODEX=1.'];
   const result = emptyDomainEvidence();
   result.commands = evidence('available', {
     sources: [toFixturePath(input.domainFixture, input.domainFixture.sources.packageJson)],
@@ -918,6 +1015,7 @@ function buildDomainEvidence(input: {
       toFixturePath(input.domainFixture, input.domainFixture.sources.disabledRequirementsToml),
       toFixturePath(input.domainFixture, input.domainFixture.sources.pluginHooksJson),
       toFixturePath(input.domainFixture, input.domainFixture.sources.pluginJson),
+      toFixturePath(input.domainFixture, input.domainFixture.sources.codexConfigOverride),
     ],
     behaviorProof: input.hookDiscoveryProof.map(proof => proof.behavior),
     cleanupProof,
@@ -963,12 +1061,25 @@ function buildDomainEvidence(input: {
     sources: [
       'runAcoCodexHook SubagentStart simulation',
       'runAcoCodexHook SubagentStop simulation',
+      toFixturePath(input.domainFixture, input.domainFixture.sources.codexAgentConfig),
+      toFixturePath(input.domainFixture, input.domainFixture.sources.codexAgentManifest),
+      toFixturePath(input.domainFixture, input.domainFixture.sources.codexConfigOverride),
+      ...input.generatedAgentProof.flatMap(proof => [
+        proof.configFile,
+        proof.manifest,
+        proof.fanoutPlan,
+        proof.reductionSummary,
+      ]),
     ],
     behaviorProof: [
       'SubagentStart emits roleScope, allowedEvidence, deniedEvidence, snapshotRefs, artifactExpectations.',
       'SubagentStop emits artifact collection, evidence capture, unknowns, and evaluator notes.',
       'ACO hook lifecycle simulations remain labeled separately from provider-level Codex generated agents.',
+      'Codex stable custom-agent fixture uses features.multi_agent=true and agents.code-reviewer.config_file.',
+      'Codex generated-agent fixture keeps experimental multi_agent_v2 and enable_fanout absent.',
+      ...generatedAgentRuntimeProof,
     ],
+    deniedSources: ['multi_agent_v2 default enablement', 'enable_fanout default enablement'],
     cleanupProof,
   });
   result['research-agentic-search'] = evidence('available', {
@@ -1120,6 +1231,320 @@ function toFixturePath(fixture: DomainEvidenceFixture, absolutePath: string): st
   return relativePath && !relativePath.startsWith('..')
     ? `fixture://${relativePath.split('\\').join('/')}`
     : redactSecrets(absolutePath);
+}
+
+async function runProviderGeneratedAgentSmoke(input: {
+  runId: string;
+  timeoutMs: number;
+}): Promise<{ proof: RealCodexGeneratedAgentProof; blocker?: string }> {
+  const runtime = await makeCleanCodexRuntime('aco-real-codex-provider-agents-');
+  const repo = join(runtime.root, 'repo');
+  const artifactDir = join(
+    repo,
+    '.archon/artifacts/context-orchestrator',
+    input.runId,
+    'provider-generated-agent'
+  );
+  const resultFile = join(runtime.root, 'provider-result.json');
+  const childScript = join(runtime.root, 'provider-generated-agent-smoke.mjs');
+  await mkdir(artifactDir, { recursive: true });
+  await runCommand(['git', 'init', repo], 10_000, { env: runtime.env });
+  await writeFile(
+    join(repo, 'AGENTS.md'),
+    'Temp ACO real-Codex provider generated-agent smoke repo.\n'
+  );
+  await writeFile(childScript, renderProviderGeneratedAgentSmokeScript(resultFile));
+
+  const command = await runCommand(['bun', childScript], input.timeoutMs, {
+    env: {
+      ...runtime.env,
+      ACO_PROVIDER_REPO: repo,
+      ACO_PROVIDER_ARTIFACT_DIR: artifactDir,
+      ACO_PROVIDER_RESULT: resultFile,
+    },
+    cwd: repo,
+  });
+  const childResult = await readJsonMaybe<ProviderGeneratedAgentChildResult>(resultFile);
+  const artifactProof = await inspectProviderGeneratedAgentArtifacts(artifactDir);
+  await rm(runtime.root, { recursive: true, force: true });
+
+  const blockers = [
+    ...(command.exitCode === 0 && !command.timedOut
+      ? []
+      : [
+          `provider generated-agent child process failed exit=${String(
+            command.exitCode
+          )} timedOut=${String(command.timedOut)} stderr=${command.stderr}`,
+        ]),
+    ...(childResult?.status === 'completed'
+      ? []
+      : [`CodexProvider generated-agent smoke failed: ${childResult?.error ?? 'no result file'}`]),
+    ...artifactProof.blockers,
+  ];
+  const workerCount =
+    (artifactProof.reductionSummary?.outputCount ?? 0) +
+    (artifactProof.reductionSummary?.failureCount ?? 0);
+  if (childResult?.status === 'completed' && workerCount === 0) {
+    blockers.push(
+      'CodexProvider generated-agent smoke completed without recognizable worker events.'
+    );
+  }
+
+  const proof: RealCodexGeneratedAgentProof = {
+    status: blockers.length === 0 ? 'passed' : 'blocked',
+    providerPath: 'CodexProvider.sendQuery',
+    mocked: false,
+    role: 'brief-gen',
+    artifactDir: redactSecrets(artifactDir),
+    configFile: redactSecrets(artifactProof.configFile ?? ''),
+    manifest: redactSecrets(artifactProof.manifest ?? ''),
+    fanoutPlan: redactSecrets(artifactProof.fanoutPlan ?? ''),
+    workerOutputs: redactSecrets(artifactProof.workerOutputs ?? ''),
+    workerFailures: redactSecrets(artifactProof.workerFailures ?? ''),
+    reductionSummary: redactSecrets(artifactProof.reductionSummaryFile ?? ''),
+    featureFlags: artifactProof.features.multiAgent ? ['multi_agent'] : [],
+    experimentalFeatureFlags: [
+      ...(artifactProof.features.multiAgentV2 ? ['multi_agent_v2'] : []),
+      ...(artifactProof.features.enableFanout ? ['enable_fanout'] : []),
+    ],
+    codexExecIncluded: childResult !== undefined || command.exitCode !== 0,
+    behaviorProof: [
+      'Provider smoke executes CodexProvider.sendQuery in a sanitized child process; no mocked SDK is installed.',
+      'Inline nodeConfig.agents supplies brief-gen so the provider must generate run-owned custom-agent TOML.',
+      `manifestAgentIds=${artifactProof.agentIds.join(',') || 'none'}`,
+      `features.multiAgent=${String(artifactProof.features.multiAgent)}`,
+      `features.multiAgentV2=${String(artifactProof.features.multiAgentV2)}`,
+      `features.enableFanout=${String(artifactProof.features.enableFanout)}`,
+      `workerOutputCount=${String(artifactProof.reductionSummary?.outputCount ?? 0)}`,
+      `workerFailureCount=${String(artifactProof.reductionSummary?.failureCount ?? 0)}`,
+      ...(childResult?.chunkTypes ? [`chunkTypes=${childResult.chunkTypes.join(',')}`] : []),
+      ...blockers.map(blocker => `blocked=${blocker}`),
+    ],
+    ...(blockers.length > 0 ? { blocker: blockers.join(' | ') } : {}),
+  };
+
+  return {
+    proof,
+    ...(blockers.length > 0 ? { blocker: proof.blocker } : {}),
+  };
+}
+
+interface ProviderGeneratedAgentChildResult {
+  status: 'completed' | 'failed';
+  chunkTypes: string[];
+  error?: string;
+}
+
+interface ProviderGeneratedAgentArtifactProof {
+  manifest?: string;
+  configFile?: string;
+  fanoutPlan?: string;
+  workerOutputs?: string;
+  workerFailures?: string;
+  reductionSummaryFile?: string;
+  reductionSummary?: { outputCount?: number; failureCount?: number };
+  agentIds: string[];
+  features: {
+    multiAgent: boolean;
+    multiAgentV2: boolean;
+    enableFanout: boolean;
+  };
+  blockers: string[];
+}
+
+function renderProviderGeneratedAgentSmokeScript(resultFile: string): string {
+  const providerIndex = pathToFileURL(
+    resolve(process.cwd(), 'packages/providers/src/codex/provider.ts')
+  );
+  return [
+    `const providerModule = await import(${JSON.stringify(providerIndex.href)});`,
+    'const { writeFile } = await import("node:fs/promises");',
+    'const repo = process.env.ACO_PROVIDER_REPO;',
+    'const artifactDir = process.env.ACO_PROVIDER_ARTIFACT_DIR;',
+    `const resultFile = process.env.ACO_PROVIDER_RESULT ?? ${JSON.stringify(resultFile)};`,
+    'const chunks = [];',
+    'const writeResult = async value => writeFile(resultFile, JSON.stringify(value, null, 2) + "\\n");',
+    'try {',
+    '  const provider = new providerModule.CodexProvider({ retryBaseDelayMs: 1 });',
+    `  for await (const chunk of provider.sendQuery(${JSON.stringify(
+      [
+        'Use the configured brief-gen custom agent exactly once to inspect this temp fixture.',
+        'The subagent should return one short sentence.',
+        'Then provide a final one-sentence answer.',
+        'Do not edit files.',
+      ].join(' ')
+    )}, repo, undefined, {`,
+    '    artifactDir,',
+    '    assistantConfig: { agents: { maxThreads: 1, maxDepth: 1, strict: true } },',
+    '    env: {',
+    '      HOME: process.env.HOME ?? "",',
+    '      CODEX_HOME: process.env.CODEX_HOME ?? "",',
+    '      PATH: process.env.PATH ?? "",',
+    '      SHELL: process.env.SHELL ?? "",',
+    '      TERM: process.env.TERM ?? "",',
+    '      TMPDIR: process.env.TMPDIR ?? "",',
+    '      TMP: process.env.TMP ?? "",',
+    '      TEMP: process.env.TEMP ?? "",',
+    '      LANG: process.env.LANG ?? "",',
+    '      LC_ALL: process.env.LC_ALL ?? "",',
+    '      CI: "1",',
+    '    },',
+    '    nodeConfig: {',
+    '      agents: {',
+    '        "brief-gen": {',
+    '          description: "Read-only brief generator used by the real Codex provider harness.",',
+    '          prompt: "Inspect only the temp fixture context and return one short sentence. Do not edit files or access credentials.",',
+    '          tools: [],',
+    '          disallowedTools: ["Bash", "Write", "Edit"],',
+    '          skills: ["real-codex-harness"],',
+    '          maxTurns: 1,',
+    '        },',
+    '      },',
+    '    },',
+    '  })) {',
+    '    chunks.push({ type: chunk.type, content: typeof chunk.content === "string" ? chunk.content.slice(0, 400) : undefined });',
+    '  }',
+    '  await writeResult({ status: "completed", chunkTypes: [...new Set(chunks.map(chunk => chunk.type))], chunks });',
+    '} catch (error) {',
+    '  const message = error instanceof Error ? error.message : String(error);',
+    '  await writeResult({ status: "failed", chunkTypes: [...new Set(chunks.map(chunk => chunk.type))], error: message, chunks });',
+    '}',
+    '',
+  ].join('\n');
+}
+
+async function inspectProviderGeneratedAgentArtifacts(
+  artifactDir: string
+): Promise<ProviderGeneratedAgentArtifactProof> {
+  const files = await listFilesRecursive(artifactDir);
+  const manifest = files.find(
+    path => path.includes('/codex-agents/run-') && path.endsWith('/manifest.json')
+  );
+  const fanoutPlan = files.find(
+    path => path.includes('/codex-agents/run-') && path.endsWith('/fanout-plan.json')
+  );
+  const workerOutputs = files.find(
+    path => path.includes('/codex-agents/run-') && path.endsWith('/worker-outputs.json')
+  );
+  const workerFailures = files.find(
+    path => path.includes('/codex-agents/run-') && path.endsWith('/worker-failures.json')
+  );
+  const reductionSummaryFile = files.find(
+    path => path.includes('/codex-agents/run-') && path.endsWith('/reduction-summary.json')
+  );
+  const manifestJson = manifest === undefined ? undefined : await readJsonMaybe(manifest);
+  const fanoutPlanJson =
+    fanoutPlan === undefined
+      ? undefined
+      : await readJsonMaybe<{
+          agentIds?: unknown;
+          features?: {
+            multiAgent?: unknown;
+            multiAgentV2?: unknown;
+            enableFanout?: unknown;
+          };
+        }>(fanoutPlan);
+  const reductionSummary =
+    reductionSummaryFile === undefined
+      ? undefined
+      : await readJsonMaybe<{ outputCount?: number; failureCount?: number }>(reductionSummaryFile);
+  const manifestAgents = Array.isArray((manifestJson as { agents?: unknown } | undefined)?.agents)
+    ? ((manifestJson as { agents: { id?: unknown; configFile?: unknown }[] }).agents ?? [])
+    : [];
+  const configFile =
+    typeof manifestAgents[0]?.configFile === 'string'
+      ? manifestAgents[0].configFile
+      : files.find(path => path.includes('/codex-agents/run-') && path.endsWith('/brief-gen.toml'));
+  const agentIds = manifestAgents
+    .map(agent => agent.id)
+    .filter((id): id is string => typeof id === 'string')
+    .sort();
+  const features = {
+    multiAgent: fanoutPlanJson?.features?.multiAgent === true,
+    multiAgentV2: fanoutPlanJson?.features?.multiAgentV2 === true,
+    enableFanout: fanoutPlanJson?.features?.enableFanout === true,
+  };
+  const blockers = [
+    ...(manifest !== undefined ? [] : ['generated agent manifest missing']),
+    ...(configFile !== undefined ? [] : ['generated brief-gen TOML missing']),
+    ...(fanoutPlan !== undefined ? [] : ['fanout-plan.json missing']),
+    ...(workerOutputs !== undefined ? [] : ['worker-outputs.json missing']),
+    ...(workerFailures !== undefined ? [] : ['worker-failures.json missing']),
+    ...(reductionSummaryFile !== undefined ? [] : ['reduction-summary.json missing']),
+    ...(agentIds.includes('brief-gen') ? [] : ['manifest does not include brief-gen']),
+    ...(features.multiAgent ? [] : ['fanout plan did not record stable multiAgent=true']),
+    ...(!features.multiAgentV2 ? [] : ['experimental multiAgentV2 unexpectedly enabled']),
+    ...(!features.enableFanout ? [] : ['experimental enableFanout unexpectedly enabled']),
+  ];
+  return {
+    manifest,
+    configFile,
+    fanoutPlan,
+    workerOutputs,
+    workerFailures,
+    reductionSummaryFile,
+    reductionSummary,
+    agentIds,
+    features,
+    blockers,
+  };
+}
+
+async function listFilesRecursive(root: string): Promise<string[]> {
+  try {
+    const entries = await readdir(root, { withFileTypes: true });
+    const files: string[] = [];
+    for (const entry of entries) {
+      const path = join(root, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...(await listFilesRecursive(path)));
+      } else if (entry.isFile()) {
+        files.push(path);
+      }
+    }
+    return files.sort();
+  } catch {
+    return [];
+  }
+}
+
+async function readJsonMaybe<T = unknown>(path: string): Promise<T | undefined> {
+  try {
+    return JSON.parse(await readFile(path, 'utf8')) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildBlockedGeneratedAgentProof(blockers: string[]): RealCodexGeneratedAgentProof {
+  const blocker = `Real Codex provider generated-agent smoke blocked before execution: ${blockers.join(
+    ' | '
+  )}`;
+  return {
+    status: 'blocked',
+    providerPath: 'CodexProvider.sendQuery',
+    mocked: false,
+    role: 'brief-gen',
+    artifactDir: '',
+    configFile: '',
+    manifest: '',
+    fanoutPlan: '',
+    workerOutputs: '',
+    workerFailures: '',
+    reductionSummary: '',
+    featureFlags: ['multi_agent'],
+    experimentalFeatureFlags: [],
+    codexExecIncluded: false,
+    behaviorProof: [
+      'Provider generated-agent smoke is guarded by the same RUN_REAL_CODEX and clean-room preflight gates as the real Codex hook smoke.',
+      'Expected stable feature is multi_agent; experimental multi_agent_v2 and enable_fanout remain absent.',
+      'features.multiAgent=blocked',
+      'features.multiAgentV2=false',
+      'features.enableFanout=false',
+      `blocked=${blocker}`,
+    ],
+    blocker,
+  };
 }
 
 async function runSingleSmoke(input: {

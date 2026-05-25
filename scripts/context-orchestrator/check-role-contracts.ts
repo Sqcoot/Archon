@@ -52,10 +52,10 @@ const ROLE_CONTRACTS: readonly RoleContractDefinition[] = [
     id: 'workflow-role-boundaries',
     file: '.archon/workflows/defaults/archon-aco-adversarial-loop.yaml',
     markers: [
-      'ACO role contracts remain workflow artifact/node contracts, not Codex subagents.',
-      'Codex agents and tool-restriction capabilities are unsupported runtime capabilities.',
+      'ACO role contracts remain workflow artifact/node contracts, not automatic Codex subagents.',
+      'Codex generated agents require explicit node-level agents; tool restrictions remain unsupported.',
       'Reject unsupported runtime claims explicitly.',
-      'role boundaries are contractual workflow artifact requirements, not Codex runtime gates.',
+      'role boundaries are contractual workflow artifact',
       'BMAD Reviewer is advisory only',
       'certify final readiness.',
       'certification: "not-certified-by-generator"',
@@ -68,7 +68,7 @@ const ROLE_CONTRACTS: readonly RoleContractDefinition[] = [
   {
     id: 'codex-provider-capability-boundary',
     file: 'packages/providers/src/codex/capabilities.ts',
-    markers: ['agents: false', 'toolRestrictions: false'],
+    markers: ['agents: true', 'toolRestrictions: false'],
   },
   {
     id: 'claude-provider-capability-boundary',
