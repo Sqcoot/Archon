@@ -126,7 +126,7 @@ const mockCodexCapabilities = () => ({
   mcp: true,
   hooks: false,
   skills: false,
-  agents: false,
+  agents: true,
   toolRestrictions: false,
   structuredOutput: true,
   envInjection: true,
@@ -2970,9 +2970,10 @@ describe('executeDagWorkflow -- skills options', () => {
     const optionsArg = mockSendQueryDag.mock.calls[0][3] as Record<string, unknown>;
     const nodeConfig = optionsArg?.nodeConfig as Record<string, unknown>;
     expect(nodeConfig?.agents).toEqual(agentsMap);
+    expect(optionsArg?.artifactDir).toBe(join(testDir, 'artifacts'));
   });
 
-  it('warns user when Codex DAG node has inline agents', async () => {
+  it('does not warn user when Codex DAG node has inline agents', async () => {
     mockGetAgentProviderDag.mockReturnValue({
       sendQuery: mockSendQueryDag,
       getType: () => 'codex',
@@ -3014,7 +3015,7 @@ describe('executeDagWorkflow -- skills options', () => {
     const sendMessage = platform.sendMessage as ReturnType<typeof mock>;
     const messages = sendMessage.mock.calls.map((call: unknown[]) => call[1] as string);
     const warning = messages.find(m => m.includes('agents') && m.includes('codex'));
-    expect(warning).toBeDefined();
+    expect(warning).toBeUndefined();
   });
 });
 

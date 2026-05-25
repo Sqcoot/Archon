@@ -1248,7 +1248,7 @@ function buildDomainCoverage(
       'Subagents/roles',
       roleItems,
       [
-        'Subagent lifecycle uses ACO role contracts; unsupported Codex subagent hooks are simulated.',
+        'Subagent lifecycle uses ACO role contracts; Codex generated agents are provider-level custom-agent config, while legacy hook lifecycle evidence remains simulated.',
       ],
       'Codex agents, Archon/BMAD roles, and role contracts.'
     ),

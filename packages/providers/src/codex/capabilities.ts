@@ -5,7 +5,7 @@ export const CODEX_CAPABILITIES: ProviderCapabilities = {
   mcp: true,
   hooks: false,
   skills: false,
-  agents: false,
+  agents: true,
   toolRestrictions: false,
   structuredOutput: true,
   envInjection: true,

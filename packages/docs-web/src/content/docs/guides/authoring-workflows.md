@@ -213,7 +213,7 @@ nodes:
 | `hooks` | object | — | Per-node SDK hook callbacks. Claude only. See [Hooks](/guides/hooks/) |
 | `mcp` | string | — | Path to MCP server config JSON file. Codex and Claude. See [MCP Servers](/guides/mcp-servers/) |
 | `skills` | string[] | — | Skills to preload. Claude only. See [Skills](/guides/skills/) |
-| `agents` | object | — | Inline sub-agent definitions keyed by kebab-case ID. Claude only. See [Inline sub-agents](#inline-sub-agents) |
+| `agents` | object | — | Inline sub-agent definitions keyed by kebab-case ID. Claude and Codex. See [Inline sub-agents](#inline-sub-agents) |
 | `effort` | `'low'`\|`'medium'`\|`'high'`\|`'max'` | — | Reasoning depth. Claude only. Also settable at workflow level |
 | `thinking` | string \| object | — | Thinking mode: `'adaptive'`, `'disabled'`, or `{type:'enabled', budgetTokens:N}`. Claude only. Also settable at workflow level |
 | `maxBudgetUsd` | number | — | USD cost cap; node fails if exceeded. Claude only. Per-node only |
@@ -224,7 +224,7 @@ nodes:
 
 ### Claude SDK Advanced Options
 
-These fields map directly to Claude Agent SDK options. All are Claude-only — Codex nodes emit a warning and ignore them. They can be set **per-node** or at the **workflow level** as defaults (per-node takes precedence). `maxBudgetUsd` and `systemPrompt` are per-node only.
+These fields map directly to Claude Agent SDK options. Except for `agents`, these are Claude-only — Codex nodes emit a warning and ignore them. They can be set **per-node** or at the **workflow level** as defaults (per-node takes precedence). `maxBudgetUsd` and `systemPrompt` are per-node only.
 
 **effort** — reasoning depth:
 
@@ -424,15 +424,20 @@ nodes:
 
 ### Inline sub-agents
 
-Define Claude sub-agents directly in the workflow YAML, without authoring `.claude/agents/*.md` files. The main agent can spawn them in parallel via the `Task` tool — useful for map-reduce patterns where a cheap model (e.g. Haiku) briefs items and a stronger model reduces.
+Define sub-agents directly in workflow YAML. Archon passes the same `agents:` map through the provider boundary:
+
+- Claude receives inline SDK sub-agents that the main agent can spawn with the `Task` tool.
+- Codex writes per-run custom-agent TOML files under the workflow artifact directory and passes `[agents.<role>] config_file = "..."`
+  overrides to the Codex harness. It also enables stable `multi_agent` for that node only.
+- Community providers that do not support inline agents emit a warning and ignore the field.
 
 ```yaml
 nodes:
   - id: triage
     prompt: |
       Fetch open issues via `gh issue list ...`. For each issue, spawn the
-      brief-gen sub-agent in parallel (one message, multiple Task tool calls)
-      to produce a 2-3 sentence brief. Then cluster briefs for duplicates.
+      brief-gen sub-agent in parallel to produce a 2-3 sentence brief. Then
+      cluster briefs for duplicates.
     model: sonnet
     allowed_tools: [Bash, Read, Write, Task]
     agents:
@@ -449,15 +454,50 @@ Keys:
 
 - Agent IDs must be **kebab-case** (`^[a-z0-9]+(-[a-z0-9]+)*$`)
 - Each definition requires `description` and `prompt`; `model`, `tools`, `disallowedTools`, `skills`, and `maxTurns` are optional
-- Map is merged with any SDK-level agents and with the internal `dag-node-skills` wrapper created by `skills:` — user-defined agents win on ID collision (a warning is logged when this happens)
-- Claude only. Codex and community providers that don't support inline agents emit a warning and ignore the field
+- Claude enforces the richer SDK fields directly. Codex carries `description`, `prompt`, and `model` into generated custom-agent config; Claude-specific tool/skill hints are included in the generated developer instructions but are not Codex tool restrictions.
+- Archon DAG parallelism is separate: independent nodes in the same layer still run concurrently regardless of whether one node asks its provider to spawn sub-agents.
+- Codex `multi_agent_v2` and `enable_fanout` are under-development runtime features. They are never enabled by `agents:` alone; opt in explicitly in the Codex assistant config and keep limits low.
+- The current Codex SDK exposes config override pass-through but not a public runtime capability probe for those experimental flags; Archon therefore treats them as explicit pass-through only.
 
 **When to use `agents:` vs `.claude/agents/*.md` files:**
 
 - **`agents:` (inline)** — use when the sub-agent is specific to ONE workflow's needs. Keeps the workflow self-contained in a single YAML file; travels cleanly in PRs and forks.
 - **`.claude/agents/*.md` (on-disk)** — use when the sub-agent is shared across multiple workflows OR the whole project (for example, a `triage-agent` used by several maintenance workflows). On-disk agents live outside workflow YAMLs and are picked up automatically by the Claude Agent SDK.
 
-Both sources coexist — inline agents and on-disk agents are both available to `Task(subagent_type=...)` at runtime.
+Both sources coexist for Claude — inline agents and on-disk agents are both available to `Task(subagent_type=...)` at runtime. Codex generated agent files are per-run artifacts and are not written into the source tree.
+
+For Codex runs with inline agents or explicit fanout configuration, Archon writes provider-owned artifacts under the run artifact directory:
+
+- `codex-agents/run-*/manifest.json` lists generated custom-agent config files with sorted agent IDs.
+- `codex-agents/run-*/fanout-plan.json` records the effective stable/experimental feature settings and limits.
+- `codex-agents/run-*/worker-outputs.json`, `worker-failures.json`, and `reduction-summary.json` record spawned-worker results only when the Codex SDK emits recognizable worker item events. The current SDK type surface documents the main event types, so worker-event capture is best-effort and should not be treated as a hard runtime contract.
+
+Codex example with DAG-level parallelism plus provider-level sub-agents:
+
+```yaml
+name: codex-review-fanout
+provider: codex
+nodes:
+  - id: scope
+    bash: gh pr diff --name-only
+
+  - id: review
+    depends_on: [scope]
+    prompt: |
+      Review the files listed in $scope.output. Spawn brief-gen for isolated
+      file briefs, then synthesize one ordered review.
+    agents:
+      brief-gen:
+        description: Brief one file for review risk
+        prompt: |
+          Read only the file named by the caller. Return concise JSON with
+          risk, evidence, and recommended follow-up.
+        model: gpt-5.2-codex
+
+  - id: tests
+    depends_on: [scope]
+    prompt: "Identify the smallest relevant validation command for $scope.output"
+```
 
 ---
 
@@ -675,6 +715,26 @@ additionalDirectories:
 - Codex can access files outside the codebase
 - Useful for shared libraries, documentation repos
 - Must be absolute paths
+
+Codex assistant config can also opt into generated custom-agent limits and experimental fanout:
+
+```yaml
+assistants:
+  codex:
+    agents:
+      maxThreads: 2
+      maxDepth: 1
+      jobMaxRuntimeSeconds: 120
+      strict: true            # default; false warns and falls back only for non-validation setup failures
+    features:
+      multiAgent: true        # stable; also enabled automatically for nodes with agents:
+      multiAgentV2: false     # under-development; explicit opt-in only
+      enableFanout: false     # under-development; explicit opt-in only
+    fanout:
+      enabled: false
+      maxConcurrency: 2       # prompt guard only; keep low when enableFanout is true
+      strict: true            # parsed for explicitness; future runtime-support checks can use it
+```
 
 ### Web Execution Mode
 
@@ -1211,7 +1271,7 @@ Before deploying a workflow:
 10. **`hooks`** — attach SDK hook callbacks to Claude nodes for tool control and context injection
 11. **`mcp:`** — attach per-node MCP servers via JSON config (Codex and Claude)
 12. **`skills:`** — preload skills into Claude nodes for domain expertise
-13. **`agents:`** — inline Claude sub-agent definitions invokable via the `Task` tool
+13. **`agents:`** — inline sub-agent definitions for Claude `Task` or Codex generated custom-agent config
 14. **`effort` / `thinking`** — control reasoning depth and thinking mode per node or workflow (Claude only)
 15. **`maxBudgetUsd`** — set a USD cost cap per node; fails with error if exceeded (Claude only)
 16. **`systemPrompt`** — override the default system prompt per node (Claude only)

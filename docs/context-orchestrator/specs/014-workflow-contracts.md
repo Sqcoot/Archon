@@ -16,8 +16,8 @@ The workflow must not clear graph waivers, refresh graph evidence, mutate provid
 AC-P3-WF also covers the `archon-aco-adversarial-loop` default when a contracted ACO loop is used.
 Codex execution is selected with an execution-time provider override on the canonical workflow,
 for example `archon workflow run archon-aco-adversarial-loop --provider codex`. Role contracts
-remain workflow artifacts/nodes and must not claim Codex subagents or Codex runtime tool
-restrictions for ACO authority.
+remain workflow artifacts/nodes and must not treat Codex generated agents or Codex runtime tool
+restrictions as ACO authority.
 
 Required behavior:
 

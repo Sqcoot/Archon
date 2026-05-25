@@ -7,8 +7,8 @@ description: |
         an explicit approval record; then writes planner, contract, generator, evaluator,
         feedback, run-state, trace, and handoff artifacts. The provider is inherited
         from an execution-time override, workflow config, or repo config.
-        ACO role contracts remain workflow artifact/node contracts, not Codex subagents.
-        Codex agents and tool-restriction capabilities are unsupported runtime capabilities.
+        ACO role contracts remain workflow artifact/node contracts, not automatic Codex subagents.
+        Codex generated agents require explicit node-level agents; tool restrictions remain unsupported.
   NOT for: Direct one-off fixes, standalone app generation, graph maintenance, or provider-specific workflow forks.
 
 mutates_checkout: false
@@ -227,8 +227,9 @@ nodes:
       Select only repo-available skills, commands, workflows, and tools for the current ACO
       objective. Reject unsupported runtime claims explicitly. Mark non-native capabilities as
       advisory, deferred, or unavailable instead of presenting them as executable support.
-      Codex agents and tool-restriction capabilities are unsupported runtime capabilities;
-      role boundaries are contractual workflow artifact requirements, not Codex runtime gates.
+      Codex generated agents require explicit node-level agents, and tool restrictions remain
+      unsupported runtime capabilities; role boundaries are contractual workflow artifact
+      requirements, not Codex runtime gates.
       Do not implement code or certify final readiness.
     depends_on: [coordinator-triage]
 

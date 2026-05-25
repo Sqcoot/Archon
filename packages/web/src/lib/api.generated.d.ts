@@ -3117,6 +3117,7 @@ export interface components {
       mcp: boolean;
       hooks: boolean;
       skills: boolean;
+      agents: boolean;
       toolRestrictions: boolean;
       structuredOutput: boolean;
       envInjection: boolean;

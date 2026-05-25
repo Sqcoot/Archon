@@ -129,6 +129,7 @@ describe('registry', () => {
     test('returns Codex capabilities without instantiation', () => {
       const caps = getProviderCapabilities('codex');
       expect(caps.mcp).toBe(true);
+      expect(caps.agents).toBe(true);
       expect(caps.hooks).toBe(false);
       expect(caps.envInjection).toBe(true);
     });

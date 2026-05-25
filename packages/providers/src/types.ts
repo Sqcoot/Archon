@@ -38,6 +38,38 @@ export interface CodexProviderDefaults {
    * exposes final file_change items; this flag must not synthesize progress.
    */
   applyPatchStreamingEvents?: boolean;
+  /** Codex runtime feature flags. Stable multi_agent is enabled automatically when a
+   * workflow node supplies inline `agents:`; experimental flags remain explicit opt-in. */
+  features?: CodexFeatureFlags;
+  /** Runtime limits for Codex spawned-agent execution. */
+  agents?: CodexAgentsConfig;
+  /** Guarded experimental fanout settings. */
+  fanout?: CodexFanoutConfig;
+}
+
+export interface CodexFeatureFlags {
+  /** Stable Codex spawned-agent support. */
+  multiAgent?: boolean;
+  /** Under-development Codex multi-agent runtime. Explicit opt-in only. */
+  multiAgentV2?: boolean;
+  /** Under-development Codex fanout behavior. Explicit opt-in only. */
+  enableFanout?: boolean;
+}
+
+export interface CodexAgentsConfig {
+  maxThreads?: number;
+  maxDepth?: number;
+  jobMaxRuntimeSeconds?: number;
+  interruptMessage?: boolean;
+  /** If false, non-validation setup failures fall back to ordinary Codex with a warning. */
+  strict?: boolean;
+}
+
+export interface CodexFanoutConfig {
+  enabled?: boolean;
+  maxConcurrency?: number;
+  /** Reserved for future runtime-support checks; parsed so config is typed and explicit. */
+  strict?: boolean;
 }
 
 /**
@@ -287,6 +319,8 @@ export interface SendQueryOptions extends AgentRequestOptions {
   nodeConfig?: NodeConfig;
   /** Per-provider defaults from .archon/config.yaml assistants section. */
   assistantConfig?: Record<string, unknown>;
+  /** Workflow run artifact directory for provider-owned temporary runtime files. */
+  artifactDir?: string;
 }
 
 /**

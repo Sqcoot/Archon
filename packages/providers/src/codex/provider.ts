@@ -24,6 +24,25 @@ import { CODEX_CAPABILITIES } from './capabilities';
 import { resolveCodexBinaryPath } from './binary-resolver';
 import { createLogger } from '@archon/paths';
 import { loadMcpConfig } from '../mcp/config';
+import {
+  buildCodexFeatureConfigOverrides,
+  buildCodexRuntimeConfigOverrides,
+  mergeCodexConfigOverrides,
+  setCodexConfigValue,
+  type CodexConfigOverrides,
+} from './config-overrides';
+import {
+  applyCodexRuntimeHint,
+  buildCodexAgentRoleConfigOverrides,
+  buildCodexRuntimeHint,
+  generateCodexAgentConfigs,
+  isInvalidCodexAgentIdError,
+  type GeneratedCodexAgents,
+} from './agent-config';
+import {
+  createCodexRuntimeArtifactRecorder,
+  type CodexRuntimeArtifactRecorder,
+} from './runtime-artifacts';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -31,9 +50,6 @@ function getLog(): ReturnType<typeof createLogger> {
   if (!cachedLog) cachedLog = createLogger('provider.codex');
   return cachedLog;
 }
-
-type CodexConfigOverrides = NonNullable<CodexOptions['config']>;
-type CodexConfigValue = CodexConfigOverrides[string];
 
 interface ProviderWarning {
   code: string;
@@ -133,39 +149,6 @@ const CODEX_MCP_PASSTHROUGH_KEYS = [
   'tools',
 ] as const;
 
-function toCodexConfigValue(value: unknown): CodexConfigValue | undefined {
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    const result: CodexConfigValue[] = [];
-    for (const item of value) {
-      const converted = toCodexConfigValue(item);
-      if (converted !== undefined) result.push(converted);
-    }
-    return result;
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    const result: CodexConfigOverrides = {};
-    for (const [key, nestedValue] of Object.entries(value)) {
-      const converted = toCodexConfigValue(nestedValue);
-      if (converted !== undefined) result[key] = converted;
-    }
-    return result;
-  }
-
-  return undefined;
-}
-
-function setCodexConfigValue(target: CodexConfigOverrides, key: string, value: unknown): void {
-  const converted = toCodexConfigValue(value);
-  if (converted !== undefined) {
-    target[key] = converted;
-  }
-}
-
 function convertMcpServerConfigForCodex(
   serverConfig: Record<string, unknown>
 ): CodexConfigOverrides {
@@ -207,28 +190,6 @@ function buildCodexMcpConfigOverrides(
 
   if (Object.keys(mcpServers).length === 0) return undefined;
   return { mcp_servers: mcpServers };
-}
-
-function mergeCodexConfigOverrides(
-  ...overrides: (CodexConfigOverrides | undefined)[]
-): CodexConfigOverrides | undefined {
-  const result: CodexConfigOverrides = {};
-
-  for (const override of overrides) {
-    if (!override) continue;
-    for (const [key, value] of Object.entries(override)) {
-      result[key] = value;
-    }
-  }
-
-  return Object.keys(result).length > 0 ? result : undefined;
-}
-
-function buildCodexCanaryConfigOverrides(
-  config: ReturnType<typeof parseCodexConfig>
-): CodexConfigOverrides | undefined {
-  if (config.applyPatchStreamingEvents !== true) return undefined;
-  return { features: { apply_patch_streaming_events: true } };
 }
 
 const CODEX_MODEL_FALLBACKS: Record<string, string> = {
@@ -357,6 +318,37 @@ function normalizeFileChange(item: Record<string, unknown>): PatchEventChunk {
   };
 }
 
+function isCodexWorkerItemType(itemType: string): boolean {
+  const normalized = itemType.toLowerCase().replaceAll('-', '_');
+  return (
+    normalized.includes('worker') ||
+    normalized.includes('subagent') ||
+    normalized === 'agent_result' ||
+    normalized === 'agent_job' ||
+    normalized.startsWith('agent_worker')
+  );
+}
+
+function getCodexWorkerLabel(item: Record<string, unknown>): string {
+  const role = item.role ?? item.agent ?? item.name ?? item.nickname ?? item.id;
+  return typeof role === 'string' && role.trim() ? role : 'worker';
+}
+
+function extractCodexWorkerText(item: Record<string, unknown>): string | undefined {
+  for (const key of ['text', 'output', 'summary', 'result']) {
+    const value = item[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+
+  const result = item.result;
+  if (typeof result === 'object' && result !== null) {
+    const message = (result as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+
+  return undefined;
+}
+
 // ─── Turn Options Builder ────────────────────────────────────────────────
 
 /**
@@ -400,7 +392,8 @@ async function* streamCodexEvents(
   hasOutputFormat: boolean,
   threadId: string | null | undefined,
   abortSignal?: AbortSignal,
-  surfaceMcpClientErrors = false
+  surfaceMcpClientErrors = false,
+  runtimeArtifacts?: CodexRuntimeArtifactRecorder
 ): AsyncGenerator<MessageChunk> {
   const state: CodexStreamState = {};
   let accumulatedText = '';
@@ -424,11 +417,16 @@ async function* streamCodexEvents(
     }
 
     if (event.type === 'item.started') {
-      const item = event.item as { type: string; id: string };
+      const item = event.item as Record<string, unknown>;
       getLog().debug(
         { eventType: event.type, itemType: item.type, itemId: item.id },
         'item_started'
       );
+      if (typeof item.type === 'string' && isCodexWorkerItemType(item.type)) {
+        const label = getCodexWorkerLabel(item);
+        await runtimeArtifacts?.recordWorkerStarted(item, label);
+        yield { type: 'tool', toolName: `Codex agent: ${label}` };
+      }
     }
 
     if (event.type === 'error') {
@@ -455,6 +453,8 @@ async function* streamCodexEvents(
       const errorObj = (event as { error?: { message?: string } }).error;
       const errorMessage = errorObj?.message ?? 'Unknown error';
       getLog().error({ errorMessage }, 'turn_failed');
+      await runtimeArtifacts?.recordTurnFailure(errorMessage);
+      await runtimeArtifacts?.finalize('failed', { error: errorMessage });
       yield {
         type: 'result',
         sessionId: threadId ?? undefined,
@@ -595,6 +595,21 @@ async function* streamCodexEvents(
           }
           break;
         }
+
+        default:
+          if (isCodexWorkerItemType(itemType)) {
+            const label = getCodexWorkerLabel(item);
+            const workerText = extractCodexWorkerText(item);
+            await runtimeArtifacts?.recordWorkerCompleted(item, label, workerText);
+            yield {
+              type: 'tool_result',
+              toolName: `Codex agent: ${label}`,
+              toolOutput: workerText ?? '',
+            };
+            if (workerText) {
+              yield { type: 'assistant', content: `[${label}]\n${workerText}`, flush: true };
+            }
+          }
       }
     }
 
@@ -624,6 +639,7 @@ async function* streamCodexEvents(
         }
       }
 
+      await runtimeArtifacts?.finalize('completed');
       yield {
         type: 'result',
         sessionId: threadId ?? undefined,
@@ -644,6 +660,8 @@ async function* streamCodexEvents(
   // that streamed nothing but never raised an isError.
   const message = lastNonMcpError ?? 'Codex stream closed without turn.completed or turn.failed';
   getLog().error({ message }, 'stream_incomplete');
+  await runtimeArtifacts?.recordTurnFailure(message);
+  await runtimeArtifacts?.finalize('failed', { error: message });
   yield {
     type: 'result',
     sessionId: threadId ?? undefined,
@@ -744,7 +762,36 @@ export class CodexProvider implements IAgentProvider {
     const codexConfig = parseCodexConfig(assistantConfig);
     const providerWarnings: ProviderWarning[] = [];
     let codexConfigOverrides: CodexConfigOverrides | undefined;
-    const codexCanaryOverrides = buildCodexCanaryConfigOverrides(codexConfig);
+    let generatedAgents: GeneratedCodexAgents | undefined;
+    try {
+      generatedAgents = await generateCodexAgentConfigs({
+        agents: requestOptions?.nodeConfig?.agents,
+        cwd,
+        artifactDir: requestOptions?.artifactDir,
+      });
+    } catch (error) {
+      if (isInvalidCodexAgentIdError(error) || codexConfig.agents?.strict !== false) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      providerWarnings.push({
+        code: 'codex_agents_disabled',
+        message: `Codex generated agents disabled; continuing as ordinary single-agent Codex because agents.strict is false: ${message}`,
+      });
+    }
+    const codexFeatureOverrides = buildCodexFeatureConfigOverrides(codexConfig, {
+      forceMultiAgent: generatedAgents !== undefined,
+    });
+    const codexRuntimeOverrides = buildCodexRuntimeConfigOverrides(codexConfig);
+    const codexAgentOverrides = buildCodexAgentRoleConfigOverrides(generatedAgents);
+    const runtimeHint = buildCodexRuntimeHint(codexConfig, generatedAgents);
+    const promptWithRuntimeHints = applyCodexRuntimeHint(prompt, runtimeHint);
+    const runtimeArtifacts = await createCodexRuntimeArtifactRecorder({
+      config: codexConfig,
+      cwd,
+      artifactDir: requestOptions?.artifactDir,
+      ...(generatedAgents ? { generatedAgents } : {}),
+    });
 
     if (requestOptions?.nodeConfig?.mcp) {
       const mcpPath = requestOptions.nodeConfig.mcp;
@@ -765,7 +812,12 @@ export class CodexProvider implements IAgentProvider {
       }
     }
 
-    codexConfigOverrides = mergeCodexConfigOverrides(codexConfigOverrides, codexCanaryOverrides);
+    codexConfigOverrides = mergeCodexConfigOverrides(
+      codexConfigOverrides,
+      codexRuntimeOverrides,
+      codexAgentOverrides,
+      codexFeatureOverrides
+    );
 
     for (const warning of providerWarnings) {
       yield { type: 'system', content: `⚠️ ${warning.message}` };
@@ -867,7 +919,7 @@ export class CodexProvider implements IAgentProvider {
 
         try {
           // 4. Run streamed turn
-          const result = await thread.runStreamed(prompt, turnOptions);
+          const result = await thread.runStreamed(promptWithRuntimeHints, turnOptions);
 
           // 5. Stream normalized events (fresh state per attempt to avoid dedup leaks)
           yield* streamCodexEvents(
@@ -875,7 +927,8 @@ export class CodexProvider implements IAgentProvider {
             hasOutputFormat,
             thread.id,
             attemptController.signal,
-            Boolean(requestOptions?.nodeConfig?.mcp)
+            Boolean(requestOptions?.nodeConfig?.mcp),
+            runtimeArtifacts
           );
           return;
         } catch (error) {
@@ -896,6 +949,8 @@ export class CodexProvider implements IAgentProvider {
           );
 
           if (!shouldRetry || attempt >= MAX_SUBPROCESS_RETRIES) {
+            await runtimeArtifacts?.recordTurnFailure(enrichedError.message);
+            await runtimeArtifacts?.finalize('failed', { errorClass, attempt });
             throw enrichedError;
           }
 

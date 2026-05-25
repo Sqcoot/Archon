@@ -219,6 +219,7 @@ describe('GET /api/providers', () => {
     expect(typeof caps.sessionResume).toBe('boolean');
     expect(typeof caps.mcp).toBe('boolean');
     expect(typeof caps.hooks).toBe('boolean');
+    expect(typeof caps.agents).toBe('boolean');
     expect(typeof caps.structuredOutput).toBe('boolean');
   });
 });

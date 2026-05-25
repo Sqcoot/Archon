@@ -1,7 +1,7 @@
 import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { createMockLogger } from '../test/mocks/logger';
 
 const mockLogger = createMockLogger();
@@ -78,7 +78,7 @@ describe('CodexProvider', () => {
         mcp: true,
         hooks: false,
         skills: false,
-        agents: false,
+        agents: true,
         toolRestrictions: false,
         structuredOutput: true,
         envInjection: true,
@@ -144,6 +144,45 @@ describe('CodexProvider', () => {
         toolName: 'npm test',
         toolOutput: 'tests passed\n',
       });
+    });
+
+    test('surfaces Codex spawned-worker result items when the SDK emits them', async () => {
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield {
+            type: 'item.started',
+            item: { type: 'agent_result', id: 'worker-1', role: 'brief-gen' },
+          };
+          yield {
+            type: 'item.completed',
+            item: {
+              type: 'agent_result',
+              id: 'worker-1',
+              role: 'brief-gen',
+              output: 'worker summary',
+            },
+          };
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      const chunks = [];
+      for await (const chunk of client.sendQuery('test prompt', '/workspace')) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks[0]).toEqual({ type: 'tool', toolName: 'Codex agent: brief-gen' });
+      expect(chunks[1]).toEqual({
+        type: 'tool_result',
+        toolName: 'Codex agent: brief-gen',
+        toolOutput: 'worker summary',
+      });
+      expect(chunks[2]).toEqual({
+        type: 'assistant',
+        content: '[brief-gen]\nworker summary',
+        flush: true,
+      });
+      expect(chunks[3]).toMatchObject({ type: 'result', sessionId: 'new-thread-id' });
     });
 
     test('appends non-zero exit code to command_execution tool_result', async () => {
@@ -981,6 +1020,170 @@ describe('CodexProvider', () => {
             }),
           })
         );
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+      }
+    });
+
+    test('passes generated Codex agent configs, feature flags, and MCP overrides together', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-agents-'));
+      const artifactsDir = join(testDir, 'artifacts');
+
+      try {
+        await writeFile(
+          join(testDir, 'mcp.json'),
+          JSON.stringify({
+            local: {
+              command: 'npx',
+              args: ['-y', 'figma-mcp'],
+            },
+          })
+        );
+
+        mockRunStreamed.mockResolvedValue({
+          events: (async function* () {
+            yield {
+              type: 'item.started',
+              item: { type: 'agent_job', id: 'worker-1', role: 'brief-gen' },
+            };
+            yield {
+              type: 'item.completed',
+              item: {
+                type: 'agent_result',
+                id: 'worker-1',
+                role: 'brief-gen',
+                output: 'worker summary',
+              },
+            };
+            yield {
+              type: 'item.completed',
+              item: {
+                type: 'agent_result',
+                id: 'worker-2',
+                role: 'brief-gen',
+                status: 'failed',
+                error: { message: 'worker failed' },
+              },
+            };
+            yield { type: 'turn.completed', usage: defaultUsage };
+          })(),
+        });
+
+        for await (const _ of client.sendQuery('test prompt', testDir, undefined, {
+          artifactDir: artifactsDir,
+          assistantConfig: {
+            features: {
+              multiAgentV2: true,
+              enableFanout: true,
+            },
+            agents: {
+              maxThreads: 2,
+              maxDepth: 1,
+              jobMaxRuntimeSeconds: 30,
+            },
+            fanout: {
+              enabled: true,
+              maxConcurrency: 2,
+            },
+          },
+          nodeConfig: {
+            mcp: 'mcp.json',
+            agents: {
+              'brief-gen': {
+                description: 'Summarises a single issue',
+                prompt: 'Return a short issue brief.',
+                model: 'gpt-5.2-codex',
+                tools: ['Read', 'Bash'],
+              },
+            },
+          },
+        })) {
+          // consume
+        }
+
+        const codexOptions = MockCodex.mock.calls[0][0] as {
+          config: Record<string, Record<string, unknown>>;
+        };
+        const config = codexOptions.config;
+        expect(Object.keys(config).sort()).toEqual(['agents', 'features', 'mcp_servers']);
+        expect(config.features).toEqual({
+          multi_agent: true,
+          multi_agent_v2: true,
+          enable_fanout: true,
+        });
+        expect(config.mcp_servers).toMatchObject({
+          local: {
+            command: 'npx',
+            args: ['-y', 'figma-mcp'],
+          },
+        });
+        expect(config.agents).toMatchObject({
+          max_threads: 2,
+          max_depth: 1,
+          job_max_runtime_seconds: 30,
+        });
+
+        const role = config.agents['brief-gen'] as { config_file: string; description: string };
+        expect(role.description).toBe('Summarises a single issue');
+        expect(role.config_file.startsWith(join(artifactsDir, 'codex-agents'))).toBe(true);
+        const generatedDir = dirname(role.config_file);
+        const roleToml = await readFile(role.config_file, 'utf-8');
+        expect(roleToml).toContain('name = "brief-gen"');
+        expect(roleToml).toContain('description = "Summarises a single issue"');
+        expect(roleToml).toContain('developer_instructions = """');
+        expect(roleToml).toContain('model = "gpt-5.2-codex"');
+        expect(roleToml).toContain('Requested tools: Read, Bash');
+
+        const manifest = JSON.parse(await readFile(join(generatedDir, 'manifest.json'), 'utf-8'));
+        expect(manifest.agents.map((agent: { id: string }) => agent.id)).toEqual(['brief-gen']);
+        expect(manifest.agents[0].configFile).toBe(role.config_file);
+
+        const plan = JSON.parse(await readFile(join(generatedDir, 'fanout-plan.json'), 'utf-8'));
+        expect(plan.generatedAgentManifest).toBe(join(generatedDir, 'manifest.json'));
+        expect(plan.features).toEqual({
+          multiAgent: true,
+          multiAgentV2: true,
+          enableFanout: true,
+        });
+        expect(plan.agentIds).toEqual(['brief-gen']);
+
+        const workerOutputs = JSON.parse(
+          await readFile(join(generatedDir, 'worker-outputs.json'), 'utf-8')
+        );
+        expect(workerOutputs.workers).toMatchObject([
+          {
+            id: 'worker-1',
+            label: 'brief-gen',
+            output: 'worker summary',
+          },
+        ]);
+        const workerFailures = JSON.parse(
+          await readFile(join(generatedDir, 'worker-failures.json'), 'utf-8')
+        );
+        expect(workerFailures.workers).toMatchObject([
+          {
+            id: 'worker-2',
+            label: 'brief-gen',
+            error: 'worker failed',
+          },
+        ]);
+        const reductionSummary = JSON.parse(
+          await readFile(join(generatedDir, 'reduction-summary.json'), 'utf-8')
+        );
+        expect(reductionSummary).toMatchObject({
+          status: 'completed',
+          agentIds: ['brief-gen'],
+          workerOutputIds: ['worker-1'],
+          workerFailureIds: ['worker-2'],
+          outputCount: 1,
+          failureCount: 1,
+        });
+
+        const promptArg = mockRunStreamed.mock.calls[0][0] as string;
+        expect(promptArg).toContain('Codex custom agents are configured for this turn: brief-gen');
+        expect(promptArg).toContain('Experimental Codex multi_agent_v2 is enabled');
+        expect(promptArg).toContain('Experimental Codex fanout is enabled');
+        expect(promptArg).toContain('test prompt');
       } finally {
         await rm(testDir, { recursive: true, force: true });
       }

@@ -967,7 +967,7 @@ function buildDomainEvidence(input: {
     behaviorProof: [
       'SubagentStart emits roleScope, allowedEvidence, deniedEvidence, snapshotRefs, artifactExpectations.',
       'SubagentStop emits artifact collection, evidence capture, unknowns, and evaluator notes.',
-      'ACO simulations are labeled when installed Codex lacks runnable subagent hooks.',
+      'ACO hook lifecycle simulations remain labeled separately from provider-level Codex generated agents.',
     ],
     cleanupProof,
   });

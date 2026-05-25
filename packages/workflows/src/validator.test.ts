@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { registerBuiltinProviders, clearRegistry } from '@archon/providers';
+import { registerBuiltinProviders, registerPiProvider, clearRegistry } from '@archon/providers';
 
 // Bootstrap provider registry (needed by capability-driven warnings in validator)
 clearRegistry();
@@ -443,7 +443,21 @@ describe('validateWorkflowResources — agents capability', () => {
     'brief-gen': { description: 'd', prompt: 'p' },
   };
 
-  test('warns when provider does not support inline agents (codex)', async () => {
+  test('warns when provider does not support inline agents (pi)', async () => {
+    registerPiProvider();
+    const workflow = makeWorkflow(
+      'test',
+      [{ id: 'step1', prompt: 'p', agents: agentsField } as unknown as DagNode],
+      'pi'
+    );
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const warning = issues.find(i => i.level === 'warning' && i.field === 'agents');
+    expect(warning).toBeDefined();
+    expect(warning!.message).toContain("not supported by provider 'pi'");
+    expect(warning!.hint).toContain('claude');
+  });
+
+  test('no agents-capability warning when provider is codex', async () => {
     const workflow = makeWorkflow(
       'test',
       [{ id: 'step1', prompt: 'p', agents: agentsField } as unknown as DagNode],
@@ -451,9 +465,7 @@ describe('validateWorkflowResources — agents capability', () => {
     );
     const issues = await validateWorkflowResources(workflow, tmpDir);
     const warning = issues.find(i => i.level === 'warning' && i.field === 'agents');
-    expect(warning).toBeDefined();
-    expect(warning!.message).toContain("not supported by provider 'codex'");
-    expect(warning!.hint).toContain('claude');
+    expect(warning).toBeUndefined();
   });
 
   test('no agents-capability warning when provider is claude', async () => {
