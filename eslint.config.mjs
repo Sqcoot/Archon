@@ -373,5 +373,77 @@ export default tseslint.config(
         },
       ],
     },
+  },
+
+  // ACO research is pure graph/search evidence consumption; graph refresh lives later.
+  {
+    files: ['packages/aco-research/src/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      '@typescript-eslint/no-floating-promises': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'fs',
+              message: 'ACO research production source must not import filesystem APIs.',
+            },
+            {
+              name: 'fs/promises',
+              message: 'ACO research production source must not import filesystem APIs.',
+            },
+            {
+              name: 'node:fs',
+              message: 'ACO research production source must not import filesystem APIs.',
+            },
+            {
+              name: 'node:fs/promises',
+              message: 'ACO research production source must not import filesystem APIs.',
+            },
+            {
+              name: 'path',
+              message: 'ACO research production source must not import path APIs.',
+            },
+            {
+              name: 'node:path',
+              message: 'ACO research production source must not import path APIs.',
+            },
+            {
+              name: 'process',
+              message: 'ACO research production source must not read process-global config.',
+            },
+            {
+              name: 'node:process',
+              message: 'ACO research production source must not read process-global config.',
+            },
+            {
+              name: 'child_process',
+              message: 'ACO research production source must not spawn.',
+            },
+            {
+              name: 'node:child_process',
+              message: 'ACO research production source must not spawn.',
+            },
+          ],
+          patterns: [
+            {
+              group: [
+                '@archon/adapters*',
+                '@archon/cli*',
+                '@archon/server*',
+                '@archon/web*',
+                '@archon/workflows*',
+                '@archon/providers*',
+              ],
+              message: 'ACO research must not import runtime package adapters.',
+            },
+          ],
+        },
+      ],
+    },
   }
 );

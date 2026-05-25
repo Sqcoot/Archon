@@ -1,0 +1,189 @@
+{
+  "artifacts": [
+    {
+      "checksum": "757073747265616d2d67726170682d6d616e69666573742e6a736f6e00000000",
+      "consumer": "aco-context",
+      "freshness": "fresh",
+      "kind": "aco-research-artifact-metadata",
+      "path": "upstream-graph-manifest.json",
+      "producer": "aco-research",
+      "schemaVersion": "aco.research-artifact-metadata.v1"
+    }
+  ],
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.research.graphify-agentic-search",
+      "source": "architecture/graphify-agentic-search.md",
+      "summary": "Readonly S6 evidence separates graph evidence consumption from graph refresh"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.research.upstream-graph-snapshot",
+      "source": "evidence/upstream-graph-evidence.md",
+      "summary": "Readonly S6 evidence lists upstream repositories with complete graph evidence"
+    }
+  ],
+  "kind": "aco-upstream-graph-manifest",
+  "repositories": [
+    {
+      "branch": "dev",
+      "commitSha": null,
+      "edges": 4130,
+      "graphPath": "graph/archon/graph-context.json",
+      "metadataPath": "graph/archon/metadata.json",
+      "nodes": 1842,
+      "reportPath": "graph/archon/graph-report.md",
+      "repository": "archon",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 736,
+      "graphPath": "graph/bmad-automator/graph-context.json",
+      "metadataPath": "graph/bmad-automator/metadata.json",
+      "nodes": 421,
+      "reportPath": "graph/bmad-automator/graph-report.md",
+      "repository": "bmad-automator",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 1104,
+      "graphPath": "graph/bmad-builder/graph-context.json",
+      "metadataPath": "graph/bmad-builder/metadata.json",
+      "nodes": 612,
+      "reportPath": "graph/bmad-builder/graph-report.md",
+      "repository": "bmad-builder",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 654,
+      "graphPath": "graph/bmad-cis/graph-context.json",
+      "metadataPath": "graph/bmad-cis/metadata.json",
+      "nodes": 388,
+      "reportPath": "graph/bmad-cis/graph-report.md",
+      "repository": "bmad-cis",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 2610,
+      "graphPath": "graph/bmad-method/graph-context.json",
+      "metadataPath": "graph/bmad-method/metadata.json",
+      "nodes": 1290,
+      "reportPath": "graph/bmad-method/graph-report.md",
+      "repository": "bmad-method",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 611,
+      "graphPath": "graph/bmad-plugins-marketplace/graph-context.json",
+      "metadataPath": "graph/bmad-plugins-marketplace/metadata.json",
+      "nodes": 378,
+      "reportPath": "graph/bmad-plugins-marketplace/graph-report.md",
+      "repository": "bmad-plugins-marketplace",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 319,
+      "graphPath": "graph/bmad-sample-data/graph-context.json",
+      "metadataPath": "graph/bmad-sample-data/metadata.json",
+      "nodes": 214,
+      "reportPath": "graph/bmad-sample-data/graph-report.md",
+      "repository": "bmad-sample-data",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 901,
+      "graphPath": "graph/bmad-tea/graph-context.json",
+      "metadataPath": "graph/bmad-tea/metadata.json",
+      "nodes": 535,
+      "reportPath": "graph/bmad-tea/graph-report.md",
+      "repository": "bmad-tea",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 844,
+      "graphPath": "graph/bmad-ui/graph-context.json",
+      "metadataPath": "graph/bmad-ui/metadata.json",
+      "nodes": 486,
+      "reportPath": "graph/bmad-ui/graph-report.md",
+      "repository": "bmad-ui",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 790,
+      "graphPath": "graph/bmad-wds/graph-context.json",
+      "metadataPath": "graph/bmad-wds/metadata.json",
+      "nodes": 452,
+      "reportPath": "graph/bmad-wds/graph-report.md",
+      "repository": "bmad-wds",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 221,
+      "graphPath": "graph/caveman/graph-context.json",
+      "metadataPath": "graph/caveman/metadata.json",
+      "nodes": 153,
+      "reportPath": "graph/caveman/graph-report.md",
+      "repository": "caveman",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 21480,
+      "graphPath": "graph/codex/graph-context.json",
+      "metadataPath": "graph/codex/metadata.json",
+      "nodes": 9250,
+      "reportPath": "graph/codex/graph-report.md",
+      "repository": "codex",
+      "status": "complete",
+      "waiverRequired": false
+    },
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 1328,
+      "graphPath": "graph/context7/graph-context.json",
+      "metadataPath": "graph/context7/metadata.json",
+      "nodes": 704,
+      "reportPath": "graph/context7/graph-report.md",
+      "repository": "context7",
+      "status": "complete",
+      "waiverRequired": false
+    }
+  ],
+  "schemaVersion": "aco.upstream-graph-manifest.v1"
+}

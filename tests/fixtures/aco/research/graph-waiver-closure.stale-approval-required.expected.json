@@ -1,0 +1,84 @@
+{
+  "artifacts": [
+    {
+      "checksum": "67726170682f617263686f6e2f67726170682d636f6e746578742e6a736f6e00",
+      "consumer": "aco-context",
+      "freshness": "stale",
+      "kind": "aco-research-artifact-metadata",
+      "path": "graph/archon/graph-context.json",
+      "producer": "aco-research",
+      "schemaVersion": "aco.research-artifact-metadata.v1"
+    },
+    {
+      "checksum": "67726170682f617263686f6e2f67726170682d7265706f72742e6d6400000000",
+      "consumer": "aco-context",
+      "freshness": "stale",
+      "kind": "aco-research-artifact-metadata",
+      "path": "graph/archon/graph-report.md",
+      "producer": "aco-research",
+      "schemaVersion": "aco.research-artifact-metadata.v1"
+    },
+    {
+      "checksum": "67726170682f617263686f6e2f6d657461646174612e6a736f6e000000000000",
+      "consumer": "aco-context",
+      "freshness": "stale",
+      "kind": "aco-research-artifact-metadata",
+      "path": "graph/archon/metadata.json",
+      "producer": "aco-research",
+      "schemaVersion": "aco.research-artifact-metadata.v1"
+    }
+  ],
+  "command": "bun run research:graph",
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.research.graphify-agentic-search",
+      "source": "architecture/graphify-agentic-search.md",
+      "summary": "Readonly S6 evidence separates graph evidence consumption from graph refresh"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.research.ledger-policy",
+      "source": "ledgers/command-ledger.csv#bun-run-research-graph",
+      "summary": "Command ledger classifies graph refresh as approval-gated writes-graph-cache work"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.research.artifact-contracts",
+      "source": "architecture/artifact-contracts.md",
+      "summary": "Artifact contracts require schema version, producer, consumer, path, checksum, freshness"
+    }
+  ],
+  "expectedSuccessEvidence": [
+    "valid graph evidence refs with complete or waived status",
+    "fresh checksum metadata for graph, report, and metadata artifacts"
+  ],
+  "findings": [
+    "archon graph/archon/graph-context.json freshness is stale",
+    "archon graph/archon/graph-report.md freshness is stale",
+    "archon graph/archon/metadata.json freshness is stale"
+  ],
+  "graphRefs": [
+    {
+      "branch": null,
+      "commitSha": null,
+      "edges": 20,
+      "graphPath": "graph/archon/graph-context.json",
+      "metadataPath": "graph/archon/metadata.json",
+      "nodes": 10,
+      "reportPath": "graph/archon/graph-report.md",
+      "repository": "archon",
+      "status": "complete",
+      "waiverRequired": false
+    }
+  ],
+  "id": "aco.research.s6.graph-waiver-closure",
+  "kind": "aco-graph-waiver-closure",
+  "required": true,
+  "safetyClass": "writes-graph-cache",
+  "schemaVersion": "aco.graph-waiver-closure.v1",
+  "status": "approval_required"
+}

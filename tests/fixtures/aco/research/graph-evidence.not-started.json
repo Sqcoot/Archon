@@ -1,0 +1,12 @@
+{
+  "repository": "archon",
+  "branch": null,
+  "commitSha": null,
+  "status": "not-started",
+  "nodes": 0,
+  "edges": 0,
+  "waiverRequired": false,
+  "graphPath": "graph/archon/graph-context.json",
+  "reportPath": "graph/archon/graph-report.md",
+  "metadataPath": "graph/archon/metadata.json"
+}
