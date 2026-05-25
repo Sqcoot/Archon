@@ -1,0 +1,13 @@
+artifact,schema,producer,consumer,required
+context-intent.json,aco.context-intent.v1,context-intake,compiler/status,yes
+capability-snapshot.json,aco.capability-snapshot.v1,bootstrap/status,Codex/bootstrap/handoff,yes
+tool-ledger.json,aco.ledger-bundle.v1,ledgers,compiler/gates/UI,yes
+command-ledger.json,aco.ledger-bundle.v1,ledgers,compiler/gates/UI,yes
+prompt-package.json,aco.prompt-package.v1,compile,policy/handoff,yes
+decision-dossier.json,aco.decision-dossier.v1,compile,human/Codex/workflow,yes
+approval-capsule.md,aco.approval-capsule.md,approval-capsule,human approval gate,conditional
+approval-contract.json,aco.approval-contract.v1,approval-capsule,approval verifier,conditional
+graph-waiver-closure.json,aco.graph-waiver-closure.v1,graph-waivers,readiness gate,conditional
+agentic-search.md,aco.agentic-search-report.v1,Agentic Search role,planner/evaluator,conditional
+role-contracts.json,aco.role-contracts.v1,role contract registry,workflow validator,yes for ACO workflows
+handoff.md,aco.handoff.md,compile/bootstrap/evaluator,Codex/human/next run,yes

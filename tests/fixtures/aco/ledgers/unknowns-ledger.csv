@@ -1,0 +1,7 @@
+unknown,status,resolution,router_required
+Exact 233-file changed list and full 50k-line diff,unknown in this session,capture via local git diff in Codex environment,yes
+Exact runtime capabilities of real Codex harness,unknown,provider capability tests and docs evidence,yes
+Current branch test pass/fail state,unknown,run validation on branch,no
+Whether party-mode-uncertainty-router exists as executable command,not found in visible branch evidence,search local repo and BMAD skill manifests,yes
+All web UI component changes,partial,local diff and UI tests,no
+All generated bundled defaults affected,partial,run generate/check bundled,no

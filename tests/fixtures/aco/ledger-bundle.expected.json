@@ -1,0 +1,5876 @@
+{
+  "artifacts": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.10",
+          "source": "artifact-ledger.csv#L11",
+          "summary": "artifact agentic-search.md from artifact.agentic-search-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.agentic-search-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "Agentic Search role",
+      "raw": {
+        "artifact": "agentic-search.md",
+        "consumer": "planner/evaluator",
+        "producer": "Agentic Search role",
+        "required": "conditional",
+        "schema": "aco.agentic-search-report.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 11
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "agentic-search.md",
+        "consumer": "planner/evaluator",
+        "producer": "Agentic Search role",
+        "required": "conditional",
+        "schemaVersion": "aco.agentic-search-report.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.7",
+          "source": "artifact-ledger.csv#L8",
+          "summary": "artifact approval-capsule.md from artifact.approval-capsule-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.approval-capsule-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "approval-capsule",
+      "raw": {
+        "artifact": "approval-capsule.md",
+        "consumer": "human approval gate",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schema": "aco.approval-capsule.md"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 8
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "approval-capsule.md",
+        "consumer": "human approval gate",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schemaVersion": "aco.approval-capsule.md"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.8",
+          "source": "artifact-ledger.csv#L9",
+          "summary": "artifact approval-contract.json from artifact.approval-contract-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.approval-contract-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "approval-capsule",
+      "raw": {
+        "artifact": "approval-contract.json",
+        "consumer": "approval verifier",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schema": "aco.approval-contract.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 9
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "approval-contract.json",
+        "consumer": "approval verifier",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schemaVersion": "aco.approval-contract.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.2",
+          "source": "artifact-ledger.csv#L3",
+          "summary": "artifact capability-snapshot.json from artifact.capability-snapshot-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.capability-snapshot-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "bootstrap/status",
+      "raw": {
+        "artifact": "capability-snapshot.json",
+        "consumer": "Codex/bootstrap/handoff",
+        "producer": "bootstrap/status",
+        "required": "yes",
+        "schema": "aco.capability-snapshot.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 3
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "capability-snapshot.json",
+        "consumer": "Codex/bootstrap/handoff",
+        "producer": "bootstrap/status",
+        "required": "yes",
+        "schemaVersion": "aco.capability-snapshot.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.4",
+          "source": "artifact-ledger.csv#L5",
+          "summary": "artifact command-ledger.json from artifact.command-ledger-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.command-ledger-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "ledgers",
+      "raw": {
+        "artifact": "command-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schema": "aco.ledger-bundle.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 5
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "command-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schemaVersion": "aco.ledger-bundle.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.1",
+          "source": "artifact-ledger.csv#L2",
+          "summary": "artifact context-intent.json from artifact.context-intent-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.context-intent-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "context-intake",
+      "raw": {
+        "artifact": "context-intent.json",
+        "consumer": "compiler/status",
+        "producer": "context-intake",
+        "required": "yes",
+        "schema": "aco.context-intent.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 2
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "context-intent.json",
+        "consumer": "compiler/status",
+        "producer": "context-intake",
+        "required": "yes",
+        "schemaVersion": "aco.context-intent.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.6",
+          "source": "artifact-ledger.csv#L7",
+          "summary": "artifact decision-dossier.json from artifact.decision-dossier-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.decision-dossier-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile",
+      "raw": {
+        "artifact": "decision-dossier.json",
+        "consumer": "human/Codex/workflow",
+        "producer": "compile",
+        "required": "yes",
+        "schema": "aco.decision-dossier.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 7
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "decision-dossier.json",
+        "consumer": "human/Codex/workflow",
+        "producer": "compile",
+        "required": "yes",
+        "schemaVersion": "aco.decision-dossier.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.9",
+          "source": "artifact-ledger.csv#L10",
+          "summary": "artifact graph-waiver-closure.json from artifact.graph-waiver-closure-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.graph-waiver-closure-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "graph-waivers",
+      "raw": {
+        "artifact": "graph-waiver-closure.json",
+        "consumer": "readiness gate",
+        "producer": "graph-waivers",
+        "required": "conditional",
+        "schema": "aco.graph-waiver-closure.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 10
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "graph-waiver-closure.json",
+        "consumer": "readiness gate",
+        "producer": "graph-waivers",
+        "required": "conditional",
+        "schemaVersion": "aco.graph-waiver-closure.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.12",
+          "source": "artifact-ledger.csv#L13",
+          "summary": "artifact handoff.md from artifact.handoff-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.handoff-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile/bootstrap/evaluator",
+      "raw": {
+        "artifact": "handoff.md",
+        "consumer": "Codex/human/next run",
+        "producer": "compile/bootstrap/evaluator",
+        "required": "yes",
+        "schema": "aco.handoff.md"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 13
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "handoff.md",
+        "consumer": "Codex/human/next run",
+        "producer": "compile/bootstrap/evaluator",
+        "required": "yes",
+        "schemaVersion": "aco.handoff.md"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.5",
+          "source": "artifact-ledger.csv#L6",
+          "summary": "artifact prompt-package.json from artifact.prompt-package-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.prompt-package-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile",
+      "raw": {
+        "artifact": "prompt-package.json",
+        "consumer": "policy/handoff",
+        "producer": "compile",
+        "required": "yes",
+        "schema": "aco.prompt-package.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 6
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "prompt-package.json",
+        "consumer": "policy/handoff",
+        "producer": "compile",
+        "required": "yes",
+        "schemaVersion": "aco.prompt-package.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.11",
+          "source": "artifact-ledger.csv#L12",
+          "summary": "artifact role-contracts.json from artifact.role-contracts-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.role-contracts-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "role contract registry",
+      "raw": {
+        "artifact": "role-contracts.json",
+        "consumer": "workflow validator",
+        "producer": "role contract registry",
+        "required": "yes for ACO workflows",
+        "schema": "aco.role-contracts.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 12
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "role-contracts.json",
+        "consumer": "workflow validator",
+        "producer": "role contract registry",
+        "required": "yes for ACO workflows",
+        "schemaVersion": "aco.role-contracts.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.3",
+          "source": "artifact-ledger.csv#L4",
+          "summary": "artifact tool-ledger.json from artifact.tool-ledger-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.tool-ledger-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "ledgers",
+      "raw": {
+        "artifact": "tool-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schema": "aco.ledger-bundle.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 4
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "tool-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schemaVersion": "aco.ledger-bundle.v1"
+      }
+    }
+  ],
+  "capabilities": [
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.5",
+          "source": "capability-inventory.csv#L6",
+          "summary": "capability adapters from capability.adapters"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.adapters",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-adapters",
+      "raw": {
+        "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
+        "confidence": "medium",
+        "current_surface": "source/worktree/artifact separation",
+        "id": "adapters",
+        "required_artifact": "adapter tests",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 6
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
+        "currentSurface": "source/worktree/artifact separation",
+        "id": "adapters",
+        "requiredArtifact": "adapter tests",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.11",
+          "source": "capability-inventory.csv#L12",
+          "summary": "capability agentic-search from capability.agentic-search"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.agentic-search",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-agentic-search",
+      "raw": {
+        "capability": "Research discovery",
+        "confidence": "medium",
+        "current_surface": "surfaces/tests/evidence gaps",
+        "id": "agentic-search",
+        "required_artifact": "search report schema",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 12
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Research discovery",
+        "currentSurface": "surfaces/tests/evidence gaps",
+        "id": "agentic-search",
+        "requiredArtifact": "search report schema",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.3",
+          "source": "capability-inventory.csv#L4",
+          "summary": "capability artifacts from capability.artifacts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.artifacts",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-artifacts",
+      "raw": {
+        "capability": "Prompt packages, capsules, ledgers, dossiers",
+        "confidence": "medium",
+        "current_surface": "JSON + markdown artifacts",
+        "id": "artifacts",
+        "required_artifact": "artifact manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 4
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Prompt packages, capsules, ledgers, dossiers",
+        "currentSurface": "JSON + markdown artifacts",
+        "id": "artifacts",
+        "requiredArtifact": "artifact manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.9",
+          "source": "capability-inventory.csv#L10",
+          "summary": "capability bmad from capability.bmad"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.bmad",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-bmad",
+      "raw": {
+        "capability": "BMAD routing and advisory roles",
+        "confidence": "medium",
+        "current_surface": "route mapping and role contracts",
+        "id": "bmad",
+        "required_artifact": "BMAD role manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 10
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "BMAD routing and advisory roles",
+        "currentSurface": "route mapping and role contracts",
+        "id": "bmad",
+        "requiredArtifact": "BMAD role manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.12",
+          "source": "capability-inventory.csv#L13",
+          "summary": "capability bootload from capability.bootload"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.bootload",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-bootload",
+      "raw": {
+        "capability": "Session context bootload",
+        "confidence": "medium",
+        "current_surface": "capability snapshot and handoff",
+        "id": "bootload",
+        "required_artifact": "bootstrap context",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 13
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Session context bootload",
+        "currentSurface": "capability snapshot and handoff",
+        "id": "bootload",
+        "requiredArtifact": "bootstrap context",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.17",
+          "source": "capability-inventory.csv#L18",
+          "summary": "capability codex-harness from capability.codex-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.codex-harness",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-codex-harness",
+      "raw": {
+        "capability": "Real Codex harness and bootstrap",
+        "confidence": "medium",
+        "current_surface": "capsules/events/session handoff",
+        "id": "codex-harness",
+        "required_artifact": "Codex package",
+        "rewrite_action": "preserve-harden",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 18
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Real Codex harness and bootstrap",
+        "currentSurface": "capsules/events/session handoff",
+        "id": "codex-harness",
+        "requiredArtifact": "Codex package",
+        "rewriteAction": "preserve-harden"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.1",
+          "source": "capability-inventory.csv#L2",
+          "summary": "capability commands from capability.commands"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.commands",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-commands",
+      "raw": {
+        "capability": "Slash and CLI commands",
+        "confidence": "medium",
+        "current_surface": "aco bootstrap-codex; archon aco status; archon context *",
+        "id": "commands",
+        "required_artifact": "CLI/command manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 2
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Slash and CLI commands",
+        "currentSurface": "aco bootstrap-codex; archon aco status; archon context *",
+        "id": "commands",
+        "requiredArtifact": "CLI/command manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.6",
+          "source": "capability-inventory.csv#L7",
+          "summary": "capability gates from capability.gates"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.gates",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-gates",
+      "raw": {
+        "capability": "ACO validation gates",
+        "confidence": "medium",
+        "current_surface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "id": "gates",
+        "required_artifact": "gate registry",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 7
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "ACO validation gates",
+        "currentSurface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "id": "gates",
+        "requiredArtifact": "gate registry",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.15",
+          "source": "capability-inventory.csv#L16",
+          "summary": "capability graphify from capability.graphify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.graphify",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-graphify",
+      "raw": {
+        "capability": "Graph evidence and waiver closure",
+        "confidence": "medium",
+        "current_surface": "upstream graph reports",
+        "id": "graphify",
+        "required_artifact": "graph evidence schema",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 16
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Graph evidence and waiver closure",
+        "currentSurface": "upstream graph reports",
+        "id": "graphify",
+        "requiredArtifact": "graph evidence schema",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.13",
+          "source": "capability-inventory.csv#L14",
+          "summary": "capability hooks-plugins from capability.hooks-plugins"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.hooks-plugins",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-hooks-plugins",
+      "raw": {
+        "capability": "Hooks/plugins/future extensions",
+        "confidence": "medium",
+        "current_surface": "approval-gated manifests",
+        "id": "hooks-plugins",
+        "required_artifact": "extension registry",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 14
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Hooks/plugins/future extensions",
+        "currentSurface": "approval-gated manifests",
+        "id": "hooks-plugins",
+        "requiredArtifact": "extension registry",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.14",
+          "source": "capability-inventory.csv#L15",
+          "summary": "capability ledgers from capability.ledgers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.ledgers",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-ledgers",
+      "raw": {
+        "capability": "Tool, command, workflow, evidence ledgers",
+        "confidence": "medium",
+        "current_surface": "status/confidence/freshness/safety",
+        "id": "ledgers",
+        "required_artifact": "ledger schemas",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 15
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Tool, command, workflow, evidence ledgers",
+        "currentSurface": "status/confidence/freshness/safety",
+        "id": "ledgers",
+        "requiredArtifact": "ledger schemas",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.7",
+          "source": "capability-inventory.csv#L8",
+          "summary": "capability manifests from capability.manifests"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.manifests",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-manifests",
+      "raw": {
+        "capability": "Capability, provider, workflow, artifact manifests",
+        "confidence": "medium",
+        "current_surface": "schema-first registry",
+        "id": "manifests",
+        "required_artifact": "manifest schemas",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 8
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Capability, provider, workflow, artifact manifests",
+        "currentSurface": "schema-first registry",
+        "id": "manifests",
+        "requiredArtifact": "manifest schemas",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.8",
+          "source": "capability-inventory.csv#L9",
+          "summary": "capability mcp-context7-docs from capability.mcp-context7-docs"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.mcp-context7-docs",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-mcp-context7-docs",
+      "raw": {
+        "capability": "Docs evidence resolution",
+        "confidence": "medium",
+        "current_surface": "OpenAI docs MCP, Context7, manual",
+        "id": "mcp-context7-docs",
+        "required_artifact": "docs evidence plan",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 9
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Docs evidence resolution",
+        "currentSurface": "OpenAI docs MCP, Context7, manual",
+        "id": "mcp-context7-docs",
+        "requiredArtifact": "docs evidence plan",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.16",
+          "source": "capability-inventory.csv#L17",
+          "summary": "capability providers from capability.providers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.providers",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-providers",
+      "raw": {
+        "capability": "Claude/Codex/Pi/future providers",
+        "confidence": "medium",
+        "current_surface": "generic provider contract",
+        "id": "providers",
+        "required_artifact": "provider manifest",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 17
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Claude/Codex/Pi/future providers",
+        "currentSurface": "generic provider contract",
+        "id": "providers",
+        "requiredArtifact": "provider manifest",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.10",
+          "source": "capability-inventory.csv#L11",
+          "summary": "capability subagents from capability.subagents"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.subagents",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-subagents",
+      "raw": {
+        "capability": "Role contracts and subagent boundaries",
+        "confidence": "medium",
+        "current_surface": "contractual, not unsupported runtime claims",
+        "id": "subagents",
+        "required_artifact": "role contract checker",
+        "rewrite_action": "preserve-harden",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 11
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Role contracts and subagent boundaries",
+        "currentSurface": "contractual, not unsupported runtime claims",
+        "id": "subagents",
+        "requiredArtifact": "role contract checker",
+        "rewriteAction": "preserve-harden"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.4",
+          "source": "capability-inventory.csv#L5",
+          "summary": "capability tools from capability.tools"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.tools",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-tools",
+      "raw": {
+        "capability": "Tool availability ledger",
+        "confidence": "medium",
+        "current_surface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "id": "tools",
+        "required_artifact": "tool ledger",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 5
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Tool availability ledger",
+        "currentSurface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "id": "tools",
+        "requiredArtifact": "tool ledger",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.2",
+          "source": "capability-inventory.csv#L3",
+          "summary": "capability workflows from capability.workflows"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.workflows",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-workflows",
+      "raw": {
+        "capability": "Default workflows",
+        "confidence": "medium",
+        "current_surface": "context-orchestrate; archon-aco-adversarial-loop",
+        "id": "workflows",
+        "required_artifact": "workflow manifest + role contracts",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 3
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Default workflows",
+        "currentSurface": "context-orchestrate; archon-aco-adversarial-loop",
+        "id": "workflows",
+        "requiredArtifact": "workflow manifest + role contracts",
+        "rewriteAction": "preserve"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.2",
+          "source": "command-ledger.csv#L3",
+          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-codex",
+      "raw": {
+        "approval_required": "no for artifact writes",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "compatibility": "preserve",
+        "mutates": "artifact-only when flag set",
+        "owner": "aco-codex",
+        "purpose": "Emit Codex-ready bootstrap capsule",
+        "safety": "read-only or writes-artifacts",
+        "surface": "CLI/slash"
+      },
+      "safety": "read-only-or-writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 3
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-codex",
+        "purpose": "Emit Codex-ready bootstrap capsule",
+        "safety": "read-only-or-writes-artifacts",
+        "surface": "CLI/slash"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.1",
+          "source": "command-ledger.csv#L2",
+          "summary": "command archon aco status --cwd <repo> [--json] from command.archon-aco-status-cwd-repo-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-aco-status-cwd-repo-json",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-cli",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon aco status --cwd <repo> [--json]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-cli",
+        "purpose": "Productized ACO status and graph confidence limits",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 2
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon aco status --cwd <repo> [--json]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-cli",
+        "purpose": "Productized ACO status and graph confidence limits",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.7",
+          "source": "command-ledger.csv#L8",
+          "summary": "command archon context approval-capsule <prompt> from command.archon-context-approval-capsule-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-approval-capsule-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no to create capsule",
+        "command": "archon context approval-capsule <prompt>",
+        "compatibility": "preserve",
+        "mutates": "artifact-only",
+        "owner": "aco-context",
+        "purpose": "Create approval capsule for approval-required package",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      },
+      "safety": "writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 8
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context approval-capsule <prompt>",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-context",
+        "purpose": "Create approval capsule for approval-required package",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.8",
+          "source": "command-ledger.csv#L9",
+          "summary": "command archon context approval-capsule-verify from command.archon-context-approval-capsule-verify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-approval-capsule-verify",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context approval-capsule-verify",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-context",
+        "purpose": "Verify approval contract against artifacts",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 9
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context approval-capsule-verify",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-context",
+        "purpose": "Verify approval contract against artifacts",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.6",
+          "source": "command-ledger.csv#L7",
+          "summary": "command archon context compile <prompt> from command.archon-context-compile-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-compile-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context compile <prompt>",
+        "compatibility": "preserve",
+        "mutates": "artifact-only",
+        "owner": "aco-context",
+        "purpose": "Compile context package and artifact archive",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      },
+      "safety": "writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 7
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context compile <prompt>",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-context",
+        "purpose": "Compile context package and artifact archive",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.9",
+          "source": "command-ledger.csv#L10",
+          "summary": "command archon context graph-waivers from command.archon-context-graph-waivers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-graph-waivers",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-research",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context graph-waivers",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-research",
+        "purpose": "Inspect graph waiver closure state",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 10
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context graph-waivers",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-research",
+        "purpose": "Inspect graph waiver closure state",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.4",
+          "source": "command-ledger.csv#L5",
+          "summary": "command archon context ledgers [prompt] from command.archon-context-ledgers-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-ledgers-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-ledgers",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context ledgers [prompt]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-ledgers",
+        "purpose": "Show tool and command ledgers",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 5
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context ledgers [prompt]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-ledgers",
+        "purpose": "Show tool and command ledgers",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.5",
+          "source": "command-ledger.csv#L6",
+          "summary": "command archon context route <prompt> from command.archon-context-route-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-route-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-bmad",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context route <prompt>",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-bmad",
+        "purpose": "Select BMAD advisory route",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 6
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context route <prompt>",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-bmad",
+        "purpose": "Select BMAD advisory route",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.3",
+          "source": "command-ledger.csv#L4",
+          "summary": "command archon context status [prompt] from command.archon-context-status-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-status-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context status [prompt]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-context",
+        "purpose": "Show readiness, evidence, next decision",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 4
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context status [prompt]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-context",
+        "purpose": "Show readiness, evidence, next decision",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.10",
+          "source": "command-ledger.csv#L11",
+          "summary": "command archon context validate from command.archon-context-validate"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-validate",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context validate",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-gates",
+        "purpose": "Validate ACO research/spec readiness",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 11
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context validate",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-gates",
+        "purpose": "Validate ACO research/spec readiness",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.12",
+          "source": "command-ledger.csv#L13",
+          "summary": "command bun run aco:role-contracts from command.bun-run-aco-role-contracts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.bun-run-aco-role-contracts",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "raw": {
+        "approval_required": "no",
+        "command": "bun run aco:role-contracts",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-gates",
+        "purpose": "Check role contracts",
+        "safety": "read-only",
+        "surface": "script"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 13
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "bun run aco:role-contracts",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-gates",
+        "purpose": "Check role contracts",
+        "safety": "read-only",
+        "surface": "script"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.11",
+          "source": "command-ledger.csv#L12",
+          "summary": "command bun run research:graph from command.bun-run-research-graph"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.bun-run-research-graph",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-graph-cache",
+      "owner": "aco-research",
+      "raw": {
+        "approval_required": "yes in readonly contexts",
+        "command": "bun run research:graph",
+        "compatibility": "preserve-gated",
+        "mutates": "graph cache artifacts",
+        "owner": "aco-research",
+        "purpose": "Generate graph evidence",
+        "safety": "network/writes-artifacts",
+        "surface": "script"
+      },
+      "safety": "network-writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 12
+      },
+      "status": "preserve-gated",
+      "subject": {
+        "approvalRequired": true,
+        "command": "bun run research:graph",
+        "compatibility": "preserve-gated",
+        "mutates": "writes-graph-cache",
+        "owner": "aco-research",
+        "purpose": "Generate graph evidence",
+        "safety": "network-writes-artifacts",
+        "surface": "script"
+      }
+    }
+  ],
+  "counts": {
+    "artifact": 12,
+    "capability": 17,
+    "command": 12,
+    "risk": 8,
+    "tool": 10,
+    "total": 70,
+    "unknowns": 6,
+    "workflow": 5
+  },
+  "entries": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.10",
+          "source": "artifact-ledger.csv#L11",
+          "summary": "artifact agentic-search.md from artifact.agentic-search-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.agentic-search-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "Agentic Search role",
+      "raw": {
+        "artifact": "agentic-search.md",
+        "consumer": "planner/evaluator",
+        "producer": "Agentic Search role",
+        "required": "conditional",
+        "schema": "aco.agentic-search-report.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 11
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "agentic-search.md",
+        "consumer": "planner/evaluator",
+        "producer": "Agentic Search role",
+        "required": "conditional",
+        "schemaVersion": "aco.agentic-search-report.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.7",
+          "source": "artifact-ledger.csv#L8",
+          "summary": "artifact approval-capsule.md from artifact.approval-capsule-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.approval-capsule-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "approval-capsule",
+      "raw": {
+        "artifact": "approval-capsule.md",
+        "consumer": "human approval gate",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schema": "aco.approval-capsule.md"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 8
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "approval-capsule.md",
+        "consumer": "human approval gate",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schemaVersion": "aco.approval-capsule.md"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.8",
+          "source": "artifact-ledger.csv#L9",
+          "summary": "artifact approval-contract.json from artifact.approval-contract-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.approval-contract-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "approval-capsule",
+      "raw": {
+        "artifact": "approval-contract.json",
+        "consumer": "approval verifier",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schema": "aco.approval-contract.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 9
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "approval-contract.json",
+        "consumer": "approval verifier",
+        "producer": "approval-capsule",
+        "required": "conditional",
+        "schemaVersion": "aco.approval-contract.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.2",
+          "source": "artifact-ledger.csv#L3",
+          "summary": "artifact capability-snapshot.json from artifact.capability-snapshot-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.capability-snapshot-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "bootstrap/status",
+      "raw": {
+        "artifact": "capability-snapshot.json",
+        "consumer": "Codex/bootstrap/handoff",
+        "producer": "bootstrap/status",
+        "required": "yes",
+        "schema": "aco.capability-snapshot.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 3
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "capability-snapshot.json",
+        "consumer": "Codex/bootstrap/handoff",
+        "producer": "bootstrap/status",
+        "required": "yes",
+        "schemaVersion": "aco.capability-snapshot.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.4",
+          "source": "artifact-ledger.csv#L5",
+          "summary": "artifact command-ledger.json from artifact.command-ledger-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.command-ledger-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "ledgers",
+      "raw": {
+        "artifact": "command-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schema": "aco.ledger-bundle.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 5
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "command-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schemaVersion": "aco.ledger-bundle.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.1",
+          "source": "artifact-ledger.csv#L2",
+          "summary": "artifact context-intent.json from artifact.context-intent-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.context-intent-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "context-intake",
+      "raw": {
+        "artifact": "context-intent.json",
+        "consumer": "compiler/status",
+        "producer": "context-intake",
+        "required": "yes",
+        "schema": "aco.context-intent.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 2
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "context-intent.json",
+        "consumer": "compiler/status",
+        "producer": "context-intake",
+        "required": "yes",
+        "schemaVersion": "aco.context-intent.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.6",
+          "source": "artifact-ledger.csv#L7",
+          "summary": "artifact decision-dossier.json from artifact.decision-dossier-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.decision-dossier-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile",
+      "raw": {
+        "artifact": "decision-dossier.json",
+        "consumer": "human/Codex/workflow",
+        "producer": "compile",
+        "required": "yes",
+        "schema": "aco.decision-dossier.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 7
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "decision-dossier.json",
+        "consumer": "human/Codex/workflow",
+        "producer": "compile",
+        "required": "yes",
+        "schemaVersion": "aco.decision-dossier.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.9",
+          "source": "artifact-ledger.csv#L10",
+          "summary": "artifact graph-waiver-closure.json from artifact.graph-waiver-closure-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.graph-waiver-closure-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "graph-waivers",
+      "raw": {
+        "artifact": "graph-waiver-closure.json",
+        "consumer": "readiness gate",
+        "producer": "graph-waivers",
+        "required": "conditional",
+        "schema": "aco.graph-waiver-closure.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 10
+      },
+      "status": "conditional",
+      "subject": {
+        "artifact": "graph-waiver-closure.json",
+        "consumer": "readiness gate",
+        "producer": "graph-waivers",
+        "required": "conditional",
+        "schemaVersion": "aco.graph-waiver-closure.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.12",
+          "source": "artifact-ledger.csv#L13",
+          "summary": "artifact handoff.md from artifact.handoff-md"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.handoff-md",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile/bootstrap/evaluator",
+      "raw": {
+        "artifact": "handoff.md",
+        "consumer": "Codex/human/next run",
+        "producer": "compile/bootstrap/evaluator",
+        "required": "yes",
+        "schema": "aco.handoff.md"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 13
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "handoff.md",
+        "consumer": "Codex/human/next run",
+        "producer": "compile/bootstrap/evaluator",
+        "required": "yes",
+        "schemaVersion": "aco.handoff.md"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.5",
+          "source": "artifact-ledger.csv#L6",
+          "summary": "artifact prompt-package.json from artifact.prompt-package-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.prompt-package-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "compile",
+      "raw": {
+        "artifact": "prompt-package.json",
+        "consumer": "policy/handoff",
+        "producer": "compile",
+        "required": "yes",
+        "schema": "aco.prompt-package.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 6
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "prompt-package.json",
+        "consumer": "policy/handoff",
+        "producer": "compile",
+        "required": "yes",
+        "schemaVersion": "aco.prompt-package.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.11",
+          "source": "artifact-ledger.csv#L12",
+          "summary": "artifact role-contracts.json from artifact.role-contracts-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.role-contracts-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "role contract registry",
+      "raw": {
+        "artifact": "role-contracts.json",
+        "consumer": "workflow validator",
+        "producer": "role contract registry",
+        "required": "yes for ACO workflows",
+        "schema": "aco.role-contracts.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 12
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "role-contracts.json",
+        "consumer": "workflow validator",
+        "producer": "role contract registry",
+        "required": "yes for ACO workflows",
+        "schemaVersion": "aco.role-contracts.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.artifact.3",
+          "source": "artifact-ledger.csv#L4",
+          "summary": "artifact tool-ledger.json from artifact.tool-ledger-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "artifact.tool-ledger-json",
+      "kind": "ledger-entry",
+      "ledger": "artifact",
+      "owner": "ledgers",
+      "raw": {
+        "artifact": "tool-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schema": "aco.ledger-bundle.v1"
+      },
+      "source": {
+        "fileName": "artifact-ledger.csv",
+        "ledger": "artifact",
+        "rowNumber": 4
+      },
+      "status": "required",
+      "subject": {
+        "artifact": "tool-ledger.json",
+        "consumer": "compiler/gates/UI",
+        "producer": "ledgers",
+        "required": "yes",
+        "schemaVersion": "aco.ledger-bundle.v1"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.5",
+          "source": "capability-inventory.csv#L6",
+          "summary": "capability adapters from capability.adapters"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.adapters",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-adapters",
+      "raw": {
+        "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
+        "confidence": "medium",
+        "current_surface": "source/worktree/artifact separation",
+        "id": "adapters",
+        "required_artifact": "adapter tests",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 6
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
+        "currentSurface": "source/worktree/artifact separation",
+        "id": "adapters",
+        "requiredArtifact": "adapter tests",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.11",
+          "source": "capability-inventory.csv#L12",
+          "summary": "capability agentic-search from capability.agentic-search"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.agentic-search",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-agentic-search",
+      "raw": {
+        "capability": "Research discovery",
+        "confidence": "medium",
+        "current_surface": "surfaces/tests/evidence gaps",
+        "id": "agentic-search",
+        "required_artifact": "search report schema",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 12
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Research discovery",
+        "currentSurface": "surfaces/tests/evidence gaps",
+        "id": "agentic-search",
+        "requiredArtifact": "search report schema",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.3",
+          "source": "capability-inventory.csv#L4",
+          "summary": "capability artifacts from capability.artifacts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.artifacts",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-artifacts",
+      "raw": {
+        "capability": "Prompt packages, capsules, ledgers, dossiers",
+        "confidence": "medium",
+        "current_surface": "JSON + markdown artifacts",
+        "id": "artifacts",
+        "required_artifact": "artifact manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 4
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Prompt packages, capsules, ledgers, dossiers",
+        "currentSurface": "JSON + markdown artifacts",
+        "id": "artifacts",
+        "requiredArtifact": "artifact manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.9",
+          "source": "capability-inventory.csv#L10",
+          "summary": "capability bmad from capability.bmad"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.bmad",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-bmad",
+      "raw": {
+        "capability": "BMAD routing and advisory roles",
+        "confidence": "medium",
+        "current_surface": "route mapping and role contracts",
+        "id": "bmad",
+        "required_artifact": "BMAD role manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 10
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "BMAD routing and advisory roles",
+        "currentSurface": "route mapping and role contracts",
+        "id": "bmad",
+        "requiredArtifact": "BMAD role manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.12",
+          "source": "capability-inventory.csv#L13",
+          "summary": "capability bootload from capability.bootload"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.bootload",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-bootload",
+      "raw": {
+        "capability": "Session context bootload",
+        "confidence": "medium",
+        "current_surface": "capability snapshot and handoff",
+        "id": "bootload",
+        "required_artifact": "bootstrap context",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 13
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Session context bootload",
+        "currentSurface": "capability snapshot and handoff",
+        "id": "bootload",
+        "requiredArtifact": "bootstrap context",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.17",
+          "source": "capability-inventory.csv#L18",
+          "summary": "capability codex-harness from capability.codex-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.codex-harness",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-codex-harness",
+      "raw": {
+        "capability": "Real Codex harness and bootstrap",
+        "confidence": "medium",
+        "current_surface": "capsules/events/session handoff",
+        "id": "codex-harness",
+        "required_artifact": "Codex package",
+        "rewrite_action": "preserve-harden",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 18
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Real Codex harness and bootstrap",
+        "currentSurface": "capsules/events/session handoff",
+        "id": "codex-harness",
+        "requiredArtifact": "Codex package",
+        "rewriteAction": "preserve-harden"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.1",
+          "source": "capability-inventory.csv#L2",
+          "summary": "capability commands from capability.commands"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.commands",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-commands",
+      "raw": {
+        "capability": "Slash and CLI commands",
+        "confidence": "medium",
+        "current_surface": "aco bootstrap-codex; archon aco status; archon context *",
+        "id": "commands",
+        "required_artifact": "CLI/command manifest",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 2
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Slash and CLI commands",
+        "currentSurface": "aco bootstrap-codex; archon aco status; archon context *",
+        "id": "commands",
+        "requiredArtifact": "CLI/command manifest",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.6",
+          "source": "capability-inventory.csv#L7",
+          "summary": "capability gates from capability.gates"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.gates",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-gates",
+      "raw": {
+        "capability": "ACO validation gates",
+        "confidence": "medium",
+        "current_surface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "id": "gates",
+        "required_artifact": "gate registry",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 7
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "ACO validation gates",
+        "currentSurface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "id": "gates",
+        "requiredArtifact": "gate registry",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.15",
+          "source": "capability-inventory.csv#L16",
+          "summary": "capability graphify from capability.graphify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.graphify",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-graphify",
+      "raw": {
+        "capability": "Graph evidence and waiver closure",
+        "confidence": "medium",
+        "current_surface": "upstream graph reports",
+        "id": "graphify",
+        "required_artifact": "graph evidence schema",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 16
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Graph evidence and waiver closure",
+        "currentSurface": "upstream graph reports",
+        "id": "graphify",
+        "requiredArtifact": "graph evidence schema",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.13",
+          "source": "capability-inventory.csv#L14",
+          "summary": "capability hooks-plugins from capability.hooks-plugins"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.hooks-plugins",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-hooks-plugins",
+      "raw": {
+        "capability": "Hooks/plugins/future extensions",
+        "confidence": "medium",
+        "current_surface": "approval-gated manifests",
+        "id": "hooks-plugins",
+        "required_artifact": "extension registry",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 14
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Hooks/plugins/future extensions",
+        "currentSurface": "approval-gated manifests",
+        "id": "hooks-plugins",
+        "requiredArtifact": "extension registry",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.14",
+          "source": "capability-inventory.csv#L15",
+          "summary": "capability ledgers from capability.ledgers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.ledgers",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-ledgers",
+      "raw": {
+        "capability": "Tool, command, workflow, evidence ledgers",
+        "confidence": "medium",
+        "current_surface": "status/confidence/freshness/safety",
+        "id": "ledgers",
+        "required_artifact": "ledger schemas",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 15
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Tool, command, workflow, evidence ledgers",
+        "currentSurface": "status/confidence/freshness/safety",
+        "id": "ledgers",
+        "requiredArtifact": "ledger schemas",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.7",
+          "source": "capability-inventory.csv#L8",
+          "summary": "capability manifests from capability.manifests"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.manifests",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-manifests",
+      "raw": {
+        "capability": "Capability, provider, workflow, artifact manifests",
+        "confidence": "medium",
+        "current_surface": "schema-first registry",
+        "id": "manifests",
+        "required_artifact": "manifest schemas",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 8
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Capability, provider, workflow, artifact manifests",
+        "currentSurface": "schema-first registry",
+        "id": "manifests",
+        "requiredArtifact": "manifest schemas",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.8",
+          "source": "capability-inventory.csv#L9",
+          "summary": "capability mcp-context7-docs from capability.mcp-context7-docs"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.mcp-context7-docs",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-mcp-context7-docs",
+      "raw": {
+        "capability": "Docs evidence resolution",
+        "confidence": "medium",
+        "current_surface": "OpenAI docs MCP, Context7, manual",
+        "id": "mcp-context7-docs",
+        "required_artifact": "docs evidence plan",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 9
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Docs evidence resolution",
+        "currentSurface": "OpenAI docs MCP, Context7, manual",
+        "id": "mcp-context7-docs",
+        "requiredArtifact": "docs evidence plan",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "rewrite",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.16",
+          "source": "capability-inventory.csv#L17",
+          "summary": "capability providers from capability.providers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.providers",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-providers",
+      "raw": {
+        "capability": "Claude/Codex/Pi/future providers",
+        "confidence": "medium",
+        "current_surface": "generic provider contract",
+        "id": "providers",
+        "required_artifact": "provider manifest",
+        "rewrite_action": "rewrite",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 17
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Claude/Codex/Pi/future providers",
+        "currentSurface": "generic provider contract",
+        "id": "providers",
+        "requiredArtifact": "provider manifest",
+        "rewriteAction": "rewrite"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.10",
+          "source": "capability-inventory.csv#L11",
+          "summary": "capability subagents from capability.subagents"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.subagents",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-subagents",
+      "raw": {
+        "capability": "Role contracts and subagent boundaries",
+        "confidence": "medium",
+        "current_surface": "contractual, not unsupported runtime claims",
+        "id": "subagents",
+        "required_artifact": "role contract checker",
+        "rewrite_action": "preserve-harden",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 11
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Role contracts and subagent boundaries",
+        "currentSurface": "contractual, not unsupported runtime claims",
+        "id": "subagents",
+        "requiredArtifact": "role contract checker",
+        "rewriteAction": "preserve-harden"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.4",
+          "source": "capability-inventory.csv#L5",
+          "summary": "capability tools from capability.tools"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.tools",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-tools",
+      "raw": {
+        "capability": "Tool availability ledger",
+        "confidence": "medium",
+        "current_surface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "id": "tools",
+        "required_artifact": "tool ledger",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 5
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Tool availability ledger",
+        "currentSurface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "id": "tools",
+        "requiredArtifact": "tool ledger",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.capability.2",
+          "source": "capability-inventory.csv#L3",
+          "summary": "capability workflows from capability.workflows"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "capability.workflows",
+      "kind": "ledger-entry",
+      "ledger": "capability",
+      "owner": "aco-workflows",
+      "raw": {
+        "capability": "Default workflows",
+        "confidence": "medium",
+        "current_surface": "context-orchestrate; archon-aco-adversarial-loop",
+        "id": "workflows",
+        "required_artifact": "workflow manifest + role contracts",
+        "rewrite_action": "preserve",
+        "status": "planned"
+      },
+      "source": {
+        "fileName": "capability-inventory.csv",
+        "ledger": "capability",
+        "rowNumber": 3
+      },
+      "status": "planned",
+      "subject": {
+        "capability": "Default workflows",
+        "currentSurface": "context-orchestrate; archon-aco-adversarial-loop",
+        "id": "workflows",
+        "requiredArtifact": "workflow manifest + role contracts",
+        "rewriteAction": "preserve"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.2",
+          "source": "command-ledger.csv#L3",
+          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-codex",
+      "raw": {
+        "approval_required": "no for artifact writes",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "compatibility": "preserve",
+        "mutates": "artifact-only when flag set",
+        "owner": "aco-codex",
+        "purpose": "Emit Codex-ready bootstrap capsule",
+        "safety": "read-only or writes-artifacts",
+        "surface": "CLI/slash"
+      },
+      "safety": "read-only-or-writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 3
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-codex",
+        "purpose": "Emit Codex-ready bootstrap capsule",
+        "safety": "read-only-or-writes-artifacts",
+        "surface": "CLI/slash"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.1",
+          "source": "command-ledger.csv#L2",
+          "summary": "command archon aco status --cwd <repo> [--json] from command.archon-aco-status-cwd-repo-json"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-aco-status-cwd-repo-json",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-cli",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon aco status --cwd <repo> [--json]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-cli",
+        "purpose": "Productized ACO status and graph confidence limits",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 2
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon aco status --cwd <repo> [--json]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-cli",
+        "purpose": "Productized ACO status and graph confidence limits",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.7",
+          "source": "command-ledger.csv#L8",
+          "summary": "command archon context approval-capsule <prompt> from command.archon-context-approval-capsule-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-approval-capsule-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no to create capsule",
+        "command": "archon context approval-capsule <prompt>",
+        "compatibility": "preserve",
+        "mutates": "artifact-only",
+        "owner": "aco-context",
+        "purpose": "Create approval capsule for approval-required package",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      },
+      "safety": "writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 8
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context approval-capsule <prompt>",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-context",
+        "purpose": "Create approval capsule for approval-required package",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.8",
+          "source": "command-ledger.csv#L9",
+          "summary": "command archon context approval-capsule-verify from command.archon-context-approval-capsule-verify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-approval-capsule-verify",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context approval-capsule-verify",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-context",
+        "purpose": "Verify approval contract against artifacts",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 9
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context approval-capsule-verify",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-context",
+        "purpose": "Verify approval contract against artifacts",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.6",
+          "source": "command-ledger.csv#L7",
+          "summary": "command archon context compile <prompt> from command.archon-context-compile-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-compile-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-artifacts",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context compile <prompt>",
+        "compatibility": "preserve",
+        "mutates": "artifact-only",
+        "owner": "aco-context",
+        "purpose": "Compile context package and artifact archive",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      },
+      "safety": "writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 7
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context compile <prompt>",
+        "compatibility": "preserve",
+        "mutates": "writes-artifacts",
+        "owner": "aco-context",
+        "purpose": "Compile context package and artifact archive",
+        "safety": "writes-artifacts",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.9",
+          "source": "command-ledger.csv#L10",
+          "summary": "command archon context graph-waivers from command.archon-context-graph-waivers"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-graph-waivers",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-research",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context graph-waivers",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-research",
+        "purpose": "Inspect graph waiver closure state",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 10
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context graph-waivers",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-research",
+        "purpose": "Inspect graph waiver closure state",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.4",
+          "source": "command-ledger.csv#L5",
+          "summary": "command archon context ledgers [prompt] from command.archon-context-ledgers-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-ledgers-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-ledgers",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context ledgers [prompt]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-ledgers",
+        "purpose": "Show tool and command ledgers",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 5
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context ledgers [prompt]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-ledgers",
+        "purpose": "Show tool and command ledgers",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.5",
+          "source": "command-ledger.csv#L6",
+          "summary": "command archon context route <prompt> from command.archon-context-route-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-route-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-bmad",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context route <prompt>",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-bmad",
+        "purpose": "Select BMAD advisory route",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 6
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context route <prompt>",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-bmad",
+        "purpose": "Select BMAD advisory route",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.3",
+          "source": "command-ledger.csv#L4",
+          "summary": "command archon context status [prompt] from command.archon-context-status-prompt"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-status-prompt",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-context",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context status [prompt]",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-context",
+        "purpose": "Show readiness, evidence, next decision",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 4
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context status [prompt]",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-context",
+        "purpose": "Show readiness, evidence, next decision",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.10",
+          "source": "command-ledger.csv#L11",
+          "summary": "command archon context validate from command.archon-context-validate"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.archon-context-validate",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "raw": {
+        "approval_required": "no",
+        "command": "archon context validate",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-gates",
+        "purpose": "Validate ACO research/spec readiness",
+        "safety": "read-only",
+        "surface": "CLI"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 11
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "archon context validate",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-gates",
+        "purpose": "Validate ACO research/spec readiness",
+        "safety": "read-only",
+        "surface": "CLI"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.12",
+          "source": "command-ledger.csv#L13",
+          "summary": "command bun run aco:role-contracts from command.bun-run-aco-role-contracts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.bun-run-aco-role-contracts",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "read-only",
+      "owner": "aco-gates",
+      "raw": {
+        "approval_required": "no",
+        "command": "bun run aco:role-contracts",
+        "compatibility": "preserve",
+        "mutates": "no",
+        "owner": "aco-gates",
+        "purpose": "Check role contracts",
+        "safety": "read-only",
+        "surface": "script"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 13
+      },
+      "status": "preserve",
+      "subject": {
+        "approvalRequired": false,
+        "command": "bun run aco:role-contracts",
+        "compatibility": "preserve",
+        "mutates": "read-only",
+        "owner": "aco-gates",
+        "purpose": "Check role contracts",
+        "safety": "read-only",
+        "surface": "script"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-gated",
+      "confidence": "high",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.ledger.command.11",
+          "source": "command-ledger.csv#L12",
+          "summary": "command bun run research:graph from command.bun-run-research-graph"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "command.bun-run-research-graph",
+      "kind": "ledger-entry",
+      "ledger": "command",
+      "mutates": "writes-graph-cache",
+      "owner": "aco-research",
+      "raw": {
+        "approval_required": "yes in readonly contexts",
+        "command": "bun run research:graph",
+        "compatibility": "preserve-gated",
+        "mutates": "graph cache artifacts",
+        "owner": "aco-research",
+        "purpose": "Generate graph evidence",
+        "safety": "network/writes-artifacts",
+        "surface": "script"
+      },
+      "safety": "network-writes-artifacts",
+      "source": {
+        "fileName": "command-ledger.csv",
+        "ledger": "command",
+        "rowNumber": 12
+      },
+      "status": "preserve-gated",
+      "subject": {
+        "approvalRequired": true,
+        "command": "bun run research:graph",
+        "compatibility": "preserve-gated",
+        "mutates": "writes-graph-cache",
+        "owner": "aco-research",
+        "purpose": "Generate graph evidence",
+        "safety": "network-writes-artifacts",
+        "surface": "script"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.8",
+          "source": "risk-ledger.csv#L9",
+          "summary": "risk Approval waivers become permanent from risk.approval-waivers-become-permanent"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.approval-waivers-become-permanent",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "gates",
+      "raw": {
+        "impact": "unsafe readiness claims",
+        "mitigation": "approval scoped to run and contract hash",
+        "owner": "gates",
+        "risk": "Approval waivers become permanent"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 9
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "unsafe readiness claims",
+        "mitigation": "approval scoped to run and contract hash",
+        "risk": "Approval waivers become permanent"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.1",
+          "source": "risk-ledger.csv#L2",
+          "summary": "risk Copying exploratory branch wholesale from risk.copying-exploratory-branch-wholesale"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.copying-exploratory-branch-wholesale",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "implementation lead",
+      "raw": {
+        "impact": "keeps coupling and hidden side effects",
+        "mitigation": "new dev branch, port by manifest-backed slices",
+        "owner": "implementation lead",
+        "risk": "Copying exploratory branch wholesale"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 2
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "keeps coupling and hidden side effects",
+        "mitigation": "new dev branch, port by manifest-backed slices",
+        "risk": "Copying exploratory branch wholesale"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.3",
+          "source": "risk-ledger.csv#L4",
+          "summary": "risk Graph refresh hidden in compile/status from risk.graph-refresh-hidden-in-compile-status"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.graph-refresh-hidden-in-compile-status",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-research",
+      "raw": {
+        "impact": "unexpected network/artifact mutation",
+        "mitigation": "graph refresh approval-gated command only",
+        "owner": "aco-research",
+        "risk": "Graph refresh hidden in compile/status"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 4
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "unexpected network/artifact mutation",
+        "mitigation": "graph refresh approval-gated command only",
+        "risk": "Graph refresh hidden in compile/status"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.5",
+          "source": "risk-ledger.csv#L6",
+          "summary": "risk Path confusion source vs worktree vs artifacts from risk.path-confusion-source-vs-worktree-vs-artifacts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.path-confusion-source-vs-worktree-vs-artifacts",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-paths/adapters",
+      "raw": {
+        "impact": "nested worktrees and corrupted codebase cwd",
+        "mitigation": "branded paths and canonical layout",
+        "owner": "aco-paths/adapters",
+        "risk": "Path confusion source vs worktree vs artifacts"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 6
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "nested worktrees and corrupted codebase cwd",
+        "mitigation": "branded paths and canonical layout",
+        "risk": "Path confusion source vs worktree vs artifacts"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.7",
+          "source": "risk-ledger.csv#L8",
+          "summary": "risk Provider manifests overpromise capabilities from risk.provider-manifests-overpromise-capabilities"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.provider-manifests-overpromise-capabilities",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "provider adapters",
+      "raw": {
+        "impact": "runtime failures",
+        "mitigation": "capability matrix requires evidence status and fallback",
+        "owner": "provider adapters",
+        "risk": "Provider manifests overpromise capabilities"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 8
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "runtime failures",
+        "mitigation": "capability matrix requires evidence status and fallback",
+        "risk": "Provider manifests overpromise capabilities"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.6",
+          "source": "risk-ledger.csv#L7",
+          "summary": "risk Schema drift without fixtures from risk.schema-drift-without-fixtures"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.schema-drift-without-fixtures",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "QA",
+      "raw": {
+        "impact": "breaks integrations silently",
+        "mitigation": "golden compatibility tests",
+        "owner": "QA",
+        "risk": "Schema drift without fixtures"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 7
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "breaks integrations silently",
+        "mitigation": "golden compatibility tests",
+        "risk": "Schema drift without fixtures"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.2",
+          "source": "risk-ledger.csv#L3",
+          "summary": "risk Unsupported Codex subagent/tool restriction claims from risk.unsupported-codex-subagent-tool-restriction-claims"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.unsupported-codex-subagent-tool-restriction-claims",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-codex",
+      "raw": {
+        "impact": "false safety guarantees",
+        "mitigation": "role contracts are artifact contracts unless runtime is proved",
+        "owner": "aco-codex",
+        "risk": "Unsupported Codex subagent/tool restriction claims"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 3
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "false safety guarantees",
+        "mitigation": "role contracts are artifact contracts unless runtime is proved",
+        "risk": "Unsupported Codex subagent/tool restriction claims"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.4",
+          "source": "risk-ledger.csv#L5",
+          "summary": "risk Web imports server internals from risk.web-imports-server-internals"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.web-imports-server-internals",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "web/API",
+      "raw": {
+        "impact": "tight coupling and type drift",
+        "mitigation": "generated API types only",
+        "owner": "web/API",
+        "risk": "Web imports server internals"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 5
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "tight coupling and type drift",
+        "mitigation": "generated API types only",
+        "risk": "Web imports server internals"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.7",
+          "source": "tool-availability-ledger.csv#L8",
+          "summary": "tool BMAD skills from tool.bmad-skills"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.bmad-skills",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "advisory routing",
+        "fallback": "unknown-help route",
+        "preconditions": "installed skill docs/manifests",
+        "safety": "read-only advisory",
+        "status": "required for BMAD parity",
+        "tool": "BMAD skills"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 8
+      },
+      "status": "required",
+      "subject": {
+        "category": "advisory routing",
+        "fallback": "unknown-help route",
+        "preconditions": "installed skill docs/manifests",
+        "safety": "read-only",
+        "tool": "BMAD skills"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.2",
+          "source": "tool-availability-ledger.csv#L3",
+          "summary": "tool Bun from tool.bun"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.bun",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "runtime",
+        "fallback": "blocked validation",
+        "preconditions": "dependencies installed",
+        "safety": "can run tests/scripts",
+        "status": "required",
+        "tool": "Bun"
+      },
+      "safety": "can-run-tests",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 3
+      },
+      "status": "required",
+      "subject": {
+        "category": "runtime",
+        "fallback": "blocked validation",
+        "preconditions": "dependencies installed",
+        "safety": "can-run-tests",
+        "tool": "Bun"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.9",
+          "source": "tool-availability-ledger.csv#L10",
+          "summary": "tool Claude SDK from tool.claude-sdk"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.claude-sdk",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "provider unavailable",
+        "preconditions": "auth configured",
+        "safety": "runtime dependent",
+        "status": "existing built-in",
+        "tool": "Claude SDK"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 10
+      },
+      "status": "existing-built-in",
+      "subject": {
+        "category": "provider",
+        "fallback": "provider unavailable",
+        "preconditions": "auth configured",
+        "safety": "runtime-dependent",
+        "tool": "Claude SDK"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.8",
+          "source": "tool-availability-ledger.csv#L9",
+          "summary": "tool Codex SDK/harness from tool.codex-sdk-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.codex-sdk-harness",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "bootstrap-only / deferred runtime",
+        "preconditions": "SDK configured",
+        "safety": "runtime dependent",
+        "status": "required for Codex provider parity",
+        "tool": "Codex SDK/harness"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 9
+      },
+      "status": "required",
+      "subject": {
+        "category": "provider",
+        "fallback": "bootstrap-only / deferred runtime",
+        "preconditions": "SDK configured",
+        "safety": "runtime-dependent",
+        "tool": "Codex SDK/harness"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.5",
+          "source": "tool-availability-ledger.csv#L6",
+          "summary": "tool Context7 from tool.context7"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.context7",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "docs evidence",
+        "fallback": "manual docs evidence",
+        "preconditions": "configured tool",
+        "safety": "read-only if configured",
+        "status": "optional/conditional",
+        "tool": "Context7"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 6
+      },
+      "status": "optional-conditional",
+      "subject": {
+        "category": "docs evidence",
+        "fallback": "manual docs evidence",
+        "preconditions": "configured tool",
+        "safety": "read-only",
+        "tool": "Context7"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.1",
+          "source": "tool-availability-ledger.csv#L2",
+          "summary": "tool Git from tool.git"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.git",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "repo-state",
+        "fallback": "mark repo evidence unknown",
+        "preconditions": "repo root available",
+        "safety": "read-only by default",
+        "status": "required",
+        "tool": "Git"
+      },
+      "safety": "read-only-by-default",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 2
+      },
+      "status": "required",
+      "subject": {
+        "category": "repo-state",
+        "fallback": "mark repo evidence unknown",
+        "preconditions": "repo root available",
+        "safety": "read-only-by-default",
+        "tool": "Git"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-gated",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.6",
+          "source": "tool-availability-ledger.csv#L7",
+          "summary": "tool Graphify from tool.graphify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.graphify",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "graph evidence",
+        "fallback": "waiver/approval_required",
+        "preconditions": "approved graph refresh",
+        "safety": "writes graph artifacts",
+        "status": "required for graph freshness",
+        "tool": "Graphify"
+      },
+      "safety": "writes-graph-artifacts",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 7
+      },
+      "status": "required",
+      "subject": {
+        "category": "graph evidence",
+        "fallback": "waiver/approval_required",
+        "preconditions": "approved graph refresh",
+        "safety": "writes-graph-artifacts",
+        "tool": "Graphify"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.3",
+          "source": "tool-availability-ledger.csv#L4",
+          "summary": "tool OPA from tool.opa"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.opa",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "policy",
+        "fallback": "policy gate blocked",
+        "preconditions": "installed",
+        "safety": "read-only",
+        "status": "required for policy gate",
+        "tool": "OPA"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 4
+      },
+      "status": "required",
+      "subject": {
+        "category": "policy",
+        "fallback": "policy gate blocked",
+        "preconditions": "installed",
+        "safety": "read-only",
+        "tool": "OPA"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.4",
+          "source": "tool-availability-ledger.csv#L5",
+          "summary": "tool OpenAI docs MCP from tool.openai-docs-mcp"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.openai-docs-mcp",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "docs evidence",
+        "fallback": "Context7/manual",
+        "preconditions": "configured MCP",
+        "safety": "may need auth/OAuth",
+        "status": "optional/conditional",
+        "tool": "OpenAI docs MCP"
+      },
+      "safety": "may-need-auth",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 5
+      },
+      "status": "optional-conditional",
+      "subject": {
+        "category": "docs evidence",
+        "fallback": "Context7/manual",
+        "preconditions": "configured MCP",
+        "safety": "may-need-auth",
+        "tool": "OpenAI docs MCP"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.10",
+          "source": "tool-availability-ledger.csv#L11",
+          "summary": "tool Pi SDK from tool.pi-sdk"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.pi-sdk",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "community provider unavailable",
+        "preconditions": "package/config available",
+        "safety": "runtime dependent",
+        "status": "community reference",
+        "tool": "Pi SDK"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 11
+      },
+      "status": "community-reference",
+      "subject": {
+        "category": "provider",
+        "fallback": "community provider unavailable",
+        "preconditions": "package/config available",
+        "safety": "runtime-dependent",
+        "tool": "Pi SDK"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.6",
+          "source": "unknowns-ledger.csv#L7",
+          "summary": "unknown All generated bundled defaults affected from unknown.all-generated-bundled-defaults-affected"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.all-generated-bundled-defaults-affected",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "run generate/check bundled",
+        "router_required": "no",
+        "status": "partial",
+        "unknown": "All generated bundled defaults affected"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 7
+      },
+      "status": "partial",
+      "subject": {
+        "resolution": "run generate/check bundled",
+        "routerRequired": false,
+        "unknown": "All generated bundled defaults affected"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.5",
+          "source": "unknowns-ledger.csv#L6",
+          "summary": "unknown All web UI component changes from unknown.all-web-ui-component-changes"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.all-web-ui-component-changes",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "local diff and UI tests",
+        "router_required": "no",
+        "status": "partial",
+        "unknown": "All web UI component changes"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 6
+      },
+      "status": "partial",
+      "subject": {
+        "resolution": "local diff and UI tests",
+        "routerRequired": false,
+        "unknown": "All web UI component changes"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.3",
+          "source": "unknowns-ledger.csv#L4",
+          "summary": "unknown Current branch test pass/fail state from unknown.current-branch-test-pass-fail-state"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.current-branch-test-pass-fail-state",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "run validation on branch",
+        "router_required": "no",
+        "status": "unknown",
+        "unknown": "Current branch test pass/fail state"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 4
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "run validation on branch",
+        "routerRequired": false,
+        "unknown": "Current branch test pass/fail state"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.1",
+          "source": "unknowns-ledger.csv#L2",
+          "summary": "unknown Exact 233-file changed list and full 50k-line diff from unknown.exact-233-file-changed-list-and-full-50k-line-diff"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.exact-233-file-changed-list-and-full-50k-line-diff",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "capture via local git diff in Codex environment",
+        "router_required": "yes",
+        "status": "unknown in this session",
+        "unknown": "Exact 233-file changed list and full 50k-line diff"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 2
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "capture via local git diff in Codex environment",
+        "routerRequired": true,
+        "unknown": "Exact 233-file changed list and full 50k-line diff"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.2",
+          "source": "unknowns-ledger.csv#L3",
+          "summary": "unknown Exact runtime capabilities of real Codex harness from unknown.exact-runtime-capabilities-of-real-codex-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.exact-runtime-capabilities-of-real-codex-harness",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "provider capability tests and docs evidence",
+        "router_required": "yes",
+        "status": "unknown",
+        "unknown": "Exact runtime capabilities of real Codex harness"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 3
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "provider capability tests and docs evidence",
+        "routerRequired": true,
+        "unknown": "Exact runtime capabilities of real Codex harness"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.4",
+          "source": "unknowns-ledger.csv#L5",
+          "summary": "unknown Whether party-mode-uncertainty-router exists as executable command from unknown.whether-party-mode-uncertainty-router-exists-as-executable-command"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.whether-party-mode-uncertainty-router-exists-as-executable-command",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "search local repo and BMAD skill manifests",
+        "router_required": "yes",
+        "status": "not found in visible branch evidence",
+        "unknown": "Whether party-mode-uncertainty-router exists as executable command"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 5
+      },
+      "status": "not-found",
+      "subject": {
+        "resolution": "search local repo and BMAD skill manifests",
+        "routerRequired": true,
+        "unknown": "Whether party-mode-uncertainty-router exists as executable command"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.2",
+          "source": "workflow-ledger.csv#L3",
+          "summary": "workflow archon-aco-adversarial-loop from workflow.archon-aco-adversarial-loop"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-aco-adversarial-loop",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "aco-adversarial-loop/*",
+        "compatibility": "preserve-harden",
+        "mutates_checkout": "false in artifact-only phase",
+        "purpose": "ACO-grounded contracted adversarial implementation loop",
+        "role_contracts": "coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",
+        "workflow": "archon-aco-adversarial-loop"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 3
+      },
+      "status": "preserve-harden",
+      "subject": {
+        "artifactContract": "aco-adversarial-loop/*",
+        "compatibility": "preserve-harden",
+        "mutatesCheckout": false,
+        "mutatesCheckoutRaw": "false in artifact-only phase",
+        "purpose": "ACO-grounded contracted adversarial implementation loop",
+        "roleContracts": [
+          "coordinator",
+          "skill curator",
+          "BMAD reviewer",
+          "search",
+          "planner",
+          "contract",
+          "generator",
+          "QA",
+          "evaluator",
+          "feedback/handoff"
+        ],
+        "workflow": "archon-aco-adversarial-loop"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "existing-reference-only",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.3",
+          "source": "workflow-ledger.csv#L4",
+          "summary": "workflow archon-adversarial-dev from workflow.archon-adversarial-dev"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-adversarial-dev",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "contracts/feedback/app/state",
+        "compatibility": "existing reference only",
+        "mutates_checkout": "artifact app repo",
+        "purpose": "GAN-style generation/evaluation app creation",
+        "role_contracts": "negotiator,generator,evaluator",
+        "workflow": "archon-adversarial-dev"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 4
+      },
+      "status": "existing-reference-only",
+      "subject": {
+        "artifactContract": "contracts/feedback/app/state",
+        "compatibility": "existing-reference-only",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "artifact app repo",
+        "purpose": "GAN-style generation/evaluation app creation",
+        "roleContracts": ["negotiator", "generator", "evaluator"],
+        "workflow": "archon-adversarial-dev"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-existing",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.4",
+          "source": "workflow-ledger.csv#L5",
+          "summary": "workflow archon-piv-loop from workflow.archon-piv-loop"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-piv-loop",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "plan/validation/progress",
+        "compatibility": "preserve existing",
+        "mutates_checkout": "yes when implementing",
+        "purpose": "plan-implement-validate",
+        "role_contracts": "planner,implementer,validator",
+        "workflow": "archon-piv-loop"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 5
+      },
+      "status": "preserve-existing",
+      "subject": {
+        "artifactContract": "plan/validation/progress",
+        "compatibility": "preserve-existing",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "yes when implementing",
+        "purpose": "plan-implement-validate",
+        "roleContracts": ["planner", "implementer", "validator"],
+        "workflow": "archon-piv-loop"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-existing",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.5",
+          "source": "workflow-ledger.csv#L6",
+          "summary": "workflow archon-workflow-builder from workflow.archon-workflow-builder"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-workflow-builder",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "generated-workflow.yaml",
+        "compatibility": "preserve existing",
+        "mutates_checkout": "writes workflow when installing",
+        "purpose": "generate workflows from user input",
+        "role_contracts": "intent extraction, yaml generation, validation, install",
+        "workflow": "archon-workflow-builder"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 6
+      },
+      "status": "preserve-existing",
+      "subject": {
+        "artifactContract": "generated-workflow.yaml",
+        "compatibility": "preserve-existing",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "writes workflow when installing",
+        "purpose": "generate workflows from user input",
+        "roleContracts": ["intent extraction", "yaml generation", "validation", "install"],
+        "workflow": "archon-workflow-builder"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.1",
+          "source": "workflow-ledger.csv#L2",
+          "summary": "workflow context-orchestrate from workflow.context-orchestrate"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.context-orchestrate",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "context-orchestrator/*",
+        "compatibility": "preserve",
+        "mutates_checkout": "false",
+        "purpose": "status + ledgers + compile + approval + handoff",
+        "role_contracts": "status, ledgers, compile, approval, handoff",
+        "workflow": "context-orchestrate"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 2
+      },
+      "status": "preserve",
+      "subject": {
+        "artifactContract": "context-orchestrator/*",
+        "compatibility": "preserve",
+        "mutatesCheckout": false,
+        "mutatesCheckoutRaw": "false",
+        "purpose": "status + ledgers + compile + approval + handoff",
+        "roleContracts": ["status", "ledgers", "compile", "approval", "handoff"],
+        "workflow": "context-orchestrate"
+      }
+    }
+  ],
+  "generatedFrom": [
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.artifact.source",
+        "source": "artifact-ledger.csv",
+        "summary": "artifact ledger oracle CSV with 12 data rows"
+      },
+      "fileName": "artifact-ledger.csv",
+      "header": ["artifact", "schema", "producer", "consumer", "required"],
+      "ledger": "artifact",
+      "rowCount": 12
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.capability.source",
+        "source": "capability-inventory.csv",
+        "summary": "capability ledger oracle CSV with 17 data rows"
+      },
+      "fileName": "capability-inventory.csv",
+      "header": [
+        "id",
+        "capability",
+        "current_surface",
+        "rewrite_action",
+        "required_artifact",
+        "status",
+        "confidence"
+      ],
+      "ledger": "capability",
+      "rowCount": 17
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.command.source",
+        "source": "command-ledger.csv",
+        "summary": "command ledger oracle CSV with 12 data rows"
+      },
+      "fileName": "command-ledger.csv",
+      "header": [
+        "command",
+        "surface",
+        "purpose",
+        "safety",
+        "mutates",
+        "approval_required",
+        "owner",
+        "compatibility"
+      ],
+      "ledger": "command",
+      "rowCount": 12
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.risk.source",
+        "source": "risk-ledger.csv",
+        "summary": "risk ledger oracle CSV with 8 data rows"
+      },
+      "fileName": "risk-ledger.csv",
+      "header": ["risk", "impact", "mitigation", "owner"],
+      "ledger": "risk",
+      "rowCount": 8
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.tool.source",
+        "source": "tool-availability-ledger.csv",
+        "summary": "tool ledger oracle CSV with 10 data rows"
+      },
+      "fileName": "tool-availability-ledger.csv",
+      "header": ["tool", "category", "status", "safety", "preconditions", "fallback"],
+      "ledger": "tool",
+      "rowCount": 10
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.unknowns.source",
+        "source": "unknowns-ledger.csv",
+        "summary": "unknowns ledger oracle CSV with 6 data rows"
+      },
+      "fileName": "unknowns-ledger.csv",
+      "header": ["unknown", "status", "resolution", "router_required"],
+      "ledger": "unknowns",
+      "rowCount": 6
+    },
+    {
+      "evidence": {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.ledger.workflow.source",
+        "source": "workflow-ledger.csv",
+        "summary": "workflow ledger oracle CSV with 5 data rows"
+      },
+      "fileName": "workflow-ledger.csv",
+      "header": [
+        "workflow",
+        "purpose",
+        "mutates_checkout",
+        "artifact_contract",
+        "role_contracts",
+        "compatibility"
+      ],
+      "ledger": "workflow",
+      "rowCount": 5
+    }
+  ],
+  "id": "aco.ledger-bundle.fixture",
+  "kind": "ledger-bundle",
+  "risks": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.8",
+          "source": "risk-ledger.csv#L9",
+          "summary": "risk Approval waivers become permanent from risk.approval-waivers-become-permanent"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.approval-waivers-become-permanent",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "gates",
+      "raw": {
+        "impact": "unsafe readiness claims",
+        "mitigation": "approval scoped to run and contract hash",
+        "owner": "gates",
+        "risk": "Approval waivers become permanent"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 9
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "unsafe readiness claims",
+        "mitigation": "approval scoped to run and contract hash",
+        "risk": "Approval waivers become permanent"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.1",
+          "source": "risk-ledger.csv#L2",
+          "summary": "risk Copying exploratory branch wholesale from risk.copying-exploratory-branch-wholesale"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.copying-exploratory-branch-wholesale",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "implementation lead",
+      "raw": {
+        "impact": "keeps coupling and hidden side effects",
+        "mitigation": "new dev branch, port by manifest-backed slices",
+        "owner": "implementation lead",
+        "risk": "Copying exploratory branch wholesale"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 2
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "keeps coupling and hidden side effects",
+        "mitigation": "new dev branch, port by manifest-backed slices",
+        "risk": "Copying exploratory branch wholesale"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.3",
+          "source": "risk-ledger.csv#L4",
+          "summary": "risk Graph refresh hidden in compile/status from risk.graph-refresh-hidden-in-compile-status"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.graph-refresh-hidden-in-compile-status",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-research",
+      "raw": {
+        "impact": "unexpected network/artifact mutation",
+        "mitigation": "graph refresh approval-gated command only",
+        "owner": "aco-research",
+        "risk": "Graph refresh hidden in compile/status"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 4
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "unexpected network/artifact mutation",
+        "mitigation": "graph refresh approval-gated command only",
+        "risk": "Graph refresh hidden in compile/status"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.5",
+          "source": "risk-ledger.csv#L6",
+          "summary": "risk Path confusion source vs worktree vs artifacts from risk.path-confusion-source-vs-worktree-vs-artifacts"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.path-confusion-source-vs-worktree-vs-artifacts",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-paths/adapters",
+      "raw": {
+        "impact": "nested worktrees and corrupted codebase cwd",
+        "mitigation": "branded paths and canonical layout",
+        "owner": "aco-paths/adapters",
+        "risk": "Path confusion source vs worktree vs artifacts"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 6
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "nested worktrees and corrupted codebase cwd",
+        "mitigation": "branded paths and canonical layout",
+        "risk": "Path confusion source vs worktree vs artifacts"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.7",
+          "source": "risk-ledger.csv#L8",
+          "summary": "risk Provider manifests overpromise capabilities from risk.provider-manifests-overpromise-capabilities"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.provider-manifests-overpromise-capabilities",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "provider adapters",
+      "raw": {
+        "impact": "runtime failures",
+        "mitigation": "capability matrix requires evidence status and fallback",
+        "owner": "provider adapters",
+        "risk": "Provider manifests overpromise capabilities"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 8
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "runtime failures",
+        "mitigation": "capability matrix requires evidence status and fallback",
+        "risk": "Provider manifests overpromise capabilities"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.6",
+          "source": "risk-ledger.csv#L7",
+          "summary": "risk Schema drift without fixtures from risk.schema-drift-without-fixtures"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.schema-drift-without-fixtures",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "QA",
+      "raw": {
+        "impact": "breaks integrations silently",
+        "mitigation": "golden compatibility tests",
+        "owner": "QA",
+        "risk": "Schema drift without fixtures"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 7
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "breaks integrations silently",
+        "mitigation": "golden compatibility tests",
+        "risk": "Schema drift without fixtures"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.2",
+          "source": "risk-ledger.csv#L3",
+          "summary": "risk Unsupported Codex subagent/tool restriction claims from risk.unsupported-codex-subagent-tool-restriction-claims"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.unsupported-codex-subagent-tool-restriction-claims",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "aco-codex",
+      "raw": {
+        "impact": "false safety guarantees",
+        "mitigation": "role contracts are artifact contracts unless runtime is proved",
+        "owner": "aco-codex",
+        "risk": "Unsupported Codex subagent/tool restriction claims"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 3
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "false safety guarantees",
+        "mitigation": "role contracts are artifact contracts unless runtime is proved",
+        "risk": "Unsupported Codex subagent/tool restriction claims"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.risk.4",
+          "source": "risk-ledger.csv#L5",
+          "summary": "risk Web imports server internals from risk.web-imports-server-internals"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "risk.web-imports-server-internals",
+      "kind": "ledger-entry",
+      "ledger": "risk",
+      "owner": "web/API",
+      "raw": {
+        "impact": "tight coupling and type drift",
+        "mitigation": "generated API types only",
+        "owner": "web/API",
+        "risk": "Web imports server internals"
+      },
+      "source": {
+        "fileName": "risk-ledger.csv",
+        "ledger": "risk",
+        "rowNumber": 5
+      },
+      "status": "tracked",
+      "subject": {
+        "impact": "tight coupling and type drift",
+        "mitigation": "generated API types only",
+        "risk": "Web imports server internals"
+      }
+    }
+  ],
+  "schemaVersion": "aco.ledger-bundle.v1",
+  "tools": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.7",
+          "source": "tool-availability-ledger.csv#L8",
+          "summary": "tool BMAD skills from tool.bmad-skills"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.bmad-skills",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "advisory routing",
+        "fallback": "unknown-help route",
+        "preconditions": "installed skill docs/manifests",
+        "safety": "read-only advisory",
+        "status": "required for BMAD parity",
+        "tool": "BMAD skills"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 8
+      },
+      "status": "required",
+      "subject": {
+        "category": "advisory routing",
+        "fallback": "unknown-help route",
+        "preconditions": "installed skill docs/manifests",
+        "safety": "read-only",
+        "tool": "BMAD skills"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.2",
+          "source": "tool-availability-ledger.csv#L3",
+          "summary": "tool Bun from tool.bun"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.bun",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "runtime",
+        "fallback": "blocked validation",
+        "preconditions": "dependencies installed",
+        "safety": "can run tests/scripts",
+        "status": "required",
+        "tool": "Bun"
+      },
+      "safety": "can-run-tests",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 3
+      },
+      "status": "required",
+      "subject": {
+        "category": "runtime",
+        "fallback": "blocked validation",
+        "preconditions": "dependencies installed",
+        "safety": "can-run-tests",
+        "tool": "Bun"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.9",
+          "source": "tool-availability-ledger.csv#L10",
+          "summary": "tool Claude SDK from tool.claude-sdk"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.claude-sdk",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "provider unavailable",
+        "preconditions": "auth configured",
+        "safety": "runtime dependent",
+        "status": "existing built-in",
+        "tool": "Claude SDK"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 10
+      },
+      "status": "existing-built-in",
+      "subject": {
+        "category": "provider",
+        "fallback": "provider unavailable",
+        "preconditions": "auth configured",
+        "safety": "runtime-dependent",
+        "tool": "Claude SDK"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.8",
+          "source": "tool-availability-ledger.csv#L9",
+          "summary": "tool Codex SDK/harness from tool.codex-sdk-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.codex-sdk-harness",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "bootstrap-only / deferred runtime",
+        "preconditions": "SDK configured",
+        "safety": "runtime dependent",
+        "status": "required for Codex provider parity",
+        "tool": "Codex SDK/harness"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 9
+      },
+      "status": "required",
+      "subject": {
+        "category": "provider",
+        "fallback": "bootstrap-only / deferred runtime",
+        "preconditions": "SDK configured",
+        "safety": "runtime-dependent",
+        "tool": "Codex SDK/harness"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.5",
+          "source": "tool-availability-ledger.csv#L6",
+          "summary": "tool Context7 from tool.context7"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.context7",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "docs evidence",
+        "fallback": "manual docs evidence",
+        "preconditions": "configured tool",
+        "safety": "read-only if configured",
+        "status": "optional/conditional",
+        "tool": "Context7"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 6
+      },
+      "status": "optional-conditional",
+      "subject": {
+        "category": "docs evidence",
+        "fallback": "manual docs evidence",
+        "preconditions": "configured tool",
+        "safety": "read-only",
+        "tool": "Context7"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.1",
+          "source": "tool-availability-ledger.csv#L2",
+          "summary": "tool Git from tool.git"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.git",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "repo-state",
+        "fallback": "mark repo evidence unknown",
+        "preconditions": "repo root available",
+        "safety": "read-only by default",
+        "status": "required",
+        "tool": "Git"
+      },
+      "safety": "read-only-by-default",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 2
+      },
+      "status": "required",
+      "subject": {
+        "category": "repo-state",
+        "fallback": "mark repo evidence unknown",
+        "preconditions": "repo root available",
+        "safety": "read-only-by-default",
+        "tool": "Git"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-gated",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.6",
+          "source": "tool-availability-ledger.csv#L7",
+          "summary": "tool Graphify from tool.graphify"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.graphify",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "graph evidence",
+        "fallback": "waiver/approval_required",
+        "preconditions": "approved graph refresh",
+        "safety": "writes graph artifacts",
+        "status": "required for graph freshness",
+        "tool": "Graphify"
+      },
+      "safety": "writes-graph-artifacts",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 7
+      },
+      "status": "required",
+      "subject": {
+        "category": "graph evidence",
+        "fallback": "waiver/approval_required",
+        "preconditions": "approved graph refresh",
+        "safety": "writes-graph-artifacts",
+        "tool": "Graphify"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.3",
+          "source": "tool-availability-ledger.csv#L4",
+          "summary": "tool OPA from tool.opa"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.opa",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "policy",
+        "fallback": "policy gate blocked",
+        "preconditions": "installed",
+        "safety": "read-only",
+        "status": "required for policy gate",
+        "tool": "OPA"
+      },
+      "safety": "read-only",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 4
+      },
+      "status": "required",
+      "subject": {
+        "category": "policy",
+        "fallback": "policy gate blocked",
+        "preconditions": "installed",
+        "safety": "read-only",
+        "tool": "OPA"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.4",
+          "source": "tool-availability-ledger.csv#L5",
+          "summary": "tool OpenAI docs MCP from tool.openai-docs-mcp"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.openai-docs-mcp",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "docs evidence",
+        "fallback": "Context7/manual",
+        "preconditions": "configured MCP",
+        "safety": "may need auth/OAuth",
+        "status": "optional/conditional",
+        "tool": "OpenAI docs MCP"
+      },
+      "safety": "may-need-auth",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 5
+      },
+      "status": "optional-conditional",
+      "subject": {
+        "category": "docs evidence",
+        "fallback": "Context7/manual",
+        "preconditions": "configured MCP",
+        "safety": "may-need-auth",
+        "tool": "OpenAI docs MCP"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.tool.10",
+          "source": "tool-availability-ledger.csv#L11",
+          "summary": "tool Pi SDK from tool.pi-sdk"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "tool.pi-sdk",
+      "kind": "ledger-entry",
+      "ledger": "tool",
+      "owner": "aco-ledgers",
+      "raw": {
+        "category": "provider",
+        "fallback": "community provider unavailable",
+        "preconditions": "package/config available",
+        "safety": "runtime dependent",
+        "status": "community reference",
+        "tool": "Pi SDK"
+      },
+      "safety": "runtime-dependent",
+      "source": {
+        "fileName": "tool-availability-ledger.csv",
+        "ledger": "tool",
+        "rowNumber": 11
+      },
+      "status": "community-reference",
+      "subject": {
+        "category": "provider",
+        "fallback": "community provider unavailable",
+        "preconditions": "package/config available",
+        "safety": "runtime-dependent",
+        "tool": "Pi SDK"
+      }
+    }
+  ],
+  "unknowns": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.6",
+          "source": "unknowns-ledger.csv#L7",
+          "summary": "unknown All generated bundled defaults affected from unknown.all-generated-bundled-defaults-affected"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.all-generated-bundled-defaults-affected",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "run generate/check bundled",
+        "router_required": "no",
+        "status": "partial",
+        "unknown": "All generated bundled defaults affected"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 7
+      },
+      "status": "partial",
+      "subject": {
+        "resolution": "run generate/check bundled",
+        "routerRequired": false,
+        "unknown": "All generated bundled defaults affected"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.5",
+          "source": "unknowns-ledger.csv#L6",
+          "summary": "unknown All web UI component changes from unknown.all-web-ui-component-changes"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.all-web-ui-component-changes",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "local diff and UI tests",
+        "router_required": "no",
+        "status": "partial",
+        "unknown": "All web UI component changes"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 6
+      },
+      "status": "partial",
+      "subject": {
+        "resolution": "local diff and UI tests",
+        "routerRequired": false,
+        "unknown": "All web UI component changes"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.3",
+          "source": "unknowns-ledger.csv#L4",
+          "summary": "unknown Current branch test pass/fail state from unknown.current-branch-test-pass-fail-state"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.current-branch-test-pass-fail-state",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "run validation on branch",
+        "router_required": "no",
+        "status": "unknown",
+        "unknown": "Current branch test pass/fail state"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 4
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "run validation on branch",
+        "routerRequired": false,
+        "unknown": "Current branch test pass/fail state"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.1",
+          "source": "unknowns-ledger.csv#L2",
+          "summary": "unknown Exact 233-file changed list and full 50k-line diff from unknown.exact-233-file-changed-list-and-full-50k-line-diff"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.exact-233-file-changed-list-and-full-50k-line-diff",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "capture via local git diff in Codex environment",
+        "router_required": "yes",
+        "status": "unknown in this session",
+        "unknown": "Exact 233-file changed list and full 50k-line diff"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 2
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "capture via local git diff in Codex environment",
+        "routerRequired": true,
+        "unknown": "Exact 233-file changed list and full 50k-line diff"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "low",
+      "evidence": [
+        {
+          "confidence": "low",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.2",
+          "source": "unknowns-ledger.csv#L3",
+          "summary": "unknown Exact runtime capabilities of real Codex harness from unknown.exact-runtime-capabilities-of-real-codex-harness"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.exact-runtime-capabilities-of-real-codex-harness",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "provider capability tests and docs evidence",
+        "router_required": "yes",
+        "status": "unknown",
+        "unknown": "Exact runtime capabilities of real Codex harness"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 3
+      },
+      "status": "unknown",
+      "subject": {
+        "resolution": "provider capability tests and docs evidence",
+        "routerRequired": true,
+        "unknown": "Exact runtime capabilities of real Codex harness"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-gated",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.unknowns.4",
+          "source": "unknowns-ledger.csv#L5",
+          "summary": "unknown Whether party-mode-uncertainty-router exists as executable command from unknown.whether-party-mode-uncertainty-router-exists-as-executable-command"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "unknown.whether-party-mode-uncertainty-router-exists-as-executable-command",
+      "kind": "ledger-entry",
+      "ledger": "unknowns",
+      "owner": "aco-ledgers",
+      "raw": {
+        "resolution": "search local repo and BMAD skill manifests",
+        "router_required": "yes",
+        "status": "not found in visible branch evidence",
+        "unknown": "Whether party-mode-uncertainty-router exists as executable command"
+      },
+      "source": {
+        "fileName": "unknowns-ledger.csv",
+        "ledger": "unknowns",
+        "rowNumber": 5
+      },
+      "status": "not-found",
+      "subject": {
+        "resolution": "search local repo and BMAD skill manifests",
+        "routerRequired": true,
+        "unknown": "Whether party-mode-uncertainty-router exists as executable command"
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve-harden",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.2",
+          "source": "workflow-ledger.csv#L3",
+          "summary": "workflow archon-aco-adversarial-loop from workflow.archon-aco-adversarial-loop"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-aco-adversarial-loop",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "aco-adversarial-loop/*",
+        "compatibility": "preserve-harden",
+        "mutates_checkout": "false in artifact-only phase",
+        "purpose": "ACO-grounded contracted adversarial implementation loop",
+        "role_contracts": "coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",
+        "workflow": "archon-aco-adversarial-loop"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 3
+      },
+      "status": "preserve-harden",
+      "subject": {
+        "artifactContract": "aco-adversarial-loop/*",
+        "compatibility": "preserve-harden",
+        "mutatesCheckout": false,
+        "mutatesCheckoutRaw": "false in artifact-only phase",
+        "purpose": "ACO-grounded contracted adversarial implementation loop",
+        "roleContracts": [
+          "coordinator",
+          "skill curator",
+          "BMAD reviewer",
+          "search",
+          "planner",
+          "contract",
+          "generator",
+          "QA",
+          "evaluator",
+          "feedback/handoff"
+        ],
+        "workflow": "archon-aco-adversarial-loop"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "existing-reference-only",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.3",
+          "source": "workflow-ledger.csv#L4",
+          "summary": "workflow archon-adversarial-dev from workflow.archon-adversarial-dev"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-adversarial-dev",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "contracts/feedback/app/state",
+        "compatibility": "existing reference only",
+        "mutates_checkout": "artifact app repo",
+        "purpose": "GAN-style generation/evaluation app creation",
+        "role_contracts": "negotiator,generator,evaluator",
+        "workflow": "archon-adversarial-dev"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 4
+      },
+      "status": "existing-reference-only",
+      "subject": {
+        "artifactContract": "contracts/feedback/app/state",
+        "compatibility": "existing-reference-only",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "artifact app repo",
+        "purpose": "GAN-style generation/evaluation app creation",
+        "roleContracts": ["negotiator", "generator", "evaluator"],
+        "workflow": "archon-adversarial-dev"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-existing",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.4",
+          "source": "workflow-ledger.csv#L5",
+          "summary": "workflow archon-piv-loop from workflow.archon-piv-loop"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-piv-loop",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "plan/validation/progress",
+        "compatibility": "preserve existing",
+        "mutates_checkout": "yes when implementing",
+        "purpose": "plan-implement-validate",
+        "role_contracts": "planner,implementer,validator",
+        "workflow": "archon-piv-loop"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 5
+      },
+      "status": "preserve-existing",
+      "subject": {
+        "artifactContract": "plan/validation/progress",
+        "compatibility": "preserve-existing",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "yes when implementing",
+        "purpose": "plan-implement-validate",
+        "roleContracts": ["planner", "implementer", "validator"],
+        "workflow": "archon-piv-loop"
+      }
+    },
+    {
+      "approvalRequired": true,
+      "compatibility": "preserve-existing",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.5",
+          "source": "workflow-ledger.csv#L6",
+          "summary": "workflow archon-workflow-builder from workflow.archon-workflow-builder"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.archon-workflow-builder",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "generated-workflow.yaml",
+        "compatibility": "preserve existing",
+        "mutates_checkout": "writes workflow when installing",
+        "purpose": "generate workflows from user input",
+        "role_contracts": "intent extraction, yaml generation, validation, install",
+        "workflow": "archon-workflow-builder"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 6
+      },
+      "status": "preserve-existing",
+      "subject": {
+        "artifactContract": "generated-workflow.yaml",
+        "compatibility": "preserve-existing",
+        "mutatesCheckout": true,
+        "mutatesCheckoutRaw": "writes workflow when installing",
+        "purpose": "generate workflows from user input",
+        "roleContracts": ["intent extraction", "yaml generation", "validation", "install"],
+        "workflow": "archon-workflow-builder"
+      }
+    },
+    {
+      "approvalRequired": false,
+      "compatibility": "preserve",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "confidence": "medium",
+          "freshness": "unknown",
+          "id": "evidence.ledger.workflow.1",
+          "source": "workflow-ledger.csv#L2",
+          "summary": "workflow context-orchestrate from workflow.context-orchestrate"
+        }
+      ],
+      "freshness": "unknown",
+      "id": "workflow.context-orchestrate",
+      "kind": "ledger-entry",
+      "ledger": "workflow",
+      "owner": "aco-workflows",
+      "raw": {
+        "artifact_contract": "context-orchestrator/*",
+        "compatibility": "preserve",
+        "mutates_checkout": "false",
+        "purpose": "status + ledgers + compile + approval + handoff",
+        "role_contracts": "status, ledgers, compile, approval, handoff",
+        "workflow": "context-orchestrate"
+      },
+      "source": {
+        "fileName": "workflow-ledger.csv",
+        "ledger": "workflow",
+        "rowNumber": 2
+      },
+      "status": "preserve",
+      "subject": {
+        "artifactContract": "context-orchestrator/*",
+        "compatibility": "preserve",
+        "mutatesCheckout": false,
+        "mutatesCheckoutRaw": "false",
+        "purpose": "status + ledgers + compile + approval + handoff",
+        "roleContracts": ["status", "ledgers", "compile", "approval", "handoff"],
+        "workflow": "context-orchestrate"
+      }
+    }
+  ]
+}

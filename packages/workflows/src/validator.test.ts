@@ -46,6 +46,30 @@ async function createCommandFile(name: string, content = '# Do something'): Prom
   await writeFile(join(dir, `${name}.md`), content);
 }
 
+async function withIsolatedArchonHome<T>(run: () => Promise<T>): Promise<T> {
+  const homeDir = await mkdtemp(join(tmpdir(), 'validator-home-empty-'));
+  const originalArchonHome = process.env.ARCHON_HOME;
+  const originalArchonDocker = process.env.ARCHON_DOCKER;
+  process.env.ARCHON_HOME = homeDir;
+  delete process.env.ARCHON_DOCKER;
+
+  try {
+    return await run();
+  } finally {
+    await rm(homeDir, { recursive: true, force: true });
+    if (originalArchonHome === undefined) {
+      delete process.env.ARCHON_HOME;
+    } else {
+      process.env.ARCHON_HOME = originalArchonHome;
+    }
+    if (originalArchonDocker === undefined) {
+      delete process.env.ARCHON_DOCKER;
+    } else {
+      process.env.ARCHON_DOCKER = originalArchonDocker;
+    }
+  }
+}
+
 // =============================================================================
 // levenshtein
 // =============================================================================
@@ -275,12 +299,16 @@ describe('discoverAvailableCommands', () => {
   test('returns sorted list', async () => {
     await createCommandFile('zebra');
     await createCommandFile('alpha');
-    const commands = await discoverAvailableCommands(tmpDir, { loadDefaultCommands: false });
+    const commands = await withIsolatedArchonHome(() =>
+      discoverAvailableCommands(tmpDir, { loadDefaultCommands: false })
+    );
     expect(commands).toEqual(['alpha', 'zebra']);
   });
 
   test('returns empty array when no commands directory', async () => {
-    const commands = await discoverAvailableCommands(tmpDir, { loadDefaultCommands: false });
+    const commands = await withIsolatedArchonHome(() =>
+      discoverAvailableCommands(tmpDir, { loadDefaultCommands: false })
+    );
     expect(commands).toEqual([]);
   });
 

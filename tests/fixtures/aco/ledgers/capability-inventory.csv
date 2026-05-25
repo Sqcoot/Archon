@@ -1,0 +1,18 @@
+id,capability,current_surface,rewrite_action,required_artifact,status,confidence
+commands,Slash and CLI commands,aco bootstrap-codex; archon aco status; archon context *,preserve,CLI/command manifest,planned,medium
+workflows,Default workflows,context-orchestrate; archon-aco-adversarial-loop,preserve,workflow manifest + role contracts,planned,medium
+artifacts,"Prompt packages, capsules, ledgers, dossiers",JSON + markdown artifacts,preserve,artifact manifest,planned,medium
+tools,Tool availability ledger,"MCP, Context7, OpenAI docs, graph, CLI, git",preserve,tool ledger,planned,medium
+adapters,GitHub/GitLab/Gitea paths and assistant defaults,source/worktree/artifact separation,rewrite,adapter tests,planned,medium
+gates,ACO validation gates,intake/preconditions/intent/evidence/policy/traceability/roles,preserve,gate registry,planned,medium
+manifests,"Capability, provider, workflow, artifact manifests",schema-first registry,rewrite,manifest schemas,planned,medium
+mcp-context7-docs,Docs evidence resolution,"OpenAI docs MCP, Context7, manual",preserve,docs evidence plan,planned,medium
+bmad,BMAD routing and advisory roles,route mapping and role contracts,preserve,BMAD role manifest,planned,medium
+subagents,Role contracts and subagent boundaries,"contractual, not unsupported runtime claims",preserve-harden,role contract checker,planned,medium
+agentic-search,Research discovery,surfaces/tests/evidence gaps,preserve,search report schema,planned,medium
+bootload,Session context bootload,capability snapshot and handoff,preserve,bootstrap context,planned,medium
+hooks-plugins,Hooks/plugins/future extensions,approval-gated manifests,rewrite,extension registry,planned,medium
+ledgers,"Tool, command, workflow, evidence ledgers",status/confidence/freshness/safety,preserve,ledger schemas,planned,medium
+graphify,Graph evidence and waiver closure,upstream graph reports,preserve,graph evidence schema,planned,medium
+providers,Claude/Codex/Pi/future providers,generic provider contract,rewrite,provider manifest,planned,medium
+codex-harness,Real Codex harness and bootstrap,capsules/events/session handoff,preserve-harden,Codex package,planned,medium

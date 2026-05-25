@@ -31,6 +31,17 @@
         "typescript": "^5.0.0",
       },
     },
+    "packages/aco-ledgers": {
+      "name": "@archon/aco-ledgers",
+      "version": "0.3.12",
+      "dependencies": {
+        "@archon/aco-core": "workspace:*",
+        "zod": "^3.25.28",
+      },
+      "peerDependencies": {
+        "typescript": "^5.0.0",
+      },
+    },
     "packages/adapters": {
       "name": "@archon/adapters",
       "version": "0.3.12",
@@ -271,6 +282,8 @@
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.93.0", "", { "dependencies": { "json-schema-to-ts": "^3.1.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-q9vaSZQVFx6B/gPxetGYfLXSJD5v0sOmh0OpZDq7yCrTSA+Rscvrtyol7JJTW40wEpQB4U1B4JXzxQitbQ3CAA=="],
 
     "@archon/aco-core": ["@archon/aco-core@workspace:packages/aco-core"],
+
+    "@archon/aco-ledgers": ["@archon/aco-ledgers@workspace:packages/aco-ledgers"],
 
     "@archon/adapters": ["@archon/adapters@workspace:packages/adapters"],
 
