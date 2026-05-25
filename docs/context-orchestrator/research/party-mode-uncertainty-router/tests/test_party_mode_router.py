@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ROUTER = ROOT / "hooks" / "party_mode_router.py"
+HOOKS_JSON = ROOT / "hooks" / "hooks.json"
 
 
 class PartyModeRouterTests(unittest.TestCase):
@@ -68,6 +69,30 @@ class PartyModeRouterTests(unittest.TestCase):
         })
         self.assertEqual({"continue": True}, output)
 
+    def test_force_mode_activates_without_uncertain_prompt(self):
+        self.env["PARTY_MODE"] = "force"
+        output = self.run_event({
+            "hook_event_name": "UserPromptSubmit",
+            "prompt": "Add a label to the profile button in src/Profile.tsx.",
+        })
+        context = output["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("PARTY_MODE environment override active", context)
+
+    def test_off_mode_disables_prompt_activation_and_enforcement(self):
+        self.env["PARTY_MODE"] = "off"
+        output = self.run_event({
+            "hook_event_name": "UserPromptSubmit",
+            "prompt": "Use party mode to investigate why auth is failing.",
+        })
+        self.assertEqual({"continue": True}, output)
+
+        output = self.run_event({
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Bash",
+            "tool_input": {"command": "git commit -m test"},
+        })
+        self.assertEqual({}, output)
+
     def test_pre_tool_use_denies_mutating_shell_command(self):
         self.activate()
         output = self.run_event({
@@ -113,6 +138,15 @@ class PartyModeRouterTests(unittest.TestCase):
         })
         self.assertEqual("deny", output["hookSpecificOutput"]["permissionDecision"])
 
+    def test_mcp_command_runner_tool_is_denied(self):
+        self.activate()
+        output = self.run_event({
+            "hook_event_name": "PreToolUse",
+            "tool_name": "mcp__filesystem__run_command",
+            "tool_input": {"command": "rm src/app.py"},
+        })
+        self.assertEqual("deny", output["hookSpecificOutput"]["permissionDecision"])
+
     def test_subagent_start_receives_readonly_contract(self):
         self.activate()
         output = self.run_event({
@@ -122,6 +156,26 @@ class PartyModeRouterTests(unittest.TestCase):
         })
         context = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("read-only investigation", context)
+
+    def test_subagent_stop_requires_complete_readonly_summary(self):
+        self.activate()
+        output = self.run_event({
+            "hook_event_name": "SubagentStop",
+            "last_assistant_message": "Evidence and artifact are attached.",
+            "stop_hook_active": False,
+        })
+        self.assertEqual("block", output["decision"])
+        self.assertIn("read-only confirmation", output["reason"])
+
+        output = self.run_event({
+            "hook_event_name": "SubagentStop",
+            "last_assistant_message": (
+                "Findings cite evidence. Artifact-ready summary written. "
+                "Risks listed. Confidence high. Read-only confirmed; no edits."
+            ),
+            "stop_hook_active": False,
+        })
+        self.assertEqual({"continue": True}, output)
 
     def test_stop_blocks_when_handoff_zip_missing(self):
         self.activate()
@@ -151,6 +205,30 @@ class PartyModeRouterTests(unittest.TestCase):
             "stop_hook_active": False,
         })
         self.assertEqual({"continue": True}, output)
+
+    def test_stop_requires_top_level_handoff_files(self):
+        self.activate()
+        self.artifact_dir.mkdir(parents=True)
+        with zipfile.ZipFile(self.zip_path, "w") as archive:
+            for name in [
+                "nested/investigation_report.md",
+                "nested/next_goal.md",
+                "nested/evidence_manifest.yaml",
+                "nested/readonly_policy_result.md",
+                "artifacts/notes.md",
+            ]:
+                archive.writestr(name, f"{name}\n")
+        output = self.run_event({
+            "hook_event_name": "Stop",
+            "last_assistant_message": f"Created {self.zip_path}",
+            "stop_hook_active": False,
+        })
+        self.assertEqual("block", output["decision"])
+        self.assertIn("investigation_report.md", output["reason"])
+
+    def test_hooks_config_wires_subagent_stop(self):
+        hooks = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))["hooks"]
+        self.assertIn("SubagentStop", hooks)
 
 
 def shlex_quote(value):

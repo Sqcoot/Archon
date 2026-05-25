@@ -63,6 +63,18 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PARTY_MODE_ROUTER:-${CODEX_HOME:-$HOME/.codex}/hooks/party_mode_router.py}\"",
+            "timeout": 30,
+            "statusMessage": "Checking party-mode subagent evidence"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

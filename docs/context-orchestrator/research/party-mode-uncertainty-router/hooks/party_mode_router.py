@@ -82,6 +82,13 @@ MUTATING_MCP_WORDS = {
     "run_command",
 }
 
+MUTATING_MCP_PHRASES = {
+    "exec_command",
+    "execute_command",
+    "run_command",
+    "shell_command",
+}
+
 ALWAYS_DENY_BASH_PATTERNS: Sequence[Tuple[str, str]] = (
     (r"(^|[;&|]\s*)apply_patch\b", "apply_patch edits files"),
     (r"(^|[;&|]\s*)git\s+(add|commit|checkout|reset|clean|rebase|merge|am|apply|push|tag)\b", "git mutation"),
@@ -197,7 +204,7 @@ def write_state(event: Dict[str, Any], state: Dict[str, Any]) -> None:
 
 
 def read_state(event: Dict[str, Any]) -> Dict[str, Any]:
-    override = os.environ.get("PARTY_MODE", "").strip().lower()
+    override = party_mode_override()
     if override in {"0", "false", "off", "disable", "disabled"}:
         return base_state(event, False, 0, "PARTY_MODE environment override disabled")
     if override in {"1", "true", "force", "on", "active"}:
@@ -212,6 +219,10 @@ def read_state(event: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             continue
     return base_state(event)
+
+
+def party_mode_override() -> str:
+    return os.environ.get("PARTY_MODE", "").strip().lower()
 
 
 def append_state_list(event: Dict[str, Any], field: str, item: Dict[str, Any]) -> None:
@@ -446,9 +457,13 @@ def bash_mutation_reason(event: Dict[str, Any], state: Dict[str, Any]) -> Tuple[
 def mcp_mutation_reason(event: Dict[str, Any]) -> Tuple[bool, str]:
     tool_name = str(event.get("tool_name") or "")
     lowered_name = tool_name.lower()
+    normalized_name = re.sub(r"[^a-z0-9]+", "_", lowered_name).strip("_")
     name_words = set(re.split(r"[_\W]+", lowered_name))
     has_readonly_word = bool(name_words & READONLY_MCP_WORDS)
     has_mutating_word = bool(name_words & MUTATING_MCP_WORDS)
+    has_mutating_phrase = any(phrase in normalized_name for phrase in MUTATING_MCP_PHRASES)
+    if has_mutating_phrase:
+        return True, f"MCP tool name appears mutating: {tool_name}"
     if has_mutating_word and not has_readonly_word:
         return True, f"MCP tool name appears mutating: {tool_name}"
 
@@ -497,10 +512,20 @@ def context_with_state(state: Dict[str, Any]) -> str:
 
 
 def user_prompt_submit(event: Dict[str, Any]) -> None:
-    prompt = str(event.get("prompt") or "")
-    threshold = int(os.environ.get("PARTY_MODE_THRESHOLD", str(DEFAULT_THRESHOLD)))
-    score, reason = score_uncertainty(prompt)
-    active = score >= threshold
+    override = party_mode_override()
+    if override in {"0", "false", "off", "disable", "disabled"}:
+        score = 0
+        reason = "PARTY_MODE environment override disabled"
+        active = False
+    elif override in {"1", "true", "force", "on", "active"}:
+        score = 999
+        reason = "PARTY_MODE environment override active"
+        active = True
+    else:
+        prompt = str(event.get("prompt") or "")
+        threshold = int(os.environ.get("PARTY_MODE_THRESHOLD", str(DEFAULT_THRESHOLD)))
+        score, reason = score_uncertainty(prompt)
+        active = score >= threshold
     state = base_state(event, active, score, reason)
     state["activated_at"] = utc_now() if active else None
     write_state(event, state)
@@ -644,12 +669,26 @@ def subagent_stop(event: Dict[str, Any]) -> None:
         return
 
     msg = str(event.get("last_assistant_message") or "").lower()
-    required_terms = ("finding", "evidence", "artifact", "risk", "confidence")
-    found = sum(1 for term in required_terms if term in msg)
-    if found < 2:
+    requirements = {
+        "findings": bool(re.search(r"\bfinding(s)?\b", msg)),
+        "evidence references": "evidence" in msg,
+        "artifact-ready summary": bool(re.search(r"\bartifact(s)?\b|evidence_manifest|investigation_report|readonly_policy_result", msg)),
+        "risks": bool(re.search(r"\brisk(s)?\b", msg)),
+        "confidence": "confidence" in msg,
+        "read-only confirmation": bool(re.search(
+            r"read[-\s]?only|no (source )?(edit|edits|change|changes|mutation|mutations)|did not edit|no files? (changed|modified)",
+            msg,
+        )),
+    }
+    missing = [name for name, present in requirements.items() if not present]
+    if missing:
         emit({
             "decision": "block",
-            "reason": "Continue the party-mode subagent pass. Provide an artifact-ready summary with findings, evidence references, risks, confidence, and read-only confirmation.",
+            "reason": (
+                "Continue the party-mode subagent pass. Provide an artifact-ready summary with "
+                "findings, evidence references, risks, confidence, and read-only confirmation. "
+                "Missing: " + ", ".join(missing) + "."
+            ),
         })
     else:
         emit({"continue": True})
@@ -707,7 +746,7 @@ def zip_missing_artifacts(path: Path) -> Tuple[bool, List[str]]:
     missing = [
         required
         for required in REQUIRED_FINAL_ARTIFACTS
-        if not any(name == required or name.endswith("/" + required) for name in names)
+        if not any(name == required for name in names)
     ]
     if not any(name.startswith(SUPPORTING_ARTIFACT_PREFIX) and not name.endswith("/") for name in names):
         missing.append(f"{SUPPORTING_ARTIFACT_PREFIX} supporting artifacts")
