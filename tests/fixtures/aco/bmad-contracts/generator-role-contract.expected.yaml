@@ -1,0 +1,47 @@
+allowedTools:
+  - "Read"
+  - "Write"
+canClaimGoalCompletion: false
+certification: "not-certified-by-generator"
+completionClaimPolicy: "cannot-claim-completion"
+description: "Produces implementation reports but never certifies pass/fail or completion."
+evidence:
+  - confidence: "high"
+    freshness: "unknown"
+    id: "evidence.bmad.role-contracts"
+    source: "architecture/bmad-role-contracts.md"
+    summary: "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+  - confidence: "high"
+    freshness: "unknown"
+    id: "evidence.bmad.subagent-role-catalog"
+    source: "architecture/subagents-role-contracts.yaml"
+    summary: "Readonly S5 evidence lists the required role catalog and certifications"
+handoffInputs:
+  - "contract"
+  - "feedback"
+  - "compile"
+handoffOutputs:
+  - "generator report"
+id: "generator"
+kind: "aco-bmad-role-contract"
+nativeRuntimeProof:
+  []
+nativeRuntimeSupport: "unknown"
+owner: "aco-bmad-contracts"
+prohibitedActions:
+  - "certify pass/fail"
+  - "claim goal completion"
+  - "self-certify correctness"
+reads:
+  - "contract"
+  - "feedback"
+  - "compile"
+requiredEvidence:
+  - "contract"
+  - "feedback"
+  - "compile result"
+role: "Generator"
+runtimeKind: "workflow-artifact-contract"
+schemaVersion: "aco.role-contract.v1"
+writes:
+  - "generator report"

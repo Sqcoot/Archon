@@ -1,0 +1,359 @@
+{
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.bmad.role-contracts",
+      "source": "architecture/bmad-role-contracts.md",
+      "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.bmad.subagent-role-catalog",
+      "source": "architecture/subagents-role-contracts.yaml",
+      "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+    }
+  ],
+  "kind": "aco-bmad-role-registry",
+  "roles": [
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "none",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Classifies ambiguity, owning package, and routing needs.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["status", "ledgers", "compile"],
+      "handoffOutputs": ["coordinator triage"],
+      "id": "coordinator-triage",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify final readiness", "claim goal completion"],
+      "reads": ["status", "ledgers", "compile"],
+      "requiredEvidence": ["status", "ledgers", "compile result"],
+      "role": "Coordinator/Triage",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["coordinator triage"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "none",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Evaluates skill and method applicability without claiming runtime support.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["status", "ledgers", "compile", "triage"],
+      "handoffOutputs": ["skill curator report"],
+      "id": "skill-curator",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify runtime support", "claim goal completion"],
+      "reads": ["status", "ledgers", "compile", "triage"],
+      "requiredEvidence": ["triage packet", "skill evidence"],
+      "role": "Skill Curator",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["skill curator report"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "none",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Reviews role/process methodology and preserves gate authority boundaries.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["status", "compile", "triage"],
+      "handoffOutputs": ["BMAD review"],
+      "id": "bmad-reviewer",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["override gates", "claim goal completion"],
+      "reads": ["status", "compile", "triage"],
+      "requiredEvidence": ["compile result", "triage packet"],
+      "role": "BMAD Reviewer",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["BMAD review"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "none",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Produces search/evidence reports without certifying implementation correctness.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["status", "ledgers", "compile"],
+      "handoffOutputs": ["search report"],
+      "id": "agentic-search",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify implementation correctness", "claim goal completion"],
+      "reads": ["status", "ledgers", "compile"],
+      "requiredEvidence": ["status", "ledgers", "compile result"],
+      "role": "Agentic Search",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["search report"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "none",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Turns evidence into a plan or sprint plan without certifying completion.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["evidence", "search", "approval record"],
+      "handoffOutputs": ["plan", "sprint plan"],
+      "id": "planner",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify completion", "claim goal completion"],
+      "reads": ["evidence", "search", "approval record"],
+      "requiredEvidence": ["evidence", "search report", "approval record"],
+      "role": "Planner",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["plan", "sprint plan"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "artifact-complete",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Creates sprint contracts from plan and compile artifacts.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["plan", "compile"],
+      "handoffOutputs": ["sprint contract"],
+      "id": "contract",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify completion", "claim goal completion"],
+      "reads": ["plan", "compile"],
+      "requiredEvidence": ["plan", "compile result"],
+      "role": "Contract",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["sprint contract"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "not-certified-by-generator",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Produces implementation reports but never certifies pass/fail or completion.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["contract", "feedback", "compile"],
+      "handoffOutputs": ["generator report"],
+      "id": "generator",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": [
+        "certify pass/fail",
+        "claim goal completion",
+        "self-certify correctness"
+      ],
+      "reads": ["contract", "feedback", "compile"],
+      "requiredEvidence": ["contract", "feedback", "compile result"],
+      "role": "Generator",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["generator report"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": false,
+      "certification": "verifier-report-only",
+      "completionClaimPolicy": "cannot-claim-completion",
+      "description": "Verifies against contract and generator report without claiming final readiness.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["contract", "generator report"],
+      "handoffOutputs": ["verifier report"],
+      "id": "qa-verifier",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify final readiness", "claim goal completion"],
+      "reads": ["contract", "generator report"],
+      "requiredEvidence": ["contract", "generator report", "verification evidence"],
+      "role": "QA/Verifier",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["verifier report"]
+    },
+    {
+      "allowedTools": ["Read", "Write"],
+      "canClaimGoalCompletion": true,
+      "certification": "goal-completion-evaluator-only",
+      "completionClaimPolicy": "evaluator-only",
+      "description": "Issues the only verdict that can claim goal completion when evidence passes.",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.role-contracts",
+          "source": "architecture/bmad-role-contracts.md",
+          "summary": "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+        },
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.bmad.subagent-role-catalog",
+          "source": "architecture/subagents-role-contracts.yaml",
+          "summary": "Readonly S5 evidence lists the required role catalog and certifications"
+        }
+      ],
+      "handoffInputs": ["all evidence"],
+      "handoffOutputs": ["verdict"],
+      "id": "evaluator",
+      "kind": "aco-bmad-role-contract",
+      "nativeRuntimeProof": [],
+      "nativeRuntimeSupport": "unknown",
+      "owner": "aco-bmad-contracts",
+      "prohibitedActions": ["certify completion without original objective evidence"],
+      "reads": ["all evidence"],
+      "requiredEvidence": ["all evidence", "verifier report", "original objective"],
+      "role": "Evaluator",
+      "runtimeKind": "workflow-artifact-contract",
+      "schemaVersion": "aco.role-contract.v1",
+      "writes": ["verdict"]
+    }
+  ],
+  "schemaVersion": "aco.role-contract-catalog.v1"
+}

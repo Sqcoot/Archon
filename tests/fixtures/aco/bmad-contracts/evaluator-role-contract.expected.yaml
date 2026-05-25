@@ -1,0 +1,41 @@
+allowedTools:
+  - "Read"
+  - "Write"
+canClaimGoalCompletion: true
+certification: "goal-completion-evaluator-only"
+completionClaimPolicy: "evaluator-only"
+description: "Issues the only verdict that can claim goal completion when evidence passes."
+evidence:
+  - confidence: "high"
+    freshness: "unknown"
+    id: "evidence.bmad.role-contracts"
+    source: "architecture/bmad-role-contracts.md"
+    summary: "Readonly S5 evidence defines BMAD/ACO role boundaries and checker requirements"
+  - confidence: "high"
+    freshness: "unknown"
+    id: "evidence.bmad.subagent-role-catalog"
+    source: "architecture/subagents-role-contracts.yaml"
+    summary: "Readonly S5 evidence lists the required role catalog and certifications"
+handoffInputs:
+  - "all evidence"
+handoffOutputs:
+  - "verdict"
+id: "evaluator"
+kind: "aco-bmad-role-contract"
+nativeRuntimeProof:
+  []
+nativeRuntimeSupport: "unknown"
+owner: "aco-bmad-contracts"
+prohibitedActions:
+  - "certify completion without original objective evidence"
+reads:
+  - "all evidence"
+requiredEvidence:
+  - "all evidence"
+  - "verifier report"
+  - "original objective"
+role: "Evaluator"
+runtimeKind: "workflow-artifact-contract"
+schemaVersion: "aco.role-contract.v1"
+writes:
+  - "verdict"
