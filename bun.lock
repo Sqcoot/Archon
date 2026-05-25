@@ -21,6 +21,17 @@
         "typescript-eslint": "^8.48.0",
       },
     },
+    "packages/aco-codex": {
+      "name": "@archon/aco-codex",
+      "version": "0.3.12",
+      "dependencies": {
+        "@archon/aco-core": "workspace:*",
+        "zod": "^3.25.28",
+      },
+      "peerDependencies": {
+        "typescript": "^5.0.0",
+      },
+    },
     "packages/aco-core": {
       "name": "@archon/aco-core",
       "version": "0.3.12",
@@ -280,6 +291,8 @@
     "@anthropic-ai/claude-agent-sdk-win32-x64": ["@anthropic-ai/claude-agent-sdk-win32-x64@0.2.141", "", { "os": "win32", "cpu": "x64" }, "sha512-IXuP29YJuWbR5Q6xOHrjFVGG54V2s1FC61UVNwEN5fpxL09MwPnbwtQL6fqgzt/U1MP7vWAwpXZriYAklkH/mg=="],
 
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.93.0", "", { "dependencies": { "json-schema-to-ts": "^3.1.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-q9vaSZQVFx6B/gPxetGYfLXSJD5v0sOmh0OpZDq7yCrTSA+Rscvrtyol7JJTW40wEpQB4U1B4JXzxQitbQ3CAA=="],
+
+    "@archon/aco-codex": ["@archon/aco-codex@workspace:packages/aco-codex"],
 
     "@archon/aco-core": ["@archon/aco-core@workspace:packages/aco-core"],
 

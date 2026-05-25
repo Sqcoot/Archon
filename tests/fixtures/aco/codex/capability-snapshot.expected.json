@@ -1,0 +1,239 @@
+{
+  "capabilities": [
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "artifact-ref-attachment",
+      "question": "Can artifact refs be attached as files, or must they be pasted/summarized?",
+      "runtimeClaimed": false,
+      "status": "partial",
+      "summary": "S4 renders artifact refs and handoff text, but does not attach files at runtime."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "continuation-handoff-resume",
+      "question": "How are continuation/handoff states resumed after compaction?",
+      "runtimeClaimed": false,
+      "status": "partial",
+      "summary": "S4 renders a continuation handoff artifact; runtime resume semantics are deferred."
+    },
+    {
+      "approvalRequired": true,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "credential-path-writes",
+      "question": "What credential paths are read, and which writes require approval?",
+      "runtimeClaimed": false,
+      "status": "deferred_by_design",
+      "summary": "Credential IO is deliberately out of scope for S4."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "json-bootstrap-attachment",
+      "question": "Can the harness receive a JSON bootstrap attachment, or only markdown paste text?",
+      "runtimeClaimed": false,
+      "status": "partial",
+      "summary": "S4 renders JSON artifacts, but runtime attachment behavior is not implemented."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "machine-readable-failures",
+      "question": "What failure events are observable and machine-readable?",
+      "runtimeClaimed": false,
+      "status": "unknown",
+      "summary": "S4 schemas can represent results, but runtime failure observation is unproven."
+    },
+    {
+      "approvalRequired": true,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "mcp-attachment-scope",
+      "question": "Can MCP servers be attached per node, globally, or not at all?",
+      "runtimeClaimed": false,
+      "status": "unknown",
+      "summary": "MCP attachment scope and OAuth setup are deferred to future approved runtime work."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "native-subagent-launch",
+      "question": "Can subagents be launched as separate runtime entities?",
+      "runtimeClaimed": false,
+      "status": "unsupported",
+      "summary": "S4 makes no native Codex subagent launch claim."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "provider-config-inspection",
+      "question": "Can provider config be inspected without mutation?",
+      "runtimeClaimed": false,
+      "status": "unknown",
+      "summary": "Provider config inspection is not part of this pure package."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "runtime-event-observation",
+      "question": "Can a run distinguish Codex lifecycle events?",
+      "runtimeClaimed": false,
+      "status": "unknown",
+      "summary": "S4 models event labels; runtime event observation belongs to a later harness adapter."
+    },
+    {
+      "approvalRequired": false,
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.capability-checks",
+          "source": "codex/codex-harness-capability-checks.md",
+          "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+        }
+      ],
+      "id": "tool-restriction-enforcement",
+      "question": "Can tool allow/deny restrictions be enforced by runtime?",
+      "runtimeClaimed": false,
+      "status": "unsupported",
+      "summary": "S4 makes no runtime tool enforcement claim."
+    }
+  ],
+  "command": {
+    "approvalRequired": false,
+    "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+    "compatibility": "preserve",
+    "defaultMutates": "read-only",
+    "evidence": [
+      {
+        "confidence": "high",
+        "freshness": "unknown",
+        "id": "evidence.codex.bootstrap-command",
+        "source": "reference-surface-plan.json#commands.archon-aco-bootstrap-codex",
+        "summary": "Reference surface preserves archon aco bootstrap-codex command metadata"
+      }
+    ],
+    "kind": "codex-bootstrap-command",
+    "manifest": {
+      "approvalRequired": false,
+      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "compatibility": "preserve",
+      "evidence": [
+        {
+          "confidence": "high",
+          "freshness": "unknown",
+          "id": "evidence.codex.bootstrap-command",
+          "source": "reference-surface-plan.json#commands.archon-aco-bootstrap-codex",
+          "summary": "Reference surface preserves archon aco bootstrap-codex command metadata"
+        }
+      ],
+      "id": "command.archon-aco-bootstrap-codex",
+      "kind": "command-manifest",
+      "mutates": "read-only",
+      "owner": "aco-codex",
+      "purpose": "Emit Codex-ready bootstrap capsule",
+      "surface": "CLI/slash"
+    },
+    "owner": "aco-codex",
+    "writeArtifactMutates": "writes-artifacts"
+  },
+  "evidence": [
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.codex.harness-spec",
+      "source": "codex/real-codex-harness-spec.md",
+      "summary": "Readonly artifact defines CodexHarness contract and required bootstrap artifacts"
+    },
+    {
+      "confidence": "high",
+      "freshness": "unknown",
+      "id": "evidence.codex.capability-checks",
+      "source": "codex/codex-harness-capability-checks.md",
+      "summary": "Readonly artifact requires explicit supported/partial/unsupported/unknown/deferred_by_design statuses"
+    }
+  ],
+  "kind": "codex-capability-snapshot",
+  "nonClaims": [
+    "native subagent enforcement",
+    "native tool restriction enforcement",
+    "silent MCP OAuth setup",
+    "silent hook activation",
+    "silent provider credential writes",
+    "silent user config mutation"
+  ],
+  "provider": "codex",
+  "schemaVersion": "aco.codex-capability-snapshot.v1"
+}
