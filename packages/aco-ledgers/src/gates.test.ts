@@ -31,6 +31,39 @@ describe('ledger fixture parity gate', () => {
     });
   });
 
+  test('accepts optional freshness CSV column and fails closed on invalid freshness values', async () => {
+    const inputs = await loadLedgerInputs();
+    const result = await ledgerFixtureParityGate.run({
+      ...inputs,
+      command: appendFreshnessColumn(inputs.command, 'fresh'),
+    });
+
+    expect(result.status).toBe('passed');
+    if (result.status !== 'passed') throw new Error(result.errors.join('\n'));
+    expect(result.value.requiredCommand.freshness).toBe('fresh');
+    expect(
+      result.value.bundle.generatedFrom.find(source => source.ledger === 'command')?.header
+    ).toEqual([
+      'command',
+      'surface',
+      'purpose',
+      'safety',
+      'mutates',
+      'approval_required',
+      'owner',
+      'compatibility',
+      'freshness',
+    ]);
+
+    await expectGateFailure(
+      {
+        ...inputs,
+        command: appendFreshnessColumn(inputs.command, 'ancient'),
+      },
+      'invalid freshness'
+    );
+  });
+
   test('fails closed on missing required ledger and malformed headers', async () => {
     const inputs = await loadLedgerInputs();
     const missing = { ...inputs } as Record<string, unknown>;
@@ -101,7 +134,7 @@ describe('ledger fixture parity gate', () => {
           row.command === REQUIRED_COMMAND ? { ...row, approval_required: 'yes' } : row
         ),
       },
-      'approval mismatch'
+      'must not require approval'
     );
     await expectGateFailure(
       {
@@ -133,4 +166,10 @@ async function expectGateFailure(input: unknown, expectedMessage: string): Promi
     throw new Error(`expected gate failure, received ${result.status}`);
   }
   expect(result.errors.join('\n')).toContain(expectedMessage);
+}
+
+function appendFreshnessColumn(csv: string, freshness: string): string {
+  const [header, ...rows] = csv.trimEnd().split('\n');
+  if (header === undefined) return csv;
+  return `${header},freshness\n${rows.map(row => `${row},${freshness}`).join('\n')}\n`;
 }

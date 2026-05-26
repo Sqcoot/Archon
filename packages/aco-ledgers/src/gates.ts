@@ -85,7 +85,7 @@ function validateParity(bundle: LedgerBundle): readonly string[] {
     if (requiredCommand.mutates !== 'writes-artifacts') {
       errors.push('required ledgers command must be scoped artifact-writing');
     }
-    if (requiredCommand.subject.safety !== 'read-only or writes-artifacts') {
+    if (requiredCommand.subject.safety !== 'read-only-or-writes-artifacts') {
       errors.push('required ledgers command must have read-only or writes-artifacts safety');
     }
     if (requiredCommand.approvalRequired) {

@@ -64,17 +64,23 @@ interface RowWithSource<TRow> {
   readonly source: LedgerSourceRef;
 }
 
+interface ParsedLedgerRowsForLedger<TRow> {
+  readonly header: readonly string[];
+  readonly rows: readonly RowWithSource<TRow>[];
+}
+
 interface ParsedLedgerRows {
-  readonly artifact: readonly RowWithSource<ArtifactLedgerRow>[];
-  readonly capability: readonly RowWithSource<CapabilityLedgerRow>[];
-  readonly command: readonly RowWithSource<CommandLedgerRow>[];
-  readonly risk: readonly RowWithSource<RiskLedgerRow>[];
-  readonly tool: readonly RowWithSource<ToolAvailabilityLedgerRow>[];
-  readonly unknowns: readonly RowWithSource<UnknownsLedgerRow>[];
-  readonly workflow: readonly RowWithSource<WorkflowLedgerRow>[];
+  readonly artifact: ParsedLedgerRowsForLedger<ArtifactLedgerRow>;
+  readonly capability: ParsedLedgerRowsForLedger<CapabilityLedgerRow>;
+  readonly command: ParsedLedgerRowsForLedger<CommandLedgerRow>;
+  readonly risk: ParsedLedgerRowsForLedger<RiskLedgerRow>;
+  readonly tool: ParsedLedgerRowsForLedger<ToolAvailabilityLedgerRow>;
+  readonly unknowns: ParsedLedgerRowsForLedger<UnknownsLedgerRow>;
+  readonly workflow: ParsedLedgerRowsForLedger<WorkflowLedgerRow>;
 }
 
 type IssueList = readonly string[];
+const OPTIONAL_FRESHNESS_HEADER = 'freshness';
 
 const LEDGER_SPECS = {
   artifact: {
@@ -153,13 +159,13 @@ export function parseLedgerCsvInputs(input: LedgerCsvInputs): ParseResult<Ledger
   return {
     ok: true,
     value: {
-      artifact: parsed.value.artifact.map(item => item.row),
-      capability: parsed.value.capability.map(item => item.row),
-      command: parsed.value.command.map(item => item.row),
-      risk: parsed.value.risk.map(item => item.row),
-      tool: parsed.value.tool.map(item => item.row),
-      unknowns: parsed.value.unknowns.map(item => item.row),
-      workflow: parsed.value.workflow.map(item => item.row),
+      artifact: parsed.value.artifact.rows.map(item => item.row),
+      capability: parsed.value.capability.rows.map(item => item.row),
+      command: parsed.value.command.rows.map(item => item.row),
+      risk: parsed.value.risk.rows.map(item => item.row),
+      tool: parsed.value.tool.rows.map(item => item.row),
+      unknowns: parsed.value.unknowns.rows.map(item => item.row),
+      workflow: parsed.value.workflow.rows.map(item => item.row),
     },
   };
 }
@@ -169,13 +175,13 @@ export function buildLedgerBundle(input: LedgerBundleInput): ParseResult<LedgerB
   if (!parsedRows.ok) return parsedRows;
 
   const issues: string[] = [];
-  const artifacts = collectMapped(parsedRows.value.artifact, toArtifactEntry, issues);
-  const capabilities = collectMapped(parsedRows.value.capability, toCapabilityEntry, issues);
-  const commands = collectMapped(parsedRows.value.command, toCommandEntry, issues);
-  const risks = collectMapped(parsedRows.value.risk, toRiskEntry, issues);
-  const tools = collectMapped(parsedRows.value.tool, toToolEntry, issues);
-  const unknowns = collectMapped(parsedRows.value.unknowns, toUnknownEntry, issues);
-  const workflows = collectMapped(parsedRows.value.workflow, toWorkflowEntry, issues);
+  const artifacts = collectMapped(parsedRows.value.artifact.rows, toArtifactEntry, issues);
+  const capabilities = collectMapped(parsedRows.value.capability.rows, toCapabilityEntry, issues);
+  const commands = collectMapped(parsedRows.value.command.rows, toCommandEntry, issues);
+  const risks = collectMapped(parsedRows.value.risk.rows, toRiskEntry, issues);
+  const tools = collectMapped(parsedRows.value.tool.rows, toToolEntry, issues);
+  const unknowns = collectMapped(parsedRows.value.unknowns.rows, toUnknownEntry, issues);
+  const workflows = collectMapped(parsedRows.value.workflow.rows, toWorkflowEntry, issues);
   const entries = sortEntries([
     ...artifacts,
     ...capabilities,
@@ -196,7 +202,11 @@ export function buildLedgerBundle(input: LedgerBundleInput): ParseResult<LedgerB
     id: 'aco.ledger-bundle.fixture',
     schemaVersion: 'aco.ledger-bundle.v1',
     generatedFrom: ledgerNameValues.map(ledger =>
-      sourceLedgerProvenance(ledger, parsedRows.value[ledger].length)
+      sourceLedgerProvenance(
+        ledger,
+        parsedRows.value[ledger].header,
+        parsedRows.value[ledger].rows.length
+      )
     ),
     counts: {
       artifact: artifacts.length,
@@ -295,24 +305,31 @@ function parseRowsForLedger<TRow>(
   ledger: LedgerName,
   value: unknown,
   schema: z.ZodType<TRow>
-): ParseResult<readonly RowWithSource<TRow>[]> {
+): ParseResult<ParsedLedgerRowsForLedger<TRow>> {
   const spec = LEDGER_SPECS[ledger];
-  const parsed =
-    typeof value === 'string'
-      ? parseCsvRows(ledger, value, schema)
-      : parseObjectRows(value, schema);
+  let parsed: ParseResult<{ readonly header: readonly string[]; readonly rows: readonly TRow[] }>;
+  if (typeof value === 'string') {
+    parsed = parseCsvRows(ledger, value, schema);
+  } else {
+    const objectRows = parseObjectRows(value, schema);
+    if (!objectRows.ok) return objectRows;
+    parsed = { ok: true, value: { header: [...spec.header], rows: objectRows.value } };
+  }
   if (!parsed.ok) return parsed;
 
   return {
     ok: true,
-    value: parsed.value.map((row, index) => ({
-      row,
-      source: {
-        ledger,
-        fileName: spec.fileName,
-        rowNumber: index + 2,
-      },
-    })),
+    value: {
+      header: parsed.value.header,
+      rows: parsed.value.rows.map((row, index) => ({
+        row,
+        source: {
+          ledger,
+          fileName: spec.fileName,
+          rowNumber: index + 2,
+        },
+      })),
+    },
   };
 }
 
@@ -320,7 +337,7 @@ function parseCsvRows<TRow>(
   ledger: LedgerName,
   input: string,
   schema: z.ZodType<TRow>
-): ParseResult<readonly TRow[]> {
+): ParseResult<{ readonly header: readonly string[]; readonly rows: readonly TRow[] }> {
   const spec = LEDGER_SPECS[ledger];
   const parsed = parseCsv(input);
   if (!parsed.ok) return parsed;
@@ -328,27 +345,26 @@ function parseCsvRows<TRow>(
   if (header === undefined) {
     return { ok: false, issues: [`${ledger} ledger has no header`] };
   }
-  if (!sameHeader(header, spec.header)) {
+  const resolvedHeader = resolveCsvHeader(ledger, header, spec.header);
+  if (!resolvedHeader.ok) {
     return {
       ok: false,
-      issues: [
-        `${ledger} ledger malformed header: expected ${spec.header.join(',')} but received ${header.join(',')}`,
-      ],
+      issues: resolvedHeader.issues,
     };
   }
 
   const rows: Record<string, string>[] = [];
   const issues: string[] = [];
   records.forEach((record, index) => {
-    if (record.length !== spec.header.length) {
+    if (record.length !== resolvedHeader.value.length) {
       issues.push(
-        `${ledger} ledger row ${index + 2} has ${record.length} cells; expected ${spec.header.length}`
+        `${ledger} ledger row ${index + 2} has ${record.length} cells; expected ${resolvedHeader.value.length}`
       );
       return;
     }
     rows.push(
       Object.fromEntries(
-        spec.header.map((column, columnIndex) => [column, record[columnIndex] ?? ''])
+        resolvedHeader.value.map((column, columnIndex) => [column, record[columnIndex] ?? ''])
       )
     );
   });
@@ -356,7 +372,9 @@ function parseCsvRows<TRow>(
     return { ok: false, issues };
   }
 
-  return parseObjectRows(rows, schema);
+  const parsedRows = parseObjectRows(rows, schema);
+  if (!parsedRows.ok) return parsedRows;
+  return { ok: true, value: { header: resolvedHeader.value, rows: parsedRows.value } };
 }
 
 function parseObjectRows<TRow>(
@@ -656,12 +674,17 @@ function toWorkflowEntry(item: RowWithSource<WorkflowLedgerRow>): ParseResult<Wo
   };
 }
 
-function sourceLedgerProvenance(ledger: LedgerName, rowCount: number): SourceLedgerProvenance {
+function sourceLedgerProvenance(
+  ledger: LedgerName,
+  parsedHeader: readonly string[],
+  rowCount: number
+): SourceLedgerProvenance {
   const spec = LEDGER_SPECS[ledger];
+  const header = parsedHeader.length > 0 ? parsedHeader : spec.header;
   return {
     ledger,
     fileName: spec.fileName,
-    header: [...spec.header],
+    header: [...header],
     rowCount,
     evidence: {
       id: `evidence.ledger.${ledger}.source`,
@@ -982,6 +1005,26 @@ function sameHeader(actual: readonly string[], expected: readonly string[]): boo
   return (
     actual.length === expected.length && actual.every((item, index) => item === expected[index])
   );
+}
+
+function resolveCsvHeader(
+  ledger: LedgerName,
+  actualHeader: readonly string[],
+  expectedHeader: readonly string[]
+): ParseResult<readonly string[]> {
+  if (sameHeader(actualHeader, expectedHeader)) {
+    return { ok: true, value: expectedHeader };
+  }
+  const expectedWithFreshness = [...expectedHeader, OPTIONAL_FRESHNESS_HEADER];
+  if (sameHeader(actualHeader, expectedWithFreshness)) {
+    return { ok: true, value: expectedWithFreshness };
+  }
+  return {
+    ok: false,
+    issues: [
+      `${ledger} ledger malformed header: expected ${expectedHeader.join(',')} or ${expectedWithFreshness.join(',')} but received ${actualHeader.join(',')}`,
+    ],
+  };
 }
 
 function toInputRecord(input: LedgerBundleInput): ParseResult<Record<string, unknown>> {
