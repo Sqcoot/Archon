@@ -141,6 +141,15 @@ describe('bundled-defaults', () => {
       expect(content).toContain(
         'id,surface,owner,status,confidence,freshness,mutation_class,evidence,notes'
       );
+      expect(content).toContain('ledger_candidates_policy=fresh_evidence_only');
+      expect(content).toContain(
+        'Do not pre-seed recurring candidates; populate candidate rows from fresh run evidence.'
+      );
+      expect(content).not.toContain('workflow-command-validation,workflow and command validation');
+      expect(content).not.toContain('aco-contract-fixtures,ACO contracts and fixtures');
+      expect(content).not.toContain(
+        'provider-runtime-controls,provider hooks and runtime controls'
+      );
       expect(content).toContain('workflow_model_reasoning_effort: xhigh');
       expect(content).toContain('mkdir -p .archon/state/self-improvement');
       expect(content).toContain('mutation direction');

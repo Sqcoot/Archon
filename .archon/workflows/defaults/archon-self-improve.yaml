@@ -105,19 +105,18 @@ nodes:
         echo "- CSV ledgers are architectural primitives for reviewable inventories."
         echo "- Future slices may create, update, consolidate, or remove CSV ledgers for any Archon surface."
         echo "- Committed ledgers need stable columns, producer/consumer intent, ownership, freshness, and validation."
+        echo "- Do not pre-seed recurring candidates; populate candidate rows from fresh run evidence."
       } > "$CAPABILITY_OUT"
 
       {
         echo "id,surface,owner,status,confidence,freshness,mutation_class,evidence,notes"
-        echo "workflow-command-validation,workflow and command validation,self-improvement,candidate,medium,fresh,read-only,capability-map,Could ledger target-only validation discovery and noisy global loading"
-        echo "aco-contract-fixtures,ACO contracts and fixtures,self-improvement,candidate,medium,fresh,read-only,ACO ledgers,Could ledger stale duplicated or low-value ACO fixtures before pruning"
-        echo "provider-runtime-controls,provider hooks and runtime controls,self-improvement,candidate,medium,fresh,read-only,provider tests,Could ledger controls that look enforced versus runtime-wired"
       } > "$LEDGER_CANDIDATES_OUT"
 
       {
         echo "goal_artifact=$GOAL_OUT"
         echo "capability_artifact=$CAPABILITY_OUT"
         echo "ledger_candidates_artifact=$LEDGER_CANDIDATES_OUT"
+        echo "ledger_candidates_policy=fresh_evidence_only"
         echo "default_goal=$DEFAULT_GOAL"
         echo "current_goal=$CURRENT_GOAL"
         echo "scope=Archon workflows, commands, ACO, providers, CLI/server/docs/tests, generated defaults, and the self-improvement loop when explicitly selected."
