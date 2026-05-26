@@ -29,13 +29,13 @@ nodes:
 
   # 3. loop: iterative AI prompt until completion signal
   #    Bounded by max_iterations: 2 so a misbehaving model can't hang CI.
+  #    Keep loop node free of safety/output controls (allowed_tools, etc.) and
+  #    advisory model controls like effort; loop schema rejects or ignores them.
   - id: loop-node
     loop:
       prompt: "Reply with exactly 'DONE' and nothing else."
       until: 'DONE'
       max_iterations: 2
-    allowed_tools: []
-    effort: low
     idle_timeout: 60000
 
   # ─── Deterministic node types (no AI) ───────────────────────────────────
