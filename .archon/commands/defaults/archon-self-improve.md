@@ -63,6 +63,8 @@ change.
 Recommended artifact names:
 
 - `$ARTIFACTS_DIR/self-improve-goal.md`
+- `$ARTIFACTS_DIR/capability-map.md`
+- `$ARTIFACTS_DIR/best-practices-evidence.md`
 - `$ARTIFACTS_DIR/scope-contract.md`
 - `$ARTIFACTS_DIR/slice-plan.md`
 - `$ARTIFACTS_DIR/decision-log.md`
@@ -95,6 +97,45 @@ The self-improvement loop may also edit itself when that is the selected slice:
 Preserve the explicit meta-mode boundary. Never make the self-improvement goal a
 global instruction that affects normal Archon use outside this repository.
 
+## Capability Inventory and Research Evidence
+
+Before ranking slices, inspect and summarize the current capability inventory.
+Use local ledgers and manifests first:
+
+```bash
+tests/fixtures/aco/ledgers/artifact-ledger.csv
+tests/fixtures/aco/ledgers/tool-availability-ledger.csv
+tests/fixtures/aco/ledgers/capability-inventory.csv
+tests/fixtures/aco/ledgers/command-ledger.csv
+tests/fixtures/aco/reference-surface-plan.json
+```
+
+Write `$ARTIFACTS_DIR/capability-map.md` with:
+
+- available Archon workflows, commands, bash/script surfaces, and validation
+  gates relevant to this slice
+- ACO capabilities such as ledgers, role contracts, Agentic Search, Graphify or
+  graph-waiver evidence, approval capsules, and context compilation
+- BMAD skills and party-mode or subagent/role-contract options that could
+  improve investigation, planning, adversarial review, or handoff quality
+- provider/runtime context, including known provider, model, reasoning effort,
+  execution environment, and any uncertainty about those values
+- capabilities intentionally not used and why
+
+When a slice depends on current best practices outside the repo, gather current
+evidence before editing and write `$ARTIFACTS_DIR/best-practices-evidence.md`.
+Use the right source for the question:
+
+- repo-local evidence for Archon-specific behavior
+- Context7 or official docs for library, SDK, API, CLI, or cloud-service usage
+- Agentic Search or web research for broader engineering, product, or research
+  best-practice questions
+
+Do not silently run network-heavy or mutating research. `bun run research:graph`
+and Graphify graph-cache refreshes require explicit approval because they can use
+network and write graph artifacts. Prefer read-only graph-waiver/status evidence
+when approval is absent.
+
 ## Operating Loop
 
 1. Confirm this is Archon meta-work. If it is normal project work, stop and
@@ -103,24 +144,29 @@ global instruction that affects normal Archon use outside this repository.
 3. Read the mutable current goal if it exists, then reconcile it with the loaded
    goal. The specific user goal wins over the mutable default.
 4. Inspect the current repo state with `git status --short` and recent commits.
-5. Select one coherent slice that can be implemented, validated, and committed.
+5. Build the capability map from local ACO ledgers, available Archon commands
+   and workflows, BMAD skills, scripts, gates, provider/runtime metadata, and
+   research surfaces.
+6. If the slice needs current external best practices, gather and cite that
+   evidence before editing.
+7. Select one coherent slice that can be implemented, validated, and committed.
    Explicitly classify the slice as Add, Remove, Consolidate, Stabilize, or
    Clarify. Related tests, generated files, docs, and handoff updates belong to
    the same slice when they are necessary for completion.
-6. Use Archon commands, workflows, BMAD skills, source-command handoffs, focused
+8. Use Archon commands, workflows, BMAD skills, source-command handoffs, focused
    tests, and code review as appropriate for that slice.
-7. Implement only the selected slice.
-8. Validate with the narrowest checks that prove the slice, then broaden when the
+9. Implement only the selected slice.
+10. Validate with the narrowest checks that prove the slice, then broaden when the
    touched surface is shared.
-9. Regenerate bundled defaults when default commands or workflows changed:
+11. Regenerate bundled defaults when default commands or workflows changed:
 
    ```bash
    bun run generate:bundled
    ```
 
-10. Stage only intentional tracked files and commit the slice.
-11. Write a handoff and next-run candidate list capped near 4000 characters.
-12. Update the ignored current-goal file with the top candidate plus the
+12. Stage only intentional tracked files and commit the slice.
+13. Write a handoff and next-run candidate list capped near 4000 characters.
+14. Update the ignored current-goal file with the top candidate plus the
     instruction to re-rank from fresh evidence at the start of the next run.
 
 ## Subtractive and Triage Discipline
@@ -151,6 +197,7 @@ At the end of every run:
    - user-stated priorities
    - failing or blocked validations
    - open handoffs and artifacts
+   - local capability-map and best-practice evidence
    - stale or removable workflow, command, or ACO surfaces
    - workflow behavior that risks infinite, degrading, or ambiguous runs
    - product impact and ease of validation

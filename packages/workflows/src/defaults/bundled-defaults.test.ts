@@ -92,6 +92,10 @@ describe('bundled-defaults', () => {
       expect(content).toContain('.archon/state/self-improvement/current_goal_4000chars.txt');
       expect(content).toContain('must not be committed');
       expect(content).toContain('Do not assume improvement means adding more');
+      expect(content).toContain('Capability Inventory and Research Evidence');
+      expect(content).toContain('tool-availability-ledger.csv');
+      expect(content).toContain('Agentic Search');
+      expect(content).toContain('best-practices-evidence.md');
       expect(content).toContain('Recency Bias Check');
       expect(content).toContain('re-rank from fresh evidence');
     });
@@ -125,13 +129,17 @@ describe('bundled-defaults', () => {
     it('archon-self-improve should be interactive source-checkout meta mode', () => {
       const content = BUNDLED_WORKFLOWS['archon-self-improve'];
       expect(content).toContain('mode: interactive_only');
+      expect(content).toContain('modelReasoningEffort: xhigh');
       expect(content).toContain('lock_scope: checkout_mutation');
       expect(content).toContain('worktree:\n  enabled: false');
       expect(content).toContain('archon-self-improve must run from the Archon source checkout');
       expect(content).toContain('packages/aco-core');
+      expect(content).toContain('CAPABILITY_OUT="$ARTIFACTS_DIR/capability-map.md"');
+      expect(content).toContain('workflow_model_reasoning_effort: xhigh');
       expect(content).toContain('mkdir -p .archon/state/self-improvement');
       expect(content).toContain('mutation direction');
       expect(content).toContain('cleanup-opportunities.md');
+      expect(content).toContain('best-practice or research evidence used');
       expect(content).toContain('ranked next-slice candidates');
       expect(content).toContain('Recency Bias Check');
     });

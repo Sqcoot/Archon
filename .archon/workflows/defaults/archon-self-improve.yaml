@@ -12,6 +12,7 @@ description: |
            the product being improved.
 provider: codex
 model: gpt-5.3-codex
+modelReasoningEffort: xhigh
 mode: interactive_only
 interactive: true
 lock_scope: checkout_mutation
@@ -27,6 +28,8 @@ nodes:
       DEFAULT_GOAL=".archon/self-improvement/default-goal.md"
       CURRENT_GOAL=".archon/state/self-improvement/current_goal_4000chars.txt"
       GOAL_OUT="$ARTIFACTS_DIR/self-improve-goal.md"
+      CAPABILITY_OUT="$ARTIFACTS_DIR/capability-map.md"
+      LEDGER_DIR="tests/fixtures/aco/ledgers"
 
       if [ ! -f package.json ] || [ ! -d packages/cli ] || [ ! -d packages/workflows ] || [ ! -d packages/aco-core ] || [ ! -f "$DEFAULT_GOAL" ]; then
         echo "ERROR: archon-self-improve must run from the Archon source checkout."
@@ -67,11 +70,47 @@ nodes:
       } > "$GOAL_OUT"
 
       {
+        echo "# Self-Improvement Capability Map"
+        echo
+        echo "## Runtime Context"
+        echo
+        echo "- workflow_provider: codex"
+        echo "- workflow_model: gpt-5.3-codex"
+        echo "- workflow_model_reasoning_effort: xhigh"
+        echo "- workflow_mode: interactive_only"
+        echo "- checkout: $(pwd)"
+        echo "- git_branch: $(git branch --show-current 2>/dev/null || true)"
+        echo "- git_head: $(git rev-parse --short HEAD 2>/dev/null || true)"
+        echo
+        echo "## Local ACO Ledgers"
+        for file in artifact-ledger.csv tool-availability-ledger.csv capability-inventory.csv command-ledger.csv; do
+          path="$LEDGER_DIR/$file"
+          echo
+          echo "### $file"
+          if [ -f "$path" ]; then
+            sed -n '1,80p' "$path"
+          else
+            echo "MISSING: $path"
+          fi
+        done
+        echo
+        echo "## Research and Graph Guardrails"
+        echo "- Use repo evidence first for Archon behavior."
+        echo "- Use Context7 or official docs for library, SDK, API, CLI, or cloud-service behavior."
+        echo "- Use Agentic Search or web research for broader best-practice questions."
+        echo "- Do not run bun run research:graph or graph-cache refreshes without explicit approval."
+      } > "$CAPABILITY_OUT"
+
+      {
         echo "goal_artifact=$GOAL_OUT"
+        echo "capability_artifact=$CAPABILITY_OUT"
         echo "default_goal=$DEFAULT_GOAL"
         echo "current_goal=$CURRENT_GOAL"
         echo "scope=Archon workflows, commands, ACO, providers, CLI/server/docs/tests, generated defaults, and the self-improvement loop when explicitly selected."
         echo "mutation_directions=Add Remove Consolidate Stabilize Clarify"
+        echo "runtime_provider=codex"
+        echo "runtime_model=gpt-5.3-codex"
+        echo "runtime_model_reasoning_effort=xhigh"
         echo "git_branch=$(git branch --show-current 2>/dev/null || true)"
         echo "git_head=$(git rev-parse --short HEAD 2>/dev/null || true)"
         echo "git_status_short:"
@@ -102,6 +141,8 @@ nodes:
       Write `$ARTIFACTS_DIR/handoff.md` with:
       - selected slice
       - mutation direction: Add, Remove, Consolidate, Stabilize, or Clarify
+      - capability map summary and selected capabilities
+      - best-practice or research evidence used, or why none was needed
       - files changed
       - commit hash, or exact reason no commit was made
       - validation run and result
@@ -110,6 +151,12 @@ nodes:
       - Recency Bias Check for the top candidate
 
       Also write:
+      - `$ARTIFACTS_DIR/capability-map.md` if the prepare step did not already
+        create one, preserving runtime/provider/model context and ACO ledger
+        evidence.
+      - `$ARTIFACTS_DIR/best-practices-evidence.md` when external or current
+        best-practice evidence influenced the slice, otherwise state in the
+        handoff why repo-local evidence was enough.
       - `$ARTIFACTS_DIR/scope-contract.md` defining why this was Archon meta-work,
         whether ACO was in or out of the chosen slice, and why normal Archon usage
         is not affected.

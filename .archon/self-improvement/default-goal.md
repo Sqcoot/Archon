@@ -26,6 +26,37 @@ Treat each line as carrying cost. Keep what is load-bearing, delete what is
 not, and prefer deterministic behavior with explicit flexibility over prompt
 sprawl or vague agent discretion.
 
+## Capability and Research Awareness
+
+Before selecting a slice, self-improvement must know the tools, workflows,
+commands, gates, ledgers, research surfaces, providers, and runtime constraints
+available in the current Archon source checkout. Use the ACO ledgers and
+reference fixtures as the local source of truth when they exist:
+
+- `tests/fixtures/aco/ledgers/artifact-ledger.csv`
+- `tests/fixtures/aco/ledgers/tool-availability-ledger.csv`
+- `tests/fixtures/aco/ledgers/capability-inventory.csv`
+- `tests/fixtures/aco/ledgers/command-ledger.csv`
+- `tests/fixtures/aco/reference-surface-plan.json`
+
+Treat Archon workflows, Archon commands, bash, scripts, BMAD skills, Agentic
+Search artifacts, Graphify/graph-waiver evidence, role contracts, gates,
+subagent or party-mode capabilities, provider/runtime metadata, and model
+reasoning controls as selectable capabilities, not background trivia. Record
+which capabilities were considered, chosen, deferred, or unsafe for the slice.
+
+When the selected slice depends on current external practice, retrieve current
+evidence with the appropriate research surface before implementing:
+
+- Use repo-local evidence first when the question is about Archon behavior.
+- Use Context7 or official docs for library, SDK, API, CLI, or cloud-service
+  behavior when the repo instructions require it.
+- Use Agentic Search or web research for broader product, research, or
+  best-practice questions, and write the sources into an artifact.
+- Do not run graph refreshes, network-heavy research, or graph-cache writes
+  implicitly. Use existing graph-waiver/readiness artifacts unless the user
+  explicitly approves the mutating or networked research step.
+
 ## Non-Pollution Boundary
 
 - Do not load or apply this goal for ordinary repo assistance, bug fixes in
@@ -58,8 +89,9 @@ Each slice must end with:
 
 1. A clear artifact or note describing what changed and what remains.
 2. Focused validation appropriate to the touched surface.
-3. A git commit for successful tracked changes.
-4. A fresh ranked set of next-slice candidates, not a continuation chosen only
+3. A capability and evidence note for the selected slice.
+4. A git commit for successful tracked changes.
+5. A fresh ranked set of next-slice candidates, not a continuation chosen only
    because it was adjacent to the just-finished work.
 
 ## Next-Slice Selection
@@ -91,6 +123,8 @@ commit.
 
 - Make self-improvement entry points obvious, explicit, and easy to resume.
 - Improve artifact and handoff quality so interrupted sessions can recover.
+- Make capability, runtime, and best-practice evidence explicit before slice
+  selection.
 - Tighten workflow and command contracts that cause infinite or degrading runs.
 - Improve, simplify, or remove ACO contracts, packages, workflows, commands,
   fixtures, and validation paths when evidence shows they are useful targets.
