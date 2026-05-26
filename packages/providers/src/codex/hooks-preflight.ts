@@ -2225,6 +2225,7 @@ function renderHookArtifactsManifest(report: CodexHookBootloaderReport): Record<
       installedHookEventNames: report.hookContract.installedHookEventNames,
       installedHookEventCompatibilityIssues:
         report.hookContract.installedHookEventCompatibilityIssues,
+      declaredVsObserved: renderDeclaredVsObservedContractSummary(report),
     },
     artifactPolicy: report.artifactPolicy,
     artifactRoot: report.artifactPaths.directory,
@@ -2239,6 +2240,58 @@ function renderHookArtifactsManifest(report: CodexHookBootloaderReport): Record<
       ...artifactEntries.map(([, path]) => hookArtifactFileEntry(report, path)),
       hookArtifactManifestSelfReference(report),
     ],
+  };
+}
+
+function renderDeclaredVsObservedContractSummary(
+  report: CodexHookBootloaderReport
+): Record<string, unknown> {
+  const observed = report.hookContract.installedRuntimeEvidence;
+  const schemaFingerprintCount = observed.packageSchemaFilesFound;
+  const compatibility = report.hookContract.installedHookEventCompatibility;
+
+  let comparison: 'declared-only' | 'declared-vs-observed-match' | 'declared-vs-observed-mismatch';
+  let certainty: 'unknown' | 'verified' | 'conflict';
+  let explicitStatus: string;
+
+  if (compatibility === 'matched') {
+    comparison = 'declared-vs-observed-match';
+    certainty = 'verified';
+    explicitStatus =
+      'Declared contract is backed by observed installed runtime schema fingerprints and matching hook event names.';
+  } else if (compatibility === 'mismatch') {
+    comparison = 'declared-vs-observed-mismatch';
+    certainty = 'conflict';
+    explicitStatus = `Declared contract differs from observed installed runtime hook events: ${
+      report.hookContract.installedHookEventCompatibilityIssues.join('; ') || 'no details'
+    }`;
+  } else {
+    comparison = 'declared-only';
+    certainty = 'unknown';
+    explicitStatus =
+      report.hookContract.installedRuntimeContractIssue ??
+      'Installed runtime schema fingerprints are unavailable; declared contract is not verified against installed runtime files.';
+  }
+
+  return {
+    comparison,
+    certainty,
+    declared: {
+      source: report.hookContract.source,
+      supportedEvents: report.hookContract.supportedEvents,
+      supportedEventCount: report.hookContract.supportedEvents.length,
+    },
+    observed: {
+      installedRuntimeContractStatus: report.hookContract.installedRuntimeContractStatus,
+      installedRuntimeVersion: report.hookContract.installedRuntimeVersion ?? null,
+      schemaFingerprintCount,
+      installedHookEventCompatibility: compatibility,
+      installedHookEventNames: report.hookContract.installedHookEventNames,
+      installedHookEventCompatibilityIssues:
+        report.hookContract.installedHookEventCompatibilityIssues,
+      installedRuntimeContractCompatible: report.hookContract.installedRuntimeContractCompatible,
+    },
+    explicitStatus,
   };
 }
 

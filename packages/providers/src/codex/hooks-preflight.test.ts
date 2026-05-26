@@ -142,6 +142,17 @@ describe('runCodexHookBootloaderPreflight', () => {
         installedHookEventCompatibility?: string;
         installedHookEventNames?: string[];
         installedHookEventCompatibilityIssues?: string[];
+        declaredVsObserved?: {
+          comparison?: string;
+          certainty?: string;
+          declared?: { source?: string; supportedEventCount?: number };
+          observed?: {
+            schemaFingerprintCount?: number;
+            installedHookEventCompatibility?: string;
+            installedRuntimeContractCompatible?: boolean | 'unknown';
+          };
+          explicitStatus?: string;
+        };
       };
       requiredArtifacts?: Record<string, { relativePath?: string; digestStatus?: string }>;
       files?: { relativePath?: string; digestStatus?: string }[];
@@ -162,6 +173,22 @@ describe('runCodexHookBootloaderPreflight', () => {
     });
     expect(manifest.contractCompatibility?.installedRuntimeContractIssue).toContain(
       'Installed Codex hook schema/source files were not fingerprinted'
+    );
+    expect(manifest.contractCompatibility?.declaredVsObserved).toMatchObject({
+      comparison: 'declared-only',
+      certainty: 'unknown',
+      declared: {
+        source: 'embedded-context7-official-docs',
+        supportedEventCount: 10,
+      },
+      observed: {
+        schemaFingerprintCount: 0,
+        installedHookEventCompatibility: 'unavailable',
+        installedRuntimeContractCompatible: 'unknown',
+      },
+    });
+    expect(manifest.contractCompatibility?.declaredVsObserved?.explicitStatus).toContain(
+      'not fingerprinted'
     );
     const requiredArtifactPaths = [
       'codex-hook-bootloader-report.json',
@@ -1669,6 +1696,11 @@ describe('runCodexHookBootloaderPreflight', () => {
         installedHookEventCompatibility?: string;
         installedHookEventNames?: string[];
         installedHookEventCompatibilityIssues?: string[];
+        declaredVsObserved?: {
+          comparison?: string;
+          certainty?: string;
+          observed?: { schemaFingerprintCount?: number; installedHookEventCompatibility?: string };
+        };
       };
     };
     expect(manifest.contractCompatibility).toMatchObject({
@@ -1689,6 +1721,16 @@ describe('runCodexHookBootloaderPreflight', () => {
       ],
       installedHookEventCompatibilityIssues: [],
     });
+    expect(manifest.contractCompatibility?.declaredVsObserved).toMatchObject({
+      comparison: 'declared-vs-observed-match',
+      certainty: 'verified',
+      observed: {
+        installedHookEventCompatibility: 'matched',
+      },
+    });
+    expect(
+      manifest.contractCompatibility?.declaredVsObserved?.observed?.schemaFingerprintCount
+    ).toBeGreaterThanOrEqual(1);
   });
 
   test('blocks when installed hook event source differs from embedded contract', async () => {
@@ -1744,6 +1786,11 @@ describe('runCodexHookBootloaderPreflight', () => {
         installedRuntimeContractCompatible?: boolean | 'unknown';
         installedHookEventCompatibility?: string;
         installedHookEventCompatibilityIssues?: string[];
+        declaredVsObserved?: {
+          comparison?: string;
+          certainty?: string;
+          explicitStatus?: string;
+        };
       };
     };
     expect(manifest.contractCompatibility).toMatchObject({
@@ -1756,6 +1803,13 @@ describe('runCodexHookBootloaderPreflight', () => {
         issue.includes('NewRuntimeHook')
       )
     ).toBe(true);
+    expect(manifest.contractCompatibility?.declaredVsObserved).toMatchObject({
+      comparison: 'declared-vs-observed-mismatch',
+      certainty: 'conflict',
+    });
+    expect(manifest.contractCompatibility?.declaredVsObserved?.explicitStatus).toContain(
+      'NewRuntimeHook'
+    );
   });
 });
 
