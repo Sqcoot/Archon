@@ -20,6 +20,14 @@ function getLog(): ReturnType<typeof createLogger> {
   return cachedLog;
 }
 
+/** In-process cache for merged script discovery by cwd. */
+const scriptsForCwdCache = new Map<string, Promise<Map<string, ScriptDefinition>>>();
+
+/** Clear script discovery cache (exposed for testing and explicit refreshes). */
+export function clearScriptDiscoveryCache(): void {
+  scriptsForCwdCache.clear();
+}
+
 /** Supported script runtime */
 export type ScriptRuntime = 'bun' | 'uv';
 
@@ -155,18 +163,37 @@ export async function discoverScripts(dir: string): Promise<Map<string, ScriptDe
  * explicitly overrides the home-level one and logs the override.
  */
 export async function discoverScriptsForCwd(cwd: string): Promise<Map<string, ScriptDefinition>> {
-  const homeScripts = await discoverScripts(getHomeScriptsPath());
-  const repoScripts = await discoverScripts(join(cwd, '.archon', 'scripts'));
+  const cacheKey = normalizeSep(cwd);
+  let cached = scriptsForCwdCache.get(cacheKey);
 
-  // Start with home, overlay repo (repo wins)
-  const merged = new Map<string, ScriptDefinition>(homeScripts);
-  for (const [name, def] of repoScripts) {
-    if (merged.has(name)) {
-      getLog().debug({ name }, 'script.repo_overrides_home');
-    }
-    merged.set(name, def);
+  if (!cached) {
+    cached = (async (): Promise<Map<string, ScriptDefinition>> => {
+      const homeScripts = await discoverScripts(getHomeScriptsPath());
+      const repoScripts = await discoverScripts(join(cwd, '.archon', 'scripts'));
+
+      // Start with home, overlay repo (repo wins)
+      const merged = new Map<string, ScriptDefinition>(homeScripts);
+      for (const [name, def] of repoScripts) {
+        if (merged.has(name)) {
+          getLog().debug({ name }, 'script.repo_overrides_home');
+        }
+        merged.set(name, def);
+      }
+      return merged;
+    })();
+
+    scriptsForCwdCache.set(cacheKey, cached);
   }
-  return merged;
+
+  try {
+    const merged = await cached;
+    // Return a defensive copy so callers cannot mutate cached state.
+    return new Map<string, ScriptDefinition>(merged);
+  } catch (error) {
+    // Avoid pinning a rejected promise; next call should retry discovery.
+    scriptsForCwdCache.delete(cacheKey);
+    throw error;
+  }
 }
 
 /**

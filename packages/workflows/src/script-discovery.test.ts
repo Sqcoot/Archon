@@ -24,7 +24,12 @@ mock.module('@archon/paths', () => ({
   getHomeScriptsPath: mock(() => mockHomeScriptsPath),
 }));
 
-import { discoverScripts, discoverScriptsForCwd, getDefaultScripts } from './script-discovery';
+import {
+  clearScriptDiscoveryCache,
+  discoverScripts,
+  discoverScriptsForCwd,
+  getDefaultScripts,
+} from './script-discovery';
 
 // On Windows, path.join produces backslashes (e.g. `\scripts\triage`). The
 // mocks below key on forward-slash paths for readability, so normalize before
@@ -34,6 +39,7 @@ const norm = (p: string): string => p.replaceAll('\\', '/');
 
 describe('discoverScripts', () => {
   beforeEach(() => {
+    clearScriptDiscoveryCache();
     mockReaddir.mockClear();
     mockStat.mockClear();
     mockLogger.info.mockClear();
@@ -173,6 +179,7 @@ describe('scanScriptDir depth cap', () => {
   // Scripts are discovered 1 level deep (matches the workflows/commands
   // convention). `defaults/` style subfolders are fine; nested subfolders are not.
   beforeEach(() => {
+    clearScriptDiscoveryCache();
     mockReaddir.mockReset();
     mockStat.mockReset();
   });
@@ -244,6 +251,7 @@ describe('scanScriptDir depth cap', () => {
 
 describe('discoverScriptsForCwd — merge repo + home with repo winning', () => {
   beforeEach(() => {
+    clearScriptDiscoveryCache();
     mockReaddir.mockReset();
     mockStat.mockReset();
     mockHomeScriptsPath = '/home/scripts';
@@ -294,6 +302,26 @@ describe('discoverScriptsForCwd — merge repo + home with repo winning', () => 
     const result = await discoverScriptsForCwd('/repo');
     expect(result.size).toBe(1);
     expect(result.has('only-repo')).toBe(true);
+  });
+
+  test('memoizes merged discovery per cwd and returns defensive copies', async () => {
+    mockReaddir.mockImplementation(async (path: string) => {
+      const p = norm(path);
+      if (p === '/home/scripts') return ['home-only.ts'];
+      if (p === '/repo/.archon/scripts') return ['repo-only.py'];
+      return [];
+    });
+    mockStat.mockResolvedValue({ isDirectory: () => false });
+
+    const first = await discoverScriptsForCwd('/repo');
+    first.set('local-only', { name: 'local-only', path: '/tmp/local.ts', runtime: 'bun' });
+
+    const second = await discoverScriptsForCwd('/repo');
+
+    expect(mockReaddir).toHaveBeenCalledTimes(2);
+    expect(second.has('home-only')).toBe(true);
+    expect(second.has('repo-only')).toBe(true);
+    expect(second.has('local-only')).toBe(false);
   });
 });
 
