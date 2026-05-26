@@ -328,26 +328,36 @@ export async function discoverWorkflows(
     // Surface repo workflow errors to users (these are actionable)
     allErrors.push(...repoResult.errors);
 
-    // Warn about deprecated non-prefixed defaults in repo's defaults folder
+    // Warn about deprecated non-prefixed defaults in repo's defaults folder.
+    // Skip this check when cwd is Archon source checkout itself, where
+    // `.archon/workflows/defaults` is the app defaults source of truth.
     const repoDefaultsPath = join(cwd, workflowFolder, 'defaults');
-    try {
-      await access(repoDefaultsPath);
-      const defaultEntries = await readdir(repoDefaultsPath);
-      const oldDefaults = defaultEntries.filter(
-        f => (f.endsWith('.yaml') || f.endsWith('.yml')) && !f.startsWith('archon-')
-      );
-      if (oldDefaults.length > 0) {
-        getLog().warn(
-          { count: oldDefaults.length, repoDefaultsPath, hint: `rm -rf "${repoDefaultsPath}"` },
-          'deprecated_workflow_defaults_found'
+    const appDefaultsPath = archonPaths.getDefaultWorkflowsPath();
+    if (repoDefaultsPath !== appDefaultsPath) {
+      try {
+        await access(repoDefaultsPath);
+        const defaultEntries = await readdir(repoDefaultsPath);
+        const oldDefaults = defaultEntries.filter(
+          f => (f.endsWith('.yaml') || f.endsWith('.yml')) && !f.startsWith('archon-')
         );
+        if (oldDefaults.length > 0) {
+          getLog().warn(
+            { count: oldDefaults.length, repoDefaultsPath, hint: `rm -rf "${repoDefaultsPath}"` },
+            'deprecated_workflow_defaults_found'
+          );
+        }
+      } catch (error) {
+        const err = error as NodeJS.ErrnoException;
+        if (err.code !== 'ENOENT') {
+          getLog().warn({ err, repoDefaultsPath }, 'deprecated_defaults_check_failed');
+        }
+        // ENOENT (not found) is expected - no defaults folder exists
       }
-    } catch (error) {
-      const err = error as NodeJS.ErrnoException;
-      if (err.code !== 'ENOENT') {
-        getLog().warn({ err, repoDefaultsPath }, 'deprecated_defaults_check_failed');
-      }
-      // ENOENT (not found) is expected - no defaults folder exists
+    } else {
+      getLog().debug(
+        { repoDefaultsPath, appDefaultsPath },
+        'deprecated_defaults_check_skipped_for_app_defaults_path'
+      );
     }
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
