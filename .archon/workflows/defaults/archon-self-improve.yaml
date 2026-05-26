@@ -1,0 +1,114 @@
+name: archon-self-improve
+description: |
+  Use when: The user explicitly wants to improve Archon itself, repair Archon source,
+            improve Archon workflows/commands, or improve the self-improvement loop.
+  Triggers: "archon self improve", "self-improve archon", "improve Archon itself",
+            "repair Archon", "improve the self-improving loop", "meta Archon work".
+  Does: Enters explicit repo-local meta mode, loads a specific or default self-improvement
+        goal, selects one coherent slice, validates it, commits progress, and writes
+        artifacts plus a compact next-goal handoff.
+  NOT for: Ordinary Archon usage in another repository, normal bug fixes, feature work,
+           PR review, docs work, or questions where Archon is the assistant rather than
+           the product being improved.
+provider: codex
+model: gpt-5.3-codex
+mode: interactive_only
+interactive: true
+lock_scope: checkout_mutation
+mutates_checkout: true
+worktree:
+  enabled: false
+
+nodes:
+  - id: prepare-goal
+    bash: |
+      set -euo pipefail
+
+      DEFAULT_GOAL=".archon/self-improvement/default-goal.md"
+      CURRENT_GOAL=".archon/state/self-improvement/current_goal_4000chars.txt"
+      GOAL_OUT="$ARTIFACTS_DIR/self-improve-goal.md"
+
+      if [ ! -f package.json ] || [ ! -d packages/cli ] || [ ! -d packages/workflows ] || [ ! -f "$DEFAULT_GOAL" ]; then
+        echo "ERROR: archon-self-improve must run from the Archon source checkout."
+        echo "This workflow is meta-mode for improving Archon itself, not for ordinary project work."
+        echo "Expected package.json, packages/cli, packages/workflows, and $DEFAULT_GOAL."
+        exit 1
+      fi
+
+      mkdir -p .archon/state/self-improvement
+      mkdir -p "$ARTIFACTS_DIR"
+
+      {
+        echo "# Self-Improvement Goal"
+        echo
+        if [ -n "${ARGUMENTS:-}" ]; then
+          echo "## Specific User Goal"
+          echo
+          printf '%s\n' "$ARGUMENTS"
+          echo
+        else
+          echo "## Default Goal"
+          echo
+          if [ -f "$DEFAULT_GOAL" ]; then
+            cat "$DEFAULT_GOAL"
+          else
+            echo "ERROR: missing $DEFAULT_GOAL"
+            exit 1
+          fi
+          echo
+        fi
+
+        if [ -f "$CURRENT_GOAL" ]; then
+          echo
+          echo "## Mutable Current Goal"
+          echo
+          cat "$CURRENT_GOAL"
+        fi
+      } > "$GOAL_OUT"
+
+      {
+        echo "goal_artifact=$GOAL_OUT"
+        echo "default_goal=$DEFAULT_GOAL"
+        echo "current_goal=$CURRENT_GOAL"
+        echo "git_branch=$(git branch --show-current 2>/dev/null || true)"
+        echo "git_head=$(git rev-parse --short HEAD 2>/dev/null || true)"
+        echo "git_status_short:"
+        git status --short 2>/dev/null || true
+      }
+    timeout: 30000
+
+  - id: self-improve
+    command: archon-self-improve
+    depends_on: [prepare-goal]
+    context: fresh
+    idle_timeout: 1800000
+
+  - id: summarize
+    prompt: |
+      Create a concise self-improvement run summary from this run.
+
+      ## Prepared Context
+
+      $prepare-goal.output
+
+      ## Self-Improve Result
+
+      $self-improve.output
+
+      ## Required Artifact
+
+      Write `$ARTIFACTS_DIR/handoff.md` with:
+      - selected slice
+      - files changed
+      - commit hash, or exact reason no commit was made
+      - validation run and result
+      - what remains
+      - next recommended goal
+
+      Also write `$ARTIFACTS_DIR/next_goal_4000chars.txt` with a compact next goal
+      suitable for `.archon/state/self-improvement/current_goal_4000chars.txt`.
+
+      Keep the summary explicit that self-improvement mode is repo-local meta-work and
+      does not apply to ordinary Archon usage in other repositories.
+    depends_on: [self-improve]
+    context: fresh

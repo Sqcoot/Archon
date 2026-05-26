@@ -83,6 +83,14 @@ describe('bundled-defaults', () => {
       const content = BUNDLED_COMMANDS['archon-create-pr'];
       expect(content).toContain('echo "$PR_NUMBER" > "$ARTIFACTS_DIR/.pr-number"');
     });
+
+    it('archon-self-improve should preserve the meta-only non-pollution boundary', () => {
+      const content = BUNDLED_COMMANDS['archon-self-improve'];
+      expect(content).toContain('This command is for Archon meta-work only');
+      expect(content).toContain('run from the Archon source checkout');
+      expect(content).toContain('.archon/state/self-improvement/current_goal_4000chars.txt');
+      expect(content).toContain('must not be committed');
+    });
   });
 
   describe('BUNDLED_WORKFLOWS', () => {
@@ -108,6 +116,15 @@ describe('bundled-defaults', () => {
         'sed "s/SPRINT_COUNT_PLACEHOLDER/$SPRINT_COUNT/" "$ARTIFACTS/state.json" > "$STATE_TMP"'
       );
       expect(content).not.toContain('sed -i "s/SPRINT_COUNT_PLACEHOLDER/$SPRINT_COUNT/"');
+    });
+
+    it('archon-self-improve should be interactive source-checkout meta mode', () => {
+      const content = BUNDLED_WORKFLOWS['archon-self-improve'];
+      expect(content).toContain('mode: interactive_only');
+      expect(content).toContain('lock_scope: checkout_mutation');
+      expect(content).toContain('worktree:\n  enabled: false');
+      expect(content).toContain('archon-self-improve must run from the Archon source checkout');
+      expect(content).toContain('mkdir -p .archon/state/self-improvement');
     });
 
     it('should have valid YAML structure', () => {
