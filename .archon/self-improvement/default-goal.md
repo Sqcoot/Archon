@@ -8,9 +8,23 @@ is not global guidance for ordinary Archon usage in other repositories.
 ## Standing Goal
 
 Continuously improve Archon as a product and engineering system through small,
-validated, committed slices. Prefer changes that make Archon more reliable,
-more inspectable, easier to recover, easier to route, and less likely to create
-unbounded or ambiguous agent runs.
+validated, committed slices. This includes Archon workflows, commands, ACO
+packages/contracts/workflows, provider behavior, CLI/server surfaces, docs,
+tests, and generated defaults when they are part of the selected slice. Prefer
+changes that make Archon more reliable, more inspectable, easier to recover,
+easier to route, and less likely to create unbounded or ambiguous agent runs.
+
+## Improvement Direction
+
+Self-improvement is not biased toward adding new surfaces. Every run must weigh
+addition, removal, consolidation, simplification, stabilization, documentation,
+and test hardening as equally valid improvement directions. Bad, obsolete,
+duplicative, noisy, misleading, or low-leverage code and workflow material
+should be removed or narrowed when evidence supports it.
+
+Treat each line as carrying cost. Keep what is load-bearing, delete what is
+not, and prefer deterministic behavior with explicit flexibility over prompt
+sprawl or vague agent discretion.
 
 ## Non-Pollution Boundary
 
@@ -26,9 +40,19 @@ unbounded or ambiguous agent runs.
 ## Slice Contract
 
 Every self-improvement pass chooses exactly one coherent slice unless the user
-explicitly asks for more. A slice may include related tests, docs, generated
-defaults, validation fixes, and handoff updates needed to make that slice
-complete.
+explicitly asks for more. A slice may add, remove, simplify, consolidate,
+stabilize, document, or test Archon behavior. Related tests, docs, generated
+defaults, validation fixes, and handoff updates belong to the same slice when
+they are necessary for completion.
+
+Before implementing, state the selected mutation direction:
+
+- Add: introduce missing capability or coverage.
+- Remove: delete dead, misleading, duplicated, or harmful surface.
+- Consolidate: merge overlapping behavior into one clearer source of truth.
+- Stabilize: make existing behavior more deterministic and recoverable.
+- Clarify: improve names, docs, contracts, or handoffs without changing runtime
+  behavior.
 
 Each slice must end with:
 
@@ -68,6 +92,10 @@ commit.
 - Make self-improvement entry points obvious, explicit, and easy to resume.
 - Improve artifact and handoff quality so interrupted sessions can recover.
 - Tighten workflow and command contracts that cause infinite or degrading runs.
+- Improve, simplify, or remove ACO contracts, packages, workflows, commands,
+  fixtures, and validation paths when evidence shows they are useful targets.
+- Triage stale, duplicated, misleading, or low-leverage workflow/command/ACO
+  surfaces instead of defaulting to net-new additions.
 - Prefer one-slice-per-commit loops with current goal summaries capped near
   4000 characters for handoffs.
 - Use Archon workflows, commands, BMAD skills, and source-command handoffs when

@@ -32,7 +32,9 @@ describe('reference surface manifest projection', () => {
       compatibility: 'preserve',
     });
     expect(
-      compiled.value.registries.commands.get('command.archon-context-compile-prompt')
+      compiled.value.registries.commands.get(
+        'command.archon-context-compile-prompt-no-write-artifact'
+      )
     ).toMatchObject({
       mutates: 'writes-artifacts',
       approvalRequired: false,

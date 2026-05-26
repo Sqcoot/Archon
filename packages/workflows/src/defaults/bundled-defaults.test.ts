@@ -87,9 +87,11 @@ describe('bundled-defaults', () => {
     it('archon-self-improve should preserve the meta-only non-pollution boundary', () => {
       const content = BUNDLED_COMMANDS['archon-self-improve'];
       expect(content).toContain('This command is for Archon meta-work only');
+      expect(content).toContain('workflows, commands, or ACO');
       expect(content).toContain('run from the Archon source checkout');
       expect(content).toContain('.archon/state/self-improvement/current_goal_4000chars.txt');
       expect(content).toContain('must not be committed');
+      expect(content).toContain('Do not assume improvement means adding more');
       expect(content).toContain('Recency Bias Check');
       expect(content).toContain('re-rank from fresh evidence');
     });
@@ -126,7 +128,10 @@ describe('bundled-defaults', () => {
       expect(content).toContain('lock_scope: checkout_mutation');
       expect(content).toContain('worktree:\n  enabled: false');
       expect(content).toContain('archon-self-improve must run from the Archon source checkout');
+      expect(content).toContain('packages/aco-core');
       expect(content).toContain('mkdir -p .archon/state/self-improvement');
+      expect(content).toContain('mutation direction');
+      expect(content).toContain('cleanup-opportunities.md');
       expect(content).toContain('ranked next-slice candidates');
       expect(content).toContain('Recency Bias Check');
     });

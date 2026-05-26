@@ -1,7 +1,7 @@
 name: archon-self-improve
 description: |
   Use when: The user explicitly wants to improve Archon itself, repair Archon source,
-            improve Archon workflows/commands, or improve the self-improvement loop.
+            improve Archon workflows/commands/ACO, or improve the self-improvement loop.
   Triggers: "archon self improve", "self-improve archon", "improve Archon itself",
             "repair Archon", "improve the self-improving loop", "meta Archon work".
   Does: Enters explicit repo-local meta mode, loads a specific or default self-improvement
@@ -28,10 +28,10 @@ nodes:
       CURRENT_GOAL=".archon/state/self-improvement/current_goal_4000chars.txt"
       GOAL_OUT="$ARTIFACTS_DIR/self-improve-goal.md"
 
-      if [ ! -f package.json ] || [ ! -d packages/cli ] || [ ! -d packages/workflows ] || [ ! -f "$DEFAULT_GOAL" ]; then
+      if [ ! -f package.json ] || [ ! -d packages/cli ] || [ ! -d packages/workflows ] || [ ! -d packages/aco-core ] || [ ! -f "$DEFAULT_GOAL" ]; then
         echo "ERROR: archon-self-improve must run from the Archon source checkout."
         echo "This workflow is meta-mode for improving Archon itself, not for ordinary project work."
-        echo "Expected package.json, packages/cli, packages/workflows, and $DEFAULT_GOAL."
+        echo "Expected package.json, packages/cli, packages/workflows, packages/aco-core, and $DEFAULT_GOAL."
         exit 1
       fi
 
@@ -70,6 +70,8 @@ nodes:
         echo "goal_artifact=$GOAL_OUT"
         echo "default_goal=$DEFAULT_GOAL"
         echo "current_goal=$CURRENT_GOAL"
+        echo "scope=Archon workflows, commands, ACO, providers, CLI/server/docs/tests, generated defaults, and the self-improvement loop when explicitly selected."
+        echo "mutation_directions=Add Remove Consolidate Stabilize Clarify"
         echo "git_branch=$(git branch --show-current 2>/dev/null || true)"
         echo "git_head=$(git rev-parse --short HEAD 2>/dev/null || true)"
         echo "git_status_short:"
@@ -99,12 +101,25 @@ nodes:
 
       Write `$ARTIFACTS_DIR/handoff.md` with:
       - selected slice
+      - mutation direction: Add, Remove, Consolidate, Stabilize, or Clarify
       - files changed
       - commit hash, or exact reason no commit was made
       - validation run and result
       - what remains
       - 3-5 ranked next-slice candidates based on current evidence
       - Recency Bias Check for the top candidate
+
+      Also write:
+      - `$ARTIFACTS_DIR/scope-contract.md` defining why this was Archon meta-work,
+        whether ACO was in or out of the chosen slice, and why normal Archon usage
+        is not affected.
+      - `$ARTIFACTS_DIR/decision-log.md` with the evidence used to choose Add,
+        Remove, Consolidate, Stabilize, or Clarify.
+      - `$ARTIFACTS_DIR/cleanup-opportunities.md` with stale, duplicated,
+        misleading, or removable workflow/command/ACO surfaces found during the
+        run, even if they were not selected.
+      - `$ARTIFACTS_DIR/candidate-ranking.md` with the full next-run ranking and
+        the Recency Bias Check.
 
       Also write `$ARTIFACTS_DIR/next_goal_4000chars.txt` with a compact next goal
       suitable for `.archon/state/self-improvement/current_goal_4000chars.txt`.
