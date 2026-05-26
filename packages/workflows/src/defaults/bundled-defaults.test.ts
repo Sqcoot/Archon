@@ -96,6 +96,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('tool-availability-ledger.csv');
       expect(content).toContain('Agentic Search');
       expect(content).toContain('best-practices-evidence.md');
+      expect(content).toContain('CSV Ledger Discipline');
+      expect(content).toContain('ledger-change-plan.md');
       expect(content).toContain('Recency Bias Check');
       expect(content).toContain('re-rank from fresh evidence');
     });
@@ -135,9 +137,14 @@ describe('bundled-defaults', () => {
       expect(content).toContain('archon-self-improve must run from the Archon source checkout');
       expect(content).toContain('packages/aco-core');
       expect(content).toContain('CAPABILITY_OUT="$ARTIFACTS_DIR/capability-map.md"');
+      expect(content).toContain('LEDGER_CANDIDATES_OUT="$ARTIFACTS_DIR/ledger-candidates.csv"');
+      expect(content).toContain(
+        'id,surface,owner,status,confidence,freshness,mutation_class,evidence,notes'
+      );
       expect(content).toContain('workflow_model_reasoning_effort: xhigh');
       expect(content).toContain('mkdir -p .archon/state/self-improvement');
       expect(content).toContain('mutation direction');
+      expect(content).toContain('CSV ledger decision');
       expect(content).toContain('cleanup-opportunities.md');
       expect(content).toContain('best-practice or research evidence used');
       expect(content).toContain('ranked next-slice candidates');

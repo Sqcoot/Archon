@@ -65,6 +65,8 @@ Recommended artifact names:
 - `$ARTIFACTS_DIR/self-improve-goal.md`
 - `$ARTIFACTS_DIR/capability-map.md`
 - `$ARTIFACTS_DIR/best-practices-evidence.md`
+- `$ARTIFACTS_DIR/ledger-candidates.csv`
+- `$ARTIFACTS_DIR/ledger-change-plan.md`
 - `$ARTIFACTS_DIR/scope-contract.md`
 - `$ARTIFACTS_DIR/slice-plan.md`
 - `$ARTIFACTS_DIR/decision-log.md`
@@ -136,6 +138,37 @@ and Graphify graph-cache refreshes require explicit approval because they can us
 network and write graph artifacts. Prefer read-only graph-waiver/status evidence
 when approval is absent.
 
+## CSV Ledger Discipline
+
+Treat CSV ledgers as architecture when they make a surface easier to inspect,
+diff, sort, validate, or hand off. Existing ACO ledgers cover artifacts, tools,
+capabilities, and commands, but the self-improvement loop may create ledgers for
+any Archon surface when that is the best slice:
+
+- workflows, commands, scripts, tools, providers, hooks, gates, adapters, docs,
+  risks, debts, test coverage, ownership, freshness, or best-practice evidence
+- cleanup candidates, duplicated surfaces, stale fixtures, missing validations,
+  model/provider compatibility, or artifact producer/consumer contracts
+
+Before committing a new or changed CSV ledger, write
+`$ARTIFACTS_DIR/ledger-change-plan.md` explaining:
+
+- why a CSV ledger is better than prose, JSON, code, or an ignored scratch note
+- whether the ledger is committed source/fixture or local-only artifact
+- producer, consumer, freshness expectations, and ownership
+- required columns and validation commands
+- whether an existing ledger should instead be extended, consolidated, or deleted
+
+Use stable columns. Prefer these when they fit the surface:
+
+```text
+id,surface,owner,status,confidence,freshness,mutation_class,evidence,notes
+```
+
+Do not add a CSV just to add structure. If a ledger is duplicated, stale,
+unconsumed, or misleading, remove or consolidate it as a valid self-improvement
+slice.
+
 ## Operating Loop
 
 1. Confirm this is Archon meta-work. If it is normal project work, stop and
@@ -147,26 +180,28 @@ when approval is absent.
 5. Build the capability map from local ACO ledgers, available Archon commands
    and workflows, BMAD skills, scripts, gates, provider/runtime metadata, and
    research surfaces.
-6. If the slice needs current external best practices, gather and cite that
+6. Identify whether a CSV ledger should be created, updated, consolidated,
+   deleted, or kept as an ignored artifact for the selected problem.
+7. If the slice needs current external best practices, gather and cite that
    evidence before editing.
-7. Select one coherent slice that can be implemented, validated, and committed.
+8. Select one coherent slice that can be implemented, validated, and committed.
    Explicitly classify the slice as Add, Remove, Consolidate, Stabilize, or
    Clarify. Related tests, generated files, docs, and handoff updates belong to
    the same slice when they are necessary for completion.
-8. Use Archon commands, workflows, BMAD skills, source-command handoffs, focused
+9. Use Archon commands, workflows, BMAD skills, source-command handoffs, focused
    tests, and code review as appropriate for that slice.
-9. Implement only the selected slice.
-10. Validate with the narrowest checks that prove the slice, then broaden when the
+10. Implement only the selected slice.
+11. Validate with the narrowest checks that prove the slice, then broaden when the
    touched surface is shared.
-11. Regenerate bundled defaults when default commands or workflows changed:
+12. Regenerate bundled defaults when default commands or workflows changed:
 
    ```bash
    bun run generate:bundled
    ```
 
-12. Stage only intentional tracked files and commit the slice.
-13. Write a handoff and next-run candidate list capped near 4000 characters.
-14. Update the ignored current-goal file with the top candidate plus the
+13. Stage only intentional tracked files and commit the slice.
+14. Write a handoff and next-run candidate list capped near 4000 characters.
+15. Update the ignored current-goal file with the top candidate plus the
     instruction to re-rank from fresh evidence at the start of the next run.
 
 ## Subtractive and Triage Discipline
@@ -198,6 +233,8 @@ At the end of every run:
    - failing or blocked validations
    - open handoffs and artifacts
    - local capability-map and best-practice evidence
+   - CSV ledger opportunities, stale ledgers, or missing producer/consumer
+     contracts
    - stale or removable workflow, command, or ACO surfaces
    - workflow behavior that risks infinite, degrading, or ambiguous runs
    - product impact and ease of validation

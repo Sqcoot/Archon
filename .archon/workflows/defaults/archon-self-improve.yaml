@@ -29,6 +29,7 @@ nodes:
       CURRENT_GOAL=".archon/state/self-improvement/current_goal_4000chars.txt"
       GOAL_OUT="$ARTIFACTS_DIR/self-improve-goal.md"
       CAPABILITY_OUT="$ARTIFACTS_DIR/capability-map.md"
+      LEDGER_CANDIDATES_OUT="$ARTIFACTS_DIR/ledger-candidates.csv"
       LEDGER_DIR="tests/fixtures/aco/ledgers"
 
       if [ ! -f package.json ] || [ ! -d packages/cli ] || [ ! -d packages/workflows ] || [ ! -d packages/aco-core ] || [ ! -f "$DEFAULT_GOAL" ]; then
@@ -99,11 +100,24 @@ nodes:
         echo "- Use Context7 or official docs for library, SDK, API, CLI, or cloud-service behavior."
         echo "- Use Agentic Search or web research for broader best-practice questions."
         echo "- Do not run bun run research:graph or graph-cache refreshes without explicit approval."
+        echo
+        echo "## CSV Ledger Discipline"
+        echo "- CSV ledgers are architectural primitives for reviewable inventories."
+        echo "- Future slices may create, update, consolidate, or remove CSV ledgers for any Archon surface."
+        echo "- Committed ledgers need stable columns, producer/consumer intent, ownership, freshness, and validation."
       } > "$CAPABILITY_OUT"
+
+      {
+        echo "id,surface,owner,status,confidence,freshness,mutation_class,evidence,notes"
+        echo "workflow-command-validation,workflow and command validation,self-improvement,candidate,medium,fresh,read-only,capability-map,Could ledger target-only validation discovery and noisy global loading"
+        echo "aco-contract-fixtures,ACO contracts and fixtures,self-improvement,candidate,medium,fresh,read-only,ACO ledgers,Could ledger stale duplicated or low-value ACO fixtures before pruning"
+        echo "provider-runtime-controls,provider hooks and runtime controls,self-improvement,candidate,medium,fresh,read-only,provider tests,Could ledger controls that look enforced versus runtime-wired"
+      } > "$LEDGER_CANDIDATES_OUT"
 
       {
         echo "goal_artifact=$GOAL_OUT"
         echo "capability_artifact=$CAPABILITY_OUT"
+        echo "ledger_candidates_artifact=$LEDGER_CANDIDATES_OUT"
         echo "default_goal=$DEFAULT_GOAL"
         echo "current_goal=$CURRENT_GOAL"
         echo "scope=Archon workflows, commands, ACO, providers, CLI/server/docs/tests, generated defaults, and the self-improvement loop when explicitly selected."
@@ -142,6 +156,8 @@ nodes:
       - selected slice
       - mutation direction: Add, Remove, Consolidate, Stabilize, or Clarify
       - capability map summary and selected capabilities
+      - CSV ledger decision: created, updated, consolidated, removed, deferred,
+        or not applicable
       - best-practice or research evidence used, or why none was needed
       - files changed
       - commit hash, or exact reason no commit was made
@@ -154,6 +170,10 @@ nodes:
       - `$ARTIFACTS_DIR/capability-map.md` if the prepare step did not already
         create one, preserving runtime/provider/model context and ACO ledger
         evidence.
+      - `$ARTIFACTS_DIR/ledger-candidates.csv` listing useful CSV ledger
+        opportunities with stable columns.
+      - `$ARTIFACTS_DIR/ledger-change-plan.md` when the slice creates, updates,
+        consolidates, or removes a committed CSV ledger.
       - `$ARTIFACTS_DIR/best-practices-evidence.md` when external or current
         best-practice evidence influenced the slice, otherwise state in the
         handoff why repo-local evidence was enough.

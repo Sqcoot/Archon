@@ -39,6 +39,17 @@ reference fixtures as the local source of truth when they exist:
 - `tests/fixtures/aco/ledgers/command-ledger.csv`
 - `tests/fixtures/aco/reference-surface-plan.json`
 
+CSV ledgers are architectural primitives, not disposable notes. Use them when a
+tabular inventory is the clearest way to make tools, commands, workflows,
+providers, gates, risks, artifacts, ownership, freshness, confidence, or
+evidence reviewable and deterministic. A self-improvement slice may create,
+update, consolidate, or remove CSV ledgers when that improves Archon, including
+new ledgers for surfaces that do not yet have one.
+
+Committed CSV ledgers must have stable columns, clear producer/consumer intent,
+and validation proportional to how they are used. Exploratory ledgers belong in
+ignored artifacts until they are proven useful enough to commit.
+
 Treat Archon workflows, Archon commands, bash, scripts, BMAD skills, Agentic
 Search artifacts, Graphify/graph-waiver evidence, role contracts, gates,
 subagent or party-mode capabilities, provider/runtime metadata, and model
@@ -125,6 +136,9 @@ commit.
 - Improve artifact and handoff quality so interrupted sessions can recover.
 - Make capability, runtime, and best-practice evidence explicit before slice
   selection.
+- Create, update, consolidate, or remove CSV ledgers when they make Archon
+  architecture, tooling, evidence, risk, or ownership easier to inspect and
+  validate.
 - Tighten workflow and command contracts that cause infinite or degrading runs.
 - Improve, simplify, or remove ACO contracts, packages, workflows, commands,
   fixtures, and validation paths when evidence shows they are useful targets.
