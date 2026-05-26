@@ -107,7 +107,7 @@ Commands:
   workflow search [query]    Search the workflow marketplace
   workflow install <slug>    Install a workflow from the marketplace
   aco status                 Show ACO command parity status
-  aco bootstrap-codex        Emit Codex bootstrap context without writing artifacts
+  aco bootstrap-codex        Emit Codex bootstrap context and scoped dossier artifacts
   context <subcommand>       Inspect ACO/context command parity
   isolation list             List all active worktrees/environments
   isolation cleanup [days]   Remove stale environments (default: 7 days)
@@ -134,7 +134,10 @@ Options:
   --json                     Output machine-readable JSON (for workflow list)
   --event <event>            Codex lifecycle event for 'aco bootstrap-codex'
   --format <markdown|json>   Output format for ACO/context commands
-  --write-artifact           Request artifact write path (denied without approval)
+  --scope <once>             Requested workflow approval scope; run-scoped approval is not implemented end-to-end
+  --confirm-high-impact      Explicitly confirm destructive/credential/remote/production workflow approvals
+  --write-artifact           Write a scoped artifact dossier and zip under the artifact root (default for artifact-capable ACO commands)
+  --no-write-artifact        Suppress default ACO scoped artifact dossier output
   --workflow <name>          Workflow to run for 'continue' (default: archon-assist)
   --no-context               Skip context injection for 'continue'
   --port <port>              Override server port for 'serve' (default: 3090)
@@ -251,7 +254,9 @@ async function main(): Promise<number> {
         force: { type: 'boolean' },
         event: { type: 'string' },
         format: { type: 'string' },
+        'confirm-high-impact': { type: 'boolean' },
         'write-artifact': { type: 'boolean' },
+        'no-write-artifact': { type: 'boolean' },
       },
       allowPositionals: true,
       strict: false, // Allow unknown flags to pass through
@@ -463,13 +468,21 @@ async function main(): Promise<number> {
           case 'approve': {
             const approveRunId = positionals[2];
             if (!approveRunId) {
-              console.error('Usage: archon workflow approve <run-id> [comment]');
+              console.error(
+                'Usage: archon workflow approve <run-id> [comment] [--scope once] [--confirm-high-impact]'
+              );
+              console.error(
+                'High-impact approvals require --confirm-high-impact; run-scoped approval is not implemented end-to-end.'
+              );
               return 1;
             }
             // Accept comment as positional args (everything after run ID) or --comment flag
             const approveComment =
               (values.comment as string | undefined) || positionals.slice(3).join(' ') || undefined;
-            await workflowApproveCommand(approveRunId, approveComment);
+            await workflowApproveCommand(approveRunId, approveComment, {
+              scope: values.scope as string | undefined,
+              confirmHighImpact: values['confirm-high-impact'] === true,
+            });
             break;
           }
 
@@ -626,6 +639,7 @@ async function main(): Promise<number> {
           event: values.event as string | undefined,
           format: values.format as string | undefined,
           writeArtifact: values['write-artifact'] as boolean | undefined,
+          noWriteArtifact: values['no-write-artifact'] as boolean | undefined,
         });
       }
 

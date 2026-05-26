@@ -25,6 +25,7 @@ const mockParseWorkflow = mock((_content: string, _filename: string) => ({
   workflow: makeTestWorkflow({ name: 'test', description: 'Test workflow' }),
   error: null,
 }));
+const mockValidateWorkflowResources = mock(async () => []);
 
 mock.module('@archon/core', () => ({
   handleMessage: mock(async () => {}),
@@ -60,6 +61,9 @@ mock.module('@archon/workflows/workflow-discovery', () => ({
 }));
 mock.module('@archon/workflows/loader', () => ({
   parseWorkflow: mockParseWorkflow,
+}));
+mock.module('@archon/workflows/validator', () => ({
+  validateWorkflowResources: mockValidateWorkflowResources,
 }));
 mock.module('@archon/workflows/command-validation', () => ({
   isValidCommandName: mock(
@@ -180,6 +184,37 @@ describe('POST /api/workflows/validate', () => {
     expect(body.valid).toBe(false);
     expect(Array.isArray(body.errors)).toBe(true);
     expect(body.errors.length).toBeGreaterThan(0);
+  });
+
+  test('returns valid:false when resource or provider capability validation fails', async () => {
+    const app = createTestApp();
+    registerApiRoutes(app, {} as WebAdapter, {} as ConversationLockManager);
+
+    mockValidateWorkflowResources.mockResolvedValueOnce([
+      {
+        level: 'error',
+        nodeId: 'implement',
+        field: 'hooks',
+        message: 'Workflow node hooks are not enforced by provider codex',
+        badBehaviour: {
+          pattern: 'unsupported_control',
+          classification: 'bug',
+          rationale: 'Provider hooks must fail closed when they are not enforced.',
+        },
+      },
+    ]);
+
+    const response = await app.request('/api/workflows/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ definition: { name: 'my-workflow', description: 'test', nodes: [] } }),
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { valid: boolean; errors: string[] };
+    expect(body.valid).toBe(false);
+    expect(body.errors[0]).toContain('hooks');
+    expect(body.errors[0]).toContain('not enforced');
+    expect(body.errors[0]).toContain('bad-behaviour: unsupported_control (bug)');
   });
 
   test('returns 400 for missing definition', async () => {
@@ -514,6 +549,39 @@ describe('PUT /api/workflows/:name', () => {
     const body = (await response.json()) as { error: string; detail: string };
     expect(body.error).toContain('invalid');
     expect(body.detail).toBeDefined();
+  });
+
+  test('returns 400 when resource or provider capability validation fails', async () => {
+    const app = createTestApp();
+    registerApiRoutes(app, {} as WebAdapter, {} as ConversationLockManager);
+
+    mockValidateWorkflowResources.mockResolvedValueOnce([
+      {
+        level: 'error',
+        nodeId: 'implement',
+        field: 'allowed_tools/denied_tools',
+        message: 'Tool restrictions are not supported by provider codex',
+        badBehaviour: {
+          pattern: 'unsupported_control',
+          classification: 'bug',
+          rationale:
+            'Tool restrictions must fail closed when unsupported by the selected provider.',
+        },
+      },
+    ]);
+
+    const response = await app.request('/api/workflows/my-workflow', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        definition: { name: 'my-workflow', description: 'test', nodes: [] },
+      }),
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: string; detail: string };
+    expect(body.error).toContain('resource/capability validation');
+    expect(body.detail).toContain('Tool restrictions');
+    expect(body.detail).toContain('bad-behaviour: unsupported_control (bug)');
   });
 
   test('saves valid workflow and returns parsed workflow with source:project', async () => {

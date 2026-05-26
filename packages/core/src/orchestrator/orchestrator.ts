@@ -49,6 +49,7 @@ import { createIsolationStore } from '../db/isolation-environments';
 import { toError } from '../utils/error';
 import { getCodebase } from '../db/codebases';
 import { executeWorkflow } from '@archon/workflows/executor';
+import { getWorkflowEventEmitter } from '@archon/workflows/event-emitter';
 import type { WorkflowDefinition } from '@archon/workflows/schemas/workflow';
 import { createWorkflowDeps } from '../workflows/store-adapter';
 import {
@@ -248,6 +249,192 @@ export interface WorkflowRoutingContext {
   readonly isolationHints?: IsolationHints;
 }
 
+function isPreExecutionValidationError(error: Error): boolean {
+  return (
+    error.name === 'WorkflowPreExecutionValidationError' ||
+    error.message.includes('failed pre-execution validation')
+  );
+}
+
+function formatWorkflowExecutionFailureMessage(workflowName: string, error: Error): string {
+  if (isPreExecutionValidationError(error)) {
+    return `Workflow **${workflowName}** failed pre-execution validation and was not started:\n\n${error.message}`;
+  }
+  return `Workflow **${workflowName}** failed: ${error.message}`;
+}
+
+function hookBootloaderReportPathFromError(error: Error): string | undefined {
+  const value = (error as { hookBootloaderReportPath?: unknown }).hookBootloaderReportPath;
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function hookBadBehaviourLintPathFromError(error: Error): string | undefined {
+  const value = (error as { hookBadBehaviourLintPath?: unknown }).hookBadBehaviourLintPath;
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+async function createWorkflowEventPersistenceStatus(
+  workflowDeps: ReturnType<typeof createWorkflowDeps>,
+  data: Parameters<ReturnType<typeof createWorkflowDeps>['store']['createWorkflowEvent']>[0],
+  reason: string
+): Promise<'persisted' | 'best_effort_failed'> {
+  try {
+    const persisted = await workflowDeps.store.createWorkflowEvent(data);
+    return persisted ? 'persisted' : 'best_effort_failed';
+  } catch (error) {
+    getWorkflowEventEmitter().emit({
+      type: 'workflow_event_persist_failed',
+      runId: data.workflow_run_id,
+      eventType: data.event_type,
+      ...(data.step_name ? { stepName: data.step_name } : {}),
+      reason: `${reason}: ${(error as Error).message}`,
+      persistence: 'best_effort_failed',
+    });
+    return 'best_effort_failed';
+  }
+}
+
+async function markPreCreatedRunValidationBlocked(
+  workflowDeps: ReturnType<typeof createWorkflowDeps>,
+  run:
+    | Awaited<ReturnType<ReturnType<typeof createWorkflowDeps>['store']['createWorkflowRun']>>
+    | undefined,
+  error: Error
+): Promise<void> {
+  if (!run || !isPreExecutionValidationError(error)) return;
+  const hookBootloaderReportPath = hookBootloaderReportPathFromError(error);
+  const hookBadBehaviourLintPath = hookBadBehaviourLintPathFromError(error);
+  const diagnosticArtifactPath = hookBootloaderReportPath ?? hookBadBehaviourLintPath;
+  const validationMetadata = {
+    status: 'blocked',
+    error_name: error.name,
+    message: error.message,
+    ...(hookBootloaderReportPath ? { hook_bootloader_report_path: hookBootloaderReportPath } : {}),
+    ...(hookBadBehaviourLintPath ? { hook_bad_behaviour_lint_path: hookBadBehaviourLintPath } : {}),
+  };
+  await workflowDeps.store.updateWorkflowRun(run.id, {
+    status: 'failed',
+    metadata: {
+      ...run.metadata,
+      workflow_pre_execution_validation: validationMetadata,
+    },
+  });
+  await createWorkflowEventPersistenceStatus(
+    workflowDeps,
+    {
+      workflow_run_id: run.id,
+      event_type: 'workflow_failed',
+      data: {
+        error: error.message,
+        failure_stage: 'pre_execution_validation',
+        workflow_pre_execution_validation: validationMetadata,
+      },
+    },
+    'pre-execution workflow_failed event persistence threw'
+  );
+  getWorkflowEventEmitter().emit({
+    type: 'workflow_failed',
+    runId: run.id,
+    workflowName: run.workflow_name,
+    error: error.message,
+    failureStage: 'pre_execution_validation',
+    workflowPreExecutionValidation: validationMetadata,
+    ...(diagnosticArtifactPath ? { artifactPath: diagnosticArtifactPath } : {}),
+  });
+  const preExecutionDiagnosticPersistence = await createWorkflowEventPersistenceStatus(
+    workflowDeps,
+    {
+      workflow_run_id: run.id,
+      event_type: 'workflow_diagnostic',
+      data: {
+        severity: 'error',
+        code: 'workflow_pre_execution_validation_blocked',
+        message: error.message,
+        persistence: 'persisted',
+        failure_stage: 'pre_execution_validation',
+        ...(diagnosticArtifactPath ? { artifactPath: diagnosticArtifactPath } : {}),
+        ...(hookBootloaderReportPath
+          ? {
+              hook_bootloader_report_path: hookBootloaderReportPath,
+            }
+          : {}),
+        ...(hookBadBehaviourLintPath
+          ? {
+              hook_bad_behaviour_lint_path: hookBadBehaviourLintPath,
+            }
+          : {}),
+        workflow_pre_execution_validation: validationMetadata,
+      },
+    },
+    'pre-execution workflow_diagnostic event persistence threw'
+  );
+  getWorkflowEventEmitter().emit({
+    type: 'workflow_diagnostic',
+    runId: run.id,
+    severity: 'error',
+    code: 'workflow_pre_execution_validation_blocked',
+    message: error.message,
+    persistence: preExecutionDiagnosticPersistence,
+    ...(diagnosticArtifactPath ? { artifactPath: diagnosticArtifactPath } : {}),
+  });
+
+  if (hookBootloaderReportPath) {
+    await createWorkflowEventPersistenceStatus(
+      workflowDeps,
+      {
+        workflow_run_id: run.id,
+        event_type: 'workflow_artifact',
+        data: {
+          artifactType: 'file_created',
+          label: 'Codex hook bootloader report',
+          path: hookBootloaderReportPath,
+          absolutePath: hookBootloaderReportPath,
+          failure_stage: 'pre_execution_validation',
+        },
+      },
+      'pre-execution hook bootloader artifact event persistence threw'
+    );
+
+    getWorkflowEventEmitter().emit({
+      type: 'workflow_artifact',
+      runId: run.id,
+      artifactType: 'file_created',
+      label: 'Codex hook bootloader report',
+      path: hookBootloaderReportPath,
+      absolutePath: hookBootloaderReportPath,
+      failureStage: 'pre_execution_validation',
+    });
+  }
+
+  if (hookBadBehaviourLintPath) {
+    await createWorkflowEventPersistenceStatus(
+      workflowDeps,
+      {
+        workflow_run_id: run.id,
+        event_type: 'workflow_artifact',
+        data: {
+          artifactType: 'file_created',
+          label: 'Codex hook bad-behaviour lint',
+          path: hookBadBehaviourLintPath,
+          absolutePath: hookBadBehaviourLintPath,
+          failure_stage: 'pre_execution_validation',
+        },
+      },
+      'pre-execution hook bad-behaviour lint artifact event persistence threw'
+    );
+
+    getWorkflowEventEmitter().emit({
+      type: 'workflow_artifact',
+      runId: run.id,
+      artifactType: 'file_created',
+      label: 'Codex hook bad-behaviour lint',
+      path: hookBadBehaviourLintPath,
+      absolutePath: hookBadBehaviourLintPath,
+      failureStage: 'pre_execution_validation',
+    });
+  }
+}
+
 /**
  * Dispatch a workflow to run in a background worker conversation (web platform only).
  * Creates a hidden worker conversation, sets up event bridging from worker to parent,
@@ -352,6 +539,7 @@ export async function dispatchBackgroundWorkflow(
       metadata: ctx.issueContext ? { github_context: ctx.issueContext } : {},
       parent_conversation_id: ctx.conversationDbId,
     });
+    getWorkflowEventEmitter().registerRun(preCreatedRun.id, workerPlatformId);
   } catch (error) {
     const err = error as Error;
     getLog().error({ err, workflowName: workflow.name }, 'pre_create_workflow_run_failed');
@@ -429,10 +617,18 @@ export async function dispatchBackgroundWorkflow(
           },
           'background_workflow_failed'
         );
+        await markPreCreatedRunValidationBlocked(workflowDeps, preCreatedRun, err).catch(
+          (updateErr: unknown) => {
+            getLog().error(
+              { err: toError(updateErr), workflowName: workflow.name, runId: preCreatedRun?.id },
+              'background_workflow_validation_block_status_update_failed'
+            );
+          }
+        );
         // Surface error to parent conversation — include workflowResult metadata when
         // we have a pre-created run ID so the chat renders a result card with "View full logs"
         const failureRunId = preCreatedRun?.id;
-        const failureMessage = `Workflow **${workflow.name}** failed: ${err.message}`;
+        const failureMessage = formatWorkflowExecutionFailureMessage(workflow.name, err);
         await ctx.platform
           .sendMessage(
             ctx.conversationId,
@@ -450,6 +646,9 @@ export async function dispatchBackgroundWorkflow(
           });
       } finally {
         // Clean up event bridge
+        if (preCreatedRun) {
+          getWorkflowEventEmitter().unregisterRun(preCreatedRun.id);
+        }
         if (unsubscribeBridge) {
           unsubscribeBridge();
         }

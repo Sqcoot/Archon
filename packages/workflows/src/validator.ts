@@ -30,7 +30,16 @@ function getLog(): ReturnType<typeof createLogger> {
   if (!cachedLog) cachedLog = createLogger('workflow.validator');
   return cachedLog;
 }
-import { isScriptNode } from './schemas';
+import {
+  BASH_NODE_AI_FIELDS,
+  LOOP_NODE_AI_FIELDS,
+  SCRIPT_NODE_AI_FIELDS,
+  isApprovalNode,
+  isBashNode,
+  isCancelNode,
+  isLoopNode,
+  isScriptNode,
+} from './schemas';
 import type { WorkflowDefinition, DagNode } from './schemas';
 import type { ScriptRuntime } from './script-discovery';
 import { discoverScriptsForCwd } from './script-discovery';
@@ -48,6 +57,59 @@ export interface ValidationIssue {
   message: string;
   hint?: string;
   suggestions?: string[];
+  badBehaviour?: BadBehaviourLint;
+}
+
+export type BadBehaviourPattern =
+  | 'ignored_control'
+  | 'unsupported_control'
+  | 'unsupported_ignored'
+  | 'silent_behavior'
+  | 'warning_only_control'
+  | 'missing_control'
+  | 'deferred_behavior'
+  | 'denied_before_write'
+  | 'best_effort_surface'
+  | 'conflicting_metadata';
+
+export type BadBehaviourClassification = 'intentional' | 'warning-only' | 'bug';
+
+export interface BadBehaviourLint {
+  pattern: BadBehaviourPattern;
+  classification: BadBehaviourClassification;
+  rationale: string;
+}
+
+const SAFETY_OR_OUTPUT_CONTROL_FIELDS = new Set([
+  'output_format',
+  'allowed_tools',
+  'denied_tools',
+  'hooks',
+  'mcp',
+  'skills',
+  'agents',
+  'sandbox',
+  'maxBudgetUsd',
+  'env',
+  'systemPrompt',
+  'fallbackModel',
+  'betas',
+  'effort',
+  'thinking',
+]);
+
+function badBehaviour(
+  pattern: BadBehaviourPattern,
+  classification: BadBehaviourClassification,
+  rationale: string
+): Pick<ValidationIssue, 'badBehaviour'> {
+  return { badBehaviour: { pattern, classification, rationale } };
+}
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
+
+function isHighImpactApprovalClass(value: unknown): value is string {
+  return typeof value === 'string' && HIGH_IMPACT_APPROVAL_CLASSES.has(value);
 }
 
 /** Result of validating a single workflow (Level 3) */
@@ -83,6 +145,8 @@ export interface CommandValidationResult {
 export interface ValidationConfig {
   loadDefaultCommands?: boolean;
   commandFolder?: string;
+  /** Merged workflow environment variables; non-empty AI env injection must be provider-enforced. */
+  envVars?: Record<string, string>;
 }
 
 // =============================================================================
@@ -149,7 +213,10 @@ export async function discoverAvailableCommands(
   const searchPaths = getCommandFolderSearchPaths(config?.commandFolder);
   for (const folder of searchPaths) {
     const dirPath = join(cwd, folder);
-    const files = await findMarkdownFilesRecursive(dirPath, '', { maxDepth: 1 });
+    const files = await findMarkdownFilesRecursive(dirPath, '', {
+      maxDepth: 1,
+      failOnDepthExceeded: true,
+    });
     for (const { commandName } of files) {
       names.add(commandName);
     }
@@ -160,7 +227,10 @@ export async function discoverAvailableCommands(
   // home-scope doesn't take down repo/bundled discovery.
   const homePath = getHomeCommandsPath();
   try {
-    const homeCommands = await findMarkdownFilesRecursive(homePath, '', { maxDepth: 1 });
+    const homeCommands = await findMarkdownFilesRecursive(homePath, '', {
+      maxDepth: 1,
+      failOnDepthExceeded: true,
+    });
     for (const { commandName } of homeCommands) {
       names.add(commandName);
     }
@@ -177,7 +247,10 @@ export async function discoverAvailableCommands(
       }
     } else {
       const defaultsPath = getDefaultCommandsPath();
-      const files = await findMarkdownFilesRecursive(defaultsPath, '', { maxDepth: 1 });
+      const files = await findMarkdownFilesRecursive(defaultsPath, '', {
+        maxDepth: 1,
+        failOnDepthExceeded: true,
+      });
       for (const { commandName } of files) {
         names.add(commandName);
       }
@@ -197,7 +270,10 @@ export async function discoverAvailableCommands(
  * deterministic walk order wins — duplicates within a scope are a user error.
  */
 async function resolveCommandInDir(rootDir: string, commandName: string): Promise<string | null> {
-  const entries = await findMarkdownFilesRecursive(rootDir, '', { maxDepth: 1 });
+  const entries = await findMarkdownFilesRecursive(rootDir, '', {
+    maxDepth: 1,
+    failOnDepthExceeded: true,
+  });
   const match = entries.find(e => e.commandName === commandName);
   return match ? join(rootDir, match.relativePath) : null;
 }
@@ -318,8 +394,328 @@ export async function validateWorkflowResources(
   const issues: ValidationIssue[] = [];
   const availableCommands = await discoverAvailableCommands(cwd, config);
 
+  if (workflow.mode === 'autonomous' && workflow.interactive === true) {
+    issues.push({
+      level: 'error',
+      field: 'mode',
+      message: 'Workflow declares mode: autonomous and interactive: true',
+      hint: 'Use mode: guided or mode: interactive_only for human-gated flows, or remove interactive: true for autonomous execution',
+      ...badBehaviour(
+        'conflicting_metadata',
+        'bug',
+        'Autonomous routing metadata conflicts with interactive runtime behavior.'
+      ),
+    });
+  }
+
+  if (workflow.mode === 'interactive_only' && workflow.interactive !== true) {
+    issues.push({
+      level: 'error',
+      field: 'interactive',
+      message: 'Workflow declares mode: interactive_only but does not set interactive: true',
+      hint: 'Set interactive: true so UI/runtime presentation matches router metadata',
+      ...badBehaviour(
+        'conflicting_metadata',
+        'bug',
+        'Router metadata says human-gated, but runtime presentation would not foreground the gate.'
+      ),
+    });
+  }
+
+  if (workflow.lock_scope === 'checkout_mutation' && workflow.mutates_checkout === false) {
+    issues.push({
+      level: 'error',
+      field: 'lock_scope',
+      message: 'Workflow declares lock_scope: checkout_mutation but mutates_checkout: false',
+      hint: 'Use lock_scope: artifact_only/read_only for non-checkout-mutating workflows, or remove mutates_checkout: false',
+      ...badBehaviour(
+        'conflicting_metadata',
+        'bug',
+        'Lock metadata claims checkout mutation while the path-lock guard is disabled.'
+      ),
+    });
+  }
+
+  if (
+    (workflow.lock_scope === 'artifact_only' || workflow.lock_scope === 'read_only') &&
+    workflow.mutates_checkout !== false
+  ) {
+    issues.push({
+      level: 'warning',
+      field: 'mutates_checkout',
+      message: `Workflow declares lock_scope: ${workflow.lock_scope} but does not set mutates_checkout: false`,
+      hint: 'Set mutates_checkout: false when writes are per-run artifacts only or the workflow is read-only',
+      ...badBehaviour(
+        'warning_only_control',
+        'warning-only',
+        'Lock-scope metadata is safer than the executor lock default, so concurrency behavior may be stricter than intended.'
+      ),
+    });
+  }
+
+  if (
+    workflow.mode === 'autonomous' &&
+    (workflow.lock_scope === 'checkout_mutation' || workflow.lock_scope === 'external_side_effect')
+  ) {
+    issues.push({
+      level: 'error',
+      field: 'lock_scope',
+      message: `Autonomous workflow declares lock_scope: ${workflow.lock_scope}`,
+      hint: 'Use mode: guided/interactive_only with explicit one-shot approval gates, or reduce lock_scope to artifact_only/read_only when no checkout mutation or external side effect exists',
+      ...badBehaviour(
+        'conflicting_metadata',
+        'bug',
+        'Checkout mutation and external side effects are high-impact lock scopes and must not run under ordinary autonomous no-approval execution.'
+      ),
+    });
+  }
+
+  const workflowProvider = workflow.provider ?? defaultProvider;
+  if (
+    workflow.sandbox !== undefined &&
+    workflowProvider !== undefined &&
+    isRegisteredProvider(workflowProvider)
+  ) {
+    const caps = getProviderCapabilities(workflowProvider);
+    if (!caps.sandbox) {
+      issues.push({
+        level: 'error',
+        field: 'sandbox',
+        message: `Workflow-level sandbox settings are not supported by provider '${workflowProvider}' — safety-critical controls must not be warning-only`,
+        hint: 'Remove workflow-level sandbox settings, move them into provider config that is actually mapped, or switch to a provider that enforces workflow sandbox settings',
+        ...badBehaviour(
+          'unsupported_control',
+          'bug',
+          'Workflow-level sandbox controls affect mutation safety and cannot be deferred to runtime warnings.'
+        ),
+      });
+    }
+  }
+  if (workflowProvider !== undefined && isRegisteredProvider(workflowProvider)) {
+    const caps = getProviderCapabilities(workflowProvider);
+    if (workflow.effort !== undefined && !caps.effortControl) {
+      issues.push({
+        level: 'error',
+        field: 'effort',
+        message: `Workflow-level effort is not supported by provider '${workflowProvider}' — execution controls must fail closed`,
+        hint: 'Remove workflow-level effort or switch to a provider that supports effort controls',
+        ...badBehaviour(
+          'unsupported_control',
+          'bug',
+          'Effort changes provider execution behavior and must fail closed when the selected provider cannot enforce it.'
+        ),
+      });
+    }
+    if (workflow.thinking !== undefined && !caps.thinkingControl) {
+      issues.push({
+        level: 'error',
+        field: 'thinking',
+        message: `Workflow-level thinking is not supported by provider '${workflowProvider}' — execution controls must fail closed`,
+        hint: 'Remove workflow-level thinking or switch to a provider that supports thinking controls',
+        ...badBehaviour(
+          'unsupported_control',
+          'bug',
+          'Thinking controls alter provider reasoning behavior and must fail closed when the selected provider cannot enforce them.'
+        ),
+      });
+    }
+    if (workflow.betas !== undefined && !caps.betaFlags) {
+      issues.push({
+        level: 'error',
+        field: 'betas',
+        message: `Workflow-level beta feature flags are not supported by provider '${workflowProvider}' — runtime feature controls must fail closed`,
+        hint: 'Remove workflow-level betas or switch to a provider that forwards provider beta flags',
+        ...badBehaviour(
+          'unsupported_control',
+          'bug',
+          'Provider beta flags alter runtime feature surfaces and must fail closed when the selected provider cannot forward them.'
+        ),
+      });
+    }
+    if (workflow.fallbackModel !== undefined && !caps.fallbackModel) {
+      issues.push({
+        level: 'error',
+        field: 'fallbackModel',
+        message: `Workflow-level fallbackModel is not supported by provider '${workflowProvider}' — model fallback controls must fail closed`,
+        hint: 'Remove workflow-level fallbackModel or switch to a provider that supports model fallback',
+        ...badBehaviour(
+          'unsupported_control',
+          'bug',
+          'fallbackModel changes model selection semantics and must fail closed when the selected provider cannot enforce it.'
+        ),
+      });
+    }
+  }
+
   for (const node of workflow.nodes) {
     const provider = resolveProvider(node, workflow.provider, defaultProvider);
+
+    let ignoredAiFields: readonly string[] = [];
+    let nonAiNodeKind: string | undefined;
+    if (isBashNode(node) || isApprovalNode(node) || isCancelNode(node)) {
+      ignoredAiFields = BASH_NODE_AI_FIELDS;
+      nonAiNodeKind = isBashNode(node) ? 'bash' : isApprovalNode(node) ? 'approval' : 'cancel';
+    } else if (isScriptNode(node)) {
+      ignoredAiFields = SCRIPT_NODE_AI_FIELDS;
+      nonAiNodeKind = 'script';
+    } else if (isLoopNode(node)) {
+      ignoredAiFields = LOOP_NODE_AI_FIELDS;
+      nonAiNodeKind = 'loop';
+    }
+    if (nonAiNodeKind !== undefined) {
+      const presentAiFields = ignoredAiFields.filter(
+        field => (node as unknown as Record<string, unknown>)[field] !== undefined
+      );
+      if (presentAiFields.length > 0) {
+        const unsafeFields = presentAiFields.filter(field =>
+          SAFETY_OR_OUTPUT_CONTROL_FIELDS.has(field)
+        );
+        const compatibilityFields = presentAiFields.filter(
+          field => !SAFETY_OR_OUTPUT_CONTROL_FIELDS.has(field)
+        );
+        if (unsafeFields.length > 0) {
+          issues.push({
+            level: 'error',
+            nodeId: node.id,
+            field: unsafeFields.join(','),
+            message: `${nonAiNodeKind} node contains safety/output control fields that would be ignored: ${unsafeFields.join(', ')}`,
+            hint: 'Move these fields to a prompt/AI node where the provider enforces them, or remove them',
+            ...badBehaviour(
+              'silent_behavior',
+              'bug',
+              'Safety/output controls on this node type would silently disappear because the executor does not read them.'
+            ),
+          });
+        }
+        if (compatibilityFields.length > 0) {
+          issues.push({
+            level: 'warning',
+            nodeId: node.id,
+            field: compatibilityFields.join(','),
+            message: `${nonAiNodeKind} node contains AI-only compatibility fields that are ignored: ${compatibilityFields.join(', ')}`,
+            hint: 'Move these fields to a prompt/AI node or remove them so workflow behaviour is explicit',
+            ...badBehaviour(
+              'ignored_control',
+              'intentional',
+              'Non-safety AI compatibility fields are accepted for schema compatibility but do not affect this node type.'
+            ),
+          });
+        }
+      }
+    }
+
+    if (workflow.mode === 'autonomous' && isApprovalNode(node)) {
+      issues.push({
+        level: 'error',
+        nodeId: node.id,
+        field: 'approval',
+        message: `Autonomous workflow contains approval node '${node.id}'`,
+        hint: 'Remove the approval node, replace it with a deterministic safety check, or mark the workflow mode: guided/interactive_only',
+        ...badBehaviour(
+          'conflicting_metadata',
+          'bug',
+          'An autonomous workflow would stop for a human gate.'
+        ),
+      });
+    }
+
+    const approvalIsHighImpact =
+      isApprovalNode(node) &&
+      (node.approval.high_impact === true ||
+        isHighImpactApprovalClass(node.approval.mutation_class));
+
+    if (isApprovalNode(node) && approvalIsHighImpact) {
+      if (!node.approval.reason) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'approval.reason',
+          message: `High-impact approval node '${node.id}' (${node.approval.mutation_class ?? 'high_impact=true'}) is missing reason`,
+          hint: 'Add approval.reason explaining why this destructive/credential/remote/production gate is required',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'A high-impact approval gate without an explicit reason is not safe for human approval.'
+          ),
+        });
+      }
+      if (!node.approval.path && !node.approval.command) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'approval.path',
+          message: `High-impact approval node '${node.id}' (${node.approval.mutation_class ?? 'high_impact=true'}) is missing path or command context`,
+          hint: 'Add approval.path and/or approval.command so the approval UI shows exactly what will be affected',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'A high-impact approval gate without path or command context hides the affected surface from the reviewer.'
+          ),
+        });
+      }
+      if (node.approval.default_scope === 'run') {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'approval.default_scope',
+          message: `High-impact approval node '${node.id}' cannot default to approve-for-run`,
+          hint: 'Use default_scope: once for destructive, credential, remote, or production approval gates',
+          ...badBehaviour(
+            'conflicting_metadata',
+            'bug',
+            'High-impact gates must not silently widen approval from one gate to the whole run.'
+          ),
+        });
+      }
+      if (node.approval.allowed_scopes?.includes('run')) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'approval.allowed_scopes',
+          message: `High-impact approval node '${node.id}' cannot allow approve-for-run`,
+          hint: 'Use allowed_scopes: [once] until run-scoped approval semantics are implemented end-to-end',
+          ...badBehaviour(
+            'deferred_behavior',
+            'bug',
+            'High-impact gates must remain one-shot, and run-scoped approval execution is not implemented end-to-end.'
+          ),
+        });
+      }
+    }
+
+    if (isApprovalNode(node) && !approvalIsHighImpact && node.approval.default_scope === 'run') {
+      issues.push({
+        level: 'error',
+        nodeId: node.id,
+        field: 'approval.default_scope',
+        message: `Approval node '${node.id}' defaults to approve-for-run, but run-scoped approval execution is not implemented`,
+        hint: 'Use default_scope: once until run-scoped approval semantics are implemented end-to-end',
+        ...badBehaviour(
+          'deferred_behavior',
+          'bug',
+          'The metadata can describe approve-for-run, but runtime execution currently treats approvals as one-shot gates.'
+        ),
+      });
+    }
+
+    if (
+      isApprovalNode(node) &&
+      !approvalIsHighImpact &&
+      node.approval.allowed_scopes?.includes('run')
+    ) {
+      issues.push({
+        level: 'error',
+        nodeId: node.id,
+        field: 'approval.allowed_scopes',
+        message: `Approval node '${node.id}' declares approve-for-run, but run-scoped approval execution is not implemented`,
+        hint: 'Use allowed_scopes: [once] until run-scoped approval semantics are implemented end-to-end',
+        ...badBehaviour(
+          'deferred_behavior',
+          'bug',
+          'The metadata can describe approve-for-run, but runtime execution currently treats approvals as one-shot gates.'
+        ),
+      });
+    }
 
     // --- Command nodes: check file exists ---
     if ('command' in node && typeof node.command === 'string') {
@@ -390,16 +786,21 @@ export async function validateWorkflowResources(
         }
       }
 
-      // Warn if using MCP with a provider that doesn't support it
+      // Fail closed if using MCP with a provider that doesn't support it.
       if (provider && isRegisteredProvider(provider)) {
         const caps = getProviderCapabilities(provider);
         if (!caps.mcp) {
           issues.push({
-            level: 'warning',
+            level: 'error',
             nodeId: node.id,
             field: 'mcp',
-            message: `MCP servers are not supported by provider '${provider}' — this will be ignored`,
+            message: `MCP servers are not supported by provider '${provider}' — tool-resource controls must not be warning-only`,
             hint: 'Remove the mcp field or switch to a provider that supports MCP',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'The workflow declares an MCP tool-resource control that the selected provider will not enforce.'
+            ),
           });
         }
       }
@@ -416,51 +817,144 @@ export async function validateWorkflowResources(
 
         if (!projectExists && !userExists) {
           issues.push({
-            level: 'warning',
+            level: 'error',
             nodeId: node.id,
             field: 'skills',
             message: `Skill '${skillName}' not found in .claude/skills/ or ~/.claude/skills/`,
             hint: `Install with: npx skills add <repo> — or create manually at .claude/skills/${skillName}/SKILL.md`,
+            ...badBehaviour(
+              'missing_control',
+              'bug',
+              'The workflow declares skill context that cannot be loaded; missing context controls must fail closed instead of warning-only execution.'
+            ),
           });
         }
       }
 
-      // Warn if using skills with a provider that doesn't support them
+      // Fail closed if using skills with a provider that doesn't support them.
       if (provider && isRegisteredProvider(provider)) {
         const caps = getProviderCapabilities(provider);
         if (!caps.skills) {
           issues.push({
-            level: 'warning',
+            level: 'error',
             nodeId: node.id,
             field: 'skills',
-            message: `Skills are not supported by provider '${provider}' — this will be ignored`,
+            message: `Skills are not supported by provider '${provider}' — skill controls must not be warning-only`,
             hint: 'Remove the skills field or switch to a provider that supports skills',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'The workflow declares skill context that the selected provider will not load.'
+            ),
           });
         }
       }
     }
 
-    // --- Capability-driven warnings for hooks and tool restrictions ---
+    if (
+      'agents' in node &&
+      node.agents &&
+      Object.prototype.hasOwnProperty.call(node.agents, 'dag-node-skills') &&
+      'skills' in node &&
+      Array.isArray(node.skills) &&
+      node.skills.length > 0
+    ) {
+      issues.push({
+        level: 'error',
+        nodeId: node.id,
+        field: 'agents.dag-node-skills',
+        message: `Node '${node.id}' defines reserved inline agent 'dag-node-skills' and also uses skills`,
+        hint: "Rename the inline agent or remove skills; 'dag-node-skills' is reserved for Archon's skills wrapper",
+        ...badBehaviour(
+          'silent_behavior',
+          'bug',
+          'A user-defined reserved agent would override the generated skills wrapper, making the skills field silently ineffective.'
+        ),
+      });
+    }
+
+    // --- Capability-driven enforcement for hooks and tool restrictions ---
     if (provider && isRegisteredProvider(provider)) {
       const caps = getProviderCapabilities(provider);
+      const isAiExecutionNode =
+        !isBashNode(node) &&
+        !isScriptNode(node) &&
+        !isApprovalNode(node) &&
+        !isCancelNode(node) &&
+        !isLoopNode(node);
 
-      if ('hooks' in node && node.hooks && !caps.hooks) {
+      if (isAiExecutionNode && provider !== 'codex') {
+        if (workflow.modelReasoningEffort !== undefined) {
+          issues.push({
+            level: 'warning',
+            nodeId: node.id,
+            field: 'modelReasoningEffort',
+            message: `Workflow-level modelReasoningEffort is Codex-specific and will be ignored by provider '${provider}'`,
+            hint: 'Remove modelReasoningEffort or run this workflow node with provider: codex',
+            ...badBehaviour(
+              'unsupported_ignored',
+              'warning-only',
+              'Codex model reasoning effort is an advisory model-control field for other providers; static validation surfaces the ignored control before execution.'
+            ),
+          });
+        }
+        if (workflow.webSearchMode !== undefined) {
+          issues.push({
+            level: 'error',
+            nodeId: node.id,
+            field: 'webSearchMode',
+            message: `Workflow-level webSearchMode is Codex-specific and is not enforced by provider '${provider}'`,
+            hint: 'Remove webSearchMode or run this workflow node with provider: codex',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'webSearchMode controls network/tool behavior and must fail closed when the selected provider does not enforce it.'
+            ),
+          });
+        }
+        if (workflow.additionalDirectories !== undefined) {
+          issues.push({
+            level: 'error',
+            nodeId: node.id,
+            field: 'additionalDirectories',
+            message: `Workflow-level additionalDirectories is Codex-specific and is not enforced by provider '${provider}'`,
+            hint: 'Remove additionalDirectories or run this workflow node with provider: codex',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'additionalDirectories changes the provider filesystem boundary and must fail closed when the selected provider does not enforce it.'
+            ),
+          });
+        }
+      }
+
+      if ('hooks' in node && node.hooks && caps.hookCapabilities.workflowNodeHooks !== 'enforced') {
         issues.push({
-          level: 'warning',
+          level: 'error',
           nodeId: node.id,
           field: 'hooks',
-          message: `Hooks are not supported by provider '${provider}' — this will be ignored`,
-          hint: 'Remove the hooks field or switch to a provider that supports hooks',
+          message: `Workflow node hooks are not enforced by provider '${provider}' — safety-critical controls must not be warning-only`,
+          hint: 'Remove workflow hooks, switch to a provider that enforces workflow hooks, or use provider-native hook preflight artifacts',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'Hook controls affect safety/output behavior and cannot be silently ignored.'
+          ),
         });
       }
 
       if ('agents' in node && node.agents && !caps.agents) {
         issues.push({
-          level: 'warning',
+          level: 'error',
           nodeId: node.id,
           field: 'agents',
-          message: `Inline agents are not supported by provider '${provider}' — this will be ignored`,
+          message: `Inline agents are not supported by provider '${provider}' — agent controls must not be warning-only`,
           hint: 'Remove the agents field or switch to a provider that supports inline agents (e.g. claude)',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'The workflow declares inline agent behavior that the selected provider will not execute.'
+          ),
         });
       }
 
@@ -470,13 +964,260 @@ export async function validateWorkflowResources(
           ('denied_tools' in node && node.denied_tools !== undefined)
         ) {
           issues.push({
-            level: 'warning',
+            level: 'error',
             nodeId: node.id,
             field: 'allowed_tools/denied_tools',
-            message: `Tool restrictions are not supported by provider '${provider}' — this will be ignored`,
-            hint: 'Remove tool restriction fields or switch to a provider that supports them',
+            message: `Tool restrictions are not supported by provider '${provider}' — safety-critical controls must not be warning-only`,
+            hint: 'Remove tool restriction fields or switch to a provider that enforces them',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'Tool restrictions are safety controls and cannot be warning-only.'
+            ),
           });
         }
+      }
+
+      if (
+        isAiExecutionNode &&
+        config?.envVars !== undefined &&
+        Object.keys(config.envVars).length > 0 &&
+        !caps.envInjection
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'env',
+          message: `Workflow environment variables are configured but provider '${provider}' does not enforce env injection`,
+          hint: 'Remove configured env vars for this workflow run or switch to a provider that enforces env injection',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'Environment injection is a resource/secret control and cannot be warning-only.'
+          ),
+        });
+      }
+
+      const nodeSandbox = 'sandbox' in node ? node.sandbox : undefined;
+      const inheritsWorkflowSandbox = nodeSandbox === undefined && workflow.sandbox !== undefined;
+      const inheritedSandboxNeedsProviderCheck =
+        inheritsWorkflowSandbox && provider !== workflowProvider;
+      if (
+        isAiExecutionNode &&
+        (nodeSandbox !== undefined || inheritedSandboxNeedsProviderCheck) &&
+        !caps.sandbox
+      ) {
+        const inheritedMessage = `Workflow-level sandbox settings apply to node '${node.id}', but provider '${provider}' does not enforce them — safety-critical controls must not be warning-only`;
+        const nodeMessage = `Sandbox settings are not supported by provider '${provider}' — safety-critical controls must not be warning-only`;
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'sandbox',
+          message: inheritsWorkflowSandbox ? inheritedMessage : nodeMessage,
+          hint: 'Remove sandbox settings, move them into provider config that is actually mapped, or switch to a provider that enforces workflow sandbox settings',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            inheritsWorkflowSandbox
+              ? 'Inherited workflow-level sandbox controls affect mutation safety and cannot be bypassed by node-level provider overrides.'
+              : 'Sandbox controls affect mutation safety and cannot be warning-only.'
+          ),
+        });
+      }
+
+      if (
+        isAiExecutionNode &&
+        'maxBudgetUsd' in node &&
+        node.maxBudgetUsd !== undefined &&
+        !caps.costControl
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'maxBudgetUsd',
+          message: `Budget caps are not supported by provider '${provider}' — cost controls must not be warning-only`,
+          hint: 'Remove maxBudgetUsd or switch to a provider that enforces budget caps',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'Budget caps are cost/resource controls and cannot be silently ignored.'
+          ),
+        });
+      }
+
+      if ('output_format' in node && node.output_format !== undefined && !caps.structuredOutput) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'output_format',
+          message: `Structured output is not supported by provider '${provider}' — output controls must not be ignored`,
+          hint: 'Remove output_format or switch to a provider that enforces structured output',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            'output_format controls downstream behavior and cannot be silently ignored.'
+          ),
+        });
+      }
+
+      if (
+        'output_format' in node &&
+        node.output_format !== undefined &&
+        caps.structuredOutput &&
+        caps.structuredOutputMode === 'best_effort'
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'output_format',
+          message: `Provider '${provider}' supports output_format only as best-effort structured output — output controls must fail closed unless schema enforcement is implemented`,
+          hint: 'Use an enforced structured-output provider for workflow output_format, or remove output_format and parse advisory text explicitly',
+          ...badBehaviour(
+            'best_effort_surface',
+            'bug',
+            'Workflow output_format is a user-facing output control; best-effort schema following is not true enforcement.'
+          ),
+        });
+      }
+
+      if (isAiExecutionNode && 'systemPrompt' in node && node.systemPrompt !== undefined) {
+        if (!caps.systemPrompt || caps.systemPromptMode === 'unsupported') {
+          issues.push({
+            level: 'error',
+            nodeId: node.id,
+            field: 'systemPrompt',
+            message: `System prompt controls are not supported by provider '${provider}' — instruction controls must not be ignored`,
+            hint: 'Remove systemPrompt or switch to a provider that enforces system prompt controls',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'systemPrompt changes instruction hierarchy and safety behavior, so unsupported providers must fail closed.'
+            ),
+          });
+        } else if (
+          caps.systemPromptMode === 'string_only' &&
+          typeof node.systemPrompt !== 'string'
+        ) {
+          issues.push({
+            level: 'error',
+            nodeId: node.id,
+            field: 'systemPrompt',
+            message: `Provider '${provider}' supports only string systemPrompt values — structured prompt controls must not be ignored`,
+            hint: 'Use a string systemPrompt for this provider or switch to a provider with full systemPrompt support',
+            ...badBehaviour(
+              'unsupported_control',
+              'bug',
+              'Non-string systemPrompt values would be dropped or degraded by this provider instead of being fully enforced.'
+            ),
+          });
+        }
+      }
+
+      const nodeEffort = 'effort' in node ? node.effort : undefined;
+      const inheritedEffortNeedsProviderCheck =
+        nodeEffort === undefined && workflow.effort !== undefined && provider !== workflowProvider;
+      if (
+        (nodeEffort !== undefined || (isAiExecutionNode && inheritedEffortNeedsProviderCheck)) &&
+        !caps.effortControl
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'effort',
+          message: inheritedEffortNeedsProviderCheck
+            ? `Workflow-level effort applies to node '${node.id}', but provider '${provider}' does not support effort controls — execution controls must fail closed`
+            : `Effort controls are not supported by provider '${provider}' — execution controls must fail closed`,
+          hint: 'Remove effort or switch to a provider that supports effort controls',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            inheritedEffortNeedsProviderCheck
+              ? 'Inherited workflow-level effort changes node provider execution behavior and must fail closed when the node provider cannot enforce it.'
+              : 'Effort changes provider execution behavior and must fail closed when the selected provider cannot enforce it.'
+          ),
+        });
+      }
+
+      const nodeThinking = 'thinking' in node ? node.thinking : undefined;
+      const inheritedThinkingNeedsProviderCheck =
+        nodeThinking === undefined &&
+        workflow.thinking !== undefined &&
+        provider !== workflowProvider;
+      if (
+        (nodeThinking !== undefined ||
+          (isAiExecutionNode && inheritedThinkingNeedsProviderCheck)) &&
+        !caps.thinkingControl
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'thinking',
+          message: inheritedThinkingNeedsProviderCheck
+            ? `Workflow-level thinking applies to node '${node.id}', but provider '${provider}' does not support thinking controls — execution controls must fail closed`
+            : `Thinking controls are not supported by provider '${provider}' — execution controls must fail closed`,
+          hint: 'Remove thinking or switch to a provider that supports thinking controls',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            inheritedThinkingNeedsProviderCheck
+              ? 'Inherited workflow-level thinking alters node provider reasoning behavior and must fail closed when the node provider cannot enforce it.'
+              : 'Thinking controls alter provider reasoning behavior and must fail closed when the selected provider cannot enforce them.'
+          ),
+        });
+      }
+
+      const nodeBetas = 'betas' in node ? node.betas : undefined;
+      const inheritedBetasNeedProviderCheck =
+        nodeBetas === undefined && workflow.betas !== undefined && provider !== workflowProvider;
+      if (
+        isAiExecutionNode &&
+        ((Array.isArray(nodeBetas) && nodeBetas.length > 0) || inheritedBetasNeedProviderCheck) &&
+        !caps.betaFlags
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'betas',
+          message: inheritedBetasNeedProviderCheck
+            ? `Workflow-level beta feature control applies to node '${node.id}', but provider '${provider}' does not support beta flags — runtime feature controls must fail closed`
+            : `Beta feature flags are not supported by provider '${provider}' — runtime feature controls must fail closed`,
+          hint: 'Remove betas or switch to a provider that forwards provider beta flags',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            inheritedBetasNeedProviderCheck
+              ? 'Inherited workflow-level provider beta flags alter node runtime feature surfaces and must fail closed when the node provider cannot forward them.'
+              : 'Provider beta flags alter runtime feature surfaces and must fail closed when the selected provider cannot forward them.'
+          ),
+        });
+      }
+
+      const nodeFallbackModel = 'fallbackModel' in node ? node.fallbackModel : undefined;
+      const inheritedFallbackModelNeedsProviderCheck =
+        nodeFallbackModel === undefined &&
+        workflow.fallbackModel !== undefined &&
+        provider !== workflowProvider;
+      if (
+        (nodeFallbackModel !== undefined ||
+          (isAiExecutionNode && inheritedFallbackModelNeedsProviderCheck)) &&
+        !caps.fallbackModel
+      ) {
+        issues.push({
+          level: 'error',
+          nodeId: node.id,
+          field: 'fallbackModel',
+          message: inheritedFallbackModelNeedsProviderCheck
+            ? `Workflow-level fallbackModel applies to node '${node.id}', but provider '${provider}' does not support model fallback — model fallback controls must fail closed`
+            : `fallbackModel is not supported by provider '${provider}' — model fallback controls must fail closed`,
+          hint: 'Remove fallbackModel or switch to a provider that supports model fallback',
+          ...badBehaviour(
+            'unsupported_control',
+            'bug',
+            inheritedFallbackModelNeedsProviderCheck
+              ? 'Inherited workflow-level fallbackModel changes node model selection semantics and must fail closed when the node provider cannot enforce it.'
+              : 'fallbackModel changes model selection semantics and must fail closed when the selected provider cannot enforce it.'
+          ),
+        });
       }
     }
 
@@ -509,11 +1250,16 @@ export async function validateWorkflowResources(
       const runtimeAvailable = await checkRuntimeAvailable(node.runtime);
       if (!runtimeAvailable) {
         issues.push({
-          level: 'warning',
+          level: 'error',
           nodeId: node.id,
           field: 'runtime',
           message: `Runtime '${node.runtime}' is not available on PATH`,
           hint: RUNTIME_INSTALL_HINTS[node.runtime],
+          ...badBehaviour(
+            'missing_control',
+            'bug',
+            'A declared script runtime is an execution dependency; accepting the workflow would defer a missing control to runtime failure.'
+          ),
         });
       }
 
@@ -525,6 +1271,11 @@ export async function validateWorkflowResources(
           field: 'deps',
           message: "'deps' is ignored for bun runtime (bun auto-installs packages at runtime)",
           hint: 'Remove deps or switch to runtime: uv if you need explicit dependency management',
+          ...badBehaviour(
+            'ignored_control',
+            'intentional',
+            'This is an explicitly documented no-op for the bun runtime.'
+          ),
         });
       }
     }
@@ -665,10 +1416,15 @@ export async function validateScript(
   const runtimeAvailable = await checkRuntimeAvailable(detectedRuntime);
   if (!runtimeAvailable) {
     issues.push({
-      level: 'warning',
+      level: 'error',
       field: 'runtime',
       message: `Runtime '${detectedRuntime}' is not available on PATH`,
       hint: RUNTIME_INSTALL_HINTS[detectedRuntime],
+      ...badBehaviour(
+        'missing_control',
+        'bug',
+        'A declared script runtime is an execution dependency; accepting the script would defer a missing control to runtime failure.'
+      ),
     });
   }
 

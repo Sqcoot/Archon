@@ -9,6 +9,7 @@ import type { WorkflowRun, WorkflowRunStatus, ApprovalContext } from './schemas'
 
 export const WORKFLOW_EVENT_TYPES = [
   'workflow_started',
+  'workflow_diagnostic',
   'workflow_completed',
   'workflow_failed',
   'node_started',
@@ -80,8 +81,9 @@ export interface IWorkflowStore {
 
   /**
    * Create a workflow event. Implementations MUST NOT throw — catch all errors
-   * internally and log them. Callers treat this as observable-only: workflow
-   * execution continues regardless of whether event persistence succeeds.
+   * internally and log them. Returns true when persisted and false when
+   * best-effort persistence failed so callers can surface audit degradation
+   * without failing workflow execution.
    */
   createWorkflowEvent(data: {
     workflow_run_id: string;
@@ -89,7 +91,7 @@ export interface IWorkflowStore {
     step_index?: number;
     step_name?: string;
     data?: Record<string, unknown>;
-  }): Promise<void>;
+  }): Promise<boolean>;
 
   /**
    * Return a map of nodeId → output for all node_completed events

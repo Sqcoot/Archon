@@ -2,11 +2,16 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdtemp, mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { registerBuiltinProviders, clearRegistry } from '@archon/providers';
+import {
+  registerBuiltinProviders,
+  registerCommunityProviders,
+  clearRegistry,
+} from '@archon/providers';
 
 // Bootstrap provider registry (needed by capability-driven warnings in validator)
 clearRegistry();
 registerBuiltinProviders();
+registerCommunityProviders();
 
 import {
   levenshtein,
@@ -428,7 +433,243 @@ describe('validateWorkflowResources — script nodes', () => {
 });
 
 // =============================================================================
-// validateWorkflowResources — inline agents capability warning
+// validateWorkflowResources — high-impact approval gates
+// =============================================================================
+
+describe('validateWorkflowResources — high-impact approval gates', () => {
+  test('errors when interactive_only workflow does not foreground interactive runtime', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode]),
+      mode: 'interactive_only',
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'interactive');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('interactive_only');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'conflicting_metadata',
+      classification: 'bug',
+    });
+  });
+
+  test('errors when autonomous workflow declares external side effects', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode]),
+      mode: 'autonomous',
+      lock_scope: 'external_side_effect',
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'lock_scope');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('external_side_effect');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'conflicting_metadata',
+      classification: 'bug',
+    });
+  });
+
+  test('errors when autonomous workflow declares checkout mutation', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode]),
+      mode: 'autonomous',
+      lock_scope: 'checkout_mutation',
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'lock_scope');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('checkout_mutation');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'conflicting_metadata',
+      classification: 'bug',
+    });
+  });
+
+  test('warns when artifact-only workflow does not disable checkout mutation metadata', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode]),
+      mode: 'autonomous',
+      lock_scope: 'artifact_only',
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const warning = issues.find(i => i.level === 'warning' && i.field === 'mutates_checkout');
+    expect(warning).toBeDefined();
+    expect(warning!.message).toContain('artifact_only');
+    expect(warning!.badBehaviour).toMatchObject({
+      pattern: 'warning_only_control',
+      classification: 'warning-only',
+    });
+  });
+
+  test('errors when provider cannot enforce system prompt control', async () => {
+    const workflow = makeWorkflow(
+      'test',
+      [
+        {
+          id: 'step1',
+          prompt: 'p',
+          systemPrompt: 'Always produce a JSON object.',
+        } as unknown as DagNode,
+      ],
+      'codex'
+    );
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'systemPrompt');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('System prompt controls are not supported');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'unsupported_control',
+      classification: 'bug',
+    });
+  });
+
+  test('errors when high-impact approval lacks reason and affected surface', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'production-gate',
+        approval: { message: 'Deploy to production?', mutation_class: 'production' },
+      } as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const errors = issues.filter(i => i.level === 'error');
+    expect(errors.map(i => i.field)).toContain('approval.reason');
+    expect(errors.map(i => i.field)).toContain('approval.path');
+  });
+
+  test('errors when non-AI nodes declare ignored model or feature controls', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'shell-step',
+        bash: 'echo safe',
+        fallbackModel: 'backup-model',
+        effort: 'high',
+        betas: ['experimental-mode'],
+      } as unknown as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'effort,fallbackModel,betas');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('safety/output control fields that would be ignored');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'silent_behavior',
+      classification: 'bug',
+    });
+  });
+
+  test('treats explicit high_impact approval metadata as high impact for custom classes', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'network-gate',
+        approval: {
+          message: 'Change network boundary?',
+          mutation_class: 'network_boundary',
+          high_impact: true,
+          allowed_scopes: ['once', 'run'],
+        },
+      } as unknown as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const errors = issues.filter(i => i.level === 'error');
+    expect(errors.map(i => i.field)).toContain('approval.reason');
+    expect(errors.map(i => i.field)).toContain('approval.path');
+    expect(errors.map(i => i.field)).toContain('approval.allowed_scopes');
+  });
+
+  test('errors when high-impact approval allows approve-for-run', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'destructive-gate',
+        approval: {
+          message: 'Delete remote resources?',
+          mutation_class: 'destructive',
+          reason: 'Remote resources will be removed',
+          command: 'terraform destroy',
+          default_scope: 'run',
+          allowed_scopes: ['once', 'run'],
+        },
+      } as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const errors = issues.filter(i => i.level === 'error');
+    expect(errors.map(i => i.field)).toContain('approval.default_scope');
+    expect(errors.map(i => i.field)).toContain('approval.allowed_scopes');
+  });
+
+  test('accepts one-shot high-impact approval with reason and affected surface', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'credential-gate',
+        approval: {
+          message: 'Rotate credential?',
+          mutation_class: 'credential',
+          reason: 'Credential rotation changes production authentication material',
+          command: 'rotate-secret',
+          default_scope: 'once',
+          allowed_scopes: ['once'],
+        },
+      } as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const errors = issues.filter(i => i.level === 'error');
+    expect(errors).toHaveLength(0);
+  });
+
+  test('errors when standard approval allows approve-for-run before run scope is implemented', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'review-gate',
+        approval: {
+          message: 'Review before continuing?',
+          allowed_scopes: ['once', 'run'],
+          default_scope: 'once',
+        },
+      } as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'approval.allowed_scopes');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('run-scoped approval execution is not implemented');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'deferred_behavior',
+      classification: 'bug',
+    });
+  });
+
+  test('errors when standard approval defaults to approve-for-run before run scope is implemented', async () => {
+    const workflow = makeWorkflow('test', [
+      {
+        id: 'review-gate',
+        approval: {
+          message: 'Review before continuing?',
+          default_scope: 'run',
+          allowed_scopes: ['once'],
+        },
+      } as DagNode,
+    ]);
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'approval.default_scope');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('run-scoped approval execution is not implemented');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'deferred_behavior',
+      classification: 'bug',
+    });
+  });
+});
+
+// =============================================================================
+// validateWorkflowResources — inline agents capability
 // =============================================================================
 
 describe('validateWorkflowResources — agents capability', () => {
@@ -436,17 +677,18 @@ describe('validateWorkflowResources — agents capability', () => {
     'brief-gen': { description: 'd', prompt: 'p' },
   };
 
-  test('warns when provider does not support inline agents (codex)', async () => {
+  test('errors when provider does not support inline agents (codex)', async () => {
     const workflow = makeWorkflow(
       'test',
       [{ id: 'step1', prompt: 'p', agents: agentsField } as unknown as DagNode],
       'codex'
     );
     const issues = await validateWorkflowResources(workflow, tmpDir);
-    const warning = issues.find(i => i.level === 'warning' && i.field === 'agents');
-    expect(warning).toBeDefined();
-    expect(warning!.message).toContain("not supported by provider 'codex'");
-    expect(warning!.hint).toContain('claude');
+    const error = issues.find(i => i.level === 'error' && i.field === 'agents');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain("not supported by provider 'codex'");
+    expect(error!.hint).toContain('claude');
+    expect(error!.badBehaviour?.classification).toBe('bug');
   });
 
   test('no agents-capability warning when provider is claude', async () => {
@@ -469,5 +711,128 @@ describe('validateWorkflowResources — agents capability', () => {
     const issues = await validateWorkflowResources(workflow, tmpDir);
     const warning = issues.find(i => i.level === 'warning' && i.field === 'agents');
     expect(warning).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// validateWorkflowResources — output_format enforcement
+// =============================================================================
+
+describe('validateWorkflowResources — output_format enforcement', () => {
+  test('errors when provider only supports best-effort structured output', async () => {
+    const workflow = makeWorkflow(
+      'test',
+      [
+        {
+          id: 'step1',
+          prompt: 'p',
+          output_format: { type: 'object', properties: { ok: { type: 'boolean' } } },
+        } as unknown as DagNode,
+      ],
+      'pi'
+    );
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'output_format');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('best-effort structured output');
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'best_effort_surface',
+      classification: 'bug',
+    });
+  });
+});
+
+// =============================================================================
+// validateWorkflowResources — workflow-level sandbox capability
+// =============================================================================
+
+describe('validateWorkflowResources — workflow-level sandbox capability', () => {
+  test('errors when provider does not support workflow-level sandbox settings', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode], 'codex'),
+      sandbox: { mode: 'read-only' },
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'sandbox');
+    expect(error).toBeDefined();
+    expect(error!.message).toContain(
+      "Workflow-level sandbox settings are not supported by provider 'codex'"
+    );
+    expect(error!.badBehaviour?.pattern).toBe('unsupported_control');
+  });
+
+  test('accepts workflow-level sandbox settings when provider supports sandbox', async () => {
+    const workflow = {
+      ...makeWorkflow('test', [{ id: 'step1', prompt: 'p' } as unknown as DagNode], 'claude'),
+      sandbox: { mode: 'read-only' },
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(i => i.level === 'error' && i.field === 'sandbox');
+    expect(error).toBeUndefined();
+  });
+
+  test('errors when node provider override cannot enforce inherited workflow-level sandbox', async () => {
+    const workflow = {
+      ...makeWorkflow(
+        'test',
+        [{ id: 'step1', prompt: 'p', provider: 'codex' } as unknown as DagNode],
+        'claude'
+      ),
+      sandbox: { mode: 'read-only' },
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const error = issues.find(
+      i => i.level === 'error' && i.nodeId === 'step1' && i.field === 'sandbox'
+    );
+    expect(error).toBeDefined();
+    expect(error!.message).toContain("Workflow-level sandbox settings apply to node 'step1'");
+    expect(error!.message).toContain("provider 'codex'");
+    expect(error!.badBehaviour).toMatchObject({
+      pattern: 'unsupported_control',
+      classification: 'bug',
+    });
+  });
+});
+
+// =============================================================================
+// validateWorkflowResources — inherited workflow-level advisory controls
+// =============================================================================
+
+describe('validateWorkflowResources — inherited workflow-level advisory controls', () => {
+  test('warns when node provider override cannot honor inherited workflow-level model controls', async () => {
+    const workflow = {
+      ...makeWorkflow(
+        'test',
+        [{ id: 'step1', prompt: 'p', provider: 'codex' } as unknown as DagNode],
+        'claude'
+      ),
+      effort: 'high',
+      thinking: { type: 'enabled', budgetTokens: 4000 },
+      betas: ['example-beta'],
+      fallbackModel: 'fallback-model',
+    } as WorkflowDefinition;
+
+    const issues = await validateWorkflowResources(workflow, tmpDir);
+    const inheritedErrors = issues.filter(i => i.level === 'error' && i.nodeId === 'step1');
+
+    expect(inheritedErrors.map(i => i.field).sort()).toEqual([
+      'betas',
+      'effort',
+      'fallbackModel',
+      'thinking',
+    ]);
+    for (const issue of inheritedErrors) {
+      expect(issue.badBehaviour).toMatchObject({
+        pattern: 'unsupported_control',
+        classification: 'bug',
+      });
+      expect(issue.message).toContain("applies to node 'step1'");
+      expect(issue.message).toContain("provider 'codex'");
+      expect(issue.message).toContain('must fail closed');
+    }
   });
 });

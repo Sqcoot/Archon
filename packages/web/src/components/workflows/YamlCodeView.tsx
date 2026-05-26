@@ -159,11 +159,29 @@ export function serializeToYaml(def: WorkflowDefinition): string {
   if (def.model) {
     lines.push(`model: ${def.model}`);
   }
+  if (def.mode) {
+    lines.push(`mode: ${def.mode}`);
+  }
+  if (def.lock_scope) {
+    lines.push(`lock_scope: ${def.lock_scope}`);
+  }
+  if (def.mutates_checkout !== undefined) {
+    lines.push(`mutates_checkout: ${String(def.mutates_checkout)}`);
+  }
+  if (def.interactive !== undefined) {
+    lines.push(`interactive: ${String(def.interactive)}`);
+  }
   if (def.modelReasoningEffort) {
     lines.push(`modelReasoningEffort: ${def.modelReasoningEffort}`);
   }
   if (def.webSearchMode) {
     lines.push(`webSearchMode: ${def.webSearchMode}`);
+  }
+  if (def.additionalDirectories && def.additionalDirectories.length > 0) {
+    lines.push('additionalDirectories:');
+    for (const directory of def.additionalDirectories) {
+      lines.push(`  - ${serializeValue(directory, 2)}`);
+    }
   }
 
   lines.push('');

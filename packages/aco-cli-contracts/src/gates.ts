@@ -79,7 +79,11 @@ export function enforceCommandSafety(
   }
 
   const requested = requestedMutationsForDescriptor(descriptor, invocation.requestedMutations);
-  if (invocation.readonlyContext && hasHighRiskMutation(requested)) {
+  const checkoutMutations = requested.filter(
+    (mutation): mutation is Exclude<MutationClass, 'writes-artifacts'> =>
+      mutation !== 'writes-artifacts'
+  );
+  if (invocation.readonlyContext && hasHighRiskMutation(checkoutMutations)) {
     return deniedCommandResult(
       descriptor.id,
       descriptor.display,
@@ -87,8 +91,11 @@ export function enforceCommandSafety(
     );
   }
 
-  if (hasHighRiskMutation(requested) && !approvalCoversMutations(invocation.approval, requested)) {
-    return approvalRequiredCommandResult(descriptor, requested);
+  if (
+    hasHighRiskMutation(checkoutMutations) &&
+    !approvalCoversMutations(invocation.approval, checkoutMutations)
+  ) {
+    return approvalRequiredCommandResult(descriptor, checkoutMutations);
   }
 
   return null;
@@ -122,7 +129,16 @@ export function deferredCommandResult(
     exitCode: 3,
     stdout: '',
     stderr: `Not implemented in S7: ${descriptor.display}. ${reason}.`,
-    data: { implementationStatus: descriptor.implementationStatus, reason },
+    data: {
+      implementationStatus: descriptor.implementationStatus,
+      reason,
+      badBehaviourLint: {
+        pattern: 'deferred_behavior',
+        classification: 'intentional',
+        rationale:
+          'The descriptor declares this surface as deferred rather than silently pretending it ran.',
+      },
+    },
     evidence: descriptor.evidence,
   });
 }
@@ -135,7 +151,15 @@ export function unsupportedCommandResult(command: string): AcoCommandResultEnvel
     exitCode: 1,
     stdout: '',
     stderr: `Unsupported ACO command: ${command}.`,
-    data: { reason: 'command is not present in the S7 descriptor catalog' },
+    data: {
+      reason: 'command is not present in the S7 descriptor catalog',
+      badBehaviourLint: {
+        pattern: 'unsupported_command',
+        classification: 'intentional',
+        rationale:
+          'Unknown commands fail closed instead of being routed to an untracked implementation.',
+      },
+    },
     evidence: [COMMAND_LEDGER_EVIDENCE],
   });
 }
@@ -152,7 +176,15 @@ export function deniedCommandResult(
     exitCode: 2,
     stdout: '',
     stderr: `Denied ACO command: ${display}. ${reason}.`,
-    data: { reason },
+    data: {
+      reason,
+      badBehaviourLint: {
+        pattern: 'denied_before_write',
+        classification: 'intentional',
+        rationale:
+          'The command layer refused an unsafe or invalid request before execution; scoped artifact writes are handled as artifact-only output, not denied read-only mutations.',
+      },
+    },
     evidence: [COMMAND_LEDGER_EVIDENCE, S7_CONSENSUS_EVIDENCE, S8_CONSENSUS_EVIDENCE],
   });
 }
@@ -170,7 +202,14 @@ export function approvalRequiredCommandResult(
     stderr: `Approval required for ${descriptor.display}: ${requested.join(', ')}.`,
     data: {
       requestedMutations: requested,
-      reason: 'write, network, graph-cache, or artifact mutation risk requires approval',
+      reason:
+        'tracked-file, user-file, config, credential, remote, graph-cache, network, unknown, or destructive mutation risk requires approval',
+      badBehaviourLint: {
+        pattern: 'approval_gate',
+        classification: 'intentional',
+        rationale:
+          'High-impact mutations require explicit approval instead of automatic execution; scoped artifact-only writes are not high-impact mutations.',
+      },
     },
     evidence: descriptor.evidence,
   });

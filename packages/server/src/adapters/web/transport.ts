@@ -183,6 +183,8 @@ export class SSETransport {
         // Remove and close the stream so the browser's EventSource detects
         // the disconnect and auto-reconnects with a fresh connection.
         this.streams.delete(conversationId);
+        this.bufferEvent(conversationId, event);
+        this.bufferDeliveryFailureDiagnostic(conversationId, event, e);
         stream.close().catch((_: unknown) => {
           /* stream already closing */
         });
@@ -212,6 +214,8 @@ export class SSETransport {
       stream.writeSSE({ data: event }).catch((e: unknown) => {
         getLog().warn({ conversationId, err: e }, 'sse_write_failed');
         this.streams.delete(conversationId);
+        this.bufferEvent(conversationId, event);
+        this.bufferDeliveryFailureDiagnostic(conversationId, event, e);
         stream.close().catch((_: unknown) => {
           /* stream already closing */
         });
@@ -260,6 +264,51 @@ export class SSETransport {
     }, EVENT_BUFFER_TTL_MS + 500);
     this.bufferCleanupTimers.set(conversationId, timer);
     getLog().debug({ conversationId, buffered: buf.length }, 'sse_event_buffered');
+  }
+
+  private bufferDeliveryFailureDiagnostic(
+    conversationId: string,
+    event: string,
+    error: unknown
+  ): void {
+    const diagnostic = this.buildDeliveryFailureDiagnostic(event, error);
+    if (!diagnostic) return;
+    this.bufferEvent(conversationId, diagnostic);
+  }
+
+  private buildDeliveryFailureDiagnostic(event: string, error: unknown): string | null {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(event);
+    } catch {
+      return null;
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    const type = typeof record.type === 'string' ? record.type : undefined;
+    const runId = typeof record.runId === 'string' ? record.runId : undefined;
+    if (!type || !runId) return null;
+    if (type === 'workflow_diagnostic' && record.code === 'sse_delivery_failed') return null;
+
+    const reason = error instanceof Error ? error.message : String(error);
+    const stepName =
+      typeof record.stepName === 'string'
+        ? record.stepName
+        : typeof record.nodeId === 'string'
+          ? record.nodeId
+          : undefined;
+
+    return JSON.stringify({
+      type: 'workflow_diagnostic',
+      runId,
+      severity: 'warning',
+      code: 'sse_delivery_failed',
+      message: `SSE delivery failed for ${type}${stepName ? `/${stepName}` : ''}: ${reason}. Event was buffered for replay.`,
+      persistence: 'best_effort_failed',
+      eventType: type,
+      ...(stepName ? { stepName } : {}),
+      timestamp: Date.now(),
+    });
   }
 
   private clearBuffer(conversationId: string): void {

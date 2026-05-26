@@ -4,8 +4,9 @@
  * Stores step transitions, parallel agent status, artifacts, and errors.
  * Verbose assistant/tool content stays in JSONL logs only.
  *
- * All write operations use fire-and-forget pattern (catch + log, never throw)
- * because workflow execution must not fail due to event logging.
+ * Write operations catch and log persistence failures, then return false so
+ * workflow execution does not fail due to event logging while callers can
+ * surface best-effort persistence degradation.
  * Read operations also throw on error — callers own the degradation policy.
  */
 import { pool, getDialect } from './connection';
@@ -30,7 +31,8 @@ export interface WorkflowEventRow {
 }
 
 /**
- * Create a workflow event. Fire-and-forget - never throws.
+ * Create a workflow event. Never throws.
+ * Returns true when persisted, false when best-effort persistence failed.
  */
 export async function createWorkflowEvent(data: {
   workflow_run_id: string;
@@ -38,7 +40,7 @@ export async function createWorkflowEvent(data: {
   step_index?: number;
   step_name?: string;
   data?: Record<string, unknown>;
-}): Promise<void> {
+}): Promise<boolean> {
   try {
     const dialect = getDialect();
     const id = dialect.generateUuid();
@@ -54,12 +56,13 @@ export async function createWorkflowEvent(data: {
         JSON.stringify(data.data ?? {}),
       ]
     );
+    return true;
   } catch (error) {
     getLog().error(
       { err: error as Error, eventType: data.event_type, runId: data.workflow_run_id },
       'db.workflow_event_create_failed'
     );
-    // Fire-and-forget: never throw
+    return false;
   }
 }
 

@@ -15,7 +15,7 @@
  * In dev mode (BUNDLED_IS_BINARY=false), returns undefined so the SDK
  * uses its normal node_modules-based resolution.
  */
-import { existsSync as _existsSync } from 'node:fs';
+import { existsSync as _existsSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { BUNDLED_IS_BINARY, getArchonHome, createLogger } from '@archon/paths';
@@ -25,13 +25,14 @@ export function fileExists(path: string): boolean {
   return _existsSync(path);
 }
 
-// TODO(#1723): existsSync returns true for directories, so an env or config
-// path pointing at the platform-package *directory* (e.g. an npm-distributed
-// `@openai/codex-<platform>` folder containing `codex{.exe}`) currently slips
-// past validation and crashes inside the SDK's child_process.spawn as ENOENT.
-// The Claude resolver applies a pathKind() / expandDirectoryToExecutable()
-// fix; mirror the same pattern here when a Codex bug report lands or as part
-// of a deliberate parity pass.
+/** True only for filesystem entries that resolve to a file. Follows symlinks. */
+export function pathIsFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
 
 /** Lazy-initialized logger */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -71,6 +72,12 @@ export async function resolveCodexBinaryPath(
           'Please verify the path points to the Codex CLI binary.'
       );
     }
+    if (!pathIsFile(envPath)) {
+      throw new Error(
+        `CODEX_BIN_PATH is set to "${envPath}" but that path is not a file.\n` +
+          'Please point CODEX_BIN_PATH directly at the Codex CLI binary, not a package directory.'
+      );
+    }
     getLog().info({ binaryPath: envPath, source: 'env' }, 'codex.binary_resolved');
     return envPath;
   }
@@ -83,6 +90,12 @@ export async function resolveCodexBinaryPath(
           'Please verify the path in .archon/config.yaml points to the Codex CLI binary.'
       );
     }
+    if (!pathIsFile(configCodexBinaryPath)) {
+      throw new Error(
+        `assistants.codex.codexBinaryPath is set to "${configCodexBinaryPath}" but that path is not a file.\n` +
+          'Please point assistants.codex.codexBinaryPath directly at the Codex CLI binary, not a package directory.'
+      );
+    }
     getLog().info({ binaryPath: configCodexBinaryPath, source: 'config' }, 'codex.binary_resolved');
     return configCodexBinaryPath;
   }
@@ -93,7 +106,7 @@ export async function resolveCodexBinaryPath(
     const archonHome = getArchonHome();
     const vendorBinaryPath = join(archonHome, CODEX_VENDOR_DIR, binaryName);
 
-    if (fileExists(vendorBinaryPath)) {
+    if (pathIsFile(vendorBinaryPath)) {
       getLog().info({ binaryPath: vendorBinaryPath, source: 'vendor' }, 'codex.binary_resolved');
       return vendorBinaryPath;
     }
@@ -105,7 +118,7 @@ export async function resolveCodexBinaryPath(
   // priority sources above. Order: most specific → least specific.
   const autodetectPaths = getAutodetectPaths();
   for (const probePath of autodetectPaths) {
-    if (fileExists(probePath)) {
+    if (pathIsFile(probePath)) {
       getLog().info({ binaryPath: probePath, source: 'autodetect' }, 'codex.binary_resolved');
       return probePath;
     }

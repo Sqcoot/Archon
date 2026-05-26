@@ -127,7 +127,7 @@ export function compileContextPackage(
     ],
     capabilityConstraints: [
       'research graph refresh requires explicit approval',
-      'artifact persistence is not implemented in S8',
+      'artifact persistence is delegated to the CLI dossier writer when this context package is produced as a command artifact',
       'provider/runtime behavior is outside the context package',
     ],
     approvalRequirements: status.value.approvalReadiness,

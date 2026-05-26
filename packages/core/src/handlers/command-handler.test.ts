@@ -1805,10 +1805,20 @@ describe('CommandHandler', () => {
         expect(result.success).toBe(true);
         expect(result.message).toContain('loop input received');
         expect(result.message).toContain('my-loop-wf');
-        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-123', {
-          status: 'failed',
-          metadata: { loop_user_input: 'Add error handling' },
-        });
+        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith(
+          'run-123',
+          expect.objectContaining({
+            status: 'failed',
+            metadata: expect.objectContaining({
+              loop_user_input: 'Add error handling',
+              approval_audit: expect.objectContaining({
+                decision: 'approved',
+                node_id: 'refine',
+                approval_channel: 'chat',
+              }),
+            }),
+          })
+        );
       });
 
       test('creates approval_received event (not node_completed) for interactive_loop', async () => {
@@ -1843,7 +1853,10 @@ describe('CommandHandler', () => {
         );
         expect(nodeCompletedCalls.length).toBe(0);
         expect(mockCreateWorkflowEvent).toHaveBeenCalledWith(
-          expect.objectContaining({ event_type: 'approval_received' })
+          expect.objectContaining({
+            event_type: 'approval_received',
+            data: expect.objectContaining({ approval_channel: 'chat' }),
+          })
         );
       });
 
@@ -1925,7 +1938,11 @@ describe('CommandHandler', () => {
           (c: unknown[]) => (c[0] as Record<string, unknown>).event_type === 'node_completed'
         );
         expect(nodeCompletedCall?.[0]).toMatchObject({
-          data: { node_output: 'LGTM looks good', approval_decision: 'approved' },
+          data: {
+            node_output: 'LGTM looks good',
+            approval_decision: 'approved',
+            approval_channel: 'chat',
+          },
         });
       });
 
@@ -1957,8 +1974,56 @@ describe('CommandHandler', () => {
           (c: unknown[]) => (c[0] as Record<string, unknown>).event_type === 'node_completed'
         );
         expect(nodeCompletedCall?.[0]).toMatchObject({
-          data: { node_output: '', approval_decision: 'approved' },
+          data: { node_output: '', approval_decision: 'approved', approval_channel: 'chat' },
         });
+      });
+
+      test('blocks all built-in high-impact approvals from normal chat command', async () => {
+        for (const mutationClass of [
+          'destructive',
+          'credential',
+          'remote',
+          'production',
+        ] as const) {
+          mockCreateWorkflowEvent.mockClear();
+          mockUpdateWorkflowRun.mockClear();
+          mockGetWorkflowRun.mockResolvedValueOnce({
+            id: `run-${mutationClass}`,
+            workflow_name: 'high-impact-wf',
+            conversation_id: 'conv-approve',
+            parent_conversation_id: null,
+            codebase_id: null,
+            status: 'paused',
+            user_message: `approve ${mutationClass}`,
+            metadata: {
+              approval: {
+                type: 'approval',
+                nodeId: `${mutationClass}-gate`,
+                message: `Approve ${mutationClass} operation?`,
+                mutationClass,
+                command: `${mutationClass}-command`,
+                reason: `${mutationClass} operation requires explicit approval`,
+              },
+            },
+            started_at: new Date(),
+            completed_at: null,
+            last_activity_at: new Date(),
+            working_path: '/repo',
+          });
+
+          const result = await handleCommand(
+            baseConversation,
+            `/workflow approve run-${mutationClass} LGTM`
+          );
+
+          expect(result.success).toBe(false);
+          expect(result.message).toContain(
+            `High-impact approval '${mutationClass}' cannot be approved from normal chat`
+          );
+          expect(result.message).toContain('explicit approval UI');
+          expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+          expect(mockUpdateWorkflowRun).not.toHaveBeenCalled();
+        }
       });
     });
 
@@ -2008,10 +2073,22 @@ describe('CommandHandler', () => {
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('Reworking');
-        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-reject-1', {
-          status: 'failed',
-          metadata: { rejection_reason: 'needs work', rejection_count: 1 },
-        });
+        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith(
+          'run-reject-1',
+          expect.objectContaining({
+            status: 'failed',
+            metadata: expect.objectContaining({
+              rejection_reason: 'needs work',
+              rejection_count: 1,
+              approval_audit: expect.objectContaining({
+                decision: 'rejected',
+                node_id: 'review',
+                rejection_reason: 'needs work',
+                approval_channel: 'chat',
+              }),
+            }),
+          })
+        );
       });
 
       test('cancels when max attempts reached', async () => {
@@ -2043,7 +2120,22 @@ describe('CommandHandler', () => {
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('max attempts reached');
-        expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-reject-max');
+        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith(
+          'run-reject-max',
+          expect.objectContaining({
+            status: 'cancelled',
+            metadata: expect.objectContaining({
+              rejection_reason: 'bad',
+              rejection_count: 3,
+              approval_audit: expect.objectContaining({
+                decision: 'rejected',
+                node_id: 'review',
+                rejection_reason: 'bad',
+                approval_channel: 'chat',
+              }),
+            }),
+          })
+        );
       });
 
       test('cancels immediately without on_reject', async () => {
@@ -2074,7 +2166,21 @@ describe('CommandHandler', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-reject-plain');
+        expect(mockUpdateWorkflowRun).toHaveBeenCalledWith(
+          'run-reject-plain',
+          expect.objectContaining({
+            status: 'cancelled',
+            metadata: expect.objectContaining({
+              rejection_reason: 'reason',
+              approval_audit: expect.objectContaining({
+                decision: 'rejected',
+                node_id: 'gate',
+                rejection_reason: 'reason',
+                approval_channel: 'chat',
+              }),
+            }),
+          })
+        );
       });
     });
   });

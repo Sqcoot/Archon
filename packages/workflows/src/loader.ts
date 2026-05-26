@@ -11,7 +11,12 @@ import {
   SCRIPT_NODE_AI_FIELDS,
   LOOP_NODE_AI_FIELDS,
 } from './schemas/dag-node';
-import { modelReasoningEffortSchema, webSearchModeSchema } from './schemas/workflow';
+import {
+  modelReasoningEffortSchema,
+  webSearchModeSchema,
+  workflowLockScopeSchema,
+  workflowModeSchema,
+} from './schemas/workflow';
 import { workflowNodeHooksSchema } from './schemas/hooks';
 import { z } from '@hono/zod-openapi';
 
@@ -21,6 +26,77 @@ function getLog(): ReturnType<typeof createLogger> {
   if (!cachedLog) cachedLog = createLogger('workflow.loader');
   return cachedLog;
 }
+
+const SAFETY_OR_OUTPUT_CONTROL_FIELDS = new Set([
+  'output_format',
+  'allowed_tools',
+  'denied_tools',
+  'hooks',
+  'mcp',
+  'skills',
+  'agents',
+  'sandbox',
+  'maxBudgetUsd',
+  'systemPrompt',
+]);
+
+const UNSUPPORTED_APPROVAL_CONTROL_FIELDS = new Set([
+  'approvalPolicy',
+  'approval_policy',
+  'approvalMode',
+  'approval_mode',
+  'permissionMode',
+  'permission_mode',
+  'permissionPolicy',
+  'permission_policy',
+  'bypassPermissions',
+  'bypass_permissions',
+  'dangerouslyBypassPermissions',
+  'dangerously_bypass_permissions',
+  'autoApprove',
+  'auto_approve',
+  'requireApproval',
+  'require_approval',
+]);
+
+const UNSUPPORTED_ENVIRONMENT_CONTROL_FIELDS = new Set([
+  'env',
+  'envVars',
+  'env_vars',
+  'environment',
+  'environmentVariables',
+  'environment_variables',
+]);
+
+const UNSUPPORTED_NODE_RUNTIME_CONTROL_FIELDS = new Set([
+  'modelReasoningEffort',
+  'model_reasoning_effort',
+  'webSearchMode',
+  'web_search_mode',
+  'additionalDirectories',
+  'additional_directories',
+  'networkAccessEnabled',
+  'network_access_enabled',
+  'sandboxMode',
+  'sandbox_mode',
+  'codexBinaryPath',
+  'codex_binary_path',
+]);
+
+const WORKFLOW_ONLY_UNSUPPORTED_APPROVAL_CONTROL_FIELDS = new Set([
+  ...UNSUPPORTED_APPROVAL_CONTROL_FIELDS,
+  'approval',
+  'permissions',
+]);
+
+const WORKFLOW_ONLY_UNSUPPORTED_RUNTIME_CONTROL_FIELDS = new Set([
+  'networkAccessEnabled',
+  'network_access_enabled',
+  'sandboxMode',
+  'sandbox_mode',
+  'codexBinaryPath',
+  'codex_binary_path',
+]);
 
 /**
  * Parse YAML using Bun's native YAML parser
@@ -37,6 +113,29 @@ function formatNodeIssue(id: string, issue: z.ZodIssue): string {
   return `Node '${id}': ${pathStr}${issue.message}`;
 }
 
+function unsupportedControlFieldsIn(raw: Record<string, unknown>, fields: Set<string>): string[] {
+  return Object.keys(raw).filter(field => fields.has(field));
+}
+
+function formatUnknownForMessage(value: unknown): string {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    value === null ||
+    value === undefined
+  ) {
+    return String(value);
+  }
+
+  try {
+    const json = JSON.stringify(value);
+    return json ?? Object.prototype.toString.call(value);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
 /**
  * Validate and parse a single DagNode from raw YAML data.
  * Replaces the former parseDagNode + parseRetryConfig + parseToolList +
@@ -49,6 +148,39 @@ function parseDagNode(raw: unknown, index: number, errors: string[]): DagNode | 
       ? String((raw as Record<string, unknown>).id)
       : '';
   const id = rawId.trim() || `#${String(index + 1)}`;
+
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
+    const approvalControlFields = unsupportedControlFieldsIn(
+      raw as Record<string, unknown>,
+      UNSUPPORTED_APPROVAL_CONTROL_FIELDS
+    );
+    if (approvalControlFields.length > 0) {
+      errors.push(
+        `Node '${id}': unsupported approval/permission control fields rejected fail-closed before they could be ignored: ${approvalControlFields.join(', ')}`
+      );
+      return null;
+    }
+    const environmentControlFields = unsupportedControlFieldsIn(
+      raw as Record<string, unknown>,
+      UNSUPPORTED_ENVIRONMENT_CONTROL_FIELDS
+    );
+    if (environmentControlFields.length > 0) {
+      errors.push(
+        `Node '${id}': unsupported environment/resource control fields rejected fail-closed before they could be ignored: ${environmentControlFields.join(', ')}`
+      );
+      return null;
+    }
+    const runtimeControlFields = unsupportedControlFieldsIn(
+      raw as Record<string, unknown>,
+      UNSUPPORTED_NODE_RUNTIME_CONTROL_FIELDS
+    );
+    if (runtimeControlFields.length > 0) {
+      errors.push(
+        `Node '${id}': unsupported provider runtime control fields rejected fail-closed before they could be ignored: ${runtimeControlFields.join(', ')}`
+      );
+      return null;
+    }
+  }
 
   const result = dagNodeSchema.safeParse(raw);
   if (!result.success) {
@@ -78,6 +210,15 @@ function parseDagNode(raw: unknown, index: number, errors: string[]): DagNode | 
       f => (raw as Record<string, unknown>)[f] !== undefined
     );
     if (presentAiFields.length > 0) {
+      const ignoredControlFields = presentAiFields.filter(field =>
+        SAFETY_OR_OUTPUT_CONTROL_FIELDS.has(field)
+      );
+      if (ignoredControlFields.length > 0) {
+        errors.push(
+          `Node '${id}': ${nonAiNode.type} node contains safety/output control fields rejected fail-closed before they could be ignored: ${ignoredControlFields.join(', ')}`
+        );
+        return null;
+      }
       getLog().warn(
         { id: node.id, fields: presentAiFields },
         `${nonAiNode.type}_node_ai_fields_ignored`
@@ -219,6 +360,49 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
       };
     }
 
+    const unsupportedWorkflowApprovalControls = unsupportedControlFieldsIn(
+      raw,
+      WORKFLOW_ONLY_UNSUPPORTED_APPROVAL_CONTROL_FIELDS
+    );
+    if (unsupportedWorkflowApprovalControls.length > 0) {
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Workflow contains unsupported approval/permission control fields rejected fail-closed before they could be ignored: ${unsupportedWorkflowApprovalControls.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
+    }
+    const unsupportedWorkflowEnvironmentControls = unsupportedControlFieldsIn(
+      raw,
+      UNSUPPORTED_ENVIRONMENT_CONTROL_FIELDS
+    );
+    if (unsupportedWorkflowEnvironmentControls.length > 0) {
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Workflow contains unsupported environment/resource control fields rejected fail-closed before they could be ignored: ${unsupportedWorkflowEnvironmentControls.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
+    }
+    const unsupportedWorkflowRuntimeControls = unsupportedControlFieldsIn(
+      raw,
+      WORKFLOW_ONLY_UNSUPPORTED_RUNTIME_CONTROL_FIELDS
+    );
+    if (unsupportedWorkflowRuntimeControls.length > 0) {
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Workflow contains unsupported provider runtime control fields rejected fail-closed before they could be ignored: ${unsupportedWorkflowRuntimeControls.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
+    }
+
     const errors: string[] = [];
 
     // Reject legacy steps-based workflows
@@ -281,9 +465,8 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
       };
     }
 
-    // Parse workflow-level fields using WorkflowBaseSchema for validation
-    // Note: modelReasoningEffort and webSearchMode use warn-and-ignore for invalid values
-    // (consistent with original behavior) rather than schema-level rejection.
+    // Parse workflow-level fields. Runtime controls fail closed when malformed
+    // so they cannot be silently dropped before provider capability validation.
     const provider =
       typeof raw.provider === 'string' && raw.provider.length > 0 ? raw.provider : undefined;
     const model = typeof raw.model === 'string' ? raw.model : undefined;
@@ -319,7 +502,7 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
       }
     }
 
-    // Validate modelReasoningEffort — warn and ignore invalid values (preserve original behavior)
+    // Validate modelReasoningEffort — invalid values are user-facing runtime controls.
     const modelReasoningEffortResult = modelReasoningEffortSchema.safeParse(
       raw.modelReasoningEffort
     );
@@ -331,9 +514,17 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
         { filename, value: raw.modelReasoningEffort, valid: modelReasoningEffortSchema.options },
         'invalid_model_reasoning_effort'
       );
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Invalid workflow modelReasoningEffort value '${formatUnknownForMessage(raw.modelReasoningEffort)}'; expected one of: ${modelReasoningEffortSchema.options.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
     }
 
-    // Validate webSearchMode — warn and ignore invalid values (preserve original behavior)
+    // Validate webSearchMode — network/search behavior must not silently fall back.
     const webSearchModeResult = webSearchModeSchema.safeParse(raw.webSearchMode);
     const webSearchMode = webSearchModeResult.success ? webSearchModeResult.data : undefined;
     if (raw.webSearchMode !== undefined && !webSearchModeResult.success) {
@@ -341,22 +532,98 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
         { filename, value: raw.webSearchMode, valid: webSearchModeSchema.options },
         'invalid_web_search_mode'
       );
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Invalid workflow webSearchMode value '${formatUnknownForMessage(raw.webSearchMode)}'; expected one of: ${webSearchModeSchema.options.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
     }
 
-    // Filter additionalDirectories — warn on non-strings (preserve original behavior)
-    const additionalDirectories = Array.isArray(raw.additionalDirectories)
-      ? raw.additionalDirectories.filter((d: unknown) => {
-          if (typeof d !== 'string') {
-            getLog().warn({ filename, value: d }, 'non_string_additional_directory_filtered');
-            return false;
-          }
-          return true;
-        })
-      : undefined;
+    // Validate additionalDirectories — this changes provider filesystem scope.
+    let additionalDirectories: string[] | undefined;
+    if (raw.additionalDirectories !== undefined) {
+      if (!Array.isArray(raw.additionalDirectories)) {
+        getLog().warn(
+          { filename, value: raw.additionalDirectories },
+          'invalid_additional_directories_block'
+        );
+        return {
+          workflow: null,
+          error: {
+            filename,
+            error: 'Invalid workflow additionalDirectories value; expected an array of strings',
+            errorType: 'validation_error',
+          },
+        };
+      }
+      const invalidAdditionalDirectory = raw.additionalDirectories.find(
+        (d: unknown) => typeof d !== 'string'
+      );
+      if (invalidAdditionalDirectory !== undefined) {
+        getLog().warn(
+          { filename, value: invalidAdditionalDirectory },
+          'non_string_additional_directory'
+        );
+        return {
+          workflow: null,
+          error: {
+            filename,
+            error: `Invalid workflow additionalDirectories entry '${formatUnknownForMessage(invalidAdditionalDirectory)}'; expected string`,
+            errorType: 'validation_error',
+          },
+        };
+      }
+      additionalDirectories = raw.additionalDirectories as string[];
+    }
 
     const interactive = typeof raw.interactive === 'boolean' ? raw.interactive : undefined;
     if (raw.interactive !== undefined && typeof raw.interactive !== 'boolean') {
-      getLog().warn({ filename, value: raw.interactive }, 'invalid_interactive_value_ignored');
+      getLog().warn({ filename, value: raw.interactive }, 'invalid_interactive_value');
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Invalid workflow interactive value '${formatUnknownForMessage(raw.interactive)}'; expected boolean`,
+          errorType: 'validation_error',
+        },
+      };
+    }
+
+    const workflowModeResult = workflowModeSchema.safeParse(raw.mode);
+    const mode = workflowModeResult.success ? workflowModeResult.data : undefined;
+    if (raw.mode !== undefined && !workflowModeResult.success) {
+      getLog().warn(
+        { filename, value: raw.mode, valid: workflowModeSchema.options },
+        'invalid_workflow_mode'
+      );
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Invalid workflow mode '${formatUnknownForMessage(raw.mode)}'. Valid values: ${workflowModeSchema.options.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
+    }
+
+    const workflowLockScopeResult = workflowLockScopeSchema.safeParse(raw.lock_scope);
+    const lockScope = workflowLockScopeResult.success ? workflowLockScopeResult.data : undefined;
+    if (raw.lock_scope !== undefined && !workflowLockScopeResult.success) {
+      getLog().warn(
+        { filename, value: raw.lock_scope, valid: workflowLockScopeSchema.options },
+        'invalid_workflow_lock_scope'
+      );
+      return {
+        workflow: null,
+        error: {
+          filename,
+          error: `Invalid workflow lock_scope '${formatUnknownForMessage(raw.lock_scope)}'. Valid values: ${workflowLockScopeSchema.options.join(', ')}`,
+          errorType: 'validation_error',
+        },
+      };
     }
 
     // Warn if any interactive loop node exists in a non-interactive workflow
@@ -383,10 +650,26 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
         if (typeof rawEnabled === 'boolean') {
           worktreePolicy = { enabled: rawEnabled };
         } else if (rawEnabled !== undefined) {
-          getLog().warn({ filename, value: rawEnabled }, 'invalid_worktree_enabled_value_ignored');
+          getLog().warn({ filename, value: rawEnabled }, 'invalid_worktree_enabled_value');
+          return {
+            workflow: null,
+            error: {
+              filename,
+              error: `Invalid workflow worktree.enabled value '${formatUnknownForMessage(rawEnabled)}'; expected boolean`,
+              errorType: 'validation_error',
+            },
+          };
         }
       } else {
-        getLog().warn({ filename, value: raw.worktree }, 'invalid_worktree_block_ignored');
+        getLog().warn({ filename, value: raw.worktree }, 'invalid_worktree_block');
+        return {
+          workflow: null,
+          error: {
+            filename,
+            error: 'Invalid workflow worktree block; expected object with optional boolean enabled',
+            errorType: 'validation_error',
+          },
+        };
       }
     }
 
@@ -398,10 +681,15 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
       if (typeof raw.mutates_checkout === 'boolean') {
         mutatesCheckout = raw.mutates_checkout;
       } else {
-        getLog().warn(
-          { filename, value: raw.mutates_checkout },
-          'invalid_mutates_checkout_value_ignored'
-        );
+        getLog().warn({ filename, value: raw.mutates_checkout }, 'invalid_mutates_checkout_value');
+        return {
+          workflow: null,
+          error: {
+            filename,
+            error: `Invalid workflow mutates_checkout value '${formatUnknownForMessage(raw.mutates_checkout)}'; expected boolean`,
+            errorType: 'validation_error',
+          },
+        };
       }
     }
 
@@ -430,6 +718,8 @@ export function parseWorkflow(content: string, filename: string): ParseResult {
         description: raw.description,
         provider,
         model,
+        ...(mode !== undefined ? { mode } : {}),
+        ...(lockScope !== undefined ? { lock_scope: lockScope } : {}),
         modelReasoningEffort,
         webSearchMode,
         additionalDirectories,

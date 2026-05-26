@@ -2,7 +2,7 @@
 
 schemaVersion: aco.approval-capsule.v1
 id: aco.context.s8.approval-capsule.archon.context.compile
-requestedCommand: archon context compile <prompt>
+requestedCommand: archon context compile <prompt> [--no-write-artifact]
 mutationClass: writes-artifacts
 approvalScope: writes-artifacts
 approvalStatus: not-granted

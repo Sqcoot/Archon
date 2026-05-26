@@ -8,8 +8,8 @@ import * as workflowDb from '@archon/core/db/workflows';
 import { execFileAsync } from '@archon/git';
 import { createLogger, getRunArtifactsPath, parseOwnerRepo } from '@archon/paths';
 import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
-import { readdir, readFile, stat } from 'fs/promises';
-import { join } from 'path';
+import { lstat, readdir, readFile, realpath, stat } from 'fs/promises';
+import { join, normalize, sep } from 'path';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -170,8 +170,8 @@ async function loadArtifactSummary(
   if (!artifactsDir) return '';
 
   try {
-    const dirStat = await stat(artifactsDir);
-    if (!dirStat.isDirectory()) return '';
+    const dirStat = await lstat(artifactsDir);
+    if (!dirStat.isDirectory() || dirStat.isSymbolicLink()) return '';
   } catch {
     return '';
   }
@@ -184,7 +184,7 @@ async function loadArtifactSummary(
     const summaries: string[] = [];
     for (const file of mdFiles.slice(0, 5)) {
       try {
-        const content = await readFile(join(artifactsDir, file), 'utf-8');
+        const content = await readScopedArtifactFile(artifactsDir, file);
         const lines = content.split('\n').slice(0, 50);
         summaries.push(`**${file}**:\n\`\`\`\n${lines.join('\n')}\n\`\`\``);
       } catch {
@@ -195,6 +195,25 @@ async function loadArtifactSummary(
   } catch {
     return '';
   }
+}
+
+async function readScopedArtifactFile(artifactsDir: string, file: string): Promise<string> {
+  if (file.includes('/') || file.includes('\\') || file.includes('\0')) {
+    throw new Error('invalid artifact filename');
+  }
+  const filePath = join(artifactsDir, file);
+  const fileStat = await lstat(filePath);
+  if (!fileStat.isFile() || fileStat.isSymbolicLink()) {
+    throw new Error('unsafe artifact file');
+  }
+  const artifactsDirReal = await realpath(artifactsDir);
+  const filePathReal = await realpath(filePath);
+  const normalizedRoot = normalize(artifactsDirReal);
+  const normalizedTarget = normalize(filePathReal);
+  if (!normalizedTarget.startsWith(normalizedRoot + sep) && normalizedTarget !== normalizedRoot) {
+    throw new Error('artifact file escapes artifact root');
+  }
+  return readFile(filePathReal, 'utf-8');
 }
 
 /**

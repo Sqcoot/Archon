@@ -7,6 +7,7 @@ import type {
   WorkflowState,
   DagNodeState,
   WorkflowStatusEvent,
+  WorkflowDiagnosticEvent,
   WorkflowArtifactEvent,
   DagNodeEvent,
   WorkflowToolActivityEvent,
@@ -19,27 +20,22 @@ interface WorkflowStoreState {
   activeWorkflowId: string | null;
   // Actions
   handleWorkflowStatus: (event: WorkflowStatusEvent) => void;
+  handleWorkflowDiagnostic: (event: WorkflowDiagnosticEvent) => void;
   handleWorkflowArtifact: (event: WorkflowArtifactEvent) => void;
   handleDagNode: (event: DagNodeEvent) => void;
   handleLoopIteration: (event: LoopIterationEvent) => void;
   handleWorkflowToolActivity: (event: WorkflowToolActivityEvent) => void;
+  handleWorkflowTransportDiagnostic: (input: {
+    source: 'dashboard_sse';
+    message: string;
+    readyState?: number;
+  }) => void;
   hydrateWorkflow: (state: WorkflowState) => void;
 }
 
 // --- Helpers ---
 
-/** Update a single workflow entry in the Map. Returns unchanged state if runId not found. */
-function updateWorkflow(
-  state: WorkflowStoreState,
-  runId: string,
-  updater: (wf: WorkflowState) => WorkflowState
-): Partial<WorkflowStoreState> | WorkflowStoreState {
-  const wf = state.workflows.get(runId);
-  if (!wf) return state;
-  const next = new Map(state.workflows);
-  next.set(runId, updater(wf));
-  return { workflows: next };
-}
+const MAX_WORKFLOW_DIAGNOSTICS = 10;
 
 /** Derive the active workflow ID: most recent running, or most recent any. */
 function deriveActiveId(workflows: Map<string, WorkflowState>): string | null {
@@ -116,17 +112,32 @@ function checkWorkflowStatus(runId: string): void {
       }
     })
     .catch((err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('[WorkflowStore] Status poll failed', {
         runId,
         errorType: err instanceof Error ? err.constructor.name : typeof err,
-        error: err instanceof Error ? err.message : String(err),
+        error: errorMessage,
       });
       useWorkflowStore.setState(
         state => {
           const existing = state.workflows.get(runId);
           if (existing?.status !== 'running') return state;
           const next = new Map(state.workflows);
-          next.set(runId, { ...existing, stale: true });
+          next.set(runId, {
+            ...existing,
+            stale: true,
+            diagnostics: [
+              ...(existing.diagnostics ?? []),
+              {
+                type: 'workflow_diagnostic' as const,
+                runId,
+                timestamp: Date.now(),
+                severity: 'warning' as const,
+                code: 'workflow_status_poll_failed',
+                message: `Workflow status refresh failed; displayed status may be stale: ${errorMessage}`,
+              },
+            ].slice(-MAX_WORKFLOW_DIAGNOSTICS),
+          });
           return { workflows: next };
         },
         undefined,
@@ -193,6 +204,9 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
                 startedAt: event.timestamp,
                 completedAt: isTerminalStatus(event.status) ? event.timestamp : undefined,
                 error: event.error,
+                failureStage: event.failureStage,
+                workflowPreExecutionValidation: event.workflowPreExecutionValidation,
+                artifactPath: event.artifactPath,
                 approval: event.approval,
                 currentTool: null,
               });
@@ -203,10 +217,16 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
               }
               next.set(event.runId, {
                 ...existing,
+                workflowName: event.workflowName || existing.workflowName,
                 status: event.status,
                 error: event.error,
+                failureStage: event.failureStage ?? existing.failureStage,
+                workflowPreExecutionValidation:
+                  event.workflowPreExecutionValidation ?? existing.workflowPreExecutionValidation,
+                artifactPath: event.artifactPath ?? existing.artifactPath,
                 completedAt: isTerminalStatus(event.status) ? event.timestamp : undefined,
-                approval: event.status === 'paused' ? event.approval : undefined,
+                approval:
+                  event.status === 'paused' ? (event.approval ?? existing.approval) : undefined,
               });
             }
             return { workflows: next, activeWorkflowId: deriveActiveId(next) };
@@ -220,21 +240,69 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
         }
       },
 
+      handleWorkflowDiagnostic: (event: WorkflowDiagnosticEvent): void => {
+        set(
+          state => {
+            const next = new Map(state.workflows);
+            const existing = next.get(event.runId);
+            if (!existing) {
+              next.set(event.runId, {
+                runId: event.runId,
+                workflowName: '',
+                status: 'running',
+                dagNodes: [],
+                artifacts: [],
+                startedAt: event.timestamp,
+                diagnostics: [event],
+                currentTool: null,
+              });
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+            }
+            next.set(event.runId, {
+              ...existing,
+              diagnostics: [...(existing.diagnostics ?? []), event].slice(
+                -MAX_WORKFLOW_DIAGNOSTICS
+              ),
+            });
+            return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+          },
+          undefined,
+          'workflow/diagnostic'
+        );
+      },
+
       handleWorkflowArtifact: (event: WorkflowArtifactEvent): void => {
         set(
-          state =>
-            updateWorkflow(state, event.runId, wf => ({
-              ...wf,
-              artifacts: [
-                ...wf.artifacts,
-                {
-                  type: event.artifactType,
-                  label: event.label,
-                  url: event.url,
-                  path: event.path,
-                },
-              ],
-            })),
+          state => {
+            const artifact = {
+              type: event.artifactType,
+              label: event.label,
+              url: event.url,
+              path: event.path,
+              absolutePath: event.absolutePath,
+              originalPath: event.originalPath,
+              failureStage: event.failureStage,
+            };
+            const next = new Map(state.workflows);
+            const existing = next.get(event.runId);
+            if (!existing) {
+              next.set(event.runId, {
+                runId: event.runId,
+                workflowName: '',
+                status: 'running',
+                dagNodes: [],
+                artifacts: [artifact],
+                startedAt: event.timestamp,
+                currentTool: null,
+              });
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+            }
+            next.set(event.runId, {
+              ...existing,
+              artifacts: [...existing.artifacts, artifact],
+            });
+            return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+          },
           undefined,
           'workflow/artifact'
         );
@@ -242,29 +310,40 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
 
       handleDagNode: (event: DagNodeEvent): void => {
         set(
-          state =>
-            updateWorkflow(state, event.runId, wf => {
-              const dagNodes = [...wf.dagNodes];
-              const existingIdx = dagNodes.findIndex(n => n.nodeId === event.nodeId);
+          state => {
+            const next = new Map(state.workflows);
+            const existing = next.get(event.runId);
+            const workflow = existing ?? {
+              runId: event.runId,
+              workflowName: '',
+              status: 'running',
+              dagNodes: [],
+              artifacts: [],
+              startedAt: event.timestamp,
+              currentTool: null,
+            };
+            const dagNodes = [...workflow.dagNodes];
+            const existingIdx = dagNodes.findIndex(n => n.nodeId === event.nodeId);
 
-              const nodeState: DagNodeState = {
-                ...(existingIdx >= 0 ? dagNodes[existingIdx] : {}), // preserve accumulated iteration state
-                nodeId: event.nodeId,
-                name: event.name,
-                status: event.status,
-                duration: event.duration,
-                error: event.error,
-                reason: event.reason,
-              };
+            const nodeState: DagNodeState = {
+              ...(existingIdx >= 0 ? dagNodes[existingIdx] : {}), // preserve accumulated iteration state
+              nodeId: event.nodeId,
+              name: event.name,
+              status: event.status,
+              duration: event.duration,
+              error: event.error,
+              reason: event.reason,
+            };
 
-              if (existingIdx >= 0) {
-                dagNodes[existingIdx] = nodeState;
-              } else {
-                dagNodes.push(nodeState);
-              }
+            if (existingIdx >= 0) {
+              dagNodes[existingIdx] = nodeState;
+            } else {
+              dagNodes.push(nodeState);
+            }
 
-              return { ...wf, dagNodes };
-            }),
+            next.set(event.runId, { ...workflow, dagNodes });
+            return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+          },
           undefined,
           'workflow/dagNode'
         );
@@ -273,34 +352,71 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
       handleLoopIteration: (event: LoopIterationEvent): void => {
         if (!event.nodeId) return; // Non-DAG loops have no nodeId — skip
         set(
-          state =>
-            updateWorkflow(state, event.runId, wf => {
-              const dagNodes = [...wf.dagNodes];
-              const existingIdx = dagNodes.findIndex(n => n.nodeId === event.nodeId);
-              if (existingIdx < 0) return wf; // Node not yet in store — loop iteration may arrive before dag_node event in SSE ordering. Intentional silent drop.
+          state => {
+            const next = new Map(state.workflows);
+            const existingWorkflow = next.get(event.runId);
+            const orphanDiagnostic = {
+              type: 'workflow_diagnostic' as const,
+              runId: event.runId,
+              timestamp: event.timestamp,
+              severity: 'warning' as const,
+              code: 'workflow_loop_iteration_orphaned',
+              message:
+                'Loop iteration event arrived before its DAG node status; live loop progress may be incomplete.',
+              eventType: 'workflow_step',
+              stepName: event.nodeId,
+            };
+            if (!existingWorkflow) {
+              next.set(event.runId, {
+                runId: event.runId,
+                workflowName: '',
+                status: 'running',
+                dagNodes: [],
+                artifacts: [],
+                startedAt: event.timestamp,
+                stale: true,
+                diagnostics: [orphanDiagnostic],
+                currentTool: null,
+              });
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+            }
 
-              const existing = dagNodes[existingIdx];
-              const iterations: LoopIterationInfo[] = [...(existing.iterations ?? [])];
-              const iterIdx = iterations.findIndex(it => it.iteration === event.iteration);
-              const iterState: LoopIterationInfo = {
-                iteration: event.iteration,
-                status: event.status,
-                duration: event.duration,
-              };
-              if (iterIdx >= 0) {
-                iterations[iterIdx] = iterState;
-              } else {
-                iterations.push(iterState);
-              }
+            const dagNodes = [...existingWorkflow.dagNodes];
+            const existingIdx = dagNodes.findIndex(n => n.nodeId === event.nodeId);
+            if (existingIdx < 0) {
+              next.set(event.runId, {
+                ...existingWorkflow,
+                stale: true,
+                diagnostics: [...(existingWorkflow.diagnostics ?? []), orphanDiagnostic].slice(
+                  -MAX_WORKFLOW_DIAGNOSTICS
+                ),
+              });
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+            }
 
-              dagNodes[existingIdx] = {
-                ...existing,
-                currentIteration: event.iteration,
-                maxIterations: event.total > 0 ? event.total : existing.maxIterations,
-                iterations,
-              };
-              return { ...wf, dagNodes };
-            }),
+            const existing = dagNodes[existingIdx];
+            const iterations: LoopIterationInfo[] = [...(existing.iterations ?? [])];
+            const iterIdx = iterations.findIndex(it => it.iteration === event.iteration);
+            const iterState: LoopIterationInfo = {
+              iteration: event.iteration,
+              status: event.status,
+              duration: event.duration,
+            };
+            if (iterIdx >= 0) {
+              iterations[iterIdx] = iterState;
+            } else {
+              iterations.push(iterState);
+            }
+
+            dagNodes[existingIdx] = {
+              ...existing,
+              currentIteration: event.iteration,
+              maxIterations: event.total > 0 ? event.total : existing.maxIterations,
+              iterations,
+            };
+            next.set(event.runId, { ...existingWorkflow, dagNodes });
+            return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+          },
           undefined,
           'workflow/loopIteration'
         );
@@ -308,16 +424,73 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
 
       handleWorkflowToolActivity: (event: WorkflowToolActivityEvent): void => {
         set(
-          state =>
-            updateWorkflow(state, event.runId, wf => ({
-              ...wf,
-              currentTool:
-                event.status === 'started'
-                  ? { name: event.toolName, status: 'running' }
-                  : { name: event.toolName, status: 'completed', durationMs: event.durationMs },
-            })),
+          state => {
+            const next = new Map(state.workflows);
+            const existing = next.get(event.runId);
+            const currentTool =
+              event.status === 'started'
+                ? { name: event.toolName, status: 'running' as const }
+                : {
+                    name: event.toolName,
+                    status: 'completed' as const,
+                    durationMs: event.durationMs,
+                  };
+            if (!existing) {
+              next.set(event.runId, {
+                runId: event.runId,
+                workflowName: '',
+                status: 'running',
+                dagNodes: [],
+                artifacts: [],
+                startedAt: event.timestamp,
+                currentTool,
+              });
+              return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+            }
+            next.set(event.runId, {
+              ...existing,
+              currentTool,
+            });
+            return { workflows: next, activeWorkflowId: deriveActiveId(next) };
+          },
           undefined,
           'workflow/toolActivity'
+        );
+      },
+
+      handleWorkflowTransportDiagnostic: (input): void => {
+        set(
+          state => {
+            const next = new Map(state.workflows);
+            const timestamp = Date.now();
+            let changed = false;
+            for (const [runId, workflow] of next.entries()) {
+              if (isTerminalStatus(workflow.status)) continue;
+              changed = true;
+              next.set(runId, {
+                ...workflow,
+                stale: true,
+                diagnostics: [
+                  ...(workflow.diagnostics ?? []),
+                  {
+                    type: 'workflow_diagnostic' as const,
+                    runId,
+                    timestamp,
+                    severity: 'warning' as const,
+                    code: 'workflow_sse_connection_degraded',
+                    message: input.message,
+                    eventType: input.source,
+                    ...(input.readyState !== undefined
+                      ? { stepName: `readyState=${String(input.readyState)}` }
+                      : {}),
+                  },
+                ].slice(-MAX_WORKFLOW_DIAGNOSTICS),
+              });
+            }
+            return changed ? { workflows: next } : state;
+          },
+          undefined,
+          'workflow/transportDiagnostic'
         );
       },
 
@@ -359,18 +532,22 @@ export function selectActiveWorkflow(state: WorkflowStoreState): WorkflowState |
 // Shared by ChatInterface and WorkflowLogs instead of per-component useShallow selectors.
 const {
   handleWorkflowStatus,
+  handleWorkflowDiagnostic,
   handleWorkflowArtifact,
   handleDagNode,
   handleLoopIteration,
   handleWorkflowToolActivity,
+  handleWorkflowTransportDiagnostic,
 } = useWorkflowStore.getState();
 
 export const workflowSSEHandlers = {
   onWorkflowStatus: handleWorkflowStatus,
+  onWorkflowDiagnostic: handleWorkflowDiagnostic,
   onWorkflowArtifact: handleWorkflowArtifact,
   onDagNode: handleDagNode,
   onLoopIteration: handleLoopIteration,
   onToolActivity: handleWorkflowToolActivity,
+  onWorkflowTransportDiagnostic: handleWorkflowTransportDiagnostic,
 } as const;
 
 /** Reset store data and clean up polling timers/subscriptions. Use in tests and HMR. */

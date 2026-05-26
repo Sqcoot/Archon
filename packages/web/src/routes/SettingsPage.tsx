@@ -22,11 +22,39 @@ import type {
   SafeConfigResponse,
   CodebaseResponse,
   ProviderDefaults,
+  ProviderCapabilities,
   ProviderInfo,
 } from '@/lib/api';
 
 const selectClass =
   'h-9 rounded-md border border-border bg-surface-elevated text-text-primary px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring [&>option]:bg-surface-elevated [&>option]:text-text-primary';
+
+const UNKNOWN_PROVIDER_CAPABILITIES: ProviderCapabilities = {
+  sessionResume: false,
+  mcp: false,
+  hookCapabilities: {
+    workflowNodeHooks: 'unsupported',
+    runtimeConfigHooks: 'unknown',
+    hookInventoryObservable: false,
+    hookTrustObservable: false,
+    hookEventStreaming: false,
+  },
+  hooks: false,
+  skills: false,
+  agents: false,
+  toolRestrictions: false,
+  structuredOutput: false,
+  structuredOutputMode: 'unsupported',
+  systemPrompt: false,
+  systemPromptMode: 'unsupported',
+  envInjection: false,
+  costControl: false,
+  effortControl: false,
+  thinkingControl: false,
+  fallbackModel: false,
+  sandbox: false,
+  betaFlags: false,
+};
 
 function SystemHealthSection({
   health,
@@ -433,7 +461,7 @@ function AssistantConfigSection({ config }: { config: SafeConfigResponse }): Rea
           ({
             id: providerId,
             displayName: providerId,
-            capabilities: {},
+            capabilities: UNKNOWN_PROVIDER_CAPABILITIES,
             builtIn: false,
           }) satisfies ProviderInfo
       ),
@@ -516,6 +544,7 @@ function AssistantConfigSection({ config }: { config: SafeConfigResponse }): Rea
               }
 
               if (provider.id === 'codex') {
+                const hookCapabilities = provider.capabilities.hookCapabilities;
                 return (
                   <div
                     key={provider.id}
@@ -523,6 +552,49 @@ function AssistantConfigSection({ config }: { config: SafeConfigResponse }): Rea
                   >
                     <div className="font-medium">{provider.displayName}</div>
                     <div className="text-muted-foreground">Built-in provider settings</div>
+
+                    <div className="font-medium">Hook surface</div>
+                    <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">
+                          workflow YAML: {hookCapabilities.workflowNodeHooks}
+                        </Badge>
+                        <Badge
+                          variant={
+                            hookCapabilities.runtimeConfigHooks === 'possible'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          runtime config: {hookCapabilities.runtimeConfigHooks}
+                        </Badge>
+                        <Badge
+                          variant={
+                            hookCapabilities.hookInventoryObservable ? 'default' : 'secondary'
+                          }
+                        >
+                          inventory:{' '}
+                          {hookCapabilities.hookInventoryObservable ? 'observable' : 'unobservable'}
+                        </Badge>
+                        <Badge
+                          variant={hookCapabilities.hookTrustObservable ? 'default' : 'secondary'}
+                        >
+                          trust:{' '}
+                          {hookCapabilities.hookTrustObservable ? 'observable' : 'unobservable'}
+                        </Badge>
+                        <Badge
+                          variant={hookCapabilities.hookEventStreaming ? 'default' : 'secondary'}
+                        >
+                          events:{' '}
+                          {hookCapabilities.hookEventStreaming ? 'streamed' : 'not streamed'}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Codex workflow YAML hooks are not enforced by Archon. Runtime Codex hooks
+                        are possible and are preflighted before execution, including inventory and
+                        trust-status artifacts.
+                      </div>
+                    </div>
 
                     <label htmlFor="codex-model">Model</label>
                     <Input

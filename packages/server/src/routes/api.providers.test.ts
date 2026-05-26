@@ -210,15 +210,45 @@ describe('GET /api/providers', () => {
     }
   });
 
-  test('capabilities have expected boolean fields', async () => {
+  test('capabilities expose booleans, modes, and hook capability details', async () => {
     const response = await app.request('/api/providers');
     const body = (await response.json()) as {
-      providers: { capabilities: Record<string, boolean> }[];
+      providers: {
+        id: string;
+        capabilities: {
+          sessionResume: boolean;
+          mcp: boolean;
+          hooks: boolean;
+          agents: boolean;
+          structuredOutput: boolean;
+          structuredOutputMode: string;
+          hookCapabilities: {
+            workflowNodeHooks: string;
+            runtimeConfigHooks: string;
+            hookInventoryObservable: boolean;
+            hookTrustObservable: boolean;
+            hookEventStreaming: boolean;
+          };
+        };
+      }[];
     };
     const caps = body.providers[0].capabilities;
     expect(typeof caps.sessionResume).toBe('boolean');
     expect(typeof caps.mcp).toBe('boolean');
     expect(typeof caps.hooks).toBe('boolean');
+    expect(typeof caps.agents).toBe('boolean');
     expect(typeof caps.structuredOutput).toBe('boolean');
+    expect(['enforced', 'best_effort', 'unsupported']).toContain(caps.structuredOutputMode);
+    expect(caps.hookCapabilities).toBeDefined();
+
+    const codexCaps = body.providers.find(provider => provider.id === 'codex')?.capabilities;
+    expect(codexCaps?.hooks).toBe(true);
+    expect(codexCaps?.hookCapabilities).toMatchObject({
+      workflowNodeHooks: 'unsupported',
+      runtimeConfigHooks: 'possible',
+      hookInventoryObservable: true,
+      hookTrustObservable: true,
+      hookEventStreaming: false,
+    });
   });
 });

@@ -30,7 +30,11 @@ import { syncArchonToWorktree } from '../utils/worktree-sync';
 import { syncWorkspace, toRepoPath } from '@archon/git';
 import type { WorkspaceSyncResult } from '@archon/git';
 import { discoverWorkflowsWithConfig } from '@archon/workflows/workflow-discovery';
-import { findWorkflow } from '@archon/workflows/router';
+import {
+  findWorkflow,
+  isAutonomousRequestWithoutHumanLoopConsent,
+  isHumanInLoopWorkflow,
+} from '@archon/workflows/router';
 import { executeWorkflow, hydrateResumableRun } from '@archon/workflows/executor';
 import type {
   WorkflowDefinition,
@@ -47,9 +51,9 @@ import { buildOrchestratorSystemAppend, formatWorkflowContextSection } from './p
 import type { WorkflowResultContext } from './prompt-builder';
 import * as messageDb from '../db/messages';
 import * as workflowDb from '../db/workflows';
-import * as workflowEventDb from '../db/workflow-events';
 import { getCodebaseEnvVars } from '../db/env-vars';
-import type { ApprovalContext } from '@archon/workflows/schemas/workflow-run';
+import { isApprovalContext } from '@archon/workflows/schemas/workflow-run';
+import { approveLoadedWorkflowRun } from '../operations/workflow-operations';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -269,6 +273,98 @@ export function parseOrchestratorCommands(
   return result;
 }
 
+function effectiveWorkflowMode(workflow: WorkflowDefinition): string | undefined {
+  return workflow.mode ?? (workflow.interactive === true ? 'guided' : undefined);
+}
+
+function isHumanGatedWorkflow(workflow: WorkflowDefinition): boolean {
+  const mode = effectiveWorkflowMode(workflow);
+  return (
+    workflow.interactive === true ||
+    mode === 'guided' ||
+    mode === 'interactive_only' ||
+    workflow.lock_scope === 'external_side_effect' ||
+    workflow.lock_scope === 'checkout_mutation' ||
+    workflow.nodes.some(node => 'approval' in node)
+  );
+}
+
+function messageRequestsAutonomousRouting(message: string): boolean {
+  const normalized = message.toLowerCase();
+  const autonomousPatterns = [
+    /\baco\b/,
+    /\bagentic coding orchestrator\b/,
+    /\bautonomous\b/,
+    /\bunattended\b/,
+    /\bparty[- ]mode\b/,
+    /\bartifact[- ]rich handoff\b/,
+    /\bartifact rich handoff\b/,
+    /\bhandoff\b/,
+    /\bdossier\b/,
+    /\bcontinue without\b/,
+    /\bwithout asking\b/,
+    /\bwithout approval\b/,
+    /\bdo not ask\b/,
+    /\bdon't ask\b/,
+    /\bdont ask\b/,
+    /\bno approval\b/,
+    /\bno approvals\b/,
+    /\bno approval gates?\b/,
+    /\bstop awaiting approval\b/,
+    /\bstop asking\b/,
+  ];
+  return autonomousPatterns.some(pattern => pattern.test(normalized));
+}
+
+function messageRejectsHumanInLoop(message: string): boolean {
+  const normalized = message.toLowerCase();
+  const rejectionPatterns = [
+    /\b(?:no|without)\s+(?:manual\s+)?approvals?\b/,
+    /\b(?:no|without)\s+approval\s+gates?\b/,
+    /\b(?:no|without)\s+human[- ]in[- ]the[- ]loop\b/,
+    /\b(?:do\s+not|don'?t|never)\s+(?:ask|pause|wait)\s+(?:me\s+)?(?:for\s+)?approval\b/,
+    /\b(?:do\s+not|don'?t|never|stop)\s+ask(?:ing)?(?:\s+me)?\b/,
+    /\bwithout\s+asking\b/,
+    /\bcontinue\s+without\s+(?:asking|approval)\b/,
+  ];
+  return rejectionPatterns.some(pattern => pattern.test(normalized));
+}
+
+function messageExplicitlyAllowsHumanInLoop(message: string): boolean {
+  if (messageRejectsHumanInLoop(message)) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+  const humanInLoopPatterns = [
+    /\bguided\b/,
+    /\binteractive\b/,
+    /\bhuman[- ]in[- ]the[- ]loop\b/,
+    /\bhuman in the loop\b/,
+    /\bmanual approval\b/,
+    /\bmanual approvals\b/,
+    /\bask me\b/,
+    /\bapproval gate\b/,
+    /\bapproval gates\b/,
+    /\bpause for approval\b/,
+  ];
+  return humanInLoopPatterns.some(pattern => pattern.test(normalized));
+}
+
+function shouldBlockAutonomousToHumanGatedWorkflow(
+  workflow: WorkflowDefinition,
+  userMessage: string
+): boolean {
+  const autonomousIntent =
+    messageRequestsAutonomousRouting(userMessage) || messageRejectsHumanInLoop(userMessage);
+
+  return (
+    isHumanGatedWorkflow(workflow) &&
+    autonomousIntent &&
+    !messageExplicitlyAllowsHumanInLoop(userMessage)
+  );
+}
+
 // ─── Batch Mode Helpers ─────────────────────────────────────────────────────
 
 /**
@@ -315,12 +411,30 @@ async function dispatchOrchestratorWorkflow(
   codebase: Codebase,
   workflow: WorkflowDefinition,
   userMessage: string,
-  isolationHints?: HandleMessageContext['isolationHints']
+  isolationHints?: HandleMessageContext['isolationHints'],
+  routingIntentMessage = userMessage
 ): Promise<void> {
   // Auto-attach project to conversation
   await db.updateConversation(conversation.id, {
     codebase_id: codebase.id,
   });
+
+  if (shouldBlockAutonomousToHumanGatedWorkflow(workflow, routingIntentMessage)) {
+    const mode = effectiveWorkflowMode(workflow) ?? workflow.lock_scope ?? 'guided';
+    await platform.sendMessage(
+      conversationId,
+      `Workflow \`${workflow.name}\` is ${mode}/interactive/high-impact and cannot be used for an autonomous request. Choose a workflow with \`mode: autonomous\` and a safer \`lock_scope\`, or explicitly ask for guided human-in-the-loop execution.`
+    );
+    getLog().warn(
+      {
+        workflowName: workflow.name,
+        mode,
+        conversationId,
+      },
+      'workflow_autonomous_route_human_gated_blocked'
+    );
+    return;
+  }
 
   // Validate and resolve isolation.
   // A workflow with `worktree.enabled: false` short-circuits the resolver entirely
@@ -681,13 +795,9 @@ export async function handleMessage(
       const pausedRun = await workflowDb.getPausedWorkflowRun(conversation.id);
       if (pausedRun) {
         const approvalRaw = pausedRun.metadata.approval;
-        const hasValidApproval =
-          approvalRaw != null &&
-          typeof approvalRaw === 'object' &&
-          'nodeId' in approvalRaw &&
-          typeof (approvalRaw as Record<string, unknown>).nodeId === 'string';
+        const approval = isApprovalContext(approvalRaw) ? approvalRaw : undefined;
 
-        if (!hasValidApproval) {
+        if (approval === undefined) {
           // Paused run exists but approval context is missing or corrupt —
           // tell the user so they can use explicit commands instead.
           await platform.sendMessage(
@@ -698,7 +808,6 @@ export async function handleMessage(
           return;
         }
 
-        const approval = approvalRaw as ApprovalContext;
         getLog().info(
           {
             conversationId,
@@ -710,32 +819,9 @@ export async function handleMessage(
         );
 
         try {
-          // Write approval events — for interactive loops, do NOT write node_completed
-          // (the executor writes it when the AI emits the completion signal on actual exit).
-          if (approval.type !== 'interactive_loop') {
-            const nodeOutput = approval.captureResponse === true ? message : '';
-            await workflowEventDb.createWorkflowEvent({
-              workflow_run_id: pausedRun.id,
-              event_type: 'node_completed',
-              step_name: approval.nodeId,
-              data: { node_output: nodeOutput, approval_decision: 'approved' },
-            });
-          }
-          await workflowEventDb.createWorkflowEvent({
-            workflow_run_id: pausedRun.id,
-            event_type: 'approval_received',
-            step_name: approval.nodeId,
-            data: { decision: 'approved', comment: message },
-          });
-          // For interactive loops, store user input; for standard approvals, mark as approved
-          // and clear any rejection state.
-          const metadataUpdate: Record<string, unknown> =
-            approval.type === 'interactive_loop'
-              ? { loop_user_input: message }
-              : { approval_response: 'approved', rejection_reason: '', rejection_count: 0 };
-          await workflowDb.updateWorkflowRun(pausedRun.id, {
-            status: 'failed',
-            metadata: metadataUpdate,
+          await approveLoadedWorkflowRun(pausedRun, message, {
+            approvalChannel: 'chat',
+            scope: 'once',
           });
 
           // Discover workflow and resume
@@ -783,7 +869,7 @@ export async function handleMessage(
           await platform.sendMessage(
             conversationId,
             `Approval failed: ${(error as Error).message}. ` +
-              `Try again or use \`/workflow approve ${pausedRun.id}\` explicitly.`
+              `For high-impact destructive, credential, remote, or production gates, use the explicit approval UI or CLI \`archon workflow approve ${pausedRun.id} --scope once --confirm-high-impact\`. For non-high-impact gates, use \`/workflow approve ${pausedRun.id}\`.`
           );
         }
         return;
@@ -1426,16 +1512,31 @@ async function handleWorkflowInvocationResult(
 ): Promise<void> {
   const { workflowName, projectName, remainingMessage } = invocation;
 
-  // Send explanation text before dispatching
-  if (remainingMessage) {
-    await platform.sendMessage(conversationId, remainingMessage);
-  }
-
   // Find the codebase and workflow (supports partial name matching)
   const codebase = findCodebaseByName(codebases, projectName);
   const workflow = findWorkflow(workflowName, [...workflows]);
 
   if (codebase && workflow) {
+    if (
+      isAutonomousRequestWithoutHumanLoopConsent(originalMessage) &&
+      isHumanInLoopWorkflow(workflow)
+    ) {
+      getLog().warn(
+        { workflowName, projectName },
+        'workflow_autonomous_human_loop_invocation_blocked'
+      );
+      await platform.sendMessage(
+        conversationId,
+        `I did not start \`${workflowName}\` because this request asks for autonomous execution, but that workflow is guided, interactive, approval-gated, source-mutating, or external-side-effecting. Choose an autonomous \`read_only\` or \`artifact_only\` workflow instead.`
+      );
+      return;
+    }
+
+    // Send explanation text before dispatching once the workflow is safe to invoke.
+    if (remainingMessage) {
+      await platform.sendMessage(conversationId, remainingMessage);
+    }
+
     const workflowPrompt = invocation.synthesizedPrompt ?? originalMessage;
     getLog().debug(
       {
@@ -1454,7 +1555,8 @@ async function handleWorkflowInvocationResult(
       codebase,
       workflow,
       workflowPrompt,
-      isolationHints
+      isolationHints,
+      originalMessage
     );
     return;
   }

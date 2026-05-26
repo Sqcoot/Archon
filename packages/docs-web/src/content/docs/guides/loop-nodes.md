@@ -298,17 +298,14 @@ nodes:
 ### What is NOT supported on loop nodes
 
 - `retry` — rejected at parse time. The loader fails the workflow if `retry:` is set on a loop node.
-- `context: fresh` — silently ignored. Session control is handled exclusively by `fresh_context` within the `loop:` config
-- `hooks` — per-node SDK hooks are not passed through to loop iterations
-- `mcp` — per-node MCP server configs are not loaded for loop nodes
-- `skills` — skill preloading is not applied to loop iterations
-- `allowed_tools` / `denied_tools` — tool restrictions are not enforced on loop iterations
-- `output_format` — structured JSON output is not supported for loop nodes
-- `provider` / `model` — accepted in YAML without error but silently ignored at runtime. Loop nodes always use the workflow-level provider and model.
-
-These fields (except `retry`) are silently discarded at parse time with a
-loader warning — the workflow still loads but the fields have no effect.
-`retry` is the exception: it causes a hard load error.
+- Safety/output controls such as `hooks`, `mcp`, `skills`, `allowed_tools`,
+  `denied_tools`, `output_format`, and `sandbox` are rejected before schema
+  stripping. The loop executor cannot enforce them per iteration, so Archon
+  fails closed instead of warning and continuing.
+- `context: fresh` is a compatibility no-op. Session control is handled
+  exclusively by `fresh_context` within the `loop:` config.
+- `provider` / `model` are supported on loop nodes and are forwarded to each
+  iteration's AI call.
 
 The loop executor manages its own AI sessions independently from the standard
 node executor. If you need hooks, MCP, skills, or tool restrictions, consider

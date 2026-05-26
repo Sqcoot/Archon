@@ -21,6 +21,7 @@ import {
   type WorkflowEmitterEvent,
 } from '@archon/workflows/event-emitter';
 import type { WorkflowDefinition, WorkflowLoadResult } from '@archon/workflows/schemas/workflow';
+import { isApprovalContext, type ApprovalContext } from '@archon/workflows/schemas/workflow-run';
 import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import {
   approveWorkflow,
@@ -44,6 +45,56 @@ let cachedLog: ReturnType<typeof createLogger> | undefined;
 function getLog(): ReturnType<typeof createLogger> {
   if (!cachedLog) cachedLog = createLogger('cli.workflow');
   return cachedLog;
+}
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
+
+function isHighImpactApproval(
+  approval: Pick<ApprovalContext, 'mutationClass' | 'highImpact'>
+): boolean {
+  return (
+    approval.highImpact === true ||
+    (approval.mutationClass !== undefined &&
+      HIGH_IMPACT_APPROVAL_CLASSES.has(approval.mutationClass))
+  );
+}
+
+function formatPausedApprovalStatus(runId: string, approvalCandidate: unknown): string[] {
+  if (!isApprovalContext(approvalCandidate)) return [];
+
+  const allowedScopes = approvalCandidate.allowedScopes ?? ['once'];
+  const defaultScope = approvalCandidate.defaultScope ?? allowedScopes[0] ?? 'once';
+  const highImpact = isHighImpactApproval(approvalCandidate);
+  const approveOnceCommand = highImpact
+    ? `workflow approve ${runId} --scope once --confirm-high-impact`
+    : `workflow approve ${runId} --scope once`;
+  const approvalActionLines = [
+    allowedScopes.includes('once') ? `  Approve once: ${approveOnceCommand}` : undefined,
+    allowedScopes.includes('run')
+      ? '  Approve for run: unavailable — run-scoped approval is not implemented end-to-end yet.'
+      : undefined,
+    highImpact
+      ? `  High-impact approval: use the explicit approval UI or \`${approveOnceCommand}\`; normal chat approval is blocked.`
+      : `  Reject action: workflow reject ${runId} <reason>`,
+  ];
+  return [
+    `  Approval node: ${approvalCandidate.nodeId}`,
+    `  Approval message: ${approvalCandidate.message}`,
+    approvalCandidate.mutationClass
+      ? `  Mutation class: ${approvalCandidate.mutationClass}`
+      : undefined,
+    approvalCandidate.path ? `  Path: ${approvalCandidate.path}` : undefined,
+    approvalCandidate.command ? `  Command: ${approvalCandidate.command}` : undefined,
+    approvalCandidate.reason ? `  Reason: ${approvalCandidate.reason}` : undefined,
+    approvalCandidate.highImpact !== undefined
+      ? `  High impact: ${approvalCandidate.highImpact ? 'yes' : 'no'}`
+      : undefined,
+    approvalCandidate.highImpactConfirmed !== undefined
+      ? `  High-impact confirmed: ${approvalCandidate.highImpactConfirmed ? 'yes' : 'no'}`
+      : undefined,
+    `  Approval scope: default=${defaultScope}; allowed=${allowedScopes.join(',')}`,
+    ...approvalActionLines,
+  ].filter((line): line is string => line !== undefined);
 }
 
 /**
@@ -73,6 +124,13 @@ export interface WorkflowRunOptions {
   verbose?: boolean;
   /** Platform conversation ID (e.g. `cli-{ts}-{rand}`), NOT a DB UUID. */
   conversationId?: string;
+}
+
+export interface WorkflowApproveOptions {
+  /** Requested approval scope; validated here before the shared operation sees it. */
+  scope?: string;
+  /** Required for destructive/credential/remote/production approval gates. */
+  confirmHighImpact?: boolean;
 }
 
 /**
@@ -171,6 +229,41 @@ function renderWorkflowEvent(event: WorkflowEmitterEvent, verbose: boolean): voi
       break;
     case 'approval_pending':
       process.stderr.write(`[${event.nodeId}] Waiting for approval: ${event.message}\n`);
+      if (
+        event.mutationClass ??
+        event.path ??
+        event.command ??
+        event.reason ??
+        event.highImpact ??
+        event.highImpactConfirmed ??
+        event.defaultScope ??
+        event.allowedScopes
+      ) {
+        process.stderr.write(
+          `[${event.nodeId}] Approval details: ${[
+            event.mutationClass ? `mutation=${event.mutationClass}` : undefined,
+            event.path ? `path=${event.path}` : undefined,
+            event.command ? `command=${event.command}` : undefined,
+            event.reason ? `reason=${event.reason}` : undefined,
+            event.highImpact !== undefined
+              ? `highImpact=${event.highImpact ? 'yes' : 'no'}`
+              : undefined,
+            event.highImpactConfirmed !== undefined
+              ? `highImpactConfirmed=${event.highImpactConfirmed ? 'yes' : 'no'}`
+              : undefined,
+            event.defaultScope || event.allowedScopes
+              ? `scope=default=${event.defaultScope ?? 'once'}; allowed=${(event.allowedScopes ?? ['once']).join(',')}`
+              : undefined,
+          ]
+            .filter((part): part is string => part !== undefined)
+            .join(' | ')}\n`
+        );
+      }
+      if (event.allowedScopes && event.allowedScopes.length > 0) {
+        process.stderr.write(
+          `[${event.nodeId}] Approval scopes: default=${event.defaultScope ?? event.allowedScopes[0]} allowed=${event.allowedScopes.join(',')}\n`
+        );
+      }
       break;
     case 'tool_started':
       if (verbose) {
@@ -183,6 +276,11 @@ function renderWorkflowEvent(event: WorkflowEmitterEvent, verbose: boolean): voi
           `[${event.stepName}] tool: ${event.toolName} (${String(event.durationMs)}ms)\n`
         );
       }
+      break;
+    case 'workflow_event_persist_failed':
+      process.stderr.write(
+        `[workflow-events] Persistence failed for ${event.eventType}${event.stepName ? `/${event.stepName}` : ''}: ${event.reason} (${event.persistence})\n`
+      );
       break;
     default:
       // Workflow-level, loop, artifact, and cancelled events are intentionally not rendered.
@@ -965,6 +1063,11 @@ export async function workflowStatusCommand(json?: boolean, verbose?: boolean): 
     console.log(`  Path:   ${run.working_path ?? '(none)'}`);
     console.log(`  Status: ${run.status}`);
     console.log(`  Age:    ${age}`);
+    if (run.status === 'paused') {
+      for (const line of formatPausedApprovalStatus(run.id, run.metadata?.approval)) {
+        console.log(line);
+      }
+    }
 
     if (verbose) {
       let events: WorkflowEventRow[];
@@ -1073,12 +1176,32 @@ export async function workflowAbandonCommand(runId: string): Promise<void> {
   console.log(`Workflow: ${run.workflow_name}`);
 }
 
+function normalizeWorkflowApprovalScope(scope?: string): 'once' | undefined {
+  if (!scope) return undefined;
+  if (scope === 'once') return scope;
+  if (scope === 'run') {
+    throw new Error(
+      "Approval scope 'run' is not implemented end-to-end yet. Use approval scope 'once'."
+    );
+  }
+  throw new Error(`Invalid approval scope '${scope}'. Expected 'once'.`);
+}
+
 /**
  * Approve a paused workflow run by ID.
  * Writes the approval events and transitions to 'failed' for auto-resume.
  */
-export async function workflowApproveCommand(runId: string, comment?: string): Promise<void> {
-  const result = await approveWorkflow(runId, comment);
+export async function workflowApproveCommand(
+  runId: string,
+  comment?: string,
+  options: WorkflowApproveOptions = {}
+): Promise<void> {
+  const approvalScope = normalizeWorkflowApprovalScope(options.scope);
+  const result = await approveWorkflow(runId, comment, {
+    ...(approvalScope ? { scope: approvalScope } : {}),
+    approvalChannel: 'cli',
+    highImpactConfirmed: options.confirmHighImpact === true,
+  });
 
   // CLI auto-resumes after approval (unlike chat, which defers to next user message)
   if (!result.workingPath) {
@@ -1162,7 +1285,7 @@ export async function workflowApproveCommand(runId: string, comment?: string): P
  * otherwise marks the run as cancelled.
  */
 export async function workflowRejectCommand(runId: string, reason?: string): Promise<void> {
-  const result = await rejectWorkflow(runId, reason);
+  const result = await rejectWorkflow(runId, reason, { approvalChannel: 'cli' });
 
   if (result.cancelled) {
     const suffix = result.maxAttemptsReached ? ' (max attempts reached)' : '';
@@ -1264,7 +1387,8 @@ export async function workflowCleanupCommand(days: number): Promise<void> {
 
 /**
  * Emit a workflow event directly to the database.
- * Non-throwing: mirrors the fire-and-forget contract of createWorkflowEvent.
+ * Non-throwing: createWorkflowEvent returns whether persistence actually
+ * happened so CLI output can distinguish stored events from audit degradation.
  */
 export function isValidEventType(value: string): value is WorkflowEventType {
   return (WORKFLOW_EVENT_TYPES as readonly string[]).includes(value);
@@ -1276,14 +1400,16 @@ export async function workflowEventEmitCommand(
   data?: Record<string, unknown>
 ): Promise<void> {
   const store = createWorkflowStore();
-  await store.createWorkflowEvent({
+  const persisted = await store.createWorkflowEvent({
     workflow_run_id: runId,
     event_type: eventType,
     data,
   });
-  // createWorkflowEvent is non-throwing (fire-and-forget) — the event may not
-  // have been persisted if the DB was unavailable. Check server logs if missing.
-  console.log(`Event submitted (best-effort): ${eventType} for run ${runId}`);
+  if (persisted) {
+    console.log(`Event persisted: ${eventType} for run ${runId}`);
+  } else {
+    console.warn(`Event persistence failed (best_effort_failed): ${eventType} for run ${runId}`);
+  }
 }
 
 // ─── Marketplace commands ────────────────────────────────────────────────────

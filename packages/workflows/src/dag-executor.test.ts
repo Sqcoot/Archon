@@ -42,6 +42,7 @@ import {
   checkTriggerRule,
   substituteNodeOutputRefs,
   executeDagWorkflow,
+  normalizeProviderArtifactPathForViewer,
 } from './dag-executor';
 import { loadMcpConfig } from '@archon/providers/mcp/config';
 import type { DagNode, BashNode, ScriptNode, NodeOutput, WorkflowRun } from './schemas';
@@ -97,7 +98,7 @@ function createMockStore(): IWorkflowStore {
     failWorkflowRun: mock(() => Promise.resolve()),
     pauseWorkflowRun: mock(() => Promise.resolve()),
     cancelWorkflowRun: mock(() => Promise.resolve()),
-    createWorkflowEvent: mock(() => Promise.resolve()),
+    createWorkflowEvent: mock(() => Promise.resolve(true)),
     getCompletedDagNodeOutputs: mock(() => Promise.resolve(new Map<string, string>())),
     getCodebase: mock(() => Promise.resolve(null)),
     getCodebaseEnvVars: mock(() => Promise.resolve({})),
@@ -230,6 +231,42 @@ function makeWorkflowRun(id = 'dag-test-run-id', overrides?: Partial<WorkflowRun
 }
 
 // --- Tests ---
+
+describe('normalizeProviderArtifactPathForViewer', () => {
+  it('converts absolute provider artifacts under the run artifact root to viewer paths', () => {
+    const artifactsDir = join(tmpdir(), 'archon-run-artifacts');
+    const artifactPath = join(artifactsDir, 'codex-hooks-runtime', 'summary.md');
+
+    expect(normalizeProviderArtifactPathForViewer(artifactsDir, artifactPath)).toBe(
+      'codex-hooks-runtime/summary.md'
+    );
+  });
+
+  it('allows in-root artifact names that start with two dots but are not parent traversal', () => {
+    const artifactsDir = join(tmpdir(), 'archon-run-artifacts');
+    const artifactPath = join(artifactsDir, '..reports', 'summary.md');
+
+    expect(normalizeProviderArtifactPathForViewer(artifactsDir, artifactPath)).toBe(
+      '..reports/summary.md'
+    );
+  });
+
+  it('omits viewer paths for absolute provider artifacts outside the run artifact root', () => {
+    const artifactsDir = join(tmpdir(), 'archon-run-artifacts');
+    const outsidePath = join(tmpdir(), 'outside-artifacts', 'summary.md');
+
+    expect(normalizeProviderArtifactPathForViewer(artifactsDir, outsidePath)).toBeUndefined();
+  });
+
+  it('omits unsafe relative provider artifact paths', () => {
+    const artifactsDir = join(tmpdir(), 'archon-run-artifacts');
+
+    expect(normalizeProviderArtifactPathForViewer(artifactsDir, '../secret.md')).toBeUndefined();
+    expect(normalizeProviderArtifactPathForViewer(artifactsDir, 'reports\\secret.md')).toBe(
+      'reports/secret.md'
+    );
+  });
+});
 
 describe('buildTopologicalLayers', () => {
   it('single node with no dependencies -> one layer', () => {
@@ -1063,7 +1100,7 @@ describe('executeDagWorkflow -- tool restrictions', () => {
     expect(nodeConfig?.allowed_tools).toEqual(['Read', 'Grep']);
   });
 
-  it('warns user when Codex DAG node has denied_tools only', async () => {
+  it('fails closed when Codex DAG node has denied_tools only', async () => {
     mockGetAgentProviderDag.mockReturnValue({
       sendQuery: mockSendQueryDag,
       getType: () => 'codex',
@@ -1074,33 +1111,28 @@ describe('executeDagWorkflow -- tool restrictions', () => {
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun();
 
-    await executeDagWorkflow(
-      mockDeps,
-      platform,
-      'conv-dag',
-      testDir,
-      {
-        name: 'dag-codex-denied',
-        nodes: [
-          { id: 'review', command: 'my-cmd', provider: 'codex', denied_tools: ['WebSearch'] },
-        ],
-      },
-      workflowRun,
-      'codex',
-      undefined,
-      join(testDir, 'artifacts'),
-      join(testDir, 'logs'),
-      'main',
-      'docs/',
-      { ...minimalConfig, assistant: 'codex' }
-    );
-
-    const sendMessage = platform.sendMessage as ReturnType<typeof mock>;
-    const messages = sendMessage.mock.calls.map((call: unknown[]) => call[1] as string);
-    const warning = messages.find(
-      m => m.includes('allowed_tools/denied_tools') && m.includes('codex')
-    );
-    expect(warning).toBeDefined();
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-denied',
+          nodes: [
+            { id: 'review', command: 'my-cmd', provider: 'codex', denied_tools: ['WebSearch'] },
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety-critical controls must not be warning-only');
   });
 
   it('passes empty allowed_tools: [] (disable all tools) to sendQuery', async () => {
@@ -1170,7 +1202,7 @@ describe('executeDagWorkflow -- tool restrictions', () => {
     expect(hooks.PreToolUse).toHaveLength(1);
   });
 
-  it('warns user when Codex DAG node has hooks', async () => {
+  it('fails closed when Codex DAG node has workflow hooks', async () => {
     mockGetAgentProviderDag.mockReturnValue({
       sendQuery: mockSendQueryDag,
       getType: () => 'codex',
@@ -1181,38 +1213,160 @@ describe('executeDagWorkflow -- tool restrictions', () => {
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun();
 
-    await executeDagWorkflow(
-      mockDeps,
-      platform,
-      'conv-dag',
-      testDir,
-      {
-        name: 'dag-codex-hooks',
-        nodes: [
-          {
-            id: 'review',
-            command: 'my-cmd',
-            provider: 'codex',
-            hooks: {
-              PreToolUse: [{ response: { decision: 'block' } }],
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-hooks',
+          nodes: [
+            {
+              id: 'review',
+              command: 'my-cmd',
+              provider: 'codex',
+              hooks: {
+                PreToolUse: [{ response: { decision: 'block' } }],
+              },
             },
-          },
-        ],
-      },
-      workflowRun,
-      'codex',
-      undefined,
-      join(testDir, 'artifacts'),
-      join(testDir, 'logs'),
-      'main',
-      'docs/',
-      { ...minimalConfig, assistant: 'codex' }
-    );
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety-critical controls must not be warning-only');
+  });
 
-    const sendMessage = platform.sendMessage as ReturnType<typeof mock>;
-    const messages = sendMessage.mock.calls.map((call: unknown[]) => call[1] as string);
-    const warning = messages.find(m => m.includes('hooks') && m.includes('codex'));
-    expect(warning).toBeDefined();
+  it('fails closed when Codex DAG node has MCP servers', async () => {
+    mockGetAgentProviderDag.mockReturnValue({
+      sendQuery: mockSendQueryDag,
+      getType: () => 'codex',
+      getCapabilities: mockCodexCapabilities,
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-mcp',
+          nodes: [
+            {
+              id: 'review',
+              command: 'my-cmd',
+              provider: 'codex',
+              mcp: {
+                filesystem: {
+                  command: 'npx',
+                  args: ['-y', '@modelcontextprotocol/server-filesystem'],
+                },
+              },
+            },
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety/output/resource controls must not be warning-only');
+  });
+
+  it('fails closed when Codex DAG node has sandbox settings', async () => {
+    mockGetAgentProviderDag.mockReturnValue({
+      sendQuery: mockSendQueryDag,
+      getType: () => 'codex',
+      getCapabilities: mockCodexCapabilities,
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-sandbox',
+          nodes: [
+            {
+              id: 'review',
+              command: 'my-cmd',
+              provider: 'codex',
+              sandbox: { mode: 'read-only' },
+            },
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety/output/resource controls must not be warning-only');
+  });
+
+  it('fails closed when provider only supports best-effort output_format', async () => {
+    mockGetAgentProviderDag.mockReturnValue({
+      sendQuery: mockSendQueryDag,
+      getType: () => 'pi',
+      getCapabilities: mockClaudeCapabilities,
+    });
+
+    const mockDeps = createMockDeps();
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun();
+
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-pi-output-format',
+          nodes: [
+            {
+              id: 'review',
+              command: 'my-cmd',
+              provider: 'pi',
+              output_format: { type: 'object', properties: { ok: { type: 'boolean' } } },
+            },
+          ],
+        },
+        workflowRun,
+        'pi',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'pi' }
+      )
+    ).rejects.toThrow('best-effort structured output');
   });
 });
 
@@ -2839,7 +2993,7 @@ describe('executeDagWorkflow -- skills options', () => {
     expect(nodeConfig?.allowed_tools).toEqual(['Read', 'Grep']);
   });
 
-  it('warns user when Codex DAG node has skills and does not pass agents', async () => {
+  it('fails closed when Codex DAG node has skills', async () => {
     mockGetAgentProviderDag.mockReturnValue({
       sendQuery: mockSendQueryDag,
       getType: () => 'codex',
@@ -2850,32 +3004,28 @@ describe('executeDagWorkflow -- skills options', () => {
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun();
 
-    await executeDagWorkflow(
-      mockDeps,
-      platform,
-      'conv-dag',
-      testDir,
-      {
-        name: 'dag-codex-skills',
-        nodes: [
-          { id: 'review', command: 'my-cmd', provider: 'codex', skills: ['codebase-search'] },
-        ],
-      },
-      workflowRun,
-      'codex',
-      undefined,
-      join(testDir, 'artifacts'),
-      join(testDir, 'logs'),
-      'main',
-      'docs/',
-      { ...minimalConfig, assistant: 'codex' }
-    );
-
-    // Warning sent to user
-    const sendMessage = platform.sendMessage as ReturnType<typeof mock>;
-    const messages = sendMessage.mock.calls.map((call: unknown[]) => call[1] as string);
-    const warning = messages.find(m => m.includes('skills') && m.includes('codex'));
-    expect(warning).toBeDefined();
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-skills',
+          nodes: [
+            { id: 'review', command: 'my-cmd', provider: 'codex', skills: ['codebase-search'] },
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety/output/resource controls must not be warning-only');
   });
 
   it('passes agents to sendQuery nodeConfig when node has inline agents', async () => {
@@ -2917,7 +3067,7 @@ describe('executeDagWorkflow -- skills options', () => {
     expect(nodeConfig?.agents).toEqual(agentsMap);
   });
 
-  it('warns user when Codex DAG node has inline agents', async () => {
+  it('fails closed when Codex DAG node has inline agents', async () => {
     mockGetAgentProviderDag.mockReturnValue({
       sendQuery: mockSendQueryDag,
       getType: () => 'codex',
@@ -2928,38 +3078,35 @@ describe('executeDagWorkflow -- skills options', () => {
     const platform = createMockPlatform();
     const workflowRun = makeWorkflowRun();
 
-    await executeDagWorkflow(
-      mockDeps,
-      platform,
-      'conv-dag',
-      testDir,
-      {
-        name: 'dag-codex-agents',
-        nodes: [
-          {
-            id: 'review',
-            command: 'my-cmd',
-            provider: 'codex',
-            agents: {
-              'brief-gen': { description: 'd', prompt: 'p' },
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-dag',
+        testDir,
+        {
+          name: 'dag-codex-agents',
+          nodes: [
+            {
+              id: 'review',
+              command: 'my-cmd',
+              provider: 'codex',
+              agents: {
+                'brief-gen': { description: 'd', prompt: 'p' },
+              },
             },
-          },
-        ],
-      },
-      workflowRun,
-      'codex',
-      undefined,
-      join(testDir, 'artifacts'),
-      join(testDir, 'logs'),
-      'main',
-      'docs/',
-      { ...minimalConfig, assistant: 'codex' }
-    );
-
-    const sendMessage = platform.sendMessage as ReturnType<typeof mock>;
-    const messages = sendMessage.mock.calls.map((call: unknown[]) => call[1] as string);
-    const warning = messages.find(m => m.includes('agents') && m.includes('codex'));
-    expect(warning).toBeDefined();
+          ],
+        },
+        workflowRun,
+        'codex',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        { ...minimalConfig, assistant: 'codex' }
+      )
+    ).rejects.toThrow('safety/output/resource controls must not be warning-only');
   });
 });
 
@@ -5633,7 +5780,7 @@ describe('executeDagWorkflow -- credit exhaustion', () => {
     );
 
     // node_failed (not node_completed) must have been stored
-    const events = (store.createWorkflowEvent as Mock<() => Promise<void>>).mock.calls.map(
+    const events = (store.createWorkflowEvent as Mock<() => Promise<boolean>>).mock.calls.map(
       (c: unknown[]) => (c[0] as { event_type: string }).event_type
     );
     expect(events).toContain('node_failed');
@@ -5768,6 +5915,113 @@ describe('executeDagWorkflow -- approval node', () => {
     });
     // captureResponse should be undefined (not set)
     expect((pauseCalls[0][1] as Record<string, unknown>).captureResponse).toBeUndefined();
+  });
+
+  it('does not advertise normal chat approval for high-impact approval nodes', async () => {
+    const store = createMockStore();
+    const mockDeps = createMockDeps(store);
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun('high-impact-approval-run');
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-approval',
+      testDir,
+      {
+        name: 'approval-high-impact',
+        nodes: [
+          {
+            id: 'deploy',
+            approval: {
+              message: 'Deploy to production?',
+              mutation_class: 'production',
+              command: 'deploy-prod',
+              reason: 'Production deployment changes live traffic',
+            },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const sentMessages = (
+      platform.sendMessage as Mock<(...args: unknown[]) => Promise<void>>
+    ).mock.calls.map((c: unknown[]) => c[1] as string);
+    const approvalMessage = sentMessages.find(m => m.includes('Deploy to production?'));
+    expect(approvalMessage).toBeDefined();
+    expect(approvalMessage).not.toContain('/workflow approve high-impact-approval-run');
+    expect(approvalMessage).toContain('Normal chat approval is blocked for this gate');
+    expect(approvalMessage).toContain('archon workflow approve high-impact-approval-run');
+    const pauseCalls = (
+      store.pauseWorkflowRun as Mock<(id: string, ctx: Record<string, unknown>) => Promise<void>>
+    ).mock.calls;
+    expect(pauseCalls[0][1]).toMatchObject({
+      mutationClass: 'production',
+      highImpact: true,
+      highImpactConfirmed: false,
+    });
+  });
+
+  it('does not advertise normal chat approval when custom approval class sets high_impact', async () => {
+    const store = createMockStore();
+    const mockDeps = createMockDeps(store);
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun('custom-high-impact-approval-run');
+
+    await executeDagWorkflow(
+      mockDeps,
+      platform,
+      'conv-approval',
+      testDir,
+      {
+        name: 'approval-custom-high-impact',
+        nodes: [
+          {
+            id: 'network',
+            approval: {
+              message: 'Change network boundary?',
+              mutation_class: 'network_boundary',
+              high_impact: true,
+              command: 'configure-network-boundary',
+              reason: 'Changes external network access',
+            },
+          },
+        ],
+      },
+      workflowRun,
+      'claude',
+      undefined,
+      join(testDir, 'artifacts'),
+      join(testDir, 'logs'),
+      'main',
+      'docs/',
+      minimalConfig
+    );
+
+    const sentMessages = (
+      platform.sendMessage as Mock<(...args: unknown[]) => Promise<void>>
+    ).mock.calls.map((c: unknown[]) => c[1] as string);
+    const approvalMessage = sentMessages.find(m => m.includes('Change network boundary?'));
+    expect(approvalMessage).toBeDefined();
+    expect(approvalMessage).not.toContain('/workflow approve custom-high-impact-approval-run');
+    expect(approvalMessage).toContain('Normal chat approval is blocked for this gate');
+    expect(approvalMessage).toContain('archon workflow approve custom-high-impact-approval-run');
+    const pauseCalls = (
+      store.pauseWorkflowRun as Mock<(id: string, ctx: Record<string, unknown>) => Promise<void>>
+    ).mock.calls;
+    expect(pauseCalls[0][1]).toMatchObject({
+      mutationClass: 'network_boundary',
+      highImpact: true,
+      highImpactConfirmed: false,
+    });
   });
 
   it('on_reject runs AI prompt and re-pauses on rejection resume', async () => {
@@ -6116,7 +6370,7 @@ describe('executeDagWorkflow -- approval node', () => {
 
     // (b) The persisted approval_requested workflow event's data.message must be substituted.
     const approvalRequestedEvents = (
-      store.createWorkflowEvent as Mock<() => Promise<void>>
+      store.createWorkflowEvent as Mock<() => Promise<boolean>>
     ).mock.calls.filter(
       (c: unknown[]) => (c[0] as { event_type: string }).event_type === 'approval_requested'
     );
@@ -7473,10 +7727,10 @@ describe('executeDagWorkflow -- MCP failure filtering', () => {
     expect(mcpMessages(platform)).toEqual([]);
   });
 
-  it('forwards ⚠️ provider warnings verbatim', async () => {
-    const platform = await runWithSystemChunk('⚠️ Haiku does not support MCP');
+  it('forwards non-safety provider diagnostics verbatim', async () => {
+    const platform = await runWithSystemChunk('⚠️ Provider diagnostic: retrying transient stream');
 
-    expect(mcpMessages(platform)).toEqual(['⚠️ Haiku does not support MCP']);
+    expect(mcpMessages(platform)).toEqual(['⚠️ Provider diagnostic: retrying transient stream']);
   });
 });
 
@@ -7829,5 +8083,47 @@ describe('bundled opus nodes -- provider annotation invariant (#1610)', () => {
         }
       }
     }
+  });
+});
+
+describe('executeDagWorkflow -- autonomous lock-scope runtime guard', () => {
+  it('fails closed before execution when autonomous workflow declares checkout mutation', async () => {
+    const store = createMockStore();
+    const mockDeps = createMockDeps(store);
+    const platform = createMockPlatform();
+    const workflowRun = makeWorkflowRun('autonomous-checkout-mutation-run');
+
+    await expect(
+      executeDagWorkflow(
+        mockDeps,
+        platform,
+        'conv-autonomous-lock-scope',
+        testDir,
+        {
+          name: 'unsafe-autonomous-source-edit',
+          mode: 'autonomous',
+          lock_scope: 'checkout_mutation',
+          nodes: [{ id: 'noop', bash: 'echo should-not-run' } as unknown as DagNode],
+        },
+        workflowRun,
+        'claude',
+        undefined,
+        join(testDir, 'artifacts'),
+        join(testDir, 'logs'),
+        'main',
+        'docs/',
+        minimalConfig
+      )
+    ).rejects.toThrow('lock_scope: checkout_mutation');
+
+    const sentMessages = (
+      platform.sendMessage as Mock<(...args: unknown[]) => Promise<void>>
+    ).mock.calls.map((call: unknown[]) => call[1] as string);
+    expect(sentMessages.some(message => message.includes('lock_scope: checkout_mutation'))).toBe(
+      true
+    );
+    expect(store.createWorkflowEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: 'node_started' })
+    );
   });
 });

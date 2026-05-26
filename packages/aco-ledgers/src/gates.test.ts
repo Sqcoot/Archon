@@ -21,7 +21,7 @@ describe('ledger fixture parity gate', () => {
     });
     expect(result.value.requiredCommand).toMatchObject({
       owner: 'aco-ledgers',
-      mutates: 'read-only',
+      mutates: 'writes-artifacts',
       approvalRequired: false,
       compatibility: 'preserve',
     });

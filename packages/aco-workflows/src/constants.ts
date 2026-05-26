@@ -19,7 +19,7 @@ export const S8_CONTEXT_EVIDENCE = {
 export const WORKFLOW_LEDGER_EVIDENCE = {
   id: 'evidence.workflows.workflow-ledger',
   source: 'ledgers/workflow-ledger.csv',
-  summary: 'Readonly workflow ledger lists context-orchestrate and adversarial loop parity',
+  summary: 'Artifact-scoped workflow ledger lists context-orchestrate and adversarial loop parity',
   confidence: 'high',
   freshness: 'unknown',
 } as const satisfies EvidenceRef;

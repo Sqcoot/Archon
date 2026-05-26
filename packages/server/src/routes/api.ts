@@ -47,15 +47,22 @@ import {
 } from '@archon/paths';
 import { discoverWorkflowsWithConfig } from '@archon/workflows/workflow-discovery';
 import { parseWorkflow } from '@archon/workflows/loader';
+import { validateWorkflowResources, type ValidationIssue } from '@archon/workflows/validator';
 import { isValidCommandName } from '@archon/workflows/command-validation';
 import { BUNDLED_WORKFLOWS, BUNDLED_COMMANDS, isBinaryBuild } from '@archon/workflows/defaults';
 import {
   RESUMABLE_WORKFLOW_STATUSES,
   TERMINAL_WORKFLOW_STATUSES,
 } from '@archon/workflows/schemas/workflow-run';
-import type { ApprovalContext, WorkflowRun } from '@archon/workflows/schemas/workflow-run';
+import type { WorkflowRun } from '@archon/workflows/schemas/workflow-run';
 import { findMarkdownFilesRecursive } from '@archon/core/utils/commands';
 import { buildApiUiParityBundle, apiUiParityBundleSchema } from '@archon/aco-api-ui';
+import {
+  assertNoSymlinkComponents,
+  assertPathInsideRoot,
+  assertRealPathInsideRoot,
+  sanitizeArtifactName,
+} from '@archon/paths';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -70,6 +77,10 @@ import * as isolationEnvDb from '@archon/core/db/isolation-environments';
 import * as workflowDb from '@archon/core/db/workflows';
 import * as workflowEventDb from '@archon/core/db/workflow-events';
 import * as messageDb from '@archon/core/db/messages';
+import {
+  approveLoadedWorkflowRun,
+  rejectWorkflow,
+} from '@archon/core/operations/workflow-operations';
 import { errorSchema } from './schemas/common.schemas';
 import { updateCheckResponseSchema } from './schemas/system.schemas';
 import { acoParityResponseSchema } from './schemas/aco.schemas';
@@ -86,6 +97,7 @@ import {
   workflowRunByWorkerResponseSchema,
   cancelWorkflowRunResponseSchema,
   workflowRunActionResponseSchema,
+  workflowRunApprovalActionResponseSchema,
   dashboardRunsResponseSchema,
   runWorkflowBodySchema,
   dashboardRunsQuerySchema,
@@ -689,7 +701,7 @@ const approveWorkflowRunRoute = createRoute({
   },
   responses: {
     200: {
-      content: { 'application/json': { schema: workflowRunActionResponseSchema } },
+      content: { 'application/json': { schema: workflowRunApprovalActionResponseSchema } },
       description: 'Approved',
     },
     400: jsonError('Bad request'),
@@ -709,7 +721,7 @@ const rejectWorkflowRunRoute = createRoute({
   },
   responses: {
     200: {
-      content: { 'application/json': { schema: workflowRunActionResponseSchema } },
+      content: { 'application/json': { schema: workflowRunApprovalActionResponseSchema } },
       description: 'Rejected',
     },
     400: jsonError('Bad request'),
@@ -896,6 +908,49 @@ export function registerApiRoutes(
       const base = normalize(cb.default_cwd);
       return normalizedCwd === base || normalizedCwd.startsWith(base + sep);
     });
+  }
+
+  async function workflowAuthoringWorkingDir(c: Context): Promise<string | Response> {
+    const cwd = c.req.query('cwd');
+    if (cwd) {
+      if (!(await validateCwd(cwd))) {
+        return apiError(c, 400, 'Invalid cwd: must match a registered codebase path');
+      }
+      return cwd;
+    }
+    const codebases = await codebaseDb.listCodebases();
+    return codebases[0]?.default_cwd ?? getArchonHome();
+  }
+
+  async function validateWorkflowDefinitionResources(input: {
+    workflow: NonNullable<ReturnType<typeof parseWorkflow>['workflow']>;
+    workingDir: string;
+  }): Promise<string[]> {
+    const config = await loadConfig(input.workingDir);
+    const issues = await validateWorkflowResources(
+      input.workflow,
+      input.workingDir,
+      {
+        loadDefaultCommands: config.defaults?.loadDefaultCommands,
+        commandFolder: config.commands?.folder,
+        envVars: config.envVars,
+      },
+      config.assistant
+    );
+    return issues
+      .filter(issue => issue.level === 'error')
+      .map(formatWorkflowResourceValidationError);
+  }
+
+  function formatWorkflowResourceValidationError(issue: ValidationIssue): string {
+    const location = [issue.nodeId ? `Node '${issue.nodeId}'` : undefined, issue.field]
+      .filter((part): part is string => Boolean(part))
+      .join(': ');
+    const badBehaviour = issue.badBehaviour
+      ? ` bad-behaviour: ${issue.badBehaviour.pattern} (${issue.badBehaviour.classification}) - ${issue.badBehaviour.rationale}`
+      : '';
+    const hint = issue.hint ? ` Hint: ${issue.hint}` : '';
+    return `${location ? `${location}: ` : ''}${issue.message}${badBehaviour}${hint}`;
   }
 
   // CORS for Web UI — allow-all is fine for a single-developer tool.
@@ -1836,7 +1891,9 @@ export function registerApiRoutes(
       return apiError(c, 400, 'Invalid workflow name');
     }
     try {
-      const { conversationId, message } = getValidatedBody(c, runWorkflowBodySchema);
+      const body = getValidatedBody(c, runWorkflowBodySchema);
+      const conversationId = body.conversationId;
+      const message = body.message ?? '';
       // Persist user message and register DB ID (same as message endpoint)
       let conv: Awaited<ReturnType<typeof conversationDb.findConversationByPlatformId>> = null;
       try {
@@ -2014,40 +2071,30 @@ export function registerApiRoutes(
       if (run.status !== 'paused') {
         return apiError(c, 400, `Cannot approve workflow in '${run.status}' status`);
       }
-      const body = (await c.req.json().catch(() => ({}))) as { comment?: string };
-      const comment = body.comment ?? 'Approved';
-      const approval = run.metadata.approval as ApprovalContext | undefined;
-      if (!approval?.nodeId) {
-        return apiError(c, 400, 'Workflow run is paused but missing approval context');
+      const bodyResult = approveWorkflowRunBodySchema.safeParse(
+        await c.req.json().catch(() => ({}))
+      );
+      if (!bodyResult.success) {
+        return apiError(
+          c,
+          400,
+          'Invalid workflow approval request',
+          bodyResult.error.issues.map(issue => issue.message).join('; ')
+        );
       }
-      // For interactive loops, do NOT write node_completed — the executor writes it when
-      // the AI emits the completion signal (actual loop exit). Writing it here would cause
-      // the resume to skip the loop node entirely via priorCompletedNodes.
-      if (approval.type !== 'interactive_loop') {
-        const nodeOutput = approval.captureResponse === true ? comment : '';
-        await workflowEventDb.createWorkflowEvent({
-          workflow_run_id: runId,
-          event_type: 'node_completed',
-          step_name: approval.nodeId,
-          data: { node_output: nodeOutput, approval_decision: 'approved' },
+      const body = bodyResult.data;
+      let result: Awaited<ReturnType<typeof approveLoadedWorkflowRun>>;
+      try {
+        result = await approveLoadedWorkflowRun(run, body.comment, {
+          scope: body.scope,
+          approvalChannel: 'web',
+          highImpactConfirmed: body.confirmHighImpact === true,
         });
+      } catch (error) {
+        const message = (error as Error).message;
+        if (message.startsWith('Failed to approve workflow run')) throw error;
+        return apiError(c, 400, message);
       }
-      await workflowEventDb.createWorkflowEvent({
-        workflow_run_id: runId,
-        event_type: 'approval_received',
-        step_name: approval.nodeId,
-        data: { decision: 'approved', comment },
-      });
-      // For interactive loops, store user input; for standard approvals, mark as approved
-      // and clear any rejection state.
-      const metadataUpdate =
-        approval.type === 'interactive_loop'
-          ? { loop_user_input: comment }
-          : { approval_response: 'approved', rejection_reason: '', rejection_count: 0 };
-      await workflowDb.updateWorkflowRun(runId, {
-        status: 'failed',
-        metadata: metadataUpdate,
-      });
 
       // Auto-resume: dispatch to the orchestrator so the workflow continues
       // without requiring the user to re-run the workflow command. Mirrors
@@ -2062,6 +2109,8 @@ export function registerApiRoutes(
         message: autoResumed
           ? `Workflow approved: ${run.workflow_name}. Resuming workflow.`
           : `Workflow approved: ${run.workflow_name}. Send a message to continue.`,
+        approvalAudit: result.approvalAudit,
+        approval_audit: result.approval_audit,
       });
     } catch (error) {
       getLog().error({ err: error, runId }, 'api.workflow_run_approve_failed');
@@ -2080,32 +2129,20 @@ export function registerApiRoutes(
       if (run.status !== 'paused') {
         return apiError(c, 400, `Cannot reject workflow in '${run.status}' status`);
       }
-      const body = (await c.req.json().catch(() => ({}))) as { reason?: string };
-      const reason = body.reason ?? 'Rejected';
-      const approval = run.metadata.approval as ApprovalContext | undefined;
-      await workflowEventDb.createWorkflowEvent({
-        workflow_run_id: runId,
-        event_type: 'approval_received',
-        step_name: approval?.nodeId ?? 'unknown',
-        data: { decision: 'rejected', reason },
-      });
-
-      const hasOnReject = approval?.onRejectPrompt !== undefined;
-      if (hasOnReject) {
-        const currentCount = (run.metadata.rejection_count as number | undefined) ?? 0;
-        const maxAttempts = approval?.onRejectMaxAttempts ?? 3;
-        if (currentCount + 1 >= maxAttempts) {
-          await workflowDb.cancelWorkflowRun(runId);
-          return c.json({
-            success: true,
-            message: `Workflow rejected and cancelled (max attempts reached): ${run.workflow_name}`,
-          });
-        }
-        await workflowDb.updateWorkflowRun(runId, {
-          status: 'failed',
-          metadata: { rejection_reason: reason, rejection_count: currentCount + 1 },
-        });
-
+      const bodyResult = rejectWorkflowRunBodySchema.safeParse(
+        await c.req.json().catch(() => ({}))
+      );
+      if (!bodyResult.success) {
+        return apiError(
+          c,
+          400,
+          'Invalid workflow rejection request',
+          bodyResult.error.issues.map(issue => issue.message).join('; ')
+        );
+      }
+      const body = bodyResult.data;
+      const result = await rejectWorkflow(runId, body.reason, { approvalChannel: 'web' });
+      if (!result.cancelled) {
         // Auto-resume: dispatch to the orchestrator so the on_reject prompt runs
         // without requiring the user to re-run the workflow command. Mirrors
         // what `workflowRejectCommand` does in the CLI. Same cross-adapter
@@ -2117,13 +2154,18 @@ export function registerApiRoutes(
           message: autoResumed
             ? `Workflow rejected: ${run.workflow_name}. Running on-reject prompt.`
             : `Workflow rejected: ${run.workflow_name}. On-reject prompt will run on resume.`,
+          approvalAudit: result.approvalAudit,
+          approval_audit: result.approval_audit,
         });
       }
 
-      await workflowDb.cancelWorkflowRun(runId);
       return c.json({
         success: true,
-        message: `Workflow rejected: ${run.workflow_name}`,
+        message: result.maxAttemptsReached
+          ? `Workflow rejected and cancelled (max attempts reached): ${run.workflow_name}`
+          : `Workflow rejected: ${run.workflow_name}`,
+        approvalAudit: result.approvalAudit,
+        approval_audit: result.approval_audit,
       });
     } catch (error) {
       getLog().error({ err: error, runId }, 'api.workflow_run_reject_failed');
@@ -2268,10 +2310,21 @@ export function registerApiRoutes(
     }
 
     try {
+      const workingDir = await workflowAuthoringWorkingDir(c);
+      if (workingDir instanceof Response) return workingDir;
       const result = parseWorkflow(yamlContent, 'validate-input.yaml');
 
       if (result.error) {
         return c.json({ valid: false, errors: [result.error.error] });
+      }
+      if (result.workflow) {
+        const resourceErrors = await validateWorkflowDefinitionResources({
+          workflow: result.workflow,
+          workingDir,
+        });
+        if (resourceErrors.length > 0) {
+          return c.json({ valid: false, errors: resourceErrors });
+        }
       }
       return c.json({ valid: true });
     } catch (error) {
@@ -2430,6 +2483,20 @@ export function registerApiRoutes(
     const parsed = parseWorkflow(yamlContent, `${name}.yaml`);
     if (parsed.error) {
       return apiError(c, 400, 'Workflow definition is invalid', parsed.error.error);
+    }
+    if (parsed.workflow) {
+      const resourceErrors = await validateWorkflowDefinitionResources({
+        workflow: parsed.workflow,
+        workingDir,
+      });
+      if (resourceErrors.length > 0) {
+        return apiError(
+          c,
+          400,
+          'Workflow definition failed resource/capability validation',
+          resourceErrors.join('; ')
+        );
+      }
     }
 
     try {
@@ -2592,6 +2659,8 @@ export function registerApiRoutes(
   // GET /api/artifacts/:runId/* - Serve workflow artifact file contents
   // The wildcard captures the filename (e.g. "plan.md", "subdir/report.md").
   // Path traversal is blocked: any segment containing ".." is rejected.
+  // Symlink escapes are blocked by resolving the artifact root and target
+  // before reading.
   // NOTE: Uses app.get() instead of registerOpenApiRoute because:
   //  1. Wildcard path params (*) are not representable in OpenAPI 3.0
   //  2. Response is raw text/markdown, not JSON
@@ -2608,18 +2677,10 @@ export function registerApiRoutes(
       return apiError(c, 400, 'Invalid filename');
     }
 
-    // Block path traversal: reject if any segment is ".." or contains null bytes
-    if (
-      !rawFilename ||
-      rawFilename.includes('\0') ||
-      rawFilename.split('/').some(s => s === '..')
-    ) {
-      return apiError(c, 400, 'Invalid filename');
-    }
-
-    // Normalize and ensure relative (no leading slash)
-    const filename = normalize(rawFilename).replace(/^[/\\]+/, '');
-    if (!filename) {
+    let filename: string;
+    try {
+      filename = sanitizeArtifactName(rawFilename);
+    } catch {
       return apiError(c, 400, 'Invalid filename');
     }
 
@@ -2650,13 +2711,18 @@ export function registerApiRoutes(
 
     const artifactDir = getRunArtifactsPath(owner, repo, runId);
     const filePath = join(artifactDir, filename);
-
-    // Final safety check: ensure resolved path stays within artifact directory
-    if (
-      !normalize(filePath).startsWith(normalize(artifactDir) + sep) &&
-      normalize(filePath) !== normalize(artifactDir)
-    ) {
-      getLog().warn({ runId, filename, filePath, artifactDir }, 'artifacts.path_escape_blocked');
+    try {
+      assertPathInsideRoot(artifactDir, filePath);
+      assertNoSymlinkComponents(artifactDir, filePath);
+      assertRealPathInsideRoot(artifactDir, filePath);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        return apiError(c, 404, 'Artifact file not found');
+      }
+      getLog().warn(
+        { err, runId, filename, filePath, artifactDir },
+        'artifacts.scoped_policy_blocked'
+      );
       return apiError(c, 400, 'Invalid filename');
     }
 

@@ -28,6 +28,15 @@ export function mapWorkflowEvent(event: WorkflowEmitterEvent): string | null {
               ? 'completed'
               : 'failed',
         error: event.type === 'workflow_failed' ? event.error : undefined,
+        ...(event.type === 'workflow_failed' && event.failureStage
+          ? { failureStage: event.failureStage }
+          : {}),
+        ...(event.type === 'workflow_failed' && event.workflowPreExecutionValidation
+          ? { workflowPreExecutionValidation: event.workflowPreExecutionValidation }
+          : {}),
+        ...(event.type === 'workflow_failed' && event.artifactPath
+          ? { artifactPath: event.artifactPath }
+          : {}),
         timestamp: Date.now(),
       });
 
@@ -83,6 +92,23 @@ export function mapWorkflowEvent(event: WorkflowEmitterEvent): string | null {
         label: event.label,
         url: event.url,
         path: event.path,
+        absolutePath: event.absolutePath,
+        originalPath: event.originalPath,
+        failureStage: event.failureStage,
+        timestamp: Date.now(),
+      });
+
+    case 'workflow_diagnostic':
+      return JSON.stringify({
+        type: 'workflow_diagnostic',
+        runId: event.runId,
+        severity: event.severity,
+        code: event.code,
+        message: event.message,
+        persistence: event.persistence ?? 'persisted',
+        eventType: event.eventType,
+        stepName: event.stepName,
+        artifactPath: event.artifactPath,
         timestamp: Date.now(),
       });
 
@@ -140,6 +166,17 @@ export function mapWorkflowEvent(event: WorkflowEmitterEvent): string | null {
         approval: {
           nodeId: event.nodeId,
           message: event.message,
+          ...(event.mutationClass ? { mutationClass: event.mutationClass } : {}),
+          ...(event.path ? { path: event.path } : {}),
+          ...(event.command ? { command: event.command } : {}),
+          ...(event.reason ? { reason: event.reason } : {}),
+          ...(event.approvalChannel ? { approvalChannel: event.approvalChannel } : {}),
+          ...(event.highImpact !== undefined ? { highImpact: event.highImpact } : {}),
+          ...(event.highImpactConfirmed !== undefined
+            ? { highImpactConfirmed: event.highImpactConfirmed }
+            : {}),
+          ...(event.defaultScope ? { defaultScope: event.defaultScope } : {}),
+          ...(event.allowedScopes ? { allowedScopes: event.allowedScopes } : {}),
         },
       });
 
@@ -149,6 +186,19 @@ export function mapWorkflowEvent(event: WorkflowEmitterEvent): string | null {
         runId: event.runId,
         workflowName: '',
         status: 'cancelled',
+        timestamp: Date.now(),
+      });
+
+    case 'workflow_event_persist_failed':
+      return JSON.stringify({
+        type: 'workflow_diagnostic',
+        runId: event.runId,
+        severity: 'warning',
+        code: 'workflow_event_persist_failed',
+        message: `Workflow event persistence failed for ${event.eventType}${event.stepName ? `/${event.stepName}` : ''}: ${event.reason}`,
+        persistence: event.persistence,
+        eventType: event.eventType,
+        stepName: event.stepName,
         timestamp: Date.now(),
       });
 

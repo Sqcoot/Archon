@@ -229,15 +229,61 @@ describe('Workflow Loader', () => {
       expect(result.workflows[0].workflow.mutates_checkout).toBeUndefined();
     });
 
-    it('should warn and omit mutates_checkout for invalid value', async () => {
+    it('should reject invalid mutates_checkout value', async () => {
       const workflowDir = join(testDir, '.archon', 'workflows');
       await mkdir(workflowDir, { recursive: true });
-      // YAML string "yes" is not a boolean — should be dropped and field omitted
+      // YAML string "yes" is not a boolean. This controls checkout locking, so it must
+      // not be silently ignored.
       const yaml = `name: test\ndescription: typo\nmutates_checkout: "yes"\nnodes:\n  - id: n\n    prompt: p\n`;
       await writeFile(join(workflowDir, 'test.yaml'), yaml);
       const result = await discoverWorkflows(testDir, { loadDefaults: false });
-      expect(result.workflows).toHaveLength(1);
-      expect(result.workflows[0].workflow.mutates_checkout).toBeUndefined();
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('Invalid workflow mutates_checkout');
+    });
+
+    it('should reject invalid workflow mode', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+      const yaml = `name: test\ndescription: typo\nmode: auto\nnodes:\n  - id: n\n    prompt: p\n`;
+      await writeFile(join(workflowDir, 'test.yaml'), yaml);
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('Invalid workflow mode');
+    });
+
+    it('should reject invalid workflow lock_scope', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+      const yaml = `name: test\ndescription: typo\nlock_scope: artifacts\nnodes:\n  - id: n\n    prompt: p\n`;
+      await writeFile(join(workflowDir, 'test.yaml'), yaml);
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('Invalid workflow lock_scope');
+    });
+
+    it('should reject invalid workflow worktree policy', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+      const yaml = `name: test\ndescription: typo\nworktree:\n  enabled: yes-please\nnodes:\n  - id: n\n    prompt: p\n`;
+      await writeFile(join(workflowDir, 'test.yaml'), yaml);
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('Invalid workflow worktree.enabled');
+    });
+
+    it('should reject invalid workflow interactive value', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+      const yaml = `name: test\ndescription: typo\ninteractive: foreground\nnodes:\n  - id: n\n    prompt: p\n`;
+      await writeFile(join(workflowDir, 'test.yaml'), yaml);
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('Invalid workflow interactive');
     });
 
     it('should parse valid DAG workflow YAML', async () => {
@@ -415,6 +461,78 @@ nodes:
       expect(workflows[0].modelReasoningEffort).toBe('medium');
       expect(workflows[0].webSearchMode).toBe('live');
       expect(workflows[0].additionalDirectories).toEqual(['/repo/a']);
+    });
+
+    it('should reject invalid workflow-level Codex runtime controls instead of dropping them', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'invalid-codex-controls.yaml'),
+        `
+name: invalid-codex-controls
+description: Invalid Codex runtime controls
+modelReasoningEffort: turbo
+webSearchMode: live
+nodes:
+  - id: implement
+    prompt: "Do work"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('modelReasoningEffort');
+      expect(result.errors[0].error).toContain('expected one of');
+    });
+
+    it('should reject invalid workflow-level webSearchMode instead of dropping it', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'invalid-web-search.yaml'),
+        `
+name: invalid-web-search
+description: Invalid web search control
+webSearchMode: always
+nodes:
+  - id: implement
+    prompt: "Do work"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('webSearchMode');
+      expect(result.errors[0].error).toContain('expected one of');
+    });
+
+    it('should reject malformed workflow-level additionalDirectories instead of filtering it', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'invalid-additional-directories.yaml'),
+        `
+name: invalid-additional-directories
+description: Invalid filesystem scope control
+additionalDirectories:
+  - /repo/a
+  - 42
+nodes:
+  - id: implement
+    prompt: "Do work"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('additionalDirectories');
+      expect(result.errors[0].error).toContain('expected string');
     });
   });
 
@@ -1654,7 +1772,7 @@ nodes:
       expect(aiFieldWarnings).toHaveLength(0);
     });
 
-    it('should warn about unsupported AI fields on loop nodes (not model/provider)', async () => {
+    it('should reject unsupported safety/output fields on loop nodes', async () => {
       const workflowDir = join(testDir, '.archon', 'workflows');
       await mkdir(workflowDir, { recursive: true });
 
@@ -1675,23 +1793,173 @@ nodes:
       properties:
         status:
           type: string
+    maxBudgetUsd: 0.25
+    systemPrompt: "Do not mutate files"
 `
       );
 
       (mockLogger.warn as Mock<() => undefined>).mockClear();
       const result = await discoverWorkflows(testDir, { loadDefaults: false });
-      expect(result.errors).toHaveLength(0);
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('safety/output control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('output_format');
+      expect(result.errors[0].error).toContain('maxBudgetUsd');
+      expect(result.errors[0].error).toContain('systemPrompt');
+    });
 
-      // Should warn about output_format but NOT about model
-      const warnCalls = (mockLogger.warn as Mock<() => undefined>).mock.calls;
-      const aiFieldWarnings = warnCalls.filter(
-        call => typeof call[1] === 'string' && call[1].includes('ai_fields_ignored')
+    it('should reject unsupported approval controls on workflow nodes before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'node-approval-policy.yaml'),
+        `
+name: node-approval-policy
+description: Node-level approval policy that would otherwise be stripped
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+    approvalPolicy: never
+`
       );
-      expect(aiFieldWarnings).toHaveLength(1);
-      const warnedFields = (aiFieldWarnings[0][0] as { fields: string[] }).fields;
-      expect(warnedFields).toContain('output_format');
-      expect(warnedFields).not.toContain('model');
-      expect(warnedFields).not.toContain('provider');
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported approval/permission control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('approvalPolicy');
+    });
+
+    it('should reject unsupported environment controls on workflow nodes before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'node-env.yaml'),
+        `
+name: node-env
+description: Node-level env control that would otherwise be stripped
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+    env:
+      SECRET_TOKEN: unsafe
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported environment/resource control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('env');
+    });
+
+    it('should reject unsupported node-level provider runtime controls before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'node-runtime-controls.yaml'),
+        `
+name: node-runtime-controls
+description: Node-level runtime controls that would otherwise be stripped
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+    webSearchMode: live
+    additionalDirectories:
+      - /repo/a
+    sandboxMode: read-only
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported provider runtime control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('webSearchMode');
+      expect(result.errors[0].error).toContain('additionalDirectories');
+      expect(result.errors[0].error).toContain('sandboxMode');
+    });
+
+    it('should reject unsupported workflow-level approval controls before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'workflow-approval-policy.yaml'),
+        `
+name: workflow-approval-policy
+description: Workflow-level approval policy that would otherwise be stripped
+approvalPolicy: never
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported approval/permission control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('approvalPolicy');
+    });
+
+    it('should reject unsupported workflow-level environment controls before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'workflow-env.yaml'),
+        `
+name: workflow-env
+description: Workflow-level env control that would otherwise be stripped
+env:
+  SECRET_TOKEN: unsafe
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported environment/resource control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('env');
+    });
+
+    it('should reject unsupported workflow-level provider runtime controls before schema stripping', async () => {
+      const workflowDir = join(testDir, '.archon', 'workflows');
+      await mkdir(workflowDir, { recursive: true });
+
+      await writeFile(
+        join(workflowDir, 'workflow-runtime-controls.yaml'),
+        `
+name: workflow-runtime-controls
+description: Workflow-level provider config controls that would otherwise be stripped
+sandboxMode: read-only
+networkAccessEnabled: false
+nodes:
+  - id: implement
+    prompt: "Implement safely"
+`
+      );
+
+      const result = await discoverWorkflows(testDir, { loadDefaults: false });
+      expect(result.workflows).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('unsupported provider runtime control fields');
+      expect(result.errors[0].error).toContain('rejected fail-closed');
+      expect(result.errors[0].error).toContain('sandboxMode');
+      expect(result.errors[0].error).toContain('networkAccessEnabled');
     });
   });
 

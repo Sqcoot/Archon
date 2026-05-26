@@ -1,44 +1,46 @@
 name: context-orchestrate
 description: |
-  Use when: S9 needs read-only orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.
-  Does: Runs only read-only context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff.
+  Use when: S9 needs artifact-scoped orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.
+  Does: Runs safe context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff, with artifact-producing nodes writing scoped dossiers.
   Contract source: @archon/aco-workflows S9 workflow parity.
 provider: codex
 model: gpt-5.3-codex
+mode: autonomous
+lock_scope: artifact_only
 mutates_checkout: false
 
 nodes:
   - id: status
     bash: |
-      archon context status "$ARGUMENTS" --json
+      archon context status "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: ledgers
     depends_on: [status]
     bash: |
-      archon context ledgers "$ARGUMENTS" --json
+      archon context ledgers "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: route
     depends_on: [ledgers]
     bash: |
-      archon context route "$ARGUMENTS" --json
+      archon context route "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: compile
     depends_on: [route]
     bash: |
-      archon context compile "$ARGUMENTS" --json
+      archon context compile "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: approval-capsule
     depends_on: [compile]
     bash: |
-      archon context approval-capsule "$ARGUMENTS" --json
+      archon context approval-capsule "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: verification
     depends_on: [approval-capsule]
     bash: |
-      archon context approval-capsule-verify --json
+      archon context approval-capsule-verify --json --write-artifact
     timeout: 30000
   - id: handoff
     depends_on: [verification]
     bash: |
-      archon context status "$ARGUMENTS" --json
+      archon context status "$ARGUMENTS" --json --write-artifact
     timeout: 30000

@@ -24,7 +24,7 @@ function getLog(): ReturnType<typeof createLogger> {
 // ─── Error Classification ────────────────────────────────────────────────────
 
 /** Result of error classification */
-export type ErrorType = 'TRANSIENT' | 'FATAL' | 'UNKNOWN';
+export type ErrorType = 'TRANSIENT' | 'FATAL' | 'VALIDATION' | 'UNKNOWN';
 
 /** Fatal error patterns - authentication/authorization issues that won't resolve with retry */
 export const FATAL_PATTERNS = [
@@ -73,6 +73,12 @@ export function matchesPattern(message: string, patterns: string[]): boolean {
 export function classifyError(error: Error): ErrorType {
   const message = error.message.toLowerCase();
 
+  if (
+    error.name === 'WorkflowPreExecutionValidationError' ||
+    message.includes('failed pre-execution validation')
+  ) {
+    return 'VALIDATION';
+  }
   if (matchesPattern(message, FATAL_PATTERNS)) {
     return 'FATAL';
   }
@@ -240,7 +246,10 @@ export async function loadCommandPrompt(
   ];
 
   for (const dir of resolvedSearchPaths) {
-    const entries = await archonPaths.findMarkdownFilesRecursive(dir, '', { maxDepth: 1 });
+    const entries = await archonPaths.findMarkdownFilesRecursive(dir, '', {
+      maxDepth: 1,
+      failOnDepthExceeded: true,
+    });
     const match = entries.find(e => e.commandName === commandName);
     if (!match) continue;
 
@@ -295,6 +304,7 @@ export async function loadCommandPrompt(
       const appDefaultsPath = archonPaths.getDefaultCommandsPath();
       const entries = await archonPaths.findMarkdownFilesRecursive(appDefaultsPath, '', {
         maxDepth: 1,
+        failOnDepthExceeded: true,
       });
       const match = entries.find(e => e.commandName === commandName);
       if (match) {
@@ -601,9 +611,12 @@ export async function safeSendMessage(
       unknownErrorTracker.count = 0;
     }
 
-    // Fatal errors should not be suppressed - they indicate configuration issues
+    // Fatal/validation errors should not be suppressed - they indicate configuration issues
     if (errorType === 'FATAL') {
       throw new Error(`Platform authentication/permission error: ${err.message}`);
+    }
+    if (errorType === 'VALIDATION') {
+      throw err;
     }
 
     // Track consecutive UNKNOWN errors - abort if threshold exceeded

@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import type { WorkflowRunStatus } from '@/lib/types';
 import { ensureUtc } from '@/lib/format';
+import { workflowPersistenceDiagnosticsFromMetadata } from '@/lib/workflow-diagnostics';
 import { StatusSummaryBar } from '@/components/dashboard/StatusSummaryBar';
 import { WorkflowRunGroup } from '@/components/dashboard/WorkflowRunGroup';
 import { WorkflowRunCard } from '@/components/dashboard/WorkflowRunCard';
@@ -199,6 +200,7 @@ export function DashboardPage(): React.ReactElement {
           dagNodes: [],
           artifacts: [],
           startedAt: new Date(ensureUtc(run.started_at)).getTime(),
+          diagnostics: workflowPersistenceDiagnosticsFromMetadata(run.id, run.metadata),
           currentTool: null,
         });
       }
@@ -291,8 +293,16 @@ export function DashboardPage(): React.ReactElement {
     runAction(abandonWorkflowRun, runId, 'Failed to abandon workflow');
   const handleDelete = (runId: string): Promise<void> =>
     runAction(deleteWorkflowRun, runId, 'Failed to delete workflow run');
-  const handleApprove = (runId: string): Promise<void> =>
-    runAction(approveWorkflowRun, runId, 'Failed to approve workflow');
+  const handleApprove = (
+    runId: string,
+    scope?: 'once',
+    confirmHighImpact?: boolean
+  ): Promise<void> =>
+    runAction(
+      id => approveWorkflowRun(id, undefined, scope, confirmHighImpact),
+      runId,
+      'Failed to approve workflow'
+    );
   // Reject differs from the rest of the lifecycle actions because it takes a
   // second argument (the optional reason). Inline it rather than squeezing
   // through `runAction`'s `(id) => Promise` signature with a closure — keeps

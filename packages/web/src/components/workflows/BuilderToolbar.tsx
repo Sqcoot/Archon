@@ -6,21 +6,28 @@ import { cn } from '@/lib/utils';
 import { listWorkflows } from '@/lib/api';
 import { useProject } from '@/contexts/ProjectContext';
 import { useProviders } from '@/hooks/useProviders';
+import type { WorkflowLockScope, WorkflowMode } from '@/lib/types';
 
 export type ViewMode = 'hidden' | 'split' | 'full';
+export type { WorkflowLockScope, WorkflowMode };
 
 export interface BuilderToolbarProps {
   workflowName: string;
   workflowDescription: string;
   provider: string | undefined;
   model: string | undefined;
+  workflowMode: WorkflowMode | undefined;
+  lockScope: WorkflowLockScope | undefined;
   hasUnsavedChanges: boolean;
   validationErrors: string[];
+  validationErrorCount: number;
   viewMode: ViewMode;
   onNameChange: (name: string) => void;
   onDescriptionChange: (desc: string) => void;
   onProviderChange: (p: string | undefined) => void;
   onModelChange: (m: string | undefined) => void;
+  onWorkflowModeChange: (mode: WorkflowMode | undefined) => void;
+  onLockScopeChange: (scope: WorkflowLockScope | undefined) => void;
   onViewModeChange: (mode: ViewMode) => void;
   onValidate: () => void;
   onSave: () => void;
@@ -39,13 +46,18 @@ export function BuilderToolbar({
   workflowDescription,
   provider,
   model,
+  workflowMode,
+  lockScope,
   hasUnsavedChanges,
   validationErrors,
+  validationErrorCount,
   viewMode,
   onNameChange,
   onDescriptionChange,
   onProviderChange,
   onModelChange,
+  onWorkflowModeChange,
+  onLockScopeChange,
   onViewModeChange,
   onValidate,
   onSave,
@@ -181,6 +193,35 @@ export function BuilderToolbar({
             placeholder="Model"
             className="w-20 rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
           />
+
+          <select
+            value={workflowMode ?? ''}
+            onChange={(e): void => {
+              onWorkflowModeChange((e.target.value || undefined) as WorkflowMode | undefined);
+            }}
+            className="rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+            title="Workflow routing mode"
+          >
+            <option value="">Mode</option>
+            <option value="autonomous">autonomous</option>
+            <option value="guided">guided</option>
+            <option value="interactive_only">interactive_only</option>
+          </select>
+
+          <select
+            value={lockScope ?? ''}
+            onChange={(e): void => {
+              onLockScopeChange((e.target.value || undefined) as WorkflowLockScope | undefined);
+            }}
+            className="rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+            title="Workflow lock scope"
+          >
+            <option value="">Lock scope</option>
+            <option value="read_only">read_only</option>
+            <option value="artifact_only">artifact_only</option>
+            <option value="checkout_mutation">checkout_mutation</option>
+            <option value="external_side_effect">external_side_effect</option>
+          </select>
         </div>
 
         {/* Right group: View toggle + Actions */}
@@ -217,15 +258,27 @@ export function BuilderToolbar({
             Validate
           </Button>
 
-          <Button variant="secondary" size="xs" onClick={onSave} disabled={!workflowName.trim()}>
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={onSave}
+            disabled={!workflowName.trim() || validationErrorCount > 0}
+            title={validationErrorCount > 0 ? 'Fix validation errors before saving' : undefined}
+          >
             Save
           </Button>
 
           <Button
             size="xs"
             onClick={onRun}
-            disabled={!workflowName.trim() || hasUnsavedChanges}
-            title={hasUnsavedChanges ? 'Save the workflow before running' : undefined}
+            disabled={!workflowName.trim() || hasUnsavedChanges || validationErrorCount > 0}
+            title={
+              validationErrorCount > 0
+                ? 'Fix validation errors before running'
+                : hasUnsavedChanges
+                  ? 'Save the workflow before running'
+                  : undefined
+            }
             className="bg-node-command hover:bg-node-command/90 text-white"
           >
             Run

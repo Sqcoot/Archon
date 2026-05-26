@@ -1292,6 +1292,72 @@ describe('workflow dispatch routing — interactive flag', () => {
     expect(mockExecuteWorkflow).not.toHaveBeenCalled();
   });
 
+  test('blocks autonomous requests that resolve to guided interactive workflows before dispatch', async () => {
+    mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(makeDispatchConversation()));
+    mockGetCodebase.mockReturnValueOnce(Promise.resolve(makeDispatchCodebase()));
+    mockHandleCommand.mockReturnValueOnce(
+      Promise.resolve({
+        success: true,
+        message: 'ok',
+        workflow: {
+          definition: makeTestWorkflow({
+            name: 'guided-review',
+            mode: 'guided',
+            interactive: true,
+          }),
+          args: 'continue autonomously without asking and produce the dossier',
+        },
+      })
+    );
+
+    const platform = makePlatform();
+    await handleMessage(platform, 'conv-1', '/workflow run guided-review');
+
+    expect(mockExecuteWorkflow).not.toHaveBeenCalled();
+    expect(mockDispatchBackgroundWorkflow).not.toHaveBeenCalled();
+    expect(platform.sendMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.stringContaining('cannot be used for an autonomous request')
+    );
+  });
+
+  test('blocks autonomous requests that resolve to approval-node workflows before dispatch', async () => {
+    mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(makeDispatchConversation()));
+    mockGetCodebase.mockReturnValueOnce(Promise.resolve(makeDispatchCodebase()));
+    mockHandleCommand.mockReturnValueOnce(
+      Promise.resolve({
+        success: true,
+        message: 'ok',
+        workflow: {
+          definition: makeTestWorkflow({
+            name: 'approval-marked-autonomous',
+            mode: 'autonomous',
+            lock_scope: 'artifact_only',
+            nodes: [
+              {
+                id: 'human-gate',
+                approval: {
+                  message: 'Approve?',
+                },
+              },
+            ],
+          }),
+          args: 'run unattended with no approval gates',
+        },
+      })
+    );
+
+    const platform = makePlatform();
+    await handleMessage(platform, 'conv-1', '/workflow run approval-marked-autonomous');
+
+    expect(mockExecuteWorkflow).not.toHaveBeenCalled();
+    expect(mockDispatchBackgroundWorkflow).not.toHaveBeenCalled();
+    expect(platform.sendMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.stringContaining('cannot be used for an autonomous request')
+    );
+  });
+
   test('calls executeWorkflow for interactive workflow on non-web platform', async () => {
     mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(makeDispatchConversation()));
     mockGetCodebase.mockReturnValueOnce(Promise.resolve(makeDispatchCodebase()));
@@ -1423,6 +1489,42 @@ describe('natural-language approval routing', () => {
     expect(platform.sendMessage).toHaveBeenCalledWith(
       'conv-1',
       expect.stringContaining('approval context is missing')
+    );
+  });
+
+  test('high-impact natural language approval failure points to explicit UI or CLI confirmation', async () => {
+    const conversation = makeConversation({ codebase_id: 'codebase-1' });
+    mockGetOrCreateConversation.mockReturnValueOnce(Promise.resolve(conversation));
+    mockGetPausedWorkflowRun.mockReturnValueOnce(
+      Promise.resolve(
+        makePausedRun({
+          metadata: {
+            approval: {
+              type: 'approval',
+              nodeId: 'deploy-gate',
+              message: 'Deploy to production?',
+              mutationClass: 'production',
+              highImpact: true,
+              path: 'production',
+              command: 'deploy',
+              reason: 'Release approved build',
+            },
+          },
+        })
+      )
+    );
+
+    const platform = makePlatform();
+    await handleMessage(platform, 'conv-1', 'approved');
+
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+    expect(platform.sendMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.stringContaining('--confirm-high-impact')
+    );
+    expect(platform.sendMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.not.stringContaining('Try again or use `/workflow approve run-1` explicitly')
     );
   });
 

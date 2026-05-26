@@ -22,17 +22,28 @@ function makeMockProvider(id: string): IAgentProvider {
     getCapabilities: () => ({
       sessionResume: false,
       mcp: false,
+      hookCapabilities: {
+        workflowNodeHooks: 'unsupported',
+        runtimeConfigHooks: 'unknown',
+        hookInventoryObservable: false,
+        hookTrustObservable: false,
+        hookEventStreaming: false,
+      },
       hooks: false,
       skills: false,
       agents: false,
       toolRestrictions: false,
       structuredOutput: false,
+      structuredOutputMode: 'unsupported',
+      systemPrompt: false,
+      systemPromptMode: 'unsupported',
       envInjection: false,
       costControl: false,
       effortControl: false,
       thinkingControl: false,
       fallbackModel: false,
       sandbox: false,
+      betaFlags: false,
     }),
     async *sendQuery() {
       yield { type: 'result' as const };
@@ -114,7 +125,12 @@ describe('registry', () => {
       expect(claudeCaps.mcp).toBe(true);
       expect(codexCaps.mcp).toBe(true);
       expect(claudeCaps.hooks).toBe(true);
-      expect(codexCaps.hooks).toBe(false);
+      expect(codexCaps.hooks).toBe(true);
+      expect(codexCaps.hookCapabilities.workflowNodeHooks).toBe('unsupported');
+      expect(codexCaps.hookCapabilities.runtimeConfigHooks).toBe('possible');
+      expect(codexCaps.hookCapabilities.hookInventoryObservable).toBe(true);
+      expect(codexCaps.hookCapabilities.hookTrustObservable).toBe(true);
+      expect(codexCaps.hookCapabilities.hookEventStreaming).toBe(false);
     });
   });
 
@@ -129,7 +145,12 @@ describe('registry', () => {
     test('returns Codex capabilities without instantiation', () => {
       const caps = getProviderCapabilities('codex');
       expect(caps.mcp).toBe(true);
-      expect(caps.hooks).toBe(false);
+      expect(caps.hooks).toBe(true);
+      expect(caps.hookCapabilities.workflowNodeHooks).toBe('unsupported');
+      expect(caps.hookCapabilities.runtimeConfigHooks).toBe('possible');
+      expect(caps.hookCapabilities.hookInventoryObservable).toBe(true);
+      expect(caps.hookCapabilities.hookTrustObservable).toBe(true);
+      expect(caps.hookCapabilities.hookEventStreaming).toBe(false);
       expect(caps.envInjection).toBe(true);
     });
 
@@ -294,6 +315,11 @@ describe('registry', () => {
       // Best-effort structured output via prompt engineering + post-parse —
       // not SDK-enforced like Claude/Codex, but wired up and tested.
       expect(caps.structuredOutput).toBe(true);
+      expect(caps.structuredOutputMode).toBe('best_effort');
+      expect(caps.hookCapabilities).toMatchObject({
+        workflowNodeHooks: 'unsupported',
+        runtimeConfigHooks: 'disabled',
+      });
       // Still false (out of v2 scope)
       expect(caps.mcp).toBe(false);
       expect(caps.hooks).toBe(false);

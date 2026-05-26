@@ -12,7 +12,7 @@ import type {
 } from '../../types';
 
 import { PI_CAPABILITIES } from './capabilities';
-import { parsePiConfig } from './config';
+import { parsePiConfigWithDiagnostics } from './config';
 import { parsePiModelRef } from './model-ref';
 
 // IMPORTANT: Do NOT add static `import { ... } from '@mariozechner/*'` here,
@@ -209,7 +209,17 @@ export class PiProvider implements IAgentProvider {
     const { createAgentSession } = piCodingAgent;
 
     const assistantConfig = requestOptions?.assistantConfig ?? {};
-    const piConfig = parsePiConfig(assistantConfig);
+    const parsedPiConfig = parsePiConfigWithDiagnostics(assistantConfig);
+    const piConfig = parsedPiConfig.config;
+    if (parsedPiConfig.diagnostics.length > 0) {
+      const details = parsedPiConfig.diagnostics
+        .map(
+          diagnostic =>
+            `${diagnostic.field}: ${diagnostic.message} ${diagnostic.badBehaviour.rationale}`
+        )
+        .join(' ');
+      throw new Error(`Pi provider config failed validation: ${details}`);
+    }
 
     // 0. Apply config-level env vars to process.env for in-process extensions
     //    (plannotator reads PLANNOTATOR_REMOTE at session_start, etc.).
@@ -332,7 +342,7 @@ export class PiProvider implements IAgentProvider {
     //    4a. thinkingLevel: covers `thinking`/`effort` nodeConfig fields.
     const { level: thinkingLevel, warning: thinkingWarning } = resolvePiThinkingLevel(nodeConfig);
     if (thinkingWarning) {
-      yield { type: 'system', content: `⚠️ ${thinkingWarning}` };
+      throw new Error(`Pi provider control validation failed: ${thinkingWarning}`);
     }
 
     //    4b. tools: covers allowed_tools / denied_tools. `undefined` leaves Pi
@@ -347,10 +357,9 @@ export class PiProvider implements IAgentProvider {
       requestOptions?.env
     );
     if (unknownTools.length > 0) {
-      yield {
-        type: 'system',
-        content: `⚠️ Pi ignored unknown tool names: ${unknownTools.join(', ')}. Pi's built-in tools: read, bash, edit, write, grep, find, ls.`,
-      };
+      throw new Error(
+        `Pi provider tool restrictions failed validation: unknown tool names ${unknownTools.join(', ')}. Pi's built-in tools: read, bash, edit, write, grep, find, ls.`
+      );
     }
 
     //    4c. systemPrompt: request-level (AgentRequestOptions) wins over
@@ -372,10 +381,9 @@ export class PiProvider implements IAgentProvider {
     //        the system prompt automatically, so the model sees them.
     const { paths: skillPaths, missing: missingSkills } = resolvePiSkills(cwd, nodeConfig?.skills);
     if (missingSkills.length > 0) {
-      yield {
-        type: 'system',
-        content: `⚠️ Pi could not resolve skill names: ${missingSkills.join(', ')}. Searched .agents/skills and .claude/skills (project + user-global). Each must be a directory containing SKILL.md.`,
-      };
+      throw new Error(
+        `Pi provider skill controls failed validation: could not resolve skill names ${missingSkills.join(', ')}. Searched .agents/skills and .claude/skills (project + user-global). Each must be a directory containing SKILL.md.`
+      );
     }
 
     // 5. Session management. Pi stores each session as a JSONL file under

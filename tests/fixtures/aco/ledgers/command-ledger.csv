@@ -1,13 +1,13 @@
 command,surface,purpose,safety,mutates,approval_required,owner,compatibility
 archon aco status --cwd <repo> [--json],CLI,Productized ACO status and graph confidence limits,read-only,no,no,aco-cli,preserve
-archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact],CLI/slash,Emit Codex-ready bootstrap capsule,read-only or writes-artifacts,artifact-only when flag set,no for artifact writes,aco-codex,preserve
-archon context status [prompt],CLI,"Show readiness, evidence, next decision",read-only,no,no,aco-context,preserve
-archon context ledgers [prompt],CLI,Show tool and command ledgers,read-only,no,no,aco-ledgers,preserve
-archon context route <prompt>,CLI,Select BMAD advisory route,read-only,no,no,aco-bmad,preserve
-archon context compile <prompt>,CLI,Compile context package and artifact archive,writes-artifacts,artifact-only,no unless graph/config mutation requested,aco-context,preserve
-archon context approval-capsule <prompt>,CLI,Create approval capsule for approval-required package,writes-artifacts,artifact-only,no to create capsule,aco-context,preserve
-archon context approval-capsule-verify,CLI,Verify approval contract against artifacts,read-only,no,no,aco-context,preserve
-archon context graph-waivers,CLI,Inspect graph waiver closure state,read-only,no,no,aco-research,preserve
+archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact],CLI/slash,Emit Codex-ready bootstrap capsule,read-only or writes-artifacts,artifact-only,no for artifact writes,aco-codex,preserve
+archon context status [prompt] [--no-write-artifact],CLI,"Show readiness, evidence, next decision",read-only or writes-artifacts,artifact-only,no for artifact writes,aco-context,preserve
+archon context ledgers [prompt] [--no-write-artifact],CLI,Show tool and command ledgers,read-only or writes-artifacts,artifact-only,no for artifact writes,aco-ledgers,preserve
+archon context route <prompt> [--no-write-artifact],CLI,Select BMAD advisory route,read-only or writes-artifacts,artifact-only,no for artifact writes,aco-bmad,preserve
+archon context compile <prompt> [--no-write-artifact],CLI,Compile context package and artifact archive,writes-artifacts,artifact-only,no unless graph/config mutation requested,aco-context,preserve
+archon context approval-capsule <prompt> [--no-write-artifact],CLI,Create approval capsule for approval-required package,writes-artifacts,artifact-only,no to create capsule,aco-context,preserve
+archon context approval-capsule-verify [--no-write-artifact],CLI,Verify approval contract against artifacts,writes-artifacts,artifact-only,no unless graph/config mutation requested,aco-context,preserve
+archon context graph-waivers [--no-write-artifact],CLI,Inspect graph waiver closure state,writes-artifacts,artifact-only,no unless graph/config mutation requested,aco-research,preserve
 archon context validate,CLI,Validate ACO research/spec readiness,read-only,no,no,aco-gates,preserve
 bun run research:graph,script,Generate graph evidence,network/writes-artifacts,graph cache artifacts,yes in readonly contexts,aco-research,preserve-gated
 bun run aco:role-contracts,script,Check role contracts,read-only,no,no,aco-gates,preserve

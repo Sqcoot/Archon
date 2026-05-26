@@ -4,7 +4,7 @@ schemaVersion: aco.context-package.v1
 id: aco.context.s8.context-package
 promptDigest: 496d706c656d656e7420533820636f6e7465787420636f6e7472616374730000
 contextDigest: 61636f2e636f6e746578742d7061636b6167652e76317c61636f2e636f6e7465
-selectedRoute: archon context compile <prompt>
+selectedRoute: archon context compile <prompt> [--no-write-artifact]
 
 ## Ledger Summaries
 

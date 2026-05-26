@@ -1,7 +1,7 @@
 {
   "defaults": [
     {
-      "checksum": "628debe01239c7bd401dbffc36c7eac4628debe01239c7bd401dbffc36c7eac4",
+      "checksum": "2ec5cbe3b24a66284c46ca0fb922b5e72ec5cbe3b24a66284c46ca0fb922b5e7",
       "fileName": "context-orchestrate.yaml",
       "name": "context-orchestrate",
       "nodeIds": [
@@ -15,7 +15,7 @@
       ]
     },
     {
-      "checksum": "a0e32a1ed176e70543bc1c4a8a5de632a0e32a1ed176e70543bc1c4a8a5de632",
+      "checksum": "763ed5919176e7c054ae12f5df7ee49d763ed5919176e7c054ae12f5df7ee49d",
       "fileName": "archon-aco-adversarial-loop.yaml",
       "name": "archon-aco-adversarial-loop",
       "nodeIds": [

@@ -54,6 +54,19 @@ export {
 } from './update-check';
 export type { UpdateCheckResult } from './update-check';
 
+// Runtime artifact path policy
+export {
+  assertNoSymlinkComponents,
+  assertPathInsideRoot,
+  assertRealPathInsideRoot,
+  ensureScopedArtifactDirectory,
+  ensureScopedWritableFilePath,
+  resolveScopedArtifactRoot,
+  sanitizeArtifactName,
+  scopedArtifactPath,
+} from './artifact-policy';
+export type { ArtifactRootSource, ScopedArtifactRootPolicy } from './artifact-policy';
+
 // Anonymous telemetry
 export { captureWorkflowInvoked, shutdownTelemetry, isTelemetryDisabled } from './telemetry';
 export type { WorkflowInvokedProperties } from './telemetry';

@@ -67,8 +67,14 @@ export function checkWorkflowParityContract(input: unknown): readonly string[] {
       errors.push(`${contract.name} binding references unknown node ${binding.nodeId}`);
     }
     errors.push(...checkDescriptorBinding(binding.commandId, binding.implementationStatus));
-    if (!binding.requestedMutationClasses.includes('read-only')) {
-      errors.push(`${contract.name} binding ${binding.commandId} must request read-only execution`);
+    const descriptor = commandDescriptorById(binding.commandId);
+    if (
+      descriptor !== undefined &&
+      !binding.requestedMutationClasses.includes(descriptor.mutates)
+    ) {
+      errors.push(
+        `${contract.name} binding ${binding.commandId} must request ${descriptor.mutates} execution`
+      );
     }
   }
 
@@ -177,8 +183,19 @@ export function checkWorkflowYamlMetadata(
     if (commandText.some(value => value.includes('aco:role-contracts'))) {
       errors.push(`${contract.name} yaml must not run bun run aco:role-contracts`);
     }
-    if (commandText.some(value => value.includes('--write-artifact'))) {
-      errors.push(`${contract.name} yaml must not request artifact writes`);
+    if (
+      commandText.some(value => value.includes('--write-artifact') && !allowsArtifactWrite(value))
+    ) {
+      errors.push(
+        `${contract.name} yaml may request artifact writes only for scoped context dossier nodes`
+      );
+    }
+    const nodeWritesArtifacts = node.contextCommandIds.some(commandId => {
+      const descriptor = commandDescriptorById(commandId);
+      return descriptor?.mutates === 'writes-artifacts';
+    });
+    if (nodeWritesArtifacts && !commandText.some(value => value.includes('--write-artifact'))) {
+      errors.push(`${contract.name} yaml node ${node.id} must request scoped artifact writes`);
     }
   }
 
@@ -209,10 +226,22 @@ function checkDescriptorBinding(
   if (descriptor.implementationStatus !== 'supported') {
     errors.push(`${commandId} cannot be a workflow context binding until it is supported`);
   }
-  if (descriptor.mutates !== 'read-only') {
-    errors.push(`${commandId} workflow binding must be read-only`);
+  if (descriptor.mutates !== 'read-only' && descriptor.mutates !== 'writes-artifacts') {
+    errors.push(`${commandId} workflow binding must be read-only or scoped artifact-writing`);
   }
   return errors;
+}
+
+function allowsArtifactWrite(commandText: string): boolean {
+  return [
+    'context status',
+    'context ledgers',
+    'context route',
+    'context compile',
+    'context approval-capsule',
+    'context approval-capsule-verify',
+    'context graph-waivers',
+  ].some(fragment => commandText.includes(fragment));
 }
 
 function checkRequirementDescriptor(requirement: WorkflowApprovalRequirement): readonly string[] {

@@ -123,11 +123,11 @@ describe('parseNodeHooks', () => {
     expect(result?.PostToolUse).toHaveLength(1);
   });
 
-  test('event with empty matchers array returns undefined (event filtered out)', () => {
+  test('event with empty matchers array pushes error', () => {
     const errors: string[] = [];
     const result = parseNodeHooks({ PreToolUse: [] }, { id: 'test', errors });
-    expect(errors).toHaveLength(0);
-    // Empty array means no matchers, so the whole hooks result is undefined
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('PreToolUse');
     expect(result).toBeUndefined();
   });
 });
@@ -224,7 +224,7 @@ nodes:
     expect(node.hooks!.PostToolUse).toHaveLength(1);
   });
 
-  test('hooks on bash node are warned and excluded', () => {
+  test('hooks on bash node are rejected instead of excluded', () => {
     const yaml = `
 name: test-bash-hooks
 description: Test bash node with hooks
@@ -237,10 +237,7 @@ nodes:
             decision: block
 `;
     const result = parseWorkflow(yaml, 'test.yaml');
-    // Bash nodes ignore AI fields including hooks — the node should parse successfully
-    // but hooks should not be on the parsed node
-    expect(result.error).toBeNull();
-    const node = result.workflow!.nodes![0];
-    expect(node.hooks).toBeUndefined();
+    expect(result.workflow).toBeNull();
+    expect(result.error?.error).toContain('safety/output control fields');
   });
 });

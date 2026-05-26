@@ -184,6 +184,50 @@ describe('SSETransport', () => {
 
       expect(transport.hasActiveStream('conv-1')).toBe(false);
     });
+
+    test('buffers failed workflow events and visible diagnostics for reconnect', async () => {
+      const transport = new SSETransport();
+      const failingStream = createMockStream({
+        writeSSE: mock(() => Promise.reject(new Error('write failed'))),
+      });
+      const replayStream = createMockStream();
+
+      transport.registerStream('conv-1', failingStream);
+      await transport.emit(
+        'conv-1',
+        '{"type":"workflow_status","runId":"run-1","workflowName":"deploy","status":"running"}'
+      );
+      transport.registerStream('conv-1', replayStream);
+
+      expect(replayStream.writeSSE).toHaveBeenCalledWith({
+        data: '{"type":"workflow_status","runId":"run-1","workflowName":"deploy","status":"running"}',
+      });
+      const replayed = (replayStream.writeSSE as unknown as { mock: { calls: unknown[][] } }).mock
+        .calls;
+      const diagnosticCall = replayed.find(call => {
+        const payload = call[0] as { data?: string };
+        return payload.data?.includes('"code":"sse_delivery_failed"') === true;
+      });
+      expect(diagnosticCall).toBeDefined();
+      const diagnostic = JSON.parse((diagnosticCall?.[0] as { data: string }).data) as {
+        type?: string;
+        runId?: string;
+        severity?: string;
+        code?: string;
+        persistence?: string;
+        eventType?: string;
+        message?: string;
+      };
+      expect(diagnostic).toMatchObject({
+        type: 'workflow_diagnostic',
+        runId: 'run-1',
+        severity: 'warning',
+        code: 'sse_delivery_failed',
+        persistence: 'best_effort_failed',
+        eventType: 'workflow_status',
+      });
+      expect(diagnostic.message).toContain('Event was buffered for replay');
+    });
   });
 
   describe('emitWorkflowEvent', () => {
@@ -202,6 +246,35 @@ describe('SSETransport', () => {
 
       // Should not throw
       transport.emitWorkflowEvent('conv-1', '{"type":"workflow_status"}');
+    });
+
+    test('buffers visible diagnostics when fire-and-forget workflow delivery fails', async () => {
+      const transport = new SSETransport();
+      const failingStream = createMockStream({
+        writeSSE: mock(() => Promise.reject(new Error('workflow write failed'))),
+      });
+      const replayStream = createMockStream();
+
+      transport.registerStream('conv-1', failingStream);
+      transport.emitWorkflowEvent(
+        'conv-1',
+        '{"type":"dag_node","runId":"run-2","nodeId":"build","name":"Build","status":"running"}'
+      );
+      await Promise.resolve();
+      transport.registerStream('conv-1', replayStream);
+
+      const replayed = (replayStream.writeSSE as unknown as { mock: { calls: unknown[][] } }).mock
+        .calls;
+      expect(
+        replayed.some(call =>
+          ((call[0] as { data?: string }).data ?? '').includes('"code":"sse_delivery_failed"')
+        )
+      ).toBe(true);
+      expect(
+        replayed.some(call =>
+          ((call[0] as { data?: string }).data ?? '').includes('"eventType":"dag_node"')
+        )
+      ).toBe(true);
     });
   });
 

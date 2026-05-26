@@ -225,7 +225,7 @@ describe('CLI argument parsing', () => {
   });
 
   describe('ACO command flags', () => {
-    it('parses bootstrap-codex event, format, and write-artifact flags', () => {
+    it('parses bootstrap-codex event, format, write-artifact, and no-write-artifact flags', () => {
       const result = parseCliArgs([
         'aco',
         'bootstrap-codex',
@@ -240,6 +240,16 @@ describe('CLI argument parsing', () => {
       expect(result.values.event).toBe('SessionStart');
       expect(result.values.format).toBe('json');
       expect(result.values['write-artifact']).toBe(true);
+
+      const suppressResult = parseCliArgs([
+        'aco',
+        'bootstrap-codex',
+        '--event',
+        'SessionStart',
+        '--no-write-artifact',
+      ]);
+
+      expect(suppressResult.values['no-write-artifact']).toBe(true);
     });
   });
 

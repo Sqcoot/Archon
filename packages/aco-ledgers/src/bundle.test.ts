@@ -62,14 +62,14 @@ describe('ledger bundle builder', () => {
       bundle.value.commands.find(command => command.subject.command === REQUIRED_COMMAND)
     ).toMatchObject({
       owner: 'aco-ledgers',
-      mutates: 'read-only',
+      mutates: 'writes-artifacts',
       approvalRequired: false,
       compatibility: 'preserve',
     });
   });
 });
 
-export const REQUIRED_COMMAND = 'archon context ledgers [prompt]';
+export const REQUIRED_COMMAND = 'archon context ledgers [prompt] [--no-write-artifact]';
 
 export async function loadLedgerInputs(): Promise<LedgerCsvInputs> {
   const root = new URL('../../../tests/fixtures/aco/ledgers/', import.meta.url);

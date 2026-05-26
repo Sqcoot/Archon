@@ -217,7 +217,7 @@ export function getWorkflowFolderSearchPaths(): string[] {
 export async function findMarkdownFilesRecursive(
   rootPath: string,
   relativePath = '',
-  options?: { maxDepth?: number }
+  options?: { maxDepth?: number; failOnDepthExceeded?: boolean }
 ): Promise<{ commandName: string; relativePath: string }[]> {
   const maxDepth = options?.maxDepth ?? Infinity;
   const currentDepth = relativePath ? relativePath.split(/[/\\]/).filter(Boolean).length : 0;
@@ -240,9 +240,20 @@ export async function findMarkdownFilesRecursive(
 
     if (entry.isDirectory()) {
       // Skip descending if we're already at the depth cap — files at deeper
-      // levels are silently ignored (matches the convention that `.archon/*/`
-      // folders support one level of grouping like `defaults/`).
-      if (currentDepth >= maxDepth) continue;
+      // levels are ignored by default for backwards compatibility. Command and
+      // workflow validation paths can opt into a hard failure so misplaced files
+      // do not disappear from routing.
+      if (currentDepth >= maxDepth) {
+        if (options?.failOnDepthExceeded === true) {
+          throw new Error(
+            `Markdown directory exceeds maximum discovery depth (${String(maxDepth)}): ${join(
+              relativePath,
+              entry.name
+            )}`
+          );
+        }
+        continue;
+      }
       const subResults = await findMarkdownFilesRecursive(
         rootPath,
         join(relativePath, entry.name),

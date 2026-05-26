@@ -89,7 +89,7 @@
       "parityGate": "reference-surface-compatibility-gate"
     },
     {
-      "surface": "archon context approval-capsule-verify",
+      "surface": "archon context approval-capsule-verify [--no-write-artifact]",
       "owner": "aco-context",
       "capturePhase": "S2",
       "migrationPhase": "S4-plus",
@@ -97,7 +97,7 @@
       "parityGate": "reference-surface-compatibility-gate"
     },
     {
-      "surface": "archon context graph-waivers",
+      "surface": "archon context graph-waivers [--no-write-artifact]",
       "owner": "aco-research",
       "capturePhase": "S2",
       "migrationPhase": "S4-plus",

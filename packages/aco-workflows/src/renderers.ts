@@ -26,13 +26,15 @@ export interface WorkflowDefaultYamlRenderInput {
 }
 
 const CLI_COMMANDS: Readonly<Record<string, string>> = {
-  'archon.context.status': 'archon context status "$ARGUMENTS" --json',
-  'archon.context.ledgers': 'archon context ledgers "$ARGUMENTS" --json',
-  'archon.context.route': 'archon context route "$ARGUMENTS" --json',
-  'archon.context.compile': 'archon context compile "$ARGUMENTS" --json',
-  'archon.context.approval-capsule': 'archon context approval-capsule "$ARGUMENTS" --json',
-  'archon.context.approval-capsule-verify': 'archon context approval-capsule-verify --json',
-  'archon.context.graph-waivers': 'archon context graph-waivers --json',
+  'archon.context.status': 'archon context status "$ARGUMENTS" --json --write-artifact',
+  'archon.context.ledgers': 'archon context ledgers "$ARGUMENTS" --json --write-artifact',
+  'archon.context.route': 'archon context route "$ARGUMENTS" --json --write-artifact',
+  'archon.context.compile': 'archon context compile "$ARGUMENTS" --json --write-artifact',
+  'archon.context.approval-capsule':
+    'archon context approval-capsule "$ARGUMENTS" --json --write-artifact',
+  'archon.context.approval-capsule-verify':
+    'archon context approval-capsule-verify --json --write-artifact',
+  'archon.context.graph-waivers': 'archon context graph-waivers --json --write-artifact',
   'archon.context.validate': 'archon context validate --json',
 };
 
@@ -96,6 +98,8 @@ export function renderWorkflowDefaultYaml(contract: WorkflowDefaultYamlRenderInp
     '  Contract source: @archon/aco-workflows S9 workflow parity.',
     'provider: codex',
     'model: gpt-5.3-codex',
+    'mode: autonomous',
+    'lock_scope: artifact_only',
     'mutates_checkout: false',
     '',
     'nodes:',
@@ -139,8 +143,8 @@ export function toStableJson(value: unknown): JsonValue {
 
 function commandForNode(commandIds: readonly string[]): string {
   const commandId = commandIds[0];
-  if (commandId === undefined) return 'archon context status "$ARGUMENTS" --json';
-  return CLI_COMMANDS[commandId] ?? 'archon context status "$ARGUMENTS" --json';
+  if (commandId === undefined) return 'archon context status "$ARGUMENTS" --json --write-artifact';
+  return CLI_COMMANDS[commandId] ?? 'archon context status "$ARGUMENTS" --json --write-artifact';
 }
 
 function renderRequirementList(

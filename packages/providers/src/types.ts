@@ -26,6 +26,26 @@ export interface ClaudeProviderDefaults {
 export interface CodexProviderDefaults {
   [key: string]: unknown;
   model?: string;
+  /**
+   * Codex sandbox mode for Archon-managed sessions.
+   * Defaults to `danger-full-access` so autonomous workflows do not stop for
+   * workspace write approvals when a task spans generated worktrees or sibling
+   * repositories.
+   */
+  sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access';
+  /**
+   * Codex approval policy for Archon-managed sessions.
+   * Defaults to `never`; workflows should encode their own safety gates instead
+   * of relying on Codex runtime approval prompts.
+   * Raw config aliases `dontAsk` and `bypassPermissions` are normalized to
+   * `never` by the Codex config parser before SDK launch.
+   */
+  approvalPolicy?: 'untrusted' | 'on-failure' | 'on-request' | 'never';
+  /**
+   * Whether Codex sessions launched by Archon have network access.
+   * Defaults to true for autonomous workflow execution.
+   */
+  networkAccessEnabled?: boolean;
   /** Structurally matches @archon/workflows ModelReasoningEffort */
   modelReasoningEffort?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
   /** Structurally matches @archon/workflows WebSearchMode */
@@ -162,6 +182,13 @@ export type MessageChunk =
       /** Matching ID for the originating `tool` chunk. See `tool` variant above. */
       toolCallId?: string;
     }
+  | {
+      type: 'artifact';
+      artifactType: 'pr' | 'commit' | 'file_created' | 'file_modified' | 'branch';
+      label: string;
+      path?: string;
+      url?: string;
+    }
   | { type: 'workflow_dispatch'; workerConversationId: string; workflowName: string };
 
 /**
@@ -235,6 +262,24 @@ export interface NodeConfig {
   effort?: string;
   thinking?: unknown;
   sandbox?: unknown;
+  /** Workflow-level router mode, passed through so providers can honor autonomous intent. */
+  workflow_mode?: 'autonomous' | 'guided' | 'interactive_only';
+  /** Workflow-level write/lock surface, passed through for provider diagnostics. */
+  workflow_lock_scope?:
+    | 'read_only'
+    | 'artifact_only'
+    | 'checkout_mutation'
+    | 'external_side_effect';
+  /**
+   * Internal Archon runtime metadata. Providers use this to place diagnostic
+   * artifacts under the workflow run artifact root instead of the checkout.
+   */
+  archonRuntime?: {
+    workflowRunId?: string;
+    nodeId?: string;
+    artifactsDir?: string;
+    logDir?: string;
+  };
   betas?: string[];
   output_format?: Record<string, unknown>;
   maxBudgetUsd?: number;
@@ -263,18 +308,43 @@ export interface SendQueryOptions extends AgentRequestOptions {
 export interface ProviderCapabilities {
   sessionResume: boolean;
   mcp: boolean;
+  hookCapabilities: {
+    /** Archon workflow YAML `hooks:` mapped into provider execution. */
+    workflowNodeHooks: 'enforced' | 'unsupported';
+    /** Provider may load hooks from its own config/plugin/managed layers. */
+    runtimeConfigHooks: 'possible' | 'disabled' | 'unknown';
+    /** Archon can report loaded/skipped hook inventory for this provider. */
+    hookInventoryObservable: boolean;
+    /** Archon can report hook trust/review state or explicit trust uncertainty for this provider. */
+    hookTrustObservable: boolean;
+    /** Hook lifecycle events are surfaced through Archon workflow events/UI. */
+    hookEventStreaming: boolean;
+  };
+  /**
+   * Legacy aggregate hook indicator. True means the provider has at least one hook surface
+   * (workflow-node hooks or runtime/config hooks). Use hookCapabilities.workflowNodeHooks
+   * when deciding whether YAML node `hooks:` are enforced.
+   */
   hooks: boolean;
   skills: boolean;
   /** Whether the provider supports inline sub-agent definitions (Claude SDK's options.agents). */
   agents: boolean;
   toolRestrictions: boolean;
   structuredOutput: boolean;
+  /** Whether structured output is SDK/runtime-enforced or best-effort prompt parsing. */
+  structuredOutputMode: 'enforced' | 'best_effort' | 'unsupported';
+  /** Whether systemPrompt is actually forwarded/enforced by this provider. */
+  systemPrompt: boolean;
+  /** Full supports the shared SystemPromptInput shape; string_only supports plain strings only. */
+  systemPromptMode: 'full' | 'string_only' | 'unsupported';
   envInjection: boolean;
   costControl: boolean;
   effortControl: boolean;
   thinkingControl: boolean;
   fallbackModel: boolean;
   sandbox: boolean;
+  /** Whether provider-specific beta/preview feature flags are actually forwarded. */
+  betaFlags: boolean;
 }
 
 /**

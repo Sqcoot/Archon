@@ -246,6 +246,39 @@ function broken() {
       expect(result.remainingMessage).toContain('```javascript');
       expect(result.remainingMessage).toContain('function broken()');
     });
+
+    it('rejects human-in-loop workflow invocations for autonomous original requests', () => {
+      const workflows: WorkflowDefinition[] = [
+        {
+          name: 'safe-autonomous',
+          description: 'Use when autonomous artifact-only execution is needed',
+          mode: 'autonomous',
+          lock_scope: 'artifact_only',
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'guided-approval',
+          description: 'Use when a human approval gate is needed',
+          mode: 'guided',
+          nodes: [
+            {
+              id: 'approve',
+              approval: {
+                message: 'Approve?',
+              },
+            },
+          ],
+        },
+      ];
+
+      const result = parseWorkflowInvocation('/invoke-workflow guided-approval', workflows, {
+        userMessage: 'continue autonomously without asking and produce the dossier',
+      });
+
+      expect(result.workflowName).toBeNull();
+      expect(result.error).toContain('Autonomous request cannot invoke');
+      expect(result.error).toContain('guided-approval');
+    });
   });
 
   describe('findWorkflow', () => {
@@ -523,6 +556,158 @@ function broken() {
         const result = buildRouterPrompt('test', testWorkflows, context);
         expect(result).toContain(`Type: ${type}`);
       }
+    });
+
+    it('omits approval-node workflows for autonomous requests even without mode metadata', () => {
+      const result = buildRouterPrompt('run this autonomously with no approval prompts', [
+        {
+          name: 'safe-autonomous',
+          description: 'Use when autonomous artifact-only execution is needed',
+          mode: 'autonomous',
+          lock_scope: 'artifact_only',
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'approval-without-mode',
+          description: 'Use when a human approval gate is needed',
+          nodes: [
+            {
+              id: 'approve',
+              approval: {
+                message: 'Approve?',
+              },
+            },
+          ],
+        },
+      ]);
+
+      expect(result).toContain('**safe-autonomous**');
+      expect(result).not.toContain('**approval-without-mode**');
+      expect(result).toContain('Omitted 1 human-in-loop/high-impact/source-mutating workflow');
+    });
+
+    it('does not treat negated approval-gate language as explicit human-loop consent', () => {
+      const prompts = [
+        'run ACO with no approval gate and produce the dossier',
+        "continue without asking me; don't ask me for approvals",
+      ];
+
+      for (const prompt of prompts) {
+        const result = buildRouterPrompt(prompt, [
+          {
+            name: 'safe-autonomous',
+            description: 'Use when autonomous artifact-only execution is needed',
+            mode: 'autonomous',
+            lock_scope: 'artifact_only',
+            nodes: [{ id: 'work', command: 'work' }],
+          },
+          {
+            name: 'guided-approval',
+            description: 'Use when a human approval gate is needed',
+            mode: 'guided',
+            nodes: [
+              {
+                id: 'approve',
+                approval: {
+                  message: 'Approve?',
+                },
+              },
+            ],
+          },
+        ]);
+
+        expect(result).toContain('**safe-autonomous**');
+        expect(result).not.toContain('**guided-approval**');
+        expect(result).toContain('Omitted 1 human-in-loop/high-impact/source-mutating workflow');
+      }
+    });
+
+    it('omits external-side-effect workflows for autonomous requests even without mode metadata', () => {
+      const result = buildRouterPrompt('run this autonomously with no approval prompts', [
+        {
+          name: 'safe-artifacts',
+          description: 'Use when autonomous artifact-only execution is needed',
+          mode: 'autonomous',
+          lock_scope: 'artifact_only',
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'deploy-remote',
+          description: 'Use when deployment mutates remote production systems',
+          lock_scope: 'external_side_effect',
+          nodes: [{ id: 'deploy', command: 'deploy' }],
+        },
+      ]);
+
+      expect(result).toContain('**safe-artifacts**');
+      expect(result).not.toContain('**deploy-remote**');
+      expect(result).toContain('Omitted 1 human-in-loop/high-impact/source-mutating workflow');
+    });
+
+    it('omits checkout-mutation workflows for autonomous requests even when explicitly autonomous', () => {
+      const result = buildRouterPrompt('continue autonomously without asking', [
+        {
+          name: 'marked-source-edit',
+          description: 'Use when autonomous source edits are needed',
+          mode: 'autonomous',
+          lock_scope: 'checkout_mutation',
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'unmarked-source-edit',
+          description: 'Use when source edits are needed',
+          lock_scope: 'checkout_mutation',
+          nodes: [{ id: 'edit', command: 'edit' }],
+        },
+      ]);
+
+      expect(result).not.toContain('**marked-source-edit**');
+      expect(result).not.toContain('**unmarked-source-edit**');
+      expect(result).toContain('Omitted 2 human-in-loop/high-impact/source-mutating workflow');
+    });
+
+    it('omits legacy workflows without safe lock metadata unless mutates_checkout is false', () => {
+      const result = buildRouterPrompt('continue autonomously without asking', [
+        {
+          name: 'legacy-default-mutating',
+          description: 'Use when legacy workflow metadata has not declared a safe lock scope',
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'legacy-readonly',
+          description: 'Use when legacy workflow explicitly disables checkout mutation',
+          mutates_checkout: false,
+          nodes: [{ id: 'inspect', command: 'inspect' }],
+        },
+      ]);
+
+      expect(result).not.toContain('**legacy-default-mutating**');
+      expect(result).toContain('**legacy-readonly**');
+      expect(result).toContain('Omitted 1 human-in-loop/high-impact/source-mutating workflow');
+    });
+
+    it('fails closed when autonomous requests only match human-in-loop workflows', () => {
+      const userMessage = 'continue without asking and produce the dossier';
+      const result = buildRouterPrompt(userMessage, [
+        {
+          name: 'guided-approval',
+          description: 'Use when guided execution with approval is needed',
+          mode: 'guided',
+          interactive: true,
+          nodes: [{ id: 'work', command: 'work' }],
+        },
+        {
+          name: 'deploy-remote',
+          description: 'Use when deployment mutates remote production systems',
+          lock_scope: 'external_side_effect',
+          nodes: [{ id: 'deploy', command: 'deploy' }],
+        },
+      ]);
+
+      expect(result).toBe(userMessage);
+      expect(result).not.toContain('/invoke-workflow');
+      expect(result).not.toContain('guided-approval');
+      expect(result).not.toContain('deploy-remote');
     });
   });
 });

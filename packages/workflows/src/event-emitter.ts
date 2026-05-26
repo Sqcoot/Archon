@@ -43,6 +43,21 @@ interface WorkflowFailedEvent {
   runId: string;
   workflowName: string;
   error: string;
+  failureStage?: string;
+  workflowPreExecutionValidation?: Record<string, unknown>;
+  artifactPath?: string;
+}
+
+interface WorkflowDiagnosticEvent {
+  type: 'workflow_diagnostic';
+  runId: string;
+  severity: 'error' | 'warning' | 'info';
+  code: string;
+  message: string;
+  persistence?: 'persisted' | 'best_effort_failed';
+  eventType?: string;
+  stepName?: string;
+  artifactPath?: string;
 }
 
 interface LoopIterationStartedEvent {
@@ -77,6 +92,9 @@ interface WorkflowArtifactEvent {
   label: string;
   url?: string;
   path?: string;
+  absolutePath?: string;
+  originalPath?: string;
+  failureStage?: string;
 }
 
 interface NodeStartedEvent {
@@ -133,6 +151,15 @@ interface ApprovalPendingEvent {
   runId: string;
   nodeId: string;
   message: string;
+  mutationClass?: string;
+  path?: string;
+  command?: string;
+  reason?: string;
+  approvalChannel?: 'chat' | 'web' | 'cli' | 'system';
+  highImpact?: boolean;
+  highImpactConfirmed?: boolean;
+  defaultScope?: 'once' | 'run';
+  allowedScopes?: ('once' | 'run')[];
 }
 
 interface WorkflowCancelledEvent {
@@ -142,10 +169,20 @@ interface WorkflowCancelledEvent {
   reason: string;
 }
 
+interface WorkflowEventPersistFailedEvent {
+  type: 'workflow_event_persist_failed';
+  runId: string;
+  eventType: string;
+  stepName?: string;
+  reason: string;
+  persistence: 'best_effort_failed';
+}
+
 export type WorkflowEmitterEvent =
   | WorkflowStartedEvent
   | WorkflowCompletedEvent
   | WorkflowFailedEvent
+  | WorkflowDiagnosticEvent
   | LoopIterationStartedEvent
   | LoopIterationCompletedEvent
   | LoopIterationFailedEvent
@@ -157,7 +194,8 @@ export type WorkflowEmitterEvent =
   | ToolStartedEvent
   | ToolCompletedEvent
   | ApprovalPendingEvent
-  | WorkflowCancelledEvent;
+  | WorkflowCancelledEvent
+  | WorkflowEventPersistFailedEvent;
 
 // ---------------------------------------------------------------------------
 // Emitter class

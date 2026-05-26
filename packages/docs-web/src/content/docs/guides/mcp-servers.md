@@ -378,9 +378,11 @@ bun run cli workflow run archon-smart-pr-review "Review PR #123"
 ## Limitations
 
 - **Codex tool restrictions** — Codex nodes support `mcp`, but Archon's
-  `allowed_tools` / `denied_tools` restrictions are still ignored by Codex.
+  `allowed_tools` / `denied_tools` restrictions are not enforced by Codex.
+  Because these are safety-critical controls, workflows that set them on Codex
+  nodes now fail validation/execution instead of warning and continuing.
 - **Haiku model** — Tool search (lazy loading for many tools) is not supported on
-  Haiku. You'll see a warning. Consider using Sonnet or Opus for MCP nodes.
+  Haiku. MCP-configured Claude nodes now fail closed on Haiku; use Sonnet or Opus.
 - **No load-time validation** — The MCP config file is read at execution time, not
   when the workflow YAML is loaded. A typo in the path won't surface until the node runs.
 - **No inline config** — MCP configs must be in a separate JSON file, not inline in YAML.
@@ -396,8 +398,8 @@ bun run cli workflow run archon-smart-pr-review "Review PR #123"
 | `undefined env vars: VAR_NAME` | Environment variable not set | Export the variable or add it to your `.env` |
 | `MCP server connection failed` | Server process crashed or URL unreachable | Check command/URL, test the server standalone |
 | Plugin MCP missing from workflow output | User-level plugin MCPs are filtered out of workflow warnings | Run with `--verbose` and look for provider MCP debug logs |
-| `allowed_tools` ignored with Codex | Codex provider does not support Archon's tool restrictions yet | Do not rely on `allowed_tools: []` for Codex sandboxing |
-| `Haiku model with MCP servers` | Haiku doesn't support tool search | Use `model: sonnet` or `model: opus` instead |
+| `allowed_tools` rejected with Codex | Codex provider does not support Archon's workflow tool restrictions yet | Remove the restriction, switch provider, or use a provider-native enforced policy |
+| `Haiku model with MCP servers` | Haiku doesn't support tool search | Use `model: sonnet` or `model: opus`; MCP-configured Haiku nodes fail closed |
 
 ## Finding MCP Servers
 

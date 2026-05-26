@@ -121,17 +121,28 @@ describe('ClaudeProvider', () => {
       expect(caps).toEqual({
         sessionResume: true,
         mcp: true,
+        hookCapabilities: {
+          workflowNodeHooks: 'enforced',
+          runtimeConfigHooks: 'unknown',
+          hookInventoryObservable: false,
+          hookTrustObservable: false,
+          hookEventStreaming: false,
+        },
         hooks: true,
         skills: true,
         agents: true,
         toolRestrictions: true,
         structuredOutput: true,
+        structuredOutputMode: 'enforced',
+        systemPrompt: true,
+        systemPromptMode: 'full',
         envInjection: true,
         costControl: true,
         effortControl: true,
         thinkingControl: true,
         fallbackModel: true,
         sandbox: true,
+        betaFlags: true,
       });
     });
   });
@@ -765,6 +776,22 @@ describe('ClaudeProvider', () => {
       expect(mockQuery).toHaveBeenCalledTimes(1);
       const callArgs = mockQuery.mock.calls[0][0] as { options: Record<string, unknown> };
       expect(callArgs.options.settingSources).toEqual(['project']);
+    });
+
+    test('fails closed when assistantConfig settingSources contains invalid entries', async () => {
+      const consumeGenerator = async (): Promise<void> => {
+        for await (const _ of client.sendQuery('test', '/tmp', undefined, {
+          assistantConfig: { settingSources: ['project', 'global'] },
+        })) {
+          // consume
+        }
+      };
+
+      const err = await consumeGenerator().catch((e: unknown) => e as Error);
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toContain('Claude provider config failed validation');
+      expect(err.message).toContain('settingSources');
+      expect(mockQuery).not.toHaveBeenCalled();
     });
 
     test('passes env from requestOptions into SDK options', async () => {

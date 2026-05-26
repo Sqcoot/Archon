@@ -943,7 +943,7 @@ export interface paths {
             [name: string]: unknown;
           };
           content: {
-            'application/json': components['schemas']['WorkflowRunActionResponse'];
+            'application/json': components['schemas']['WorkflowRunApprovalActionResponse'];
           };
         };
         /** @description Bad request */
@@ -1008,7 +1008,7 @@ export interface paths {
             [name: string]: unknown;
           };
           content: {
-            'application/json': components['schemas']['WorkflowRunActionResponse'];
+            'application/json': components['schemas']['WorkflowRunApprovalActionResponse'];
           };
         };
         /** @description Bad request */
@@ -2279,6 +2279,13 @@ export interface components {
           prompt: string;
           max_attempts?: number;
         };
+        mutation_class?: string;
+        high_impact?: boolean;
+        path?: string;
+        command?: string;
+        reason?: string;
+        default_scope?: 'once' | 'run';
+        allowed_scopes?: ('once' | 'run')[];
       };
       cancel?: string;
       script?: string;
@@ -2292,6 +2299,10 @@ export interface components {
       description: string;
       provider?: string;
       model?: string;
+      /** @enum {string} */
+      mode?: 'autonomous' | 'guided' | 'interactive_only';
+      /** @enum {string} */
+      lock_scope?: 'read_only' | 'artifact_only' | 'checkout_mutation' | 'external_side_effect';
       /** @enum {string} */
       modelReasoningEffort?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
       /** @enum {string} */
@@ -2348,6 +2359,7 @@ export interface components {
       worktree?: {
         enabled?: boolean;
       };
+      mutates_checkout?: boolean;
       tags?: string[];
       nodes: components['schemas']['DagNode'][];
     };
@@ -2373,6 +2385,78 @@ export interface components {
     };
     /** @enum {string} */
     WorkflowRunStatus: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'paused';
+    WorkflowApprovalMetadata: {
+      /** @enum {string} */
+      type?: 'approval' | 'interactive_loop';
+      nodeId?: string;
+      node_id?: string;
+      message?: string;
+      mutationClass?: string;
+      mutation_class?: string;
+      path?: string;
+      command?: string;
+      reason?: string;
+      /** @enum {string} */
+      defaultScope?: 'once' | 'run';
+      /** @enum {string} */
+      default_scope?: 'once' | 'run';
+      allowedScopes?: ('once' | 'run')[];
+      allowed_scopes?: ('once' | 'run')[];
+      /** @enum {string} */
+      approvalChannel?: 'chat' | 'web' | 'cli' | 'system';
+      /** @enum {string} */
+      approval_channel?: 'chat' | 'web' | 'cli' | 'system';
+      highImpact?: boolean;
+      high_impact?: boolean;
+      highImpactConfirmed?: boolean;
+      high_impact_confirmed?: boolean;
+      iteration?: number;
+      sessionId?: string;
+      session_id?: string;
+      [key: string]: unknown;
+    };
+    WorkflowApprovalAuditMetadata: {
+      /** @enum {string} */
+      decision?: 'approved' | 'rejected';
+      nodeId?: string;
+      node_id?: string;
+      /** @enum {string} */
+      approvalScope?: 'once' | 'run';
+      /** @enum {string} */
+      approval_scope?: 'once' | 'run';
+      /** @enum {string} */
+      approvalChannel?: 'chat' | 'web' | 'cli' | 'system';
+      /** @enum {string} */
+      approval_channel?: 'chat' | 'web' | 'cli' | 'system';
+      highImpact?: boolean;
+      high_impact?: boolean;
+      highImpactConfirmed?: boolean;
+      high_impact_confirmed?: boolean;
+      mutationClass?: string;
+      mutation_class?: string;
+      path?: string;
+      command?: string;
+      reason?: string;
+      approvalReason?: string;
+      approval_reason?: string;
+      rejectionReason?: string;
+      rejection_reason?: string;
+      /** @enum {string} */
+      defaultScope?: 'once' | 'run';
+      /** @enum {string} */
+      default_scope?: 'once' | 'run';
+      allowedScopes?: ('once' | 'run')[];
+      allowed_scopes?: ('once' | 'run')[];
+      [key: string]: unknown;
+    };
+    WorkflowPreExecutionValidationMetadata: {
+      status?: string;
+      error_name?: string;
+      message?: string;
+      hook_bootloader_report_path?: string;
+      hook_bad_behaviour_lint_path?: string;
+      [key: string]: unknown;
+    };
     WorkflowRun: {
       id: string;
       workflow_name: string;
@@ -2382,6 +2466,17 @@ export interface components {
       status: components['schemas']['WorkflowRunStatus'];
       user_message: string;
       metadata: {
+        approval?: components['schemas']['WorkflowApprovalMetadata'];
+        approvalAudit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+        approval_audit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+        workflow_pre_execution_validation?: components['schemas']['WorkflowPreExecutionValidationMetadata'];
+        workflow_event_persist_failures?: {
+          eventType: string;
+          stepName?: string;
+          reason: string;
+          persistence: 'best_effort_failed';
+          timestamp: string;
+        }[];
         [key: string]: unknown;
       };
       started_at: string;
@@ -2423,8 +2518,16 @@ export interface components {
       success: boolean;
       message: string;
     };
+    WorkflowRunApprovalActionResponse: {
+      success: boolean;
+      message: string;
+      approvalAudit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+      approval_audit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+    };
     ApproveWorkflowRunBody: {
       comment?: string;
+      scope?: 'once';
+      confirmHighImpact?: boolean;
     };
     RejectWorkflowRunBody: {
       reason?: string;
@@ -2520,19 +2623,32 @@ export interface components {
         [key: string]: components['schemas']['ProviderDefaults'];
       };
     };
+    ProviderHookCapabilities: {
+      workflowNodeHooks: 'enforced' | 'unsupported';
+      runtimeConfigHooks: 'possible' | 'disabled' | 'unknown';
+      hookInventoryObservable: boolean;
+      hookTrustObservable: boolean;
+      hookEventStreaming: boolean;
+    };
     ProviderCapabilities: {
       sessionResume: boolean;
       mcp: boolean;
+      hookCapabilities: components['schemas']['ProviderHookCapabilities'];
       hooks: boolean;
       skills: boolean;
+      agents: boolean;
       toolRestrictions: boolean;
       structuredOutput: boolean;
+      structuredOutputMode: 'enforced' | 'best_effort' | 'unsupported';
+      systemPrompt: boolean;
+      systemPromptMode: 'full' | 'string_only' | 'unsupported';
       envInjection: boolean;
       costControl: boolean;
       effortControl: boolean;
       thinkingControl: boolean;
       fallbackModel: boolean;
       sandbox: boolean;
+      betaFlags: boolean;
     };
     ProviderInfo: {
       id: string;

@@ -1,7 +1,7 @@
 /**
  * Workflow Router - builds prompts and detects workflow invocation
  */
-import type { WorkflowDefinition } from './schemas';
+import { isApprovalNode, type WorkflowDefinition } from './schemas';
 import { createLogger } from '@archon/paths';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
@@ -65,6 +65,116 @@ function buildContextSection(context?: RouterContext): string {
   return parts.length > 0 ? parts.join('\n') : '';
 }
 
+export function isHumanInLoopWorkflow(workflow: WorkflowDefinition): boolean {
+  const mode = workflow.mode ?? (workflow.interactive === true ? 'guided' : undefined);
+  const legacyCheckoutMutation =
+    workflow.lock_scope === undefined && workflow.mutates_checkout !== false;
+  return (
+    mode === 'guided' ||
+    mode === 'interactive_only' ||
+    workflow.lock_scope === 'external_side_effect' ||
+    workflow.lock_scope === 'checkout_mutation' ||
+    legacyCheckoutMutation ||
+    workflow.interactive === true ||
+    workflow.nodes.some(node => isApprovalNode(node))
+  );
+}
+
+function rejectsHumanInLoopRequest(userMessage: string): boolean {
+  const rejectionPatterns = [
+    /\b(?:no|without)\s+(?:manual\s+)?approvals?\b/i,
+    /\b(?:no|without)\s+approval\s+gates?\b/i,
+    /\b(?:no|without)\s+human[- ]in[- ]the[- ]loop\b/i,
+    /\b(?:do\s+not|don'?t|never)\s+(?:ask|pause|wait)\s+(?:me\s+)?(?:for\s+)?approval\b/i,
+    /\b(?:do\s+not|don'?t|never|stop)\s+ask(?:ing)?(?:\s+me)?\b/i,
+    /\bwithout\s+asking\b/i,
+    /\bcontinue\s+without\s+(?:asking|approval)\b/i,
+  ];
+  return rejectionPatterns.some(pattern => pattern.test(userMessage));
+}
+
+function isExplicitHumanInLoopRequest(userMessage: string): boolean {
+  if (rejectsHumanInLoopRequest(userMessage)) {
+    return false;
+  }
+
+  return /\b(guided|interactive|human[- ]in[- ]the[- ]loop|ask me|approval gate|manual approval|wait for approval|with approvals)\b/i.test(
+    userMessage
+  );
+}
+
+function isAutonomousRoutingRequest(userMessage: string, context?: RouterContext): boolean {
+  const combined = [userMessage, context?.title, context?.labels?.join(' '), context?.workflowType]
+    .filter(Boolean)
+    .join(' ');
+
+  return /\b(archon agentic coding orchestrator|aco\b|autonomous|unattended|party[- ]mode|handoff|artifact-rich|artifact rich|zip|dossier|continue without|without asking|without approval|do not ask|don't ask|dont ask|stop asking|no approval(?:\s+(?:prompts?|gates?))?)\b/i.test(
+    combined
+  );
+}
+
+export function isAutonomousRequestWithoutHumanLoopConsent(
+  userMessage: string,
+  context?: RouterContext
+): boolean {
+  return (
+    isAutonomousRoutingRequest(userMessage, context) && !isExplicitHumanInLoopRequest(userMessage)
+  );
+}
+
+function routableWorkflowsForRequest(
+  userMessage: string,
+  workflows: readonly WorkflowDefinition[],
+  context?: RouterContext
+): {
+  workflows: readonly WorkflowDefinition[];
+  omittedHumanLoopCount: number;
+  autonomousRequest: boolean;
+} {
+  const autonomousRequest = isAutonomousRequestWithoutHumanLoopConsent(userMessage, context);
+  if (!autonomousRequest) {
+    return { workflows, omittedHumanLoopCount: 0, autonomousRequest: false };
+  }
+
+  const autonomousCompatible = workflows.filter(w => !isHumanInLoopWorkflow(w));
+  if (autonomousCompatible.length === 0) {
+    return { workflows: [], omittedHumanLoopCount: workflows.length, autonomousRequest: true };
+  }
+
+  return {
+    workflows: autonomousCompatible,
+    omittedHumanLoopCount: workflows.length - autonomousCompatible.length,
+    autonomousRequest: true,
+  };
+}
+
+function autonomousRoutingCandidateNote(routing: {
+  readonly workflows: readonly WorkflowDefinition[];
+  readonly omittedHumanLoopCount: number;
+}): string {
+  if (routing.omittedHumanLoopCount > 0) {
+    return `Omitted ${routing.omittedHumanLoopCount} human-in-loop/high-impact/source-mutating workflow(s) from the candidate list.`;
+  }
+  if (routing.workflows.length > 0) {
+    return 'All listed workflows are autonomous-compatible.';
+  }
+  return 'No autonomous-compatible workflow candidates are available; do not invoke a human-in-loop workflow.';
+}
+
+function shouldSurfaceAllOmittedAutonomousNote(
+  userMessage: string,
+  workflows: readonly WorkflowDefinition[],
+  context?: RouterContext
+): boolean {
+  return (
+    workflows.length > 0 &&
+    isAutonomousRequestWithoutHumanLoopConsent(userMessage, context) &&
+    workflows.every(
+      workflow => workflow.mode === 'autonomous' || workflow.lock_scope === 'checkout_mutation'
+    )
+  );
+}
+
 /**
  * Build the router prompt with available workflows and optional context.
  * Context helps the router make better routing decisions by understanding the situation.
@@ -75,20 +185,39 @@ export function buildRouterPrompt(
   workflows: readonly WorkflowDefinition[],
   context?: RouterContext
 ): string {
-  if (workflows.length === 0) {
+  const routing = routableWorkflowsForRequest(userMessage, workflows, context);
+
+  if (routing.workflows.length === 0) {
+    if (shouldSurfaceAllOmittedAutonomousNote(userMessage, workflows, context)) {
+      return autonomousRoutingCandidateNote(routing);
+    }
     // No workflows - just respond conversationally
     return userMessage;
   }
 
-  const workflowList = workflows
+  const workflowList = routing.workflows
     .map(w => {
       // Format description, handling multi-line descriptions
       const desc = w.description.trim().replace(/\n/g, '\n  ');
-      return `**${w.name}**\n  ${desc}`;
+      const metadata: string[] = [];
+      const mode = w.mode ?? (w.interactive === true ? 'guided' : undefined);
+      if (mode) metadata.push(`Mode: ${mode}`);
+      if (w.lock_scope) metadata.push(`Lock scope: ${w.lock_scope}`);
+      if (w.interactive === true) metadata.push('Interactive: true');
+      const metadataText = metadata.length > 0 ? `\n  ${metadata.join('\n  ')}` : '';
+      return `**${w.name}**\n  ${desc}${metadataText}`;
     })
     .join('\n\n');
 
   const contextSection = buildContextSection(context);
+  const routingModeNote = routing.autonomousRequest
+    ? `## Autonomous Routing Constraint
+
+This request is autonomous. Do not route it to guided, interactive-only, or interactive workflows unless the user explicitly asked for human-in-the-loop execution.
+${autonomousRoutingCandidateNote(routing)}
+
+`
+    : '';
 
   // Build prompt with or without context section
   const contextPart = contextSection
@@ -107,6 +236,7 @@ ${contextPart}## Available Workflows
 
 ${workflowList}
 
+${routingModeNote}
 ## User Request
 
 "${userMessage}"
@@ -123,7 +253,8 @@ ${workflowList}
    - Questions, exploration, explanations, general messages → use "assist"
    - PR reviews, code reviews → check for a PR review workflow in the list above
 6. If unsure, prefer "assist" (the catch-all)
-7. You MUST pick a workflow - never respond with just text
+7. For autonomous requests, prefer workflows with mode "autonomous" and safer lock scopes ("artifact_only" or "read_only")
+8. You MUST pick a workflow - never respond with just text
 
 ## Response Format
 
@@ -147,14 +278,39 @@ export interface WorkflowInvocation {
   error?: string;
 }
 
+export interface WorkflowInvocationParseOptions {
+  /** Original user request that caused the router prompt/model response. */
+  userMessage?: string;
+  context?: RouterContext;
+  /** Defaults to true when userMessage is provided. */
+  enforceAutonomous?: boolean;
+}
+
 /**
  * Parse a message to detect /invoke-workflow command
  */
 export function parseWorkflowInvocation(
   message: string,
-  workflows: readonly WorkflowDefinition[]
+  workflows: readonly WorkflowDefinition[],
+  options: WorkflowInvocationParseOptions = {}
 ): WorkflowInvocation {
   const trimmed = message.trim();
+  const enforceAutonomous = options.enforceAutonomous ?? options.userMessage !== undefined;
+  const autonomousRequest =
+    enforceAutonomous && options.userMessage !== undefined
+      ? isAutonomousRequestWithoutHumanLoopConsent(options.userMessage, options.context)
+      : false;
+
+  function rejectUnsafeAutonomousInvocation(
+    workflow: WorkflowDefinition
+  ): WorkflowInvocation | null {
+    if (!autonomousRequest || !isHumanInLoopWorkflow(workflow)) return null;
+    return {
+      workflowName: null,
+      remainingMessage: message,
+      error: `Autonomous request cannot invoke human-in-loop/high-impact workflow: \`${workflow.name}\`. Choose an autonomous read_only or artifact_only workflow instead.`,
+    };
+  }
 
   // Check for /invoke-workflow pattern (at start of any line)
   // Uses multiline flag ('m') because AI models sometimes add analysis text before the command
@@ -167,6 +323,8 @@ export function parseWorkflowInvocation(
     // Exact match
     const workflow = workflows.find(w => w.name === workflowName);
     if (workflow) {
+      const rejected = rejectUnsafeAutonomousInvocation(workflow);
+      if (rejected) return rejected;
       // Use match.index to handle multiline matches where command isn't at position 0
       const remainingMessage = trimmed.slice(match.index + match[0].length).trim();
       return { workflowName, remainingMessage };
@@ -175,6 +333,8 @@ export function parseWorkflowInvocation(
     // Case-insensitive match
     const caseMatch = workflows.find(w => w.name.toLowerCase() === workflowName.toLowerCase());
     if (caseMatch) {
+      const rejected = rejectUnsafeAutonomousInvocation(caseMatch);
+      if (rejected) return rejected;
       getLog().info(
         { requested: workflowName, matched: caseMatch.name },
         'workflow.invoke_case_insensitive_match'

@@ -48,12 +48,12 @@ export const bootstrapCodexCommandDescriptorSchema = z
   .object({
     kind: z.literal('codex-bootstrap-command'),
     command: z.literal(
-      'archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]'
+      'archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]'
     ),
     owner: z.literal('aco-codex'),
     compatibility: z.literal('preserve'),
-    defaultMutates: z.literal('read-only'),
-    writeArtifactMutates: z.literal('writes-artifacts'),
+    defaultMutates: z.literal('writes-artifacts'),
+    noWriteArtifactMutates: z.literal('read-only'),
     approvalRequired: z.literal(false),
     evidence: z.array(evidenceRefSchema).min(1),
     manifest: commandManifestRecordSchema,

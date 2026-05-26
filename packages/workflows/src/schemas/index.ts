@@ -36,6 +36,8 @@ export {
   loopNodeSchema,
   approvalNodeSchema,
   approvalOnRejectSchema,
+  approvalMutationClassSchema,
+  approvalScopeSchema,
   cancelNodeSchema,
   scriptNodeSchema,
   dagNodeSchema,
@@ -62,6 +64,8 @@ export type {
   LoopNode,
   ApprovalNode,
   ApprovalOnReject,
+  ApprovalMutationClass,
+  ApprovalScope,
   CancelNode,
   ScriptNode,
   DagNode,
@@ -75,12 +79,16 @@ export type {
 export {
   modelReasoningEffortSchema,
   webSearchModeSchema,
+  workflowModeSchema,
+  workflowLockScopeSchema,
   workflowBaseSchema,
   workflowDefinitionSchema,
 } from './workflow';
 export type {
   ModelReasoningEffort,
   WebSearchMode,
+  WorkflowMode,
+  WorkflowLockScope,
   WorkflowBase,
   WorkflowDefinition,
 } from './workflow';

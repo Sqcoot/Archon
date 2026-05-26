@@ -6,6 +6,10 @@ description: |
   Does: Scans codebase -> extracts intent (JSON) -> generates YAML -> validates -> saves.
   NOT for: Editing existing workflows or creating non-workflow files.
 
+mode: guided
+lock_scope: checkout_mutation
+mutates_checkout: true
+
 nodes:
   - id: scan-codebase
     bash: |
@@ -112,6 +116,9 @@ nodes:
       # Optional top-level settings:
       # provider: claude    (or codex)
       # model: sonnet       (or haiku, opus, etc.)
+      # mode: autonomous    (or guided, interactive_only; controls router selection)
+      # lock_scope: artifact_only (or read_only, checkout_mutation, external_side_effect)
+      # Use mode: guided or interactive_only when lock_scope is checkout_mutation or external_side_effect.
       # interactive: true   (forces foreground execution in web UI)
 
       nodes:
@@ -155,6 +162,13 @@ nodes:
           approval:
             message: "Review the plan above. Approve to continue."
             # capture_response: true         # store reviewer comment as $<nodeId>.output
+            # For destructive/credential/remote/production gates, include:
+            # mutation_class: production     # destructive | credential | remote | production
+            # path: "affected/path-or-scope"
+            # command: "exact command or operation being approved"
+            # reason: "why this high-impact gate is required"
+            # default_scope: once
+            # allowed_scopes: [once]
 
           # Common options for all node types:
           depends_on: [other-node-id]       # DAG edges
@@ -165,7 +179,7 @@ nodes:
 
       ## Variable Reference
       - `$ARGUMENTS` — user's input text
-      - `$ARTIFACTS_DIR` — pre-created directory for workflow artifacts
+      - `$ARTIFACTS_DIR` — pre-created directory for workflow artifacts. Write reports, manifests, dossiers, handoffs, and other run outputs here instead of into the checkout.
       - `$<nodeId>.output` — stdout from a bash/script node or AI response from a prompt node
       - `$<nodeId>.output.field` — JSON field from a node with output_format
       - `$BASE_BRANCH` — base git branch
@@ -176,19 +190,21 @@ nodes:
       3. Every node MUST have a unique kebab-case `id`
       4. Use `depends_on` to define execution order
       5. Use `bash` nodes for deterministic shell operations (file checks, git commands, installs)
-      6. Use `script` nodes for typed data transforms (TypeScript JSON parsing, Python with deps)
+      6. For generated reports, manifests, dossiers, handoffs, and intermediate files, write under `$ARTIFACTS_DIR`. Do not write these outputs into the repository checkout unless the workflow intentionally mutates source and declares an appropriate `lock_scope`. If the workflow uses `lock_scope: checkout_mutation` or `lock_scope: external_side_effect`, set `mode: guided` or `mode: interactive_only`, never `mode: autonomous`.
+      7. Use `script` nodes for typed data transforms (TypeScript JSON parsing, Python with deps)
          — stdout is captured as output, stderr is forwarded as a warning.
          `$nodeId.output` is NOT shell-quoted in script bodies.
          - **TypeScript/bun**: assign directly — `const data = $nodeId.output;`
            (JSON is valid JS expression syntax; avoid String.raw — it breaks on backticks)
          - **Python/uv**: use json.loads — `import json; data = json.loads("""$nodeId.output""")`
          Never interpolate into shell syntax.
-      7. Use `prompt` nodes for AI reasoning tasks
-      8. Use `approval` nodes to pause for human review at risky gates (plan→execute boundary, destructive actions)
-      9. Use `output_format` on prompt nodes when downstream nodes need structured data
-      10. Use `allowed_tools: []` on classification/analysis nodes that don't need tools
-      11. Use `denied_tools: [Edit, Bash]` when a node should only use Write (not edit existing files)
-      12. Prefer `model: haiku` for simple classification tasks to save cost
+      8. Use `prompt` nodes for AI reasoning tasks
+      9. Avoid approval nodes by default. Use `approval` only for genuinely destructive irreversible actions, missing credentials, remote/production side effects, or workflows explicitly described as interactive/human-in-the-loop.
+         For destructive, credential, remote, or production approval gates, include `mutation_class`, `path` and/or `command`, `reason`, `default_scope: once`, and `allowed_scopes: [once]` so chat cannot silently approve high-impact work and the reviewer sees exactly what is being approved.
+      10. Use `output_format` on prompt nodes when downstream nodes need structured data
+      11. Use `allowed_tools: []` on classification/analysis nodes that don't need tools
+      12. Use `denied_tools: [Edit, Bash]` when a node should only use Write (not edit existing files)
+      13. Prefer `model: haiku` for simple classification tasks to save cost
 
       ## Output
 

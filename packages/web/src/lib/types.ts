@@ -6,8 +6,61 @@
 import type { components } from '@/lib/api.generated';
 
 export type WorkflowRunStatus = components['schemas']['WorkflowRunStatus'];
+export type WorkflowMode = components['schemas']['WorkflowDefinition']['mode'];
+export type WorkflowLockScope = components['schemas']['WorkflowDefinition']['lock_scope'];
 export type WorkflowStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 export type ArtifactType = 'pr' | 'commit' | 'file_created' | 'file_modified' | 'branch';
+export type KnownApprovalMutationClass =
+  | 'read_only'
+  | 'artifact_only'
+  | 'checkout_mutation'
+  | 'external_side_effect'
+  | 'destructive'
+  | 'credential'
+  | 'remote'
+  | 'production';
+export type ApprovalMutationClass = KnownApprovalMutationClass | (string & {});
+export type ApprovalScope = 'once' | 'run';
+export type ApprovalChannel = 'chat' | 'web' | 'cli' | 'system';
+
+export interface WorkflowApprovalInfo {
+  nodeId: string;
+  message: string;
+  mutationClass?: ApprovalMutationClass;
+  path?: string;
+  command?: string;
+  reason?: string;
+  defaultScope?: ApprovalScope;
+  allowedScopes?: ApprovalScope[];
+  approvalChannel?: ApprovalChannel;
+  highImpact?: boolean;
+  highImpactConfirmed?: boolean;
+}
+
+export interface WorkflowPersistenceDiagnosticMetadata {
+  eventType: string;
+  stepName?: string;
+  reason: string;
+  persistence: 'best_effort_failed';
+  timestamp: string;
+}
+
+export interface WorkflowPreExecutionValidationMetadata {
+  status?: string;
+  message?: string;
+  hook_bootloader_report_path?: string;
+  hook_bad_behaviour_lint_path?: string;
+  [key: string]: unknown;
+}
+
+export interface WorkflowRunMetadata {
+  approval?: WorkflowApprovalInfo | components['schemas']['WorkflowApprovalMetadata'];
+  approvalAudit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+  approval_audit?: components['schemas']['WorkflowApprovalAuditMetadata'];
+  workflow_pre_execution_validation?: WorkflowPreExecutionValidationMetadata;
+  workflow_event_persist_failures?: WorkflowPersistenceDiagnosticMetadata[];
+  [key: string]: unknown;
+}
 
 // Base SSE event
 interface BaseSSEEvent {
@@ -86,7 +139,22 @@ export interface WorkflowStatusEvent extends BaseSSEEvent {
   workflowName: string;
   status: ActiveWorkflowRunStatus;
   error?: string;
-  approval?: { nodeId: string; message: string };
+  approval?: WorkflowApprovalInfo;
+  failureStage?: string;
+  workflowPreExecutionValidation?: WorkflowPreExecutionValidationMetadata;
+  artifactPath?: string;
+}
+
+export interface WorkflowDiagnosticEvent extends BaseSSEEvent {
+  type: 'workflow_diagnostic';
+  runId: string;
+  severity: 'info' | 'warning' | 'error';
+  code: string;
+  message: string;
+  persistence?: 'persisted' | 'best_effort_failed';
+  eventType?: string;
+  stepName?: string;
+  artifactPath?: string;
 }
 
 // Loop iteration info (per-iteration state stored in DagNodeState)
@@ -139,6 +207,9 @@ export interface WorkflowArtifactEvent extends BaseSSEEvent {
   label: string;
   url?: string;
   path?: string;
+  absolutePath?: string;
+  originalPath?: string;
+  failureStage?: string;
 }
 
 // Background workflow dispatch
@@ -180,6 +251,7 @@ export type SSEEvent =
   | WarningEvent
   | HeartbeatEvent
   | WorkflowStatusEvent
+  | WorkflowDiagnosticEvent
   | DagNodeEvent
   | LoopIterationEvent
   | WorkflowToolActivityEvent
@@ -257,6 +329,9 @@ export interface WorkflowArtifact {
   label: string;
   url?: string;
   path?: string;
+  absolutePath?: string;
+  originalPath?: string;
+  failureStage?: string;
 }
 
 export interface WorkflowState {
@@ -270,8 +345,12 @@ export interface WorkflowState {
   startedAt: number;
   completedAt?: number;
   error?: string;
+  failureStage?: string;
+  workflowPreExecutionValidation?: WorkflowPreExecutionValidationMetadata;
+  artifactPath?: string;
+  diagnostics?: WorkflowDiagnosticEvent[];
   stale?: boolean;
-  approval?: { nodeId: string; message: string };
+  approval?: WorkflowApprovalInfo;
   currentTool?: {
     name: string;
     status: 'running' | 'completed';

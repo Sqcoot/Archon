@@ -1179,20 +1179,20 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.2",
           "source": "command-ledger.csv#L3",
-          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact"
+          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact",
+      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-codex",
       "raw": {
         "approval_required": "no for artifact writes",
-        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "artifact-only when flag set",
+        "mutates": "artifact-only",
         "owner": "aco-codex",
         "purpose": "Emit Codex-ready bootstrap capsule",
         "safety": "read-only or writes-artifacts",
@@ -1207,7 +1207,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-codex",
@@ -1273,18 +1273,18 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.7",
           "source": "command-ledger.csv#L8",
-          "summary": "command archon context approval-capsule <prompt> from command.archon-context-approval-capsule-prompt"
+          "summary": "command archon context approval-capsule <prompt> [--no-write-artifact] from command.archon-context-approval-capsule-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-approval-capsule-prompt",
+      "id": "command.archon-context-approval-capsule-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
         "approval_required": "no to create capsule",
-        "command": "archon context approval-capsule <prompt>",
+        "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "artifact-only",
         "owner": "aco-context",
@@ -1301,7 +1301,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context approval-capsule <prompt>",
+        "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-context",
@@ -1320,26 +1320,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.8",
           "source": "command-ledger.csv#L9",
-          "summary": "command archon context approval-capsule-verify from command.archon-context-approval-capsule-verify"
+          "summary": "command archon context approval-capsule-verify [--no-write-artifact] from command.archon-context-approval-capsule-verify-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-approval-capsule-verify",
+      "id": "command.archon-context-approval-capsule-verify-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context approval-capsule-verify",
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -1348,12 +1348,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context approval-capsule-verify",
+        "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -1367,18 +1367,18 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.6",
           "source": "command-ledger.csv#L7",
-          "summary": "command archon context compile <prompt> from command.archon-context-compile-prompt"
+          "summary": "command archon context compile <prompt> [--no-write-artifact] from command.archon-context-compile-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-compile-prompt",
+      "id": "command.archon-context-compile-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
         "approval_required": "no unless graph/config mutation requested",
-        "command": "archon context compile <prompt>",
+        "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "artifact-only",
         "owner": "aco-context",
@@ -1395,7 +1395,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context compile <prompt>",
+        "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-context",
@@ -1414,26 +1414,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.9",
           "source": "command-ledger.csv#L10",
-          "summary": "command archon context graph-waivers from command.archon-context-graph-waivers"
+          "summary": "command archon context graph-waivers [--no-write-artifact] from command.archon-context-graph-waivers-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-graph-waivers",
+      "id": "command.archon-context-graph-waivers-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-research",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context graph-waivers",
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -1442,12 +1442,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context graph-waivers",
+        "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -1461,26 +1461,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.4",
           "source": "command-ledger.csv#L5",
-          "summary": "command archon context ledgers [prompt] from command.archon-context-ledgers-prompt"
+          "summary": "command archon context ledgers [prompt] [--no-write-artifact] from command.archon-context-ledgers-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-ledgers-prompt",
+      "id": "command.archon-context-ledgers-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-ledgers",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context ledgers [prompt]",
+        "approval_required": "no for artifact writes",
+        "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -1489,12 +1489,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context ledgers [prompt]",
+        "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -1508,26 +1508,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.5",
           "source": "command-ledger.csv#L6",
-          "summary": "command archon context route <prompt> from command.archon-context-route-prompt"
+          "summary": "command archon context route <prompt> [--no-write-artifact] from command.archon-context-route-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-route-prompt",
+      "id": "command.archon-context-route-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-bmad",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context route <prompt>",
+        "approval_required": "no for artifact writes",
+        "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -1536,12 +1536,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context route <prompt>",
+        "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -1555,26 +1555,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.3",
           "source": "command-ledger.csv#L4",
-          "summary": "command archon context status [prompt] from command.archon-context-status-prompt"
+          "summary": "command archon context status [prompt] [--no-write-artifact] from command.archon-context-status-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-status-prompt",
+      "id": "command.archon-context-status-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context status [prompt]",
+        "approval_required": "no for artifact writes",
+        "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -1583,12 +1583,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context status [prompt]",
+        "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -2920,20 +2920,20 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.2",
           "source": "command-ledger.csv#L3",
-          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact"
+          "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-write-artifact",
+      "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-codex",
       "raw": {
         "approval_required": "no for artifact writes",
-        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "artifact-only when flag set",
+        "mutates": "artifact-only",
         "owner": "aco-codex",
         "purpose": "Emit Codex-ready bootstrap capsule",
         "safety": "read-only or writes-artifacts",
@@ -2948,7 +2948,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+        "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-codex",
@@ -3014,18 +3014,18 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.7",
           "source": "command-ledger.csv#L8",
-          "summary": "command archon context approval-capsule <prompt> from command.archon-context-approval-capsule-prompt"
+          "summary": "command archon context approval-capsule <prompt> [--no-write-artifact] from command.archon-context-approval-capsule-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-approval-capsule-prompt",
+      "id": "command.archon-context-approval-capsule-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
         "approval_required": "no to create capsule",
-        "command": "archon context approval-capsule <prompt>",
+        "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "artifact-only",
         "owner": "aco-context",
@@ -3042,7 +3042,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context approval-capsule <prompt>",
+        "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-context",
@@ -3061,26 +3061,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.8",
           "source": "command-ledger.csv#L9",
-          "summary": "command archon context approval-capsule-verify from command.archon-context-approval-capsule-verify"
+          "summary": "command archon context approval-capsule-verify [--no-write-artifact] from command.archon-context-approval-capsule-verify-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-approval-capsule-verify",
+      "id": "command.archon-context-approval-capsule-verify-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context approval-capsule-verify",
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -3089,12 +3089,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context approval-capsule-verify",
+        "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -3108,18 +3108,18 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.6",
           "source": "command-ledger.csv#L7",
-          "summary": "command archon context compile <prompt> from command.archon-context-compile-prompt"
+          "summary": "command archon context compile <prompt> [--no-write-artifact] from command.archon-context-compile-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-compile-prompt",
+      "id": "command.archon-context-compile-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
       "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
         "approval_required": "no unless graph/config mutation requested",
-        "command": "archon context compile <prompt>",
+        "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "artifact-only",
         "owner": "aco-context",
@@ -3136,7 +3136,7 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context compile <prompt>",
+        "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
         "mutates": "writes-artifacts",
         "owner": "aco-context",
@@ -3155,26 +3155,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.9",
           "source": "command-ledger.csv#L10",
-          "summary": "command archon context graph-waivers from command.archon-context-graph-waivers"
+          "summary": "command archon context graph-waivers [--no-write-artifact] from command.archon-context-graph-waivers-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-graph-waivers",
+      "id": "command.archon-context-graph-waivers-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-research",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context graph-waivers",
+        "approval_required": "no unless graph/config mutation requested",
+        "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -3183,12 +3183,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context graph-waivers",
+        "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
-        "safety": "read-only",
+        "safety": "writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -3202,26 +3202,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.4",
           "source": "command-ledger.csv#L5",
-          "summary": "command archon context ledgers [prompt] from command.archon-context-ledgers-prompt"
+          "summary": "command archon context ledgers [prompt] [--no-write-artifact] from command.archon-context-ledgers-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-ledgers-prompt",
+      "id": "command.archon-context-ledgers-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-ledgers",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context ledgers [prompt]",
+        "approval_required": "no for artifact writes",
+        "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -3230,12 +3230,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context ledgers [prompt]",
+        "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -3249,26 +3249,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.5",
           "source": "command-ledger.csv#L6",
-          "summary": "command archon context route <prompt> from command.archon-context-route-prompt"
+          "summary": "command archon context route <prompt> [--no-write-artifact] from command.archon-context-route-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-route-prompt",
+      "id": "command.archon-context-route-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-bmad",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context route <prompt>",
+        "approval_required": "no for artifact writes",
+        "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -3277,12 +3277,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context route <prompt>",
+        "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },
@@ -3296,26 +3296,26 @@
           "freshness": "unknown",
           "id": "evidence.ledger.command.3",
           "source": "command-ledger.csv#L4",
-          "summary": "command archon context status [prompt] from command.archon-context-status-prompt"
+          "summary": "command archon context status [prompt] [--no-write-artifact] from command.archon-context-status-prompt-no-write-artifact"
         }
       ],
       "freshness": "unknown",
-      "id": "command.archon-context-status-prompt",
+      "id": "command.archon-context-status-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-context",
       "raw": {
-        "approval_required": "no",
-        "command": "archon context status [prompt]",
+        "approval_required": "no for artifact writes",
+        "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "no",
+        "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
-        "safety": "read-only",
+        "safety": "read-only or writes-artifacts",
         "surface": "CLI"
       },
-      "safety": "read-only",
+      "safety": "read-only-or-writes-artifacts",
       "source": {
         "fileName": "command-ledger.csv",
         "ledger": "command",
@@ -3324,12 +3324,12 @@
       "status": "preserve",
       "subject": {
         "approvalRequired": false,
-        "command": "archon context status [prompt]",
+        "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
-        "mutates": "read-only",
+        "mutates": "writes-artifacts",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
-        "safety": "read-only",
+        "safety": "read-only-or-writes-artifacts",
         "surface": "CLI"
       }
     },

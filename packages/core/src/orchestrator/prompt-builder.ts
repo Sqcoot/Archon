@@ -32,6 +32,13 @@ export function formatWorkflowSection(workflows: readonly WorkflowDefinition[]):
     section += `**${w.name}**\n`;
     section += `  ${w.description}\n`;
     section += `  Type: DAG (${String(w.nodes.length)} nodes)\n`;
+    const mode = w.mode ?? (w.interactive === true ? 'guided' : undefined);
+    if (mode !== undefined) {
+      section += `  Mode: ${mode}\n`;
+    }
+    if (w.lock_scope !== undefined) {
+      section += `  Lock scope: ${w.lock_scope}\n`;
+    }
     section += '\n';
   }
   return section;
@@ -79,7 +86,7 @@ export function buildRoutingRules(): string {
 export function buildRoutingRulesWithProject(projectName?: string): string {
   const rule4 = projectName
     ? `4. If ambiguous which project → use **${projectName}** (the active project)`
-    : '4. If ambiguous which project → ask the user';
+    : '4. If ambiguous which project → choose the best matching registered project; ask only when no safe project can be inferred';
 
   return `## Routing Rules
 
@@ -89,6 +96,19 @@ export function buildRoutingRulesWithProject(projectName?: string): string {
 ${rule4}
 5. If no project needed (general question) → answer directly without workflow
 6. If the user wants to add a new project → clone it, then register it (see below)
+
+## Autonomous Execution Defaults
+
+- Default to action. Do not ask preference or confirmation questions before invoking a workflow when the user intent is actionable.
+- Make reasonable engineering assumptions and include those assumptions in the workflow prompt.
+- Ask the user only for genuinely blocking ambiguity, missing credentials, external account authorization, or destructive irreversible actions.
+- When a workflow needs a destructive, credential, remote, or production approval gate, require \`mutation_class\`, \`path\` and/or \`command\`, \`reason\`, \`default_scope: once\`, and \`allowed_scopes: [once]\` in the approval node so normal chat cannot approve high-impact work.
+- When the user asks for Archon Agentic Coding Orchestrator, ACO, party-mode artifacts, or autonomous handoff, route to the most relevant workflow and require an artifact-rich handoff.
+- Ask workflows to write reports, manifests, dossiers, handoffs, next-goal notes, and other run outputs under \`$ARTIFACTS_DIR\`; writing those outputs into the repository checkout is a checkout mutation and requires an appropriate workflow \`lock_scope\`.
+- For autonomous requests, prefer workflows with \`mode: autonomous\`. Do not select workflows with \`mode: guided\`, \`mode: interactive_only\`, or \`interactive: true\` unless the user explicitly asks for guided human-in-the-loop interaction.
+- Treat \`lock_scope: artifact_only\` and \`lock_scope: read_only\` as safer autonomous choices. Treat \`lock_scope: checkout_mutation\` as source-mutating and \`lock_scope: external_side_effect\` as high-impact; keep normal worktree, approval, and validation expectations for both.
+- Treat legacy workflows that omit \`lock_scope\` and do not set \`mutates_checkout: false\` as checkout-mutating/high-impact for autonomous routing.
+- If only a guided or interactive-only workflow matches an autonomous request, choose the nearest autonomous alternative and state the routing assumption inside the workflow prompt; do not silently route autonomous work into a human-gated flow.
 
 ## Workflow Invocation Format
 
@@ -100,12 +120,16 @@ Rules:
 - The --prompt MUST be a complete, self-contained task description that fully captures the user's intent.
 - Synthesize the prompt from conversation context — do NOT use vague references like "do what we discussed" or "yes, go ahead."
 - The prompt should make sense to someone with NO knowledge of the conversation history.
+- For autonomous coding work, include: the concrete goal, assumptions, acceptance criteria, requested artifacts, and an instruction to continue without optional approval prompts.
+- Prefer more artifacts over fewer when handoff quality matters. Ask the workflow to write a manifest, decision log, implementation plan, validation notes, next-goal text of about 4000 characters when useful, and a zip/archive of the artifact directory when the workflow supports artifact writes.
 - You may include a brief explanation before the command. The user will see this text.
 - /invoke-workflow MUST be the absolute last thing in your response. Do NOT use any tools or generate additional text after it.
 
 Routing behavior:
 - If the user clearly wants work done (e.g., "create a plan for X", "implement Y", "fix Z") → include a brief explanation of what you're doing, then invoke the workflow.
-- If the user is asking a question or it's unclear whether they want a workflow → answer their question directly. You may suggest a workflow by name (e.g., "I can run the **archon-assist** workflow for this if you'd like"), but do NOT include /invoke-workflow in your response.
+- If the user is asking a question → answer directly.
+- If it is unclear whether they want a workflow but the request contains an actionable coding objective, invoke the best workflow and encode assumptions instead of asking.
+- If there is no actionable objective, you may suggest a workflow by name (e.g., "I can run the **archon-assist** workflow for this if you'd like"), but do NOT include /invoke-workflow in your response.
 
 Example (clear intent):
 I'll analyze the orchestrator module architecture for you.

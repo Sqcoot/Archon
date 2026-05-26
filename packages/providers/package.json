@@ -13,6 +13,7 @@
     "./codex/provider": "./src/codex/provider.ts",
     "./codex/config": "./src/codex/config.ts",
     "./codex/binary-resolver": "./src/codex/binary-resolver.ts",
+    "./codex/hooks-preflight": "./src/codex/hooks-preflight.ts",
     "./mcp/config": "./src/mcp/config.ts",
     "./community/pi": "./src/community/pi/index.ts",
     "./errors": "./src/errors.ts",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.121",
+    "@archon/aco-core": "workspace:*",
     "@archon/paths": "workspace:*",
     "@mariozechner/pi-ai": "^0.67.5",
     "@mariozechner/pi-coding-agent": "^0.67.5",

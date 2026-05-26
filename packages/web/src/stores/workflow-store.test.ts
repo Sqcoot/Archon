@@ -89,6 +89,39 @@ describe('handleWorkflowStatus', () => {
   });
 });
 
+describe('hydrateWorkflow', () => {
+  test('preserves REST-hydrated persistence diagnostics for visible dashboard/chat cards', () => {
+    useWorkflowStore.getState().hydrateWorkflow({
+      runId: 'run-diagnostics',
+      workflowName: 'diagnostic-wf',
+      status: 'running',
+      dagNodes: [],
+      artifacts: [],
+      startedAt: 1000,
+      currentTool: null,
+      diagnostics: [
+        {
+          type: 'workflow_diagnostic',
+          runId: 'run-diagnostics',
+          severity: 'warning',
+          code: 'workflow_event_persist_failed',
+          message:
+            'Workflow event persistence failed for approval_requested/deploy: db unavailable',
+          persistence: 'best_effort_failed',
+          eventType: 'approval_requested',
+          stepName: 'deploy',
+          timestamp: 2000,
+        },
+      ],
+    });
+
+    const wf = useWorkflowStore.getState().workflows.get('run-diagnostics');
+    expect(wf?.diagnostics?.[0]?.code).toBe('workflow_event_persist_failed');
+    expect(wf?.diagnostics?.[0]?.persistence).toBe('best_effort_failed');
+    expect(wf?.diagnostics?.[0]?.eventType).toBe('approval_requested');
+  });
+});
+
 describe('handleDagNode', () => {
   test('adds node to existing workflow', () => {
     useWorkflowStore
@@ -150,11 +183,33 @@ describe('handleWorkflowArtifact', () => {
     expect(wf!.artifacts).toHaveLength(2);
   });
 
-  test('no-ops when runId not found', () => {
+  test('preserves diagnostic path metadata for non-openable artifacts', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(statusEvent({ runId: 'run-a3' }));
+    useWorkflowStore.getState().handleWorkflowArtifact(
+      artifactEvent({
+        runId: 'run-a3',
+        label: 'External artifact',
+        artifactType: 'file_created',
+        absolutePath: '/tmp/outside/report.md',
+        originalPath: '../report.md',
+      })
+    );
+    const wf = useWorkflowStore.getState().workflows.get('run-a3');
+    expect(wf!.artifacts[0]).toMatchObject({
+      type: 'file_created',
+      label: 'External artifact',
+      absolutePath: '/tmp/outside/report.md',
+      originalPath: '../report.md',
+    });
+    expect(wf!.artifacts[0].path).toBeUndefined();
+  });
+
+  test('creates a placeholder workflow when runId not found', () => {
     const before = useWorkflowStore.getState().workflows;
     useWorkflowStore.getState().handleWorkflowArtifact(artifactEvent({ runId: 'nonexistent' }));
     const after = useWorkflowStore.getState().workflows;
-    expect(before).toBe(after);
+    expect(before).not.toBe(after);
+    expect(after.get('nonexistent')?.artifacts).toHaveLength(1);
   });
 });
 
@@ -197,6 +252,53 @@ describe('handleWorkflowStatus — approval field', () => {
       .handleWorkflowStatus(statusEvent({ runId: 'run-ap3', status: 'running' }));
     const wf = useWorkflowStore.getState().workflows.get('run-ap3');
     expect(wf!.approval).toBeUndefined();
+  });
+
+  test('preserves approval metadata when a later paused status omits approval', () => {
+    const approval = {
+      nodeId: 'gate',
+      message: 'Please review',
+      mutationClass: 'production' as const,
+      path: 'deploy/prod',
+      command: 'deploy production',
+      reason: 'Production deploy requires explicit approval',
+      defaultScope: 'once' as const,
+      allowedScopes: ['once' as const],
+      highImpact: true,
+    };
+
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-ap4',
+        status: 'paused',
+        approval,
+      })
+    );
+    useWorkflowStore
+      .getState()
+      .handleWorkflowStatus(statusEvent({ runId: 'run-ap4', status: 'paused' }));
+
+    const wf = useWorkflowStore.getState().workflows.get('run-ap4');
+    expect(wf!.approval).toEqual(approval);
+  });
+
+  test('preserves unknown approval mutation class strings for safety display', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-ap5',
+        status: 'paused',
+        approval: {
+          nodeId: 'gate',
+          message: 'Review external change',
+          mutationClass: 'network_boundary',
+          highImpact: true,
+        },
+      })
+    );
+
+    const wf = useWorkflowStore.getState().workflows.get('run-ap5');
+    expect(wf!.approval?.mutationClass).toBe('network_boundary');
+    expect(wf!.approval?.highImpact).toBe(true);
   });
 });
 
@@ -278,6 +380,39 @@ describe('hydrateWorkflow', () => {
       .hydrateWorkflow(makeWorkflow({ runId: 'run-h5', status: 'running', startedAt: 500 }));
     const wf = useWorkflowStore.getState().workflows.get('run-h5');
     expect(wf!.status).toBe('completed');
+  });
+});
+
+describe('handleWorkflowStatus failure metadata', () => {
+  test('preserves pre-execution validation metadata from failed status events', () => {
+    useWorkflowStore.getState().handleWorkflowStatus(
+      statusEvent({
+        runId: 'run-preflight',
+        status: 'failed',
+        error: 'Codex hook preflight blocked this workflow',
+        failureStage: 'pre_execution_validation',
+        artifactPath: '/tmp/codex-hook-bootloader-report.json',
+        workflowPreExecutionValidation: {
+          status: 'blocked',
+          message: 'Codex hook preflight blocked this workflow',
+          hook_bootloader_report_path: '/tmp/codex-hook-bootloader-report.json',
+          hook_bad_behaviour_lint_path: '/tmp/codex-hook-bad-behaviour-lint.json',
+        },
+      })
+    );
+
+    const wf = useWorkflowStore.getState().workflows.get('run-preflight');
+    expect(wf).toMatchObject({
+      status: 'failed',
+      error: 'Codex hook preflight blocked this workflow',
+      failureStage: 'pre_execution_validation',
+      artifactPath: '/tmp/codex-hook-bootloader-report.json',
+      workflowPreExecutionValidation: {
+        status: 'blocked',
+        hook_bootloader_report_path: '/tmp/codex-hook-bootloader-report.json',
+        hook_bad_behaviour_lint_path: '/tmp/codex-hook-bad-behaviour-lint.json',
+      },
+    });
   });
 });
 

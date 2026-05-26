@@ -139,6 +139,8 @@ In a multi-node workflow, each node's artifact IS the specification for the next
 
 If a downstream agent can't execute from just its artifact, the artifact is incomplete. This is the single most common failure mode in multi-node workflows.
 
+Keep run outputs under `$ARTIFACTS_DIR`. Reports, manifests, dossiers, handoffs, next-goal notes, and intermediate files are scoped artifacts when they stay under that root. Writing those same outputs into the repository checkout is a checkout mutation and should only happen when the workflow intentionally mutates source and declares the right `lock_scope`.
+
 ### 9. Keep workflows reversible
 
 Use `worktree.enabled: true` at the workflow level for anything that modifies the codebase. The CLI `--no-worktree` flag will hard-error, forcing users into isolation. The cost is a one-time cp of the worktree; the benefit is never having a failed workflow corrupt a live checkout.

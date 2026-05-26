@@ -3,7 +3,7 @@
  * Uses relative URLs - Vite proxy handles routing in dev.
  * SSE streams bypass the proxy in dev mode (Vite proxy buffers SSE responses).
  */
-import type { WorkflowRunStatus } from '@/lib/types';
+import type { WorkflowRunMetadata, WorkflowRunStatus } from '@/lib/types';
 import type { components } from '@/lib/api.generated';
 import type { ApiUiParityBundle } from '@archon/aco-api-ui';
 
@@ -78,10 +78,39 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 // Providers
+export interface ProviderHookCapabilities {
+  workflowNodeHooks: 'enforced' | 'unsupported';
+  runtimeConfigHooks: 'possible' | 'disabled' | 'unknown';
+  hookInventoryObservable: boolean;
+  hookTrustObservable: boolean;
+  hookEventStreaming: boolean;
+}
+
+export interface ProviderCapabilities {
+  sessionResume: boolean;
+  mcp: boolean;
+  hookCapabilities: ProviderHookCapabilities;
+  hooks: boolean;
+  skills: boolean;
+  agents: boolean;
+  toolRestrictions: boolean;
+  structuredOutput: boolean;
+  structuredOutputMode: 'enforced' | 'best_effort' | 'unsupported';
+  systemPrompt: boolean;
+  systemPromptMode: 'full' | 'string_only' | 'unsupported';
+  envInjection: boolean;
+  costControl: boolean;
+  effortControl: boolean;
+  thinkingControl: boolean;
+  fallbackModel: boolean;
+  sandbox: boolean;
+  betaFlags: boolean;
+}
+
 export interface ProviderInfo {
   id: string;
   displayName: string;
-  capabilities: Record<string, boolean>;
+  capabilities: ProviderCapabilities;
   builtIn: boolean;
 }
 
@@ -225,7 +254,7 @@ export interface WorkflowRunResponse {
   codebase_id: string | null;
   status: WorkflowRunStatus;
   user_message: string;
-  metadata: Record<string, unknown>;
+  metadata: WorkflowRunMetadata;
   started_at: string;
   completed_at: string | null;
   last_activity_at: string | null;
@@ -355,19 +384,21 @@ export async function deleteWorkflowRun(
 
 export async function approveWorkflowRun(
   runId: string,
-  comment?: string
-): Promise<{ success: boolean; message: string }> {
+  comment?: string,
+  scope?: 'once',
+  confirmHighImpact?: boolean
+): Promise<components['schemas']['WorkflowRunApprovalActionResponse']> {
   return fetchJSON(`/api/workflows/runs/${encodeURIComponent(runId)}/approve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ comment }),
+    body: JSON.stringify({ comment, scope, confirmHighImpact }),
   });
 }
 
 export async function rejectWorkflowRun(
   runId: string,
   reason?: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<components['schemas']['WorkflowRunApprovalActionResponse']> {
   return fetchJSON(`/api/workflows/runs/${encodeURIComponent(runId)}/reject`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

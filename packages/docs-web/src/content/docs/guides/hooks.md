@@ -13,7 +13,12 @@ DAG workflow nodes support a `hooks` field that attaches Claude Agent SDK hooks
 to individual nodes. Hooks fire during the node's AI execution and can control
 tool behavior, inject context, modify inputs, and more.
 
-**Claude only** — Codex nodes will warn and ignore hooks.
+**Archon workflow `hooks:` are Claude only** — Codex nodes do not receive these
+YAML hooks. Codex also has its own runtime hook system loaded from Codex config
+layers such as `~/.codex`, repo `.codex`, plugins, and managed requirements.
+Archon runs a Codex hook bootloader preflight before Codex execution and writes
+an inventory/coverage/trust report, but Archon workflow `hooks:` are still not
+mapped into Codex runtime hooks.
 
 ## Quick Start
 
@@ -306,7 +311,10 @@ need context injection, input modification, or post-tool-use reactions.
 
 - **Static responses only in YAML** — hooks return the same response every time.
   For conditional logic, use `when:` conditions on downstream nodes or gate execution with upstream bash nodes that emit structured output.
-- **Claude only** — Codex nodes warn and ignore hooks.
+- **Archon workflow hooks are Claude only** — Codex nodes do not receive the
+  YAML `hooks:` field. Codex runtime hooks are discovered by Codex from its own
+  config/plugin/managed layers and are reported through Archon's Codex hook
+  bootloader preflight artifacts.
 - **No hook event streaming** — hook lifecycle events (`hook_started`, `hook_progress`)
   are not forwarded to the Web UI.
 

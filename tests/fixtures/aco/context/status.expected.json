@@ -11,7 +11,7 @@
   "commandCoverage": [
     {
       "commandId": "archon.aco.bootstrap-codex",
-      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-codex"
     },
@@ -23,43 +23,43 @@
     },
     {
       "commandId": "archon.context.approval-capsule",
-      "display": "archon context approval-capsule <prompt>",
+      "display": "archon context approval-capsule <prompt> [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-context"
     },
     {
       "commandId": "archon.context.approval-capsule-verify",
-      "display": "archon context approval-capsule-verify",
+      "display": "archon context approval-capsule-verify [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-context"
     },
     {
       "commandId": "archon.context.compile",
-      "display": "archon context compile <prompt>",
+      "display": "archon context compile <prompt> [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-context"
     },
     {
       "commandId": "archon.context.graph-waivers",
-      "display": "archon context graph-waivers",
+      "display": "archon context graph-waivers [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-research"
     },
     {
       "commandId": "archon.context.ledgers",
-      "display": "archon context ledgers [prompt]",
+      "display": "archon context ledgers [prompt] [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-ledgers"
     },
     {
       "commandId": "archon.context.route",
-      "display": "archon context route <prompt>",
+      "display": "archon context route <prompt> [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-bmad"
     },
     {
       "commandId": "archon.context.status",
-      "display": "archon context status [prompt]",
+      "display": "archon context status [prompt] [--no-write-artifact]",
       "implementationStatus": "supported",
       "owner": "aco-context"
     },

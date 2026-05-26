@@ -49,6 +49,9 @@ function formatIssue(issue: ValidationIssue, indent = '    '): string {
   const prefix = issue.level === 'error' ? 'ERROR' : 'WARNING';
   const nodeStr = issue.nodeId ? ` Node '${issue.nodeId}':` : '';
   let line = `${indent}${prefix} [${issue.field}]${nodeStr} ${issue.message}`;
+  if (issue.badBehaviour) {
+    line += `\n${indent}  bad-behaviour: ${issue.badBehaviour.pattern} (${issue.badBehaviour.classification}) - ${issue.badBehaviour.rationale}`;
+  }
   if (issue.hint) {
     line += `\n${indent}  ${issue.hint}`;
   }
@@ -86,6 +89,10 @@ export async function validateWorkflowsCommand(
 ): Promise<number> {
   const config = await buildValidationConfig(cwd);
   const mergedConfig = await loadConfig(cwd);
+  const workflowValidationConfig: ValidationConfig = {
+    ...config,
+    envVars: mergedConfig.envVars,
+  };
   const defaultProvider = mergedConfig.assistant;
   const { workflows: workflowEntries, errors: loadErrors } = await discoverWorkflowsWithConfig(
     cwd,
@@ -107,7 +114,12 @@ export async function validateWorkflowsCommand(
 
   // Validate successfully parsed workflows (Level 3)
   for (const { workflow } of workflowEntries) {
-    const issues = await validateWorkflowResources(workflow, cwd, config, defaultProvider);
+    const issues = await validateWorkflowResources(
+      workflow,
+      cwd,
+      workflowValidationConfig,
+      defaultProvider
+    );
     results.push(makeWorkflowResult(workflow.name, issues));
   }
 

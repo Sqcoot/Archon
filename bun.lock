@@ -156,6 +156,7 @@
         "@archon/aco-cli-contracts": "workspace:*",
         "@archon/aco-codex": "workspace:*",
         "@archon/aco-context": "workspace:*",
+        "@archon/aco-core": "workspace:*",
         "@archon/aco-research": "workspace:*",
         "@archon/adapters": "workspace:*",
         "@archon/core": "workspace:*",
@@ -240,6 +241,7 @@
       "version": "0.3.12",
       "dependencies": {
         "@anthropic-ai/claude-agent-sdk": "^0.2.121",
+        "@archon/aco-core": "workspace:*",
         "@archon/paths": "workspace:*",
         "@mariozechner/pi-ai": "^0.67.5",
         "@mariozechner/pi-coding-agent": "^0.67.5",
@@ -330,6 +332,7 @@
       "name": "@archon/workflows",
       "version": "0.3.12",
       "dependencies": {
+        "@archon/aco-core": "workspace:*",
         "@archon/git": "workspace:*",
         "@archon/paths": "workspace:*",
         "@archon/providers": "workspace:*",

@@ -93,7 +93,11 @@ async function scanScriptDir(
     if (entryStat.isDirectory()) {
       // 1-depth cap: allow one level of grouping (e.g. `.archon/scripts/triage/foo.ts`)
       // but stop there. Matches the workflows/commands convention — no nested folders.
-      if (depth >= MAX_SCRIPT_DISCOVERY_DEPTH) continue;
+      if (depth >= MAX_SCRIPT_DISCOVERY_DEPTH) {
+        throw new Error(
+          `Script directory exceeds maximum discovery depth (${String(MAX_SCRIPT_DISCOVERY_DEPTH)}): ${entryPath}`
+        );
+      }
       await scanScriptDir(entryPath, scripts, depth + 1);
       continue;
     }
@@ -144,7 +148,7 @@ export async function discoverScripts(dir: string): Promise<Map<string, ScriptDe
  *
  * Within a single scope, duplicate basenames across extensions still throw
  * (matches `discoverScripts` behavior). Across scopes, the repo-level entry
- * silently overrides the home-level one.
+ * explicitly overrides the home-level one and logs the override.
  */
 export async function discoverScriptsForCwd(cwd: string): Promise<Map<string, ScriptDefinition>> {
   const homeScripts = await discoverScripts(getHomeScriptsPath());

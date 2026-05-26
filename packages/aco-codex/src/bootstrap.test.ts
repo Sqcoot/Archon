@@ -45,18 +45,18 @@ describe('codex bootstrap artifacts', () => {
     expect(secondRender.value).toEqual(bundle.value);
   });
 
-  test('preserves bootstrap-codex command metadata without live CLI wiring', () => {
+  test('preserves bootstrap-codex command metadata with default scoped artifact writes', () => {
     expect(bootstrapCodexCommand).toMatchObject({
       command: BOOTSTRAP_CODEX_COMMAND,
       owner: 'aco-codex',
       compatibility: 'preserve',
-      defaultMutates: 'read-only',
-      writeArtifactMutates: 'writes-artifacts',
+      defaultMutates: 'writes-artifacts',
+      noWriteArtifactMutates: 'read-only',
       approvalRequired: false,
     });
     expect(bootstrapCodexCommand.manifest).toMatchObject({
       kind: 'command-manifest',
-      mutates: 'read-only',
+      mutates: 'writes-artifacts',
       owner: 'aco-codex',
       compatibility: 'preserve',
     });

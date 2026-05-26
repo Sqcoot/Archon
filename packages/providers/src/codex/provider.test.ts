@@ -1,5 +1,5 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
-import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
+import { mkdtemp, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { createMockLogger } from '../test/mocks/logger';
@@ -8,6 +8,21 @@ const mockLogger = createMockLogger();
 mock.module('@archon/paths', () => ({
   createLogger: mock(() => mockLogger),
 }));
+
+let originalArtifactsDir: string | undefined;
+
+beforeEach(() => {
+  originalArtifactsDir = process.env.ARTIFACTS_DIR;
+  delete process.env.ARTIFACTS_DIR;
+});
+
+afterEach(() => {
+  if (originalArtifactsDir === undefined) {
+    delete process.env.ARTIFACTS_DIR;
+  } else {
+    process.env.ARTIFACTS_DIR = originalArtifactsDir;
+  }
+});
 
 /** Default usage matching Codex SDK's Usage type (required on TurnCompletedEvent) */
 const defaultUsage = { input_tokens: 10, cached_input_tokens: 0, output_tokens: 5 };
@@ -42,6 +57,72 @@ mock.module('@openai/codex-sdk', () => ({
   Codex: MockCodex,
 }));
 
+const defaultHookArtifactRoot = join(tmpdir(), 'archon-codex-provider-hook-preflight');
+
+function buildHookPreflightResult(
+  decision: 'allow' | 'warn' | 'block' = 'allow',
+  reasons: string[] = [],
+  artifactRoot = defaultHookArtifactRoot
+) {
+  return {
+    report: {
+      decision,
+      reasons,
+      warnings: decision === 'warn' ? reasons : [],
+      providerHookCapabilities: {
+        workflowNodeHooks: 'unsupported',
+        runtimeConfigHooks: 'possible',
+        hookInventoryObservable: true,
+        hookTrustObservable: true,
+        hookEventStreaming: false,
+      },
+      hooks: [],
+      coverage: {
+        inventoriedHookHandlers: 0,
+      },
+      permissionRequest: {
+        permissionRequestHooks: 0,
+        preToolUseHooks: 0,
+        preToolUseFallbackBounded: true,
+        preToolUseFallbackIssues: [],
+        bounded: true,
+      },
+      continuation: {
+        stopContinuationHooks: 0,
+        bounded: true,
+      },
+    },
+    artifactPaths: {
+      directory: artifactRoot,
+      manifest: join(artifactRoot, 'codex-hook-artifacts-manifest.json'),
+      report: join(artifactRoot, 'codex-hook-bootloader-report.json'),
+      inventory: join(artifactRoot, 'codex-hooks-inventory.json'),
+      coverage: join(artifactRoot, 'codex-hook-coverage.md'),
+      trust: join(artifactRoot, 'codex-hook-trust-status.md'),
+      trustStatus: join(artifactRoot, 'codex-hook-trust-status.json'),
+      artifactPolicy: join(artifactRoot, 'codex-hook-artifact-policy.json'),
+      stopContinuation: join(artifactRoot, 'codex-stop-continuation-policy.md'),
+      stopContinuationPolicy: join(artifactRoot, 'codex-stop-continuation-policy.json'),
+      contract: join(artifactRoot, 'codex-hook-contract.json'),
+      contractEvidence: join(artifactRoot, 'codex-hook-contract-evidence.md'),
+      permissionRequest: join(artifactRoot, 'codex-permission-request-policy.md'),
+      permissionRequestPolicy: join(artifactRoot, 'codex-permission-request-policy.json'),
+      badBehaviourLint: join(artifactRoot, 'codex-hook-bad-behaviour-lint.json'),
+    },
+  };
+}
+
+const mockRunCodexHookBootloaderPreflight = mock((input?: { artifactRoot?: string }) =>
+  Promise.resolve(buildHookPreflightResult('allow', [], input?.artifactRoot))
+);
+
+function resetHookPreflightMock(): void {
+  mockRunCodexHookBootloaderPreflight.mockClear();
+  mockRunCodexHookBootloaderPreflight.mockImplementation((input?: { artifactRoot?: string }) =>
+    Promise.resolve(buildHookPreflightResult('allow', [], input?.artifactRoot))
+  );
+}
+
 import { CodexProvider, resetCodexSingleton } from './provider';
 
 describe('CodexProvider', () => {
@@ -49,7 +130,11 @@ describe('CodexProvider', () => {
 
   beforeEach(() => {
     resetCodexSingleton();
-    client = new CodexProvider({ retryBaseDelayMs: 1 });
+    resetHookPreflightMock();
+    client = new CodexProvider({
+      retryBaseDelayMs: 1,
+      hookPreflightRunner: mockRunCodexHookBootloaderPreflight,
+    });
     MockCodex.mockClear();
     mockStartThread.mockClear();
     mockResumeThread.mockClear();
@@ -76,17 +161,28 @@ describe('CodexProvider', () => {
       expect(caps).toEqual({
         sessionResume: true,
         mcp: true,
-        hooks: false,
+        hookCapabilities: {
+          workflowNodeHooks: 'unsupported',
+          runtimeConfigHooks: 'possible',
+          hookInventoryObservable: true,
+          hookTrustObservable: true,
+          hookEventStreaming: false,
+        },
+        hooks: true,
         skills: false,
         agents: false,
         toolRestrictions: false,
         structuredOutput: true,
+        structuredOutputMode: 'enforced',
+        systemPrompt: false,
+        systemPromptMode: 'unsupported',
         envInjection: true,
         costControl: false,
         effortControl: false,
         thinkingControl: false,
         fallbackModel: false,
         sandbox: false,
+        betaFlags: false,
       });
     });
   });
@@ -564,6 +660,285 @@ describe('CodexProvider', () => {
       );
     });
 
+    test('surfaces workflow hook bootloader artifact before starting Codex thread', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-before-'));
+
+      try {
+        const iterator = client.sendQuery('test prompt', testDir, undefined, {
+          nodeConfig: {
+            archonRuntime: {
+              artifactsDir: testDir,
+              workflowRunId: 'run-1',
+              nodeId: 'codex-1',
+            },
+          },
+        });
+
+        const first = await iterator.next();
+
+        expect(first.value).toEqual({
+          type: 'artifact',
+          artifactType: 'file_created',
+          label: 'Codex hook artifacts manifest',
+          path: expect.stringContaining('codex-hook-artifacts-manifest.json'),
+        });
+        expect(mockRunCodexHookBootloaderPreflight).toHaveBeenCalledWith(
+          expect.objectContaining({
+            cwd: testDir,
+            artifactRoot: expect.stringContaining('codex-hooks-runtime'),
+          })
+        );
+        expect(mockStartThread).not.toHaveBeenCalled();
+
+        await iterator.return?.();
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+      }
+    });
+
+    test('surfaces direct provider hook bootloader artifacts without workflow artifact root', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-direct-'));
+
+      try {
+        const iterator = client.sendQuery('test prompt', testDir);
+        const first = await iterator.next();
+
+        expect(first.value).toEqual({
+          type: 'artifact',
+          artifactType: 'file_created',
+          label: 'Codex hook artifacts manifest',
+          path: expect.stringContaining('codex-hook-artifacts-manifest.json'),
+        });
+        expect(mockRunCodexHookBootloaderPreflight).toHaveBeenCalledWith(
+          expect.objectContaining({
+            cwd: testDir,
+          })
+        );
+        expect(mockRunCodexHookBootloaderPreflight.mock.calls[0]?.[0]).not.toHaveProperty(
+          'artifactRoot'
+        );
+        expect(mockStartThread).not.toHaveBeenCalled();
+
+        await iterator.return?.();
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+      }
+    });
+
+    test('runtime hook observation artifact marks Codex hook event streaming unavailable', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-observation-'));
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield {
+            type: 'hook.lifecycle',
+            item: { type: 'PermissionRequest', id: 'hook-1', status: 'completed' },
+          };
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      try {
+        const chunks = [];
+        for await (const chunk of client.sendQuery('test prompt', testDir, undefined, {
+          nodeConfig: {
+            archonRuntime: {
+              artifactsDir: testDir,
+              workflowRunId: 'run-1',
+              nodeId: 'codex-1',
+            },
+          },
+        })) {
+          chunks.push(chunk);
+        }
+
+        const summaryArtifact = chunks.find(
+          chunk =>
+            chunk.type === 'artifact' && chunk.label === 'Codex runtime hook observability summary'
+        );
+        expect(summaryArtifact).toBeDefined();
+
+        const { readFile } = await import('fs/promises');
+        const summary = JSON.parse(await readFile(summaryArtifact!.path, 'utf8')) as {
+          kind?: string;
+          schemaVersion?: string;
+          generatedAt?: string;
+          persistence?: string;
+          eventLogPersistence?: {
+            status?: string;
+            persistedRelevantEvents?: number;
+            droppedRelevantEvents?: number;
+            artifactWriteFailures?: number;
+          };
+          providerHookCapabilities?: {
+            workflowNodeHooks?: string;
+            runtimeConfigHooks?: string;
+            hookEventStreaming?: boolean;
+          };
+          hookEventStreaming?: boolean;
+          eventStreamingStatus?: string;
+          warnings?: string[];
+        };
+
+        expect(summary.kind).toBe('codex-runtime-hook-observability');
+        expect(summary.schemaVersion).toBe('archon.codex-hooks.runtime-observability.v1');
+        expect(summary.generatedAt).toBeDefined();
+        expect(summary.persistence).toBe('persisted');
+        expect(summary.eventLogPersistence).toMatchObject({
+          status: 'persisted',
+          persistedRelevantEvents: 1,
+          droppedRelevantEvents: 0,
+          artifactWriteFailures: 0,
+        });
+
+        const manifestArtifact = chunks.find(
+          chunk =>
+            chunk.type === 'artifact' && chunk.label === 'Codex runtime hook observability manifest'
+        );
+        expect(manifestArtifact).toBeDefined();
+        const manifest = JSON.parse(await readFile(manifestArtifact!.path, 'utf8')) as {
+          eventLogPersistence?: {
+            status?: string;
+            persistedRelevantEvents?: number;
+            droppedRelevantEvents?: number;
+            artifactWriteFailures?: number;
+          };
+        };
+        expect(manifest.eventLogPersistence).toMatchObject({
+          status: 'persisted',
+          persistedRelevantEvents: 1,
+          droppedRelevantEvents: 0,
+          artifactWriteFailures: 0,
+        });
+        expect(summary.providerHookCapabilities).toMatchObject({
+          workflowNodeHooks: 'unsupported',
+          runtimeConfigHooks: 'possible',
+          hookEventStreaming: false,
+        });
+        expect(summary.hookEventStreaming).toBe(false);
+        expect(summary.eventStreamingStatus).toBe('unavailable');
+        expect(summary.warnings).toContain(
+          'Codex hook event streaming is not available through Archon; runtime observation is limited to provider stream events and preflight-derived hook coverage.'
+        );
+
+        const eventArtifact = chunks.find(
+          chunk => chunk.type === 'artifact' && chunk.label === 'Codex runtime hook event summaries'
+        );
+        expect(eventArtifact).toBeDefined();
+        const eventLines = (await readFile(eventArtifact!.path, 'utf8')).trim().split('\n');
+        const eventSummary = JSON.parse(eventLines[0] ?? '{}') as {
+          kind?: string;
+          schemaVersion?: string;
+          generatedAt?: string;
+          persistence?: string;
+          relevance?: string[];
+        };
+        expect(eventSummary.kind).toBe('codex-runtime-hook-event-summary');
+        expect(eventSummary.schemaVersion).toBe('archon.codex-hooks.runtime-event-summary.v1');
+        expect(eventSummary.generatedAt).toBeDefined();
+        expect(eventSummary.persistence).toBe('persisted');
+        expect(eventSummary.relevance).toContain('permission-request');
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+      }
+    });
+
+    test('surfaces bootloader artifacts and blocks before SDK execution when preflight blocks', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-block-'));
+      mockRunCodexHookBootloaderPreflight.mockImplementation((input?: { artifactRoot?: string }) =>
+        Promise.resolve(
+          buildHookPreflightResult(
+            'block',
+            ['safety/privacy hook handler(s) have unknown trust'],
+            input?.artifactRoot
+          )
+        )
+      );
+
+      try {
+        const chunks = [];
+        let error: Error | undefined;
+
+        try {
+          for await (const chunk of client.sendQuery('test prompt', testDir, undefined, {
+            nodeConfig: {
+              archonRuntime: {
+                artifactsDir: testDir,
+                workflowRunId: 'run-1',
+                nodeId: 'codex-1',
+              },
+            },
+          })) {
+            chunks.push(chunk);
+          }
+        } catch (err) {
+          error = err as Error;
+        }
+
+        expect(error?.message).toContain('Codex hook bootloader blocked this run');
+        expect(chunks.map(chunk => (chunk.type === 'artifact' ? chunk.label : chunk.type))).toEqual(
+          [
+            'Codex hook artifacts manifest',
+            'Codex hook bootloader report',
+            'Codex hook inventory',
+            'Codex hook coverage',
+            'Codex hook trust status',
+            'Codex hook trust status JSON',
+            'Codex hook artifact policy',
+            'Codex hook contract',
+            'Codex hook contract evidence',
+            'Codex PermissionRequest policy',
+            'Codex PermissionRequest policy JSON',
+            'Codex hook bad-behaviour lint',
+            'Codex Stop continuation policy',
+            'Codex Stop continuation policy JSON',
+            'system',
+          ]
+        );
+        expect(
+          chunks.some(
+            chunk =>
+              chunk.type === 'system' &&
+              chunk.content.includes('Codex hook bootloader preflight block') &&
+              chunk.content.includes('codex-hook-bootloader-report.json')
+          )
+        ).toBe(true);
+        expect(mockStartThread).not.toHaveBeenCalled();
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+      }
+    });
+
+    test('rejects symlinked workflow artifact roots before hook preflight', async () => {
+      const testDir = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-symlink-'));
+      const outside = await mkdtemp(join(tmpdir(), 'codex-provider-hooks-outside-'));
+      const symlinkRoot = join(testDir, 'artifacts-link');
+
+      try {
+        await symlink(outside, symlinkRoot);
+
+        const consumeGenerator = async (): Promise<void> => {
+          for await (const _ of client.sendQuery('test prompt', testDir, undefined, {
+            nodeConfig: {
+              archonRuntime: {
+                artifactsDir: symlinkRoot,
+                workflowRunId: 'run-1',
+                nodeId: 'codex-1',
+              },
+            },
+          })) {
+            // consume
+          }
+        };
+
+        await expect(consumeGenerator()).rejects.toThrow('artifact path contains symlink');
+        expect(mockRunCodexHookBootloaderPreflight).not.toHaveBeenCalled();
+        expect(mockStartThread).not.toHaveBeenCalled();
+      } finally {
+        await rm(testDir, { recursive: true, force: true });
+        await rm(outside, { recursive: true, force: true });
+      }
+    });
+
     test('resumes existing thread with sandbox/network settings', async () => {
       mockRunStreamed.mockResolvedValue({
         events: (async function* () {
@@ -658,6 +1033,93 @@ describe('CodexProvider', () => {
           additionalDirectories: ['/other/repo'],
         })
       );
+    });
+
+    test('allows assistantConfig to override autonomous Codex thread defaults', async () => {
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      for await (const _ of client.sendQuery('test prompt', '/workspace', undefined, {
+        assistantConfig: {
+          sandboxMode: 'workspace-write',
+          approvalPolicy: 'on-request',
+          networkAccessEnabled: false,
+        },
+      })) {
+        // consume
+      }
+
+      expect(mockStartThread).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sandboxMode: 'workspace-write',
+          approvalPolicy: 'on-request',
+          networkAccessEnabled: false,
+        })
+      );
+    });
+
+    test('normalizes Codex dontAsk approvalPolicy alias to never with visible diagnostic', async () => {
+      mockRunStreamed.mockResolvedValue({
+        events: (async function* () {
+          yield { type: 'turn.completed', usage: defaultUsage };
+        })(),
+      });
+
+      const chunks = [];
+      for await (const chunk of client.sendQuery('test prompt', '/workspace', undefined, {
+        assistantConfig: {
+          approvalPolicy: 'dontAsk',
+        },
+      })) {
+        chunks.push(chunk);
+      }
+
+      expect(mockStartThread).toHaveBeenCalledWith(
+        expect.objectContaining({
+          approvalPolicy: 'never',
+        })
+      );
+      expect(
+        chunks.some(
+          chunk =>
+            chunk.type === 'system' &&
+            chunk.content.includes('approvalPolicy=dontAsk') &&
+            chunk.content.includes('approvalPolicy=never') &&
+            chunk.content.includes('[alias_normalized:intentional]')
+        )
+      ).toBe(true);
+    });
+
+    test('runs hook preflight before failing invalid Codex safety config', async () => {
+      let thrown: Error | undefined;
+      const chunks = [];
+      try {
+        for await (const chunk of client.sendQuery('test prompt', '/workspace', undefined, {
+          assistantConfig: {
+            sandboxMode: 'invalid-sandbox',
+          },
+        })) {
+          chunks.push(chunk);
+        }
+      } catch (error) {
+        thrown = error as Error;
+      }
+
+      expect(thrown?.message).toContain('Codex config contains safety/resource control field');
+      expect(thrown?.message).toContain('Hook bootloader report:');
+      expect(
+        chunks.some(
+          chunk =>
+            chunk.type === 'system' &&
+            chunk.content.includes('sandboxMode') &&
+            chunk.content.includes('[silent_behavior:bug]')
+        )
+      ).toBe(true);
+      expect(mockRunCodexHookBootloaderPreflight).toHaveBeenCalledTimes(1);
+      expect(mockStartThread).not.toHaveBeenCalled();
     });
 
     test('passes outputFormat schema as outputSchema in TurnOptions', async () => {
@@ -931,11 +1393,14 @@ describe('CodexProvider', () => {
           chunks.push(chunk);
         }
 
-        expect(chunks[0]).toEqual({
-          type: 'system',
-          content:
-            '⚠️ MCP config references undefined env vars: ARCHON_CODEX_MISSING_TOKEN. These will be empty strings - MCP servers may fail to authenticate.',
-        });
+        expect(
+          chunks.some(
+            chunk =>
+              chunk.type === 'system' &&
+              chunk.content ===
+                '⚠️ MCP config references undefined env vars: ARCHON_CODEX_MISSING_TOKEN. These will be empty strings - MCP servers may fail to authenticate.'
+          )
+        ).toBe(true);
       } finally {
         await rm(testDir, { recursive: true, force: true });
       }
@@ -1155,11 +1620,14 @@ describe('CodexProvider', () => {
           chunks.push(chunk);
         }
 
-        expect(chunks[0]).toEqual({
-          type: 'system',
-          content: '\u26A0\uFE0F MCP client connection timeout',
-        });
-        expect(chunks[1]).toEqual({
+        expect(
+          chunks.some(
+            chunk =>
+              chunk.type === 'system' &&
+              chunk.content === '\u26A0\uFE0F MCP client connection timeout'
+          )
+        ).toBe(true);
+        expect(chunks.find(chunk => chunk.type === 'result')).toEqual({
           type: 'result',
           sessionId: 'new-thread-id',
           tokens: { input: 10, output: 5 },
@@ -1449,7 +1917,11 @@ describe('CodexProvider', () => {
           chunks.push(chunk);
         }
 
-        const systemChunk = chunks.find(c => c.type === 'system');
+        const systemChunk = chunks.find(
+          c =>
+            c.type === 'system' &&
+            c.content.includes('Structured output requested but Codex returned non-JSON')
+        );
         expect(systemChunk).toBeDefined();
         expect(systemChunk!.type === 'system' && systemChunk!.content).toContain(
           'Structured output requested but Codex returned non-JSON'
@@ -1516,7 +1988,12 @@ describe('sendQuery decomposition behaviors', () => {
   let client: CodexProvider;
 
   beforeEach(() => {
-    client = new CodexProvider({ retryBaseDelayMs: 1 });
+    resetCodexSingleton();
+    resetHookPreflightMock();
+    client = new CodexProvider({
+      retryBaseDelayMs: 1,
+      hookPreflightRunner: mockRunCodexHookBootloaderPreflight,
+    });
     mockStartThread.mockClear();
     mockResumeThread.mockClear();
     mockRunStreamed.mockClear();

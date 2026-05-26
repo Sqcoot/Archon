@@ -17,6 +17,8 @@ description: |
   Input: A description of what to build, a path to an existing plan, or a GitHub issue number.
 
 provider: claude
+mode: interactive_only
+lock_scope: checkout_mutation
 interactive: true
 
 nodes:

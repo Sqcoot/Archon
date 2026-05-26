@@ -7,7 +7,7 @@
  */
 import { writeFileSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { isAbsolute, join as joinPath, resolve as resolvePath } from 'path';
+import { isAbsolute, join as joinPath, relative, resolve as resolvePath } from 'path';
 import { execFileAsync } from '@archon/git';
 import { discoverScriptsForCwd } from './script-discovery';
 import type {
@@ -21,6 +21,7 @@ import type {
   NodeConfig,
   ProviderCapabilities,
   TokenUsage,
+  MessageChunk,
 } from '@archon/providers/types';
 import {
   getProviderCapabilities,
@@ -30,6 +31,7 @@ import {
 import type {
   DagNode,
   ApprovalNode,
+  ApprovalMutationClass,
   BashNode,
   CommandNode,
   PromptNode,
@@ -41,6 +43,10 @@ import type {
   EffortLevel,
   ThinkingConfig,
   SandboxSettings,
+  WorkflowLockScope,
+  WorkflowMode,
+  ModelReasoningEffort,
+  WebSearchMode,
 } from './schemas';
 import {
   isBashNode,
@@ -66,6 +72,11 @@ import {
 } from './logger';
 import { withIdleTimeout, STEP_IDLE_TIMEOUT_MS } from './utils/idle-timeout';
 import {
+  createWorkflowEventWithoutAutoDiagnostics,
+  persistAuditedWorkflowEvent,
+  withWorkflowEventPersistenceDiagnostics,
+} from './event-persistence';
+import {
   classifyError,
   detectCreditExhaustion,
   loadCommandPrompt,
@@ -87,6 +98,131 @@ function getLog(): ReturnType<typeof createLogger> {
 }
 
 const MCP_FAILURE_PREFIX = 'MCP server connection failed: ';
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set<ApprovalMutationClass>([
+  'destructive',
+  'credential',
+  'remote',
+  'production',
+]);
+
+function isHighImpactApprovalClass(
+  value: ApprovalMutationClass | undefined
+): value is ApprovalMutationClass {
+  return value !== undefined && HIGH_IMPACT_APPROVAL_CLASSES.has(value);
+}
+
+function renderApprovalActionLine(
+  runId: string,
+  mutationClass?: ApprovalMutationClass,
+  highImpact = false
+): string {
+  if (highImpact || isHighImpactApprovalClass(mutationClass)) {
+    return (
+      'Approve: use the explicit approval UI or `archon workflow approve ' +
+      runId +
+      ' --confirm-high-impact` after reviewing the high-impact details. Normal chat approval is blocked for this gate. ' +
+      `Reject: \`/workflow reject ${runId}\``
+    );
+  }
+  return `Approve: \`/workflow approve ${runId}\` | Reject: \`/workflow reject ${runId}\``;
+}
+
+async function emitProviderArtifact(
+  deps: WorkflowDeps,
+  workflowRunId: string,
+  nodeId: string,
+  artifactsDir: string,
+  artifact: Extract<MessageChunk, { type: 'artifact' }>
+): Promise<void> {
+  const artifactPath =
+    artifact.path !== undefined
+      ? normalizeProviderArtifactPathForViewer(artifactsDir, artifact.path)
+      : undefined;
+  const originalArtifactPath =
+    artifact.path !== undefined && artifactPath !== artifact.path ? artifact.path : undefined;
+  const absolutePath =
+    originalArtifactPath !== undefined && isAbsolute(originalArtifactPath)
+      ? originalArtifactPath
+      : undefined;
+  const originalPath =
+    originalArtifactPath !== undefined && !isAbsolute(originalArtifactPath)
+      ? originalArtifactPath
+      : undefined;
+  getWorkflowEventEmitter().emit({
+    type: 'workflow_artifact',
+    runId: workflowRunId,
+    artifactType: artifact.artifactType,
+    label: artifact.label,
+    ...(artifactPath ? { path: artifactPath } : {}),
+    ...(absolutePath ? { absolutePath } : {}),
+    ...(originalPath ? { originalPath } : {}),
+    ...(artifact.url ? { url: artifact.url } : {}),
+  });
+  try {
+    const persisted = await createWorkflowEventWithoutAutoDiagnostics(deps, {
+      workflow_run_id: workflowRunId,
+      event_type: 'workflow_artifact',
+      step_name: nodeId,
+      data: {
+        artifactType: artifact.artifactType,
+        label: artifact.label,
+        ...(artifactPath ? { path: artifactPath } : {}),
+        ...(absolutePath ? { absolutePath } : {}),
+        ...(originalPath ? { originalPath } : {}),
+        ...(artifact.url ? { url: artifact.url } : {}),
+      },
+    });
+    if (!persisted) {
+      getWorkflowEventEmitter().emit({
+        type: 'workflow_event_persist_failed',
+        runId: workflowRunId,
+        eventType: 'workflow_artifact',
+        stepName: nodeId,
+        reason: `Provider artifact event was emitted but not persisted: ${artifact.label}`,
+        persistence: 'best_effort_failed',
+      });
+      getLog().error(
+        { workflowRunId, nodeId, label: artifact.label },
+        'workflow_artifact_persist_failed'
+      );
+    }
+  } catch (err) {
+    getWorkflowEventEmitter().emit({
+      type: 'workflow_event_persist_failed',
+      runId: workflowRunId,
+      eventType: 'workflow_artifact',
+      stepName: nodeId,
+      reason: `Provider artifact event persistence threw: ${(err as Error).message}`,
+      persistence: 'best_effort_failed',
+    });
+    getLog().error(
+      { err: err as Error, workflowRunId, nodeId, label: artifact.label },
+      'workflow_artifact_persist_failed'
+    );
+  }
+}
+
+export function normalizeProviderArtifactPathForViewer(
+  artifactsDir: string,
+  artifactPath: string
+): string | undefined {
+  if (!isAbsolute(artifactPath)) {
+    const normalizedPath = artifactPath.replace(/\\/g, '/');
+    return normalizedPath && !normalizedPath.includes('\0') && !isParentRelativePath(normalizedPath)
+      ? normalizedPath
+      : undefined;
+  }
+  const relativePath = relative(artifactsDir, artifactPath).replace(/\\/g, '/');
+  if (!relativePath || isParentRelativePath(relativePath) || isAbsolute(relativePath)) {
+    return undefined;
+  }
+  return relativePath;
+}
+
+function isParentRelativePath(path: string): boolean {
+  return path === '..' || path.startsWith('../');
+}
 
 /** A failed MCP server entry parsed from the SDK message. `segment` is the
  *  original substring (e.g. `"telegram (disconnected)"`) so callers can
@@ -156,6 +292,30 @@ interface WorkflowLevelOptions {
   fallbackModel?: string;
   betas?: string[];
   sandbox?: SandboxSettings;
+  mode?: WorkflowMode;
+  lock_scope?: WorkflowLockScope;
+  modelReasoningEffort?: ModelReasoningEffort;
+  webSearchMode?: WebSearchMode;
+  additionalDirectories?: string[];
+}
+
+function mergeProviderWorkflowConfig(
+  provider: string,
+  baseConfig: Record<string, unknown> | undefined,
+  workflowLevelOptions: WorkflowLevelOptions | undefined
+): Record<string, unknown> {
+  const merged = { ...(baseConfig ?? {}) };
+  if (provider !== 'codex' || workflowLevelOptions === undefined) return merged;
+  if (workflowLevelOptions.modelReasoningEffort !== undefined) {
+    merged.modelReasoningEffort = workflowLevelOptions.modelReasoningEffort;
+  }
+  if (workflowLevelOptions.webSearchMode !== undefined) {
+    merged.webSearchMode = workflowLevelOptions.webSearchMode;
+  }
+  if (workflowLevelOptions.additionalDirectories !== undefined) {
+    merged.additionalDirectories = workflowLevelOptions.additionalDirectories;
+  }
+  return merged;
 }
 
 /** Internal node execution result — extends NodeOutput with cost data for aggregation. */
@@ -347,7 +507,9 @@ export function substituteNodeOutputRefs(
  *
  * Provider-agnostic: builds universal base options + raw nodeConfig.
  * The provider internally translates nodeConfig to SDK-specific options.
- * Capability warnings inform users when features are unsupported.
+ * Capability enforcement prevents safety/output/resource controls from being
+ * downgraded to warnings when callers construct workflows in memory and bypass
+ * loader validation.
  */
 async function resolveNodeProviderAndModel(
   node: DagNode,
@@ -358,6 +520,8 @@ async function resolveNodeProviderAndModel(
   conversationId: string,
   workflowRunId: string,
   _cwd: string,
+  artifactsDir: string,
+  logDir: string,
   workflowLevelOptions: WorkflowLevelOptions
 ): Promise<{
   provider: string;
@@ -383,17 +547,17 @@ async function resolveNodeProviderAndModel(
       ? workflowModel
       : (providerAssistantConfig?.model as string | undefined));
 
-  // Get provider capabilities for capability warnings (static lookup, no instantiation)
+  // Get provider capabilities for capability enforcement (static lookup, no instantiation)
   const caps = getProviderCapabilities(provider);
 
-  // Capability warnings — inform users when features are unsupported
+  // Capability enforcement — fail closed for safety/output/resource controls and
+  // warn only for advisory compatibility fields.
   const capChecks: [string, keyof ProviderCapabilities, boolean][] = [
     [
       'allowed_tools/denied_tools',
       'toolRestrictions',
       node.allowed_tools !== undefined || node.denied_tools !== undefined,
     ],
-    ['hooks', 'hooks', node.hooks !== undefined],
     ['mcp', 'mcp', node.mcp !== undefined],
     ['skills', 'skills', node.skills !== undefined && node.skills.length > 0],
     ['agents', 'agents', node.agents !== undefined],
@@ -406,7 +570,10 @@ async function resolveNodeProviderAndModel(
       (node.fallbackModel ?? workflowLevelOptions.fallbackModel) !== undefined,
     ],
     ['sandbox', 'sandbox', (node.sandbox ?? workflowLevelOptions.sandbox) !== undefined],
+    ['systemPrompt', 'systemPrompt', node.systemPrompt !== undefined],
+    ['betas', 'betaFlags', (node.betas ?? workflowLevelOptions.betas) !== undefined],
     ['env', 'envInjection', (config.envVars && Object.keys(config.envVars).length > 0) === true],
+    ['output_format', 'structuredOutput', node.output_format !== undefined],
   ];
 
   const unsupported: string[] = [];
@@ -414,6 +581,45 @@ async function resolveNodeProviderAndModel(
     if (isSet && !caps[cap]) {
       unsupported.push(field);
     }
+  }
+  if (node.hooks !== undefined && caps.hookCapabilities.workflowNodeHooks !== 'enforced') {
+    unsupported.push('hooks');
+  }
+  if (provider !== 'codex') {
+    if (workflowLevelOptions.modelReasoningEffort !== undefined) {
+      unsupported.push('modelReasoningEffort');
+    }
+    if (workflowLevelOptions.webSearchMode !== undefined) {
+      unsupported.push('webSearchMode');
+    }
+    if (workflowLevelOptions.additionalDirectories !== undefined) {
+      unsupported.push('additionalDirectories');
+    }
+  }
+
+  const safetyOrOutputCriticalUnsupported = unsupported.filter(field =>
+    [
+      'allowed_tools/denied_tools',
+      'hooks',
+      'mcp',
+      'skills',
+      'agents',
+      'sandbox',
+      'env',
+      'maxBudgetUsd',
+      'output_format',
+      'systemPrompt',
+      'webSearchMode',
+      'additionalDirectories',
+    ].includes(field)
+  );
+  if (safetyOrOutputCriticalUnsupported.length > 0) {
+    const message = `Node '${node.id}' uses ${safetyOrOutputCriticalUnsupported.join(', ')} but ${provider} does not enforce ${safetyOrOutputCriticalUnsupported.length === 1 ? 'it' : 'them'}; safety/output/resource controls must not be warning-only.`;
+    getLog().error(
+      { nodeId: node.id, provider, unsupported: safetyOrOutputCriticalUnsupported },
+      'dag.unsupported_safety_capabilities'
+    );
+    throw new Error(message);
   }
 
   if (unsupported.length > 0) {
@@ -429,20 +635,22 @@ async function resolveNodeProviderAndModel(
     }
   }
 
-  // Surface agents + skills ID collision — user-defined 'dag-node-skills'
-  // silently overrides Archon's skills wrapper. User wins (by design) but
-  // the operator should know they've neutered the wrapper.
+  if (node.output_format !== undefined && caps.structuredOutputMode === 'best_effort') {
+    const message = `Node '${node.id}' requested output_format but ${provider} only supports best-effort structured output; output controls must fail closed unless schema enforcement is implemented.`;
+    getLog().error({ nodeId: node.id, provider }, 'dag.structured_output_best_effort_blocked');
+    throw new Error(message);
+  }
+
+  // Fail closed on agents + skills ID collision — user-defined 'dag-node-skills'
+  // would override Archon's skills wrapper, making the 'skills:' field not take effect.
   if (
     node.agents?.['dag-node-skills'] !== undefined &&
     node.skills !== undefined &&
     node.skills.length > 0
   ) {
-    getLog().warn({ nodeId: node.id }, 'dag.agents_skills_id_collision');
-    await safeSendMessage(
-      platform,
-      conversationId,
-      `Warning: Node '${node.id}' defines an agent with reserved ID 'dag-node-skills' AND uses 'skills:'. Your inline agent overrides Archon's automatic skills wrapper — the 'skills:' field will NOT take effect. Rename the agent or remove 'skills:' to fix.`,
-      { workflowId: workflowRunId, nodeName: node.id }
+    getLog().error({ nodeId: node.id }, 'dag.agents_skills_id_collision_blocked');
+    throw new Error(
+      `Node '${node.id}' defines an agent with reserved ID 'dag-node-skills' and also uses 'skills:'. This would prevent the skills wrapper from taking effect; rename the agent or remove skills.`
     );
   }
 
@@ -471,6 +679,14 @@ async function resolveNodeProviderAndModel(
     effort: node.effort ?? workflowLevelOptions.effort,
     thinking: node.thinking ?? workflowLevelOptions.thinking,
     sandbox: node.sandbox ?? workflowLevelOptions.sandbox,
+    workflow_mode: workflowLevelOptions.mode,
+    workflow_lock_scope: workflowLevelOptions.lock_scope,
+    archonRuntime: {
+      workflowRunId,
+      nodeId: node.id,
+      artifactsDir,
+      logDir,
+    },
     betas: node.betas ?? workflowLevelOptions.betas,
     output_format: node.output_format,
     maxBudgetUsd: node.maxBudgetUsd,
@@ -479,7 +695,11 @@ async function resolveNodeProviderAndModel(
   };
 
   // Pass assistantConfig from config — provider parses internally
-  const assistantConfig = config.assistants[provider] ?? {};
+  const assistantConfig = mergeProviderWorkflowConfig(
+    provider,
+    config.assistants[provider],
+    workflowLevelOptions
+  );
 
   const options: SendQueryOptions = {
     ...baseOptions,
@@ -868,6 +1088,8 @@ async function executeNodeInternal(
         if (streamingMode === 'stream' && platform.sendStructuredEvent) {
           await platform.sendStructuredEvent(conversationId, msg);
         }
+      } else if (msg.type === 'artifact') {
+        await emitProviderArtifact(deps, workflowRun.id, node.id, artifactsDir, msg);
       } else if (msg.type === 'result') {
         // Emit tool_completed for the last tool in the node
         if (lastToolStartedAt) {
@@ -1736,6 +1958,10 @@ function buildLoopNodeOptions(
   provider: string,
   model: string | undefined,
   config: WorkflowConfig,
+  workflowRunId: string,
+  nodeId: string,
+  artifactsDir: string,
+  logDir: string,
   workflowLevelOptions?: WorkflowLevelOptions
 ): SendQueryOptions {
   const options: SendQueryOptions = {};
@@ -1743,13 +1969,25 @@ function buildLoopNodeOptions(
   if (config.envVars && Object.keys(config.envVars).length > 0) {
     options.env = config.envVars;
   }
-  options.assistantConfig = config.assistants[provider] ?? {};
+  options.assistantConfig = mergeProviderWorkflowConfig(
+    provider,
+    config.assistants[provider],
+    workflowLevelOptions
+  );
   // Pass workflow-level options as nodeConfig so providers can apply them
   if (workflowLevelOptions) {
     options.nodeConfig = {
       effort: workflowLevelOptions.effort,
       thinking: workflowLevelOptions.thinking,
       sandbox: workflowLevelOptions.sandbox,
+      workflow_mode: workflowLevelOptions.mode,
+      workflow_lock_scope: workflowLevelOptions.lock_scope,
+      archonRuntime: {
+        workflowRunId,
+        nodeId,
+        artifactsDir,
+        logDir,
+      },
       betas: workflowLevelOptions.betas,
       fallbackModel: workflowLevelOptions.fallbackModel,
     };
@@ -1786,6 +2024,12 @@ async function executeLoopNode(
   const loop = node.loop;
   const msgContext = { workflowId: workflowRun.id, nodeName: node.id };
 
+  if (workflowLevelOptions?.mode === 'autonomous') {
+    const errorMsg = `Autonomous workflow '${workflowRun.workflow_name}' reached approval node '${node.id}'. Autonomous workflows must not pause for human approval; mark this workflow guided/interactive_only or replace the approval node with a deterministic safety check.`;
+    await safeSendMessage(platform, conversationId, `❌ ${errorMsg}`, msgContext);
+    return { state: 'failed' as const, output: '', error: errorMsg };
+  }
+
   // Resolve AI client — fail fast with descriptive error
   let aiClient: ReturnType<typeof deps.getAgentProvider>;
   try {
@@ -1819,6 +2063,10 @@ async function executeLoopNode(
     workflowProvider,
     workflowModel,
     config,
+    workflowRun.id,
+    node.id,
+    artifactsDir,
+    logDir,
     workflowLevelOptions
   );
 
@@ -2061,6 +2309,8 @@ async function executeLoopNode(
             });
         } else if (msg.type === 'tool_result' && platform.sendStructuredEvent) {
           await platform.sendStructuredEvent(conversationId, msg);
+        } else if (msg.type === 'artifact') {
+          await emitProviderArtifact(deps, workflowRun.id, node.id, artifactsDir, msg);
         }
         // rate_limit chunks: already log.warn'd in claude.ts; not surfaced to SSE per design
       }
@@ -2327,16 +2577,16 @@ async function executeLoopNode(
           error: `Loop gate message failed to deliver for node '${node.id}' — cannot pause safely`,
         };
       }
-      deps.store
-        .createWorkflowEvent({
+      await persistAuditedWorkflowEvent(
+        deps,
+        {
           workflow_run_id: workflowRun.id,
           event_type: 'approval_requested',
           step_name: node.id,
           data: { message: loop.gate_message, iteration: i },
-        })
-        .catch((err: Error) => {
-          logEventStoreError(err, i);
-        });
+        },
+        `Interactive loop approval request was emitted but not persisted for node '${node.id}' iteration ${String(i)}`
+      );
       await deps.store.pauseWorkflowRun(workflowRun.id, {
         nodeId: node.id,
         message: loop.gate_message,
@@ -2485,6 +2735,8 @@ async function executeApprovalNode(
       conversationId,
       workflowRun.id,
       cwd,
+      artifactsDir,
+      logDir,
       workflowLevelOptions
     );
 
@@ -2517,25 +2769,79 @@ async function executeApprovalNode(
   // Resolve $nodeId.output[.field] references so the human sees concrete values
   // (parity with prompt/bash/loop/cancel nodes, which all run the same substitution).
   const renderedMessage = substituteNodeOutputRefs(node.approval.message, nodeOutputs);
+  const renderApprovalField = (value: string | undefined): string | undefined =>
+    value !== undefined ? substituteNodeOutputRefs(value, nodeOutputs) : undefined;
+  const allowedScopes = node.approval.allowed_scopes ?? ['once'];
+  if (allowedScopes.includes('run')) {
+    const errorMsg = `Approval node '${node.id}' declares approve-for-run, but run-scoped approval execution is not implemented end-to-end. Use allowed_scopes: [once].`;
+    getLog().error(
+      { nodeId: node.id, workflowRunId: workflowRun.id, allowedScopes },
+      'approval.run_scope_not_implemented'
+    );
+    await safeSendMessage(platform, conversationId, `❌ ${errorMsg}`, msgContext);
+    return { state: 'failed' as const, output: '', error: errorMsg };
+  }
+  const defaultScope =
+    node.approval.default_scope !== undefined && allowedScopes.includes(node.approval.default_scope)
+      ? node.approval.default_scope
+      : (allowedScopes[0] ?? 'once');
+  const highImpact =
+    node.approval.high_impact === true || isHighImpactApprovalClass(node.approval.mutation_class);
+  const approvalDetails = {
+    ...(node.approval.mutation_class ? { mutationClass: node.approval.mutation_class } : {}),
+    ...(renderApprovalField(node.approval.path)
+      ? { path: renderApprovalField(node.approval.path) }
+      : {}),
+    ...(renderApprovalField(node.approval.command)
+      ? { command: renderApprovalField(node.approval.command) }
+      : {}),
+    ...(renderApprovalField(node.approval.reason)
+      ? { reason: renderApprovalField(node.approval.reason) }
+      : {}),
+    highImpact,
+    highImpactConfirmed: false,
+    defaultScope,
+    allowedScopes,
+  };
+  const approvalDetailLines = [
+    approvalDetails.mutationClass
+      ? `Mutation class: \`${approvalDetails.mutationClass}\``
+      : undefined,
+    approvalDetails.path ? `Path: \`${approvalDetails.path}\`` : undefined,
+    approvalDetails.command ? `Command: \`${approvalDetails.command}\`` : undefined,
+    approvalDetails.reason ? `Reason: ${approvalDetails.reason}` : undefined,
+    `Approval scope: \`${defaultScope}\` (allowed: ${allowedScopes.map(scope => `\`${scope}\``).join(', ')})`,
+  ].filter((line): line is string => line !== undefined);
   const approvalMsg =
     `⏸ **Approval required**: ${renderedMessage}\n\n` +
+    (approvalDetailLines.length > 0 ? `${approvalDetailLines.join('\n')}\n\n` : '') +
     `Run ID: \`${workflowRun.id}\`\n` +
-    `Approve: \`/workflow approve ${workflowRun.id}\` | Reject: \`/workflow reject ${workflowRun.id}\``;
-  await safeSendMessage(platform, conversationId, approvalMsg, msgContext);
+    renderApprovalActionLine(workflowRun.id, approvalDetails.mutationClass, highImpact);
+  const approvalSent = await safeSendMessage(platform, conversationId, approvalMsg, msgContext);
+  if (!approvalSent) {
+    // Gate message failed to deliver — do not pause; fail the node so the user
+    // sees a clear error rather than a silently orphaned paused run.
+    getLog().error(
+      { nodeId: node.id, workflowRunId: workflowRun.id },
+      'approval_node.gate_message_send_failed'
+    );
+    return {
+      state: 'failed',
+      output: '',
+      error: `Approval gate message failed to deliver for node '${node.id}' — cannot pause safely`,
+    };
+  }
 
-  deps.store
-    .createWorkflowEvent({
+  await persistAuditedWorkflowEvent(
+    deps,
+    {
       workflow_run_id: workflowRun.id,
       event_type: 'approval_requested',
       step_name: node.id,
-      data: { message: renderedMessage },
-    })
-    .catch((err: Error) => {
-      getLog().error(
-        { err, workflowRunId: workflowRun.id, eventType: 'approval_requested' },
-        'workflow.event_persist_failed'
-      );
-    });
+      data: { message: renderedMessage, approval: approvalDetails },
+    },
+    `Approval request was emitted but not persisted for node '${node.id}'`
+  );
 
   await deps.store.pauseWorkflowRun(workflowRun.id, {
     message: renderedMessage,
@@ -2544,6 +2850,7 @@ async function executeApprovalNode(
     captureResponse: node.approval.capture_response,
     onRejectPrompt: node.approval.on_reject?.prompt,
     onRejectMaxAttempts: node.approval.on_reject?.max_attempts,
+    ...approvalDetails,
   });
 
   getWorkflowEventEmitter().emit({
@@ -2551,6 +2858,7 @@ async function executeApprovalNode(
     runId: workflowRun.id,
     nodeId: node.id,
     message: renderedMessage,
+    ...approvalDetails,
   });
 
   // Return completed — the between-layer status check will see 'paused' and break.
@@ -2580,6 +2888,7 @@ export async function executeDagWorkflow(
   issueContext?: string,
   priorCompletedNodes?: Map<string, string>
 ): Promise<string | undefined> {
+  deps = withWorkflowEventPersistenceDiagnostics(deps);
   const dagStartTime = Date.now();
   const workflowLevelOptions = {
     effort: workflow.effort,
@@ -2587,7 +2896,32 @@ export async function executeDagWorkflow(
     fallbackModel: workflow.fallbackModel,
     betas: workflow.betas,
     sandbox: workflow.sandbox,
+    mode: workflow.mode,
+    lock_scope: workflow.lock_scope,
+    modelReasoningEffort: workflow.modelReasoningEffort,
+    webSearchMode: workflow.webSearchMode,
+    additionalDirectories: workflow.additionalDirectories,
   };
+  if (
+    workflowLevelOptions.mode === 'autonomous' &&
+    (workflowLevelOptions.lock_scope === 'checkout_mutation' ||
+      workflowLevelOptions.lock_scope === 'external_side_effect')
+  ) {
+    const errorMsg = `Autonomous workflow '${workflow.name}' declares lock_scope: ${workflowLevelOptions.lock_scope}. Autonomous workflows must use read_only or artifact_only lock scopes; source mutation and external side effects require guided/interactive execution with explicit approval gates.`;
+    getLog().error(
+      {
+        workflowName: workflow.name,
+        workflowRunId: workflowRun.id,
+        mode: workflowLevelOptions.mode,
+        lockScope: workflowLevelOptions.lock_scope,
+      },
+      'dag.autonomous_high_impact_lock_scope_blocked'
+    );
+    await safeSendMessage(platform, conversationId, `❌ ${errorMsg}`, {
+      workflowId: workflowRun.id,
+    });
+    throw new Error(errorMsg);
+  }
   const layers = buildTopologicalLayers(workflow.nodes);
   const nodeOutputs = new Map<string, NodeOutput>();
 
@@ -2971,6 +3305,8 @@ export async function executeDagWorkflow(
             conversationId,
             workflowRun.id,
             cwd,
+            artifactsDir,
+            logDir,
             workflowLevelOptions
           );
 

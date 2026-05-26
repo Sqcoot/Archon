@@ -25,6 +25,7 @@ import type {
   WorkflowLoadError,
   WorkflowDefinition,
 } from '@archon/workflows/schemas/workflow';
+import { isApprovalContext, type ApprovalContext } from '@archon/workflows/schemas/workflow-run';
 import * as workflowDb from '../db/workflows';
 import {
   approveWorkflow,
@@ -88,6 +89,55 @@ function calculateWorkflowTiming(workflow: {
     lastActivitySec: Math.floor((lastActivityMs % 60000) / 1000),
     isValid,
   };
+}
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
+
+function isHighImpactApproval(
+  approval: Pick<ApprovalContext, 'mutationClass' | 'highImpact'>
+): boolean {
+  return (
+    approval.highImpact === true ||
+    (approval.mutationClass !== undefined &&
+      HIGH_IMPACT_APPROVAL_CLASSES.has(approval.mutationClass))
+  );
+}
+
+function formatApprovalStatusDetails(runId: string, approvalCandidate: unknown): string {
+  if (!isApprovalContext(approvalCandidate)) return '';
+
+  const allowedScopes = approvalCandidate.allowedScopes ?? ['once'];
+  const defaultScope = approvalCandidate.defaultScope ?? allowedScopes[0] ?? 'once';
+  const approveOnceLine = allowedScopes.includes('once')
+    ? isHighImpactApproval(approvalCandidate)
+      ? `  Approve once: use the explicit approval UI or CLI \`workflow approve ${runId} --scope once --confirm-high-impact\`; normal chat approval is blocked.`
+      : `  Approve once: /workflow approve ${runId}`
+    : undefined;
+  const approveForRunLine = allowedScopes.includes('run')
+    ? '  Approve for run: unavailable — run-scoped approval is not implemented end-to-end yet.'
+    : undefined;
+  const lines = [
+    `  Approval node: ${approvalCandidate.nodeId}`,
+    `  Approval message: ${approvalCandidate.message}`,
+    approvalCandidate.mutationClass
+      ? `  Mutation class: ${approvalCandidate.mutationClass}`
+      : undefined,
+    approvalCandidate.path ? `  Path: ${approvalCandidate.path}` : undefined,
+    approvalCandidate.command ? `  Command: ${approvalCandidate.command}` : undefined,
+    approvalCandidate.reason ? `  Reason: ${approvalCandidate.reason}` : undefined,
+    approvalCandidate.highImpact !== undefined
+      ? `  High impact: ${approvalCandidate.highImpact ? 'yes' : 'no'}`
+      : undefined,
+    approvalCandidate.highImpactConfirmed !== undefined
+      ? `  High-impact confirmed: ${approvalCandidate.highImpactConfirmed ? 'yes' : 'no'}`
+      : undefined,
+    `  Approval scope: default=${defaultScope}; allowed=${allowedScopes.join(',')}`,
+    approveOnceLine,
+    approveForRunLine,
+    `  Reject: /workflow reject ${runId} <reason>`,
+  ].filter((line): line is string => line !== undefined);
+
+  return `${lines.join('\n')}\n`;
 }
 
 /**
@@ -664,14 +714,31 @@ async function handleWorkflowCommand(
           msg += `  ID: ${run.id}\n`;
           msg += `  Path: ${run.working_path ?? '(unknown)'}\n`;
           msg += `  Started: ${new Date(run.started_at).toISOString()}\n\n`;
+          if (run.status === 'paused') {
+            const approvalDetails = formatApprovalStatusDetails(run.id, run.metadata?.approval);
+            if (approvalDetails) msg += approvalDetails + '\n';
+          }
         }
 
         const hasRunning = activeRuns.some(r => r.status === 'running');
         const hasPaused = activeRuns.some(r => r.status === 'paused');
+        const pausedApprovalContexts = activeRuns
+          .filter(r => r.status === 'paused')
+          .map(r => r.metadata?.approval)
+          .filter(isApprovalContext);
+        const hasChatApprovablePaused = pausedApprovalContexts.some(
+          approval => !isHighImpactApproval(approval)
+        );
+        const hasHighImpactPaused = pausedApprovalContexts.some(isHighImpactApproval);
         if (hasRunning) msg += 'Use `/workflow cancel` to stop a running workflow.';
-        if (hasPaused)
+        if (hasChatApprovablePaused)
           msg +=
             '\nUse `/workflow approve <id>` or `/workflow reject <id> <reason>` for paused runs.';
+        if (hasPaused && !hasChatApprovablePaused)
+          msg += '\nUse `/workflow reject <id> <reason>` for paused runs.';
+        if (hasHighImpactPaused)
+          msg +=
+            '\nHigh-impact paused gates require the explicit approval UI or CLI `archon workflow approve <id> --confirm-high-impact`; normal chat approval is blocked.';
         return { success: true, message: msg.trim() };
       } catch (error) {
         const err = error as Error;
@@ -737,7 +804,7 @@ async function handleWorkflowCommand(
       }
       const comment = args.slice(2).join(' ') || 'Approved';
       try {
-        const result = await approveWorkflow(runId, comment);
+        const result = await approveWorkflow(runId, comment, { approvalChannel: 'chat' });
         const pathInfo = result.workingPath ? `\nPath: \`${result.workingPath}\`` : '';
         const msg =
           result.type === 'interactive_loop'
@@ -761,7 +828,7 @@ async function handleWorkflowCommand(
       }
       const reason = args.slice(2).join(' ') || 'Rejected';
       try {
-        const result = await rejectWorkflow(runId, reason);
+        const result = await rejectWorkflow(runId, reason, { approvalChannel: 'chat' });
         if (result.cancelled) {
           const suffix = result.maxAttemptsReached ? ' (max attempts reached)' : '';
           return {
@@ -882,7 +949,7 @@ async function handleWorkflowCommand(
       return {
         success: false,
         message:
-          'Usage:\n  /workflow list - Show available workflows\n  /workflow reload - Reload workflow definitions\n  /workflow status - Show all active workflows\n  /workflow cancel - Cancel running workflow\n  /workflow resume <id> - Resume a failed run\n  /workflow abandon <id> - Discard a failed run\n  /workflow approve <id> [comment] - Approve a paused run\n  /workflow reject <id> [reason] - Reject a paused run\n  /workflow run <name> [args] - Run a workflow directly',
+          'Usage:\n  /workflow list - Show available workflows\n  /workflow reload - Reload workflow definitions\n  /workflow status - Show all active workflows\n  /workflow cancel - Cancel running workflow\n  /workflow resume <id> - Resume a failed run\n  /workflow abandon <id> - Discard a failed run\n  /workflow approve <id> [comment] - Approve a non-high-impact paused run\n  /workflow reject <id> [reason] - Reject a paused run\n  /workflow run <name> [args] - Run a workflow directly\n\nHigh-impact destructive/credential/remote/production gates require the explicit approval UI or CLI `archon workflow approve <id> --confirm-high-impact`; normal chat approval is blocked.',
       };
   }
 }
@@ -915,8 +982,10 @@ Talk naturally — the orchestrator routes your requests to the right workflow a
 - \`/workflow cancel\` — Cancel the active workflow
 - \`/workflow resume <id>\` — Resume a failed run
 - \`/workflow abandon <id>\` — Discard a failed run
-- \`/workflow approve <id>\` — Approve a paused run
+- \`/workflow approve <id>\` — Approve a non-high-impact paused run
 - \`/workflow reject <id>\` — Reject a paused run
+
+High-impact destructive/credential/remote/production gates require the explicit approval UI or CLI \`archon workflow approve <id> --confirm-high-impact\`; normal chat approval is blocked.
 
 **Projects**
 - \`/register-project <name> <path>\` — Register a local project

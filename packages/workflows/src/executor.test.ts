@@ -60,12 +60,49 @@ clearRegistry();
 registerBuiltinProviders();
 
 // --- Import after mocks ---
-import { executeWorkflow, hydrateResumableRun } from './executor';
+import {
+  executeWorkflow,
+  hydrateResumableRun,
+  WorkflowPreExecutionValidationError,
+} from './executor';
 import type { WorkflowDeps, IWorkflowPlatform, WorkflowConfig } from './deps';
 import type { IWorkflowStore } from './store';
 import type { WorkflowDefinition, WorkflowRun } from './schemas';
 
 // --- Helpers ---
+
+describe('WorkflowPreExecutionValidationError', () => {
+  it('includes Codex hook report and bad-behaviour lint artifact paths', () => {
+    const error = new WorkflowPreExecutionValidationError(
+      'codex-workflow',
+      [
+        {
+          level: 'error',
+          field: 'hooks',
+          message: 'Unsupported hook control',
+          badBehaviour: {
+            pattern: 'unsupported_control',
+            classification: 'bug',
+            rationale: 'Safety-critical hook controls must fail closed.',
+          },
+        },
+      ],
+      '/tmp/artifacts/codex-hooks-preflight/codex-hook-bootloader-report.json',
+      '/tmp/artifacts/codex-hooks-preflight/codex-hook-bad-behaviour-lint.json'
+    );
+
+    expect(error.hookBootloaderReportPath).toBe(
+      '/tmp/artifacts/codex-hooks-preflight/codex-hook-bootloader-report.json'
+    );
+    expect(error.hookBadBehaviourLintPath).toBe(
+      '/tmp/artifacts/codex-hooks-preflight/codex-hook-bad-behaviour-lint.json'
+    );
+    expect(error.message).toContain('Codex hook bootloader report');
+    expect(error.message).toContain('codex-hook-bootloader-report.json');
+    expect(error.message).toContain('Codex hook bad-behaviour lint');
+    expect(error.message).toContain('codex-hook-bad-behaviour-lint.json');
+  });
+});
 
 function makeStore(overrides: Partial<IWorkflowStore> = {}): IWorkflowStore {
   return {
@@ -76,7 +113,7 @@ function makeStore(overrides: Partial<IWorkflowStore> = {}): IWorkflowStore {
     failWorkflowRun: mock(async () => {}),
     getWorkflowRun: mock(async () => ({ ...makeRun(), status: 'completed' as const })),
     getWorkflowRunStatus: mock(async () => 'completed' as const),
-    createWorkflowEvent: mock(async () => {}),
+    createWorkflowEvent: mock(async () => true),
     findResumableRun: mock(async () => null),
     getCompletedDagNodeOutputs: mock(async () => new Map()),
     resumeWorkflowRun: mock(async () => makeRun()),
@@ -317,6 +354,59 @@ describe('executeWorkflow', () => {
       // Guard skipped: spy never called, run succeeds
       expect(getActiveSpy).not.toHaveBeenCalled();
       expect(result.workflowRunId).toBe('run-123');
+    });
+
+    it('skips path-lock check when lock_scope is artifact_only', async () => {
+      const getActiveSpy = mock(async () =>
+        makeRun({ id: 'other-run', status: 'running' as const })
+      );
+      const store = makeStore({ getActiveWorkflowRunByPath: getActiveSpy });
+      const deps = makeDeps(store);
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow({ lock_scope: 'artifact_only' }),
+        'test message',
+        'db-conv-1'
+      );
+      expect(getActiveSpy).not.toHaveBeenCalled();
+      expect(result.workflowRunId).toBe('run-123');
+    });
+
+    it('enforces path lock when lock_scope is checkout_mutation even if mutates_checkout is false', async () => {
+      const otherRun = makeRun({ id: 'other-run-456', status: 'running' as const });
+      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => otherRun) });
+      const deps = makeDeps(store);
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow({ lock_scope: 'checkout_mutation', mutates_checkout: false }),
+        'test message',
+        'db-conv-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('already active');
+    });
+
+    it('enforces path lock when lock_scope is external_side_effect', async () => {
+      const otherRun = makeRun({ id: 'other-run-456', status: 'running' as const });
+      const store = makeStore({ getActiveWorkflowRunByPath: mock(async () => otherRun) });
+      const deps = makeDeps(store);
+      const result = await executeWorkflow(
+        deps,
+        makePlatform(),
+        'conv-1',
+        '/tmp',
+        makeWorkflow({ lock_scope: 'external_side_effect' }),
+        'test message',
+        'db-conv-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('already active');
     });
 
     it('still enforces path lock when mutates_checkout is true', async () => {

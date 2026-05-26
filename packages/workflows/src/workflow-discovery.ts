@@ -90,7 +90,8 @@ const MAX_DISCOVERY_DEPTH = 1;
 
 /**
  * Load workflows from a directory, descending at most `MAX_DISCOVERY_DEPTH`
- * folders deep. Files deeper than the cap are silently skipped.
+ * folders deep. Directories deeper than the cap are reported as load errors
+ * so misplaced workflows do not disappear from routing without a visible signal.
  * Failures are per-file: one broken file does not abort loading the rest.
  */
 async function loadWorkflowsFromDir(dirPath: string, depth = 0): Promise<DirLoadResult> {
@@ -108,9 +109,15 @@ async function loadWorkflowsFromDir(dirPath: string, depth = 0): Promise<DirLoad
 
         if (entryStat.isDirectory()) {
           // Only descend if we're still within the depth cap. Past the cap,
-          // subdirectories are ignored (same convention as the paths-package
-          // `findMarkdownFilesRecursive` depth cap).
-          if (depth >= MAX_DISCOVERY_DEPTH) continue;
+          // surface a load error instead of silently skipping possible workflows.
+          if (depth >= MAX_DISCOVERY_DEPTH) {
+            errors.push({
+              filename: entryPath,
+              error: `Workflow directory exceeds maximum discovery depth (${String(MAX_DISCOVERY_DEPTH)}): ${entryPath}`,
+              errorType: 'validation_error',
+            });
+            continue;
+          }
           const subResult = await loadWorkflowsFromDir(entryPath, depth + 1);
           for (const [filename, workflow] of subResult.workflows) {
             workflows.set(filename, workflow);

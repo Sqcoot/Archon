@@ -33,7 +33,7 @@ export function renderCodexBootstrapCapsule(context: CodexBootstrapContext): str
     '',
     '- Contract package only; live Codex runtime control is deferred.',
     '- No subagent enforcement, tool restriction enforcement, MCP OAuth, hooks, credentials, or config mutation is claimed.',
-    '- Artifact writes are future CLI behavior guarded by explicit `--write-artifact` use.',
+    '- Scoped artifact dossier and zip writes are default CLI behavior; use `--no-write-artifact` to suppress them.',
     '',
     '## Required Artifacts',
     '',
@@ -49,7 +49,7 @@ export function renderCodexBootstrapCapsule(context: CodexBootstrapContext): str
     '',
     '## Next Action',
     '',
-    'Use this capsule as read-only bootstrap context. Runtime adapters and artifact persistence belong to later slices.',
+    'Use this capsule as bootstrap context and persist the scoped dossier under the artifact root before handoff.',
   ];
 
   return `${lines.join('\n')}\n`;

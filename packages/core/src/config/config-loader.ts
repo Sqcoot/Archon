@@ -95,7 +95,14 @@ function mergeAssistantDefaults(
  */
 const SAFE_ASSISTANT_FIELDS: Record<string, readonly string[]> = {
   claude: ['model'],
-  codex: ['model', 'modelReasoningEffort', 'webSearchMode'],
+  codex: [
+    'model',
+    'sandboxMode',
+    'approvalPolicy',
+    'networkAccessEnabled',
+    'modelReasoningEffort',
+    'webSearchMode',
+  ],
   // community providers — list each field we're confident is safe to
   // show in the web UI. Unknown providers fall through with no fields.
   pi: ['model'],
@@ -157,6 +164,9 @@ const DEFAULT_CONFIG_CONTENT = `# Archon Global Configuration
 #     model: sonnet
 #   codex:
 #     model: gpt-5.3-codex
+#     sandboxMode: danger-full-access
+#     approvalPolicy: never
+#     networkAccessEnabled: true
 #     modelReasoningEffort: medium
 #     webSearchMode: disabled
 #     additionalDirectories:

@@ -129,21 +129,98 @@ export interface ApprovalContext {
   onRejectPrompt?: string;
   /** Max rejection attempts before cancellation (default 3). */
   onRejectMaxAttempts?: number;
+  /** Mutation class shown to humans before approval. */
+  mutationClass?: string;
+  /** Path affected by the approval gate, if known. */
+  path?: string;
+  /** Command or operation being approved, if known. */
+  command?: string;
+  /** Human-readable reason for the gate, if different from the message. */
+  reason?: string;
+  /** Whether the gate is destructive, credential-bearing, remote, or production-impacting. */
+  highImpact?: boolean;
+  /** Whether the high-impact gate has received explicit confirmation. False while paused. */
+  highImpactConfirmed?: boolean;
+  /** Approval scope selected by default when the client does not provide one. */
+  defaultScope?: 'once' | 'run';
+  /** Scope choices the client may offer. */
+  allowedScopes?: ('once' | 'run')[];
+}
+
+const APPROVAL_CONTEXT_TYPES = new Set(['approval', 'interactive_loop']);
+const APPROVAL_SCOPES = new Set(['once', 'run']);
+const LEGACY_APPROVAL_CONTEXT_FIELDS = new Set([
+  'mutation_class',
+  'default_scope',
+  'allowed_scopes',
+  'capture_response',
+  'on_reject_prompt',
+  'on_reject_max_attempts',
+]);
+
+function optionalString(record: Record<string, unknown>, key: string): boolean {
+  return record[key] === undefined || typeof record[key] === 'string';
+}
+
+function optionalNumber(record: Record<string, unknown>, key: string): boolean {
+  return record[key] === undefined || typeof record[key] === 'number';
+}
+
+function optionalBoolean(record: Record<string, unknown>, key: string): boolean {
+  return record[key] === undefined || typeof record[key] === 'boolean';
 }
 
 /**
  * Type guard for ApprovalContext.
- * Validates that the value is an object with the required nodeId and message fields.
+ * Validates that the value is an object with the required nodeId and message fields,
+ * and that optional approval safety metadata is already in the canonical runtime shape.
  * Use before accessing `workflowRun.metadata.approval` to prevent runtime throws on
  * malformed metadata (e.g., stale data from older runs where metadata shape differs).
  */
 export function isApprovalContext(val: unknown): val is ApprovalContext {
-  return (
-    typeof val === 'object' &&
-    val !== null &&
-    typeof (val as Record<string, unknown>).nodeId === 'string' &&
-    typeof (val as Record<string, unknown>).message === 'string'
-  );
+  if (typeof val !== 'object' || val === null || Array.isArray(val)) return false;
+  const record = val as Record<string, unknown>;
+  if (typeof record.nodeId !== 'string' || typeof record.message !== 'string') return false;
+  if ([...LEGACY_APPROVAL_CONTEXT_FIELDS].some(field => record[field] !== undefined)) {
+    return false;
+  }
+  if (
+    record.type !== undefined &&
+    (typeof record.type !== 'string' || !APPROVAL_CONTEXT_TYPES.has(record.type))
+  ) {
+    return false;
+  }
+  if (!optionalNumber(record, 'iteration')) return false;
+  if (!optionalString(record, 'sessionId')) return false;
+  if (!optionalBoolean(record, 'captureResponse')) return false;
+  if (!optionalString(record, 'onRejectPrompt')) return false;
+  if (!optionalNumber(record, 'onRejectMaxAttempts')) return false;
+  if (
+    record.mutationClass !== undefined &&
+    (typeof record.mutationClass !== 'string' || record.mutationClass.length === 0)
+  ) {
+    return false;
+  }
+  if (!optionalString(record, 'path')) return false;
+  if (!optionalString(record, 'command')) return false;
+  if (!optionalString(record, 'reason')) return false;
+  if (!optionalBoolean(record, 'highImpact')) return false;
+  if (!optionalBoolean(record, 'highImpactConfirmed')) return false;
+  if (
+    record.defaultScope !== undefined &&
+    (typeof record.defaultScope !== 'string' || !APPROVAL_SCOPES.has(record.defaultScope))
+  ) {
+    return false;
+  }
+  if (
+    record.allowedScopes !== undefined &&
+    (!Array.isArray(record.allowedScopes) ||
+      record.allowedScopes.length === 0 ||
+      record.allowedScopes.some(scope => typeof scope !== 'string' || !APPROVAL_SCOPES.has(scope)))
+  ) {
+    return false;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------

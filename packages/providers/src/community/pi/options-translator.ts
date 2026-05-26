@@ -60,7 +60,7 @@ function normalizeToThinkingLevel(v: unknown): ThinkingLevel | undefined {
 export interface ResolvedThinkingLevel {
   /** ThinkingLevel to pass to Pi, or undefined for Pi's default (implicit off) */
   level: ThinkingLevel | undefined;
-  /** Human-readable warning to surface as a system chunk, if the input shape wasn't usable */
+  /** Human-readable validation error if the input shape wasn't usable */
   warning?: string;
 }
 
@@ -70,7 +70,7 @@ export interface ResolvedThinkingLevel {
  * Precedence: `thinking` > `effort` (when both are set and valid).
  * 'off' on either → `level: undefined` (Pi runs without explicit thinking).
  * Claude-shape `thinking: { type: 'enabled', budget_tokens: N }` object form →
- * warning, not applied.
+ * validation error for the provider to reject.
  */
 export function resolvePiThinkingLevel(nodeConfig?: NodeConfig): ResolvedThinkingLevel {
   if (!nodeConfig) return { level: undefined };
@@ -88,21 +88,21 @@ export function resolvePiThinkingLevel(nodeConfig?: NodeConfig): ResolvedThinkin
   if (effortLevel) return { level: effortLevel };
 
   // Claude uses a structured `{ type: 'enabled', budget_tokens: N }` shape —
-  // Pi doesn't understand it. Surface the mismatch so users can fix their YAML.
+  // Pi doesn't understand it. Surface the mismatch so callers can fail closed.
   if (thinking !== undefined && thinking !== null && typeof thinking === 'object') {
     return {
       level: undefined,
       warning:
-        'Pi ignored `thinking` (object form is Claude-specific). Use `effort: low|medium|high|max` in YAML (max → xhigh on Pi).',
+        'Pi cannot apply `thinking` object form because it is Claude-specific. Use `effort: low|medium|high|max` in YAML (max -> xhigh on Pi).',
     };
   }
 
-  // String that isn't a known level (e.g. 'ultra') — warn so users fix it.
+  // String that isn't a known level (e.g. 'ultra') — surface so callers fail closed.
   if (typeof thinking === 'string' || typeof effort === 'string') {
     const offender = typeof thinking === 'string' ? thinking : effort;
     return {
       level: undefined,
-      warning: `Pi ignored unknown thinking level '${String(offender)}'. Valid: minimal, low, medium, high, xhigh, max, off.`,
+      warning: `Pi cannot apply unknown thinking level '${String(offender)}'. Valid: minimal, low, medium, high, xhigh, max, off.`,
     };
   }
 
@@ -179,8 +179,8 @@ const PI_DEFAULT_TOOL_NAMES = [
  *   - allowed_tools: [] → return [] (explicit no-tools; valid Archon idiom)
  *   - allowed_tools: [X, Y] → only X, Y (normalized to lowercase)
  *   - denied_tools subtracts from allowed_tools (or full set if allowed_tools absent)
- *   - tool names not in Pi's built-in set are silently dropped but reported
- *     via `unknownTools` so the caller can surface a warning.
+ *   - tool names not in Pi's built-in set are omitted from the translated Pi
+ *     tool list and reported via `unknownTools` so the provider can fail closed.
  *
  * The `env` parameter is the caller's `requestOptions.env` merged with any
  * relevant defaults; when non-empty, it is injected into every bash spawn via

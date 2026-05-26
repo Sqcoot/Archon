@@ -42,7 +42,12 @@ function ArtifactLabel({
       </button>
     );
   }
-  return <span className="text-text-primary truncate">{artifact.label}</span>;
+  const diagnosticPath = artifact.absolutePath ?? artifact.originalPath;
+  return (
+    <span className="text-text-primary truncate" title={diagnosticPath}>
+      {artifact.label}
+    </span>
+  );
 }
 
 function ArtifactIcon({ type }: { type: string }): React.ReactElement {
@@ -88,6 +93,16 @@ export function ArtifactSummary({ artifacts, runId }: ArtifactSummaryProps): Rea
                   {artifact.path}
                 </span>
               )}
+              {!artifact.path &&
+                !artifact.url &&
+                (artifact.absolutePath || artifact.originalPath) && (
+                  <span
+                    className="text-xs text-warning/80 ml-auto shrink-0 truncate max-w-[240px]"
+                    title={artifact.absolutePath ?? artifact.originalPath}
+                  >
+                    recorded, not viewer-openable
+                  </span>
+                )}
             </div>
           ))}
         </div>

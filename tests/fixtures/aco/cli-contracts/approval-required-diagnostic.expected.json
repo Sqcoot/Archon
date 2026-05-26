@@ -1,7 +1,7 @@
 {
   "commandId": "bun.research.graph",
   "data": {
-    "reason": "write, network, graph-cache, or artifact mutation risk requires approval",
+    "reason": "tracked-file, user-file, config, credential, remote, graph-cache, network, unknown, or destructive mutation risk requires approval",
     "requestedMutations": ["writes-graph-cache"]
   },
   "display": "bun run research:graph",

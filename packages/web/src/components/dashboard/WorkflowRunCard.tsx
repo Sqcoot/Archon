@@ -20,9 +20,22 @@ import {
 import type { DashboardRunResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/format';
+import { workflowPersistenceDiagnosticsFromMetadata } from '@/lib/workflow-diagnostics';
+import {
+  formatWorkflowApprovalAuditRows,
+  normalizeWorkflowApprovalAuditFromMetadata,
+  normalizeWorkflowApprovalFromMetadata,
+} from '@/lib/workflow-approval';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import type { WorkflowState } from '@/lib/types';
+import { ArtifactSummary } from '@/components/workflows/ArtifactSummary';
 import { ConfirmRunActionDialog } from './ConfirmRunActionDialog';
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
+
+function isHighImpactApprovalClass(mutationClass: string | undefined): boolean {
+  return mutationClass !== undefined && HIGH_IMPACT_APPROVAL_CLASSES.has(mutationClass);
+}
 
 interface WorkflowRunCardProps {
   run: DashboardRunResponse;
@@ -31,7 +44,7 @@ interface WorkflowRunCardProps {
   onResume?: (runId: string) => void;
   onAbandon?: (runId: string) => void;
   onDelete?: (runId: string) => void;
-  onApprove?: (runId: string) => void;
+  onApprove?: (runId: string, scope?: 'once', confirmHighImpact?: boolean) => void;
   onReject?: (runId: string, reason?: string) => void;
 }
 
@@ -146,9 +159,35 @@ export function WorkflowRunCard({
 }: WorkflowRunCardProps): React.ReactElement {
   const navigate = useNavigate();
   const [elapsed, setElapsed] = useState(() => formatDuration(run.started_at, run.completed_at));
+  const liveState = useWorkflowStore(state => state.workflows.get(run.id));
+  const approval = liveState?.approval ?? normalizeWorkflowApprovalFromMetadata(run.metadata);
+  const approvalAuditRows = formatWorkflowApprovalAuditRows(
+    normalizeWorkflowApprovalAuditFromMetadata(run.metadata)
+  );
+  const approvalScopes = approval?.allowedScopes ?? (approval != null ? ['once'] : []);
+  const approvalDefaultScope = approval?.defaultScope ?? approvalScopes[0] ?? 'once';
+  const approvalIsHighImpact =
+    approval?.highImpact === true || isHighImpactApprovalClass(approval?.mutationClass);
+  const confirmHighImpactApproval = (): boolean => {
+    if (!approvalIsHighImpact) return true;
+    return window.confirm(
+      [
+        `High-impact approval: ${approval?.mutationClass ?? 'unknown'}`,
+        approval?.path ? `Path: ${approval.path}` : undefined,
+        approval?.command ? `Command: ${approval.command}` : undefined,
+        approval?.reason ? `Reason: ${approval.reason}` : undefined,
+        '',
+        'Approve only if you intend to allow this high-impact workflow gate.',
+      ]
+        .filter((line): line is string => line !== undefined)
+        .join('\n')
+    );
+  };
 
   // Live SSE state from Zustand store — overrides REST-polled data when present
-  const liveState = useWorkflowStore(state => state.workflows.get(run.id));
+  const diagnostics =
+    liveState?.diagnostics ?? workflowPersistenceDiagnosticsFromMetadata(run.id, run.metadata);
+  const liveArtifacts = liveState?.artifacts ?? [];
 
   useEffect(() => {
     if (run.status !== 'running' && run.status !== 'paused') return;
@@ -253,18 +292,116 @@ export function WorkflowRunCard({
       )}
 
       {/* Approval request message */}
-      {run.status === 'paused' && run.metadata?.approval != null && (
+      {run.status === 'paused' && approval != null && (
         <div className="rounded-md bg-warning/5 border border-warning/20 px-3 py-2 flex items-start gap-2">
           <Pause className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <p className="text-xs text-text-secondary">
-            {(
-              run.metadata.approval as {
-                message?: string;
-              }
-            )?.message ?? 'Waiting for approval'}
-          </p>
+          <div className="space-y-1 text-xs text-text-secondary">
+            <p>{approval.message ?? 'Waiting for approval'}</p>
+            {(approval.mutationClass ||
+              approval.path ||
+              approval.command ||
+              approval.reason ||
+              approvalScopes.length > 0) && (
+              <dl className="grid gap-0.5">
+                {approval.mutationClass && (
+                  <div>
+                    <dt className="inline text-text-tertiary">Mutation class: </dt>
+                    <dd className="inline font-mono">{approval.mutationClass}</dd>
+                  </div>
+                )}
+                {approval.path && (
+                  <div>
+                    <dt className="inline text-text-tertiary">Path: </dt>
+                    <dd className="inline font-mono">{approval.path}</dd>
+                  </div>
+                )}
+                {approval.command && (
+                  <div>
+                    <dt className="inline text-text-tertiary">Command: </dt>
+                    <dd className="inline font-mono">{approval.command}</dd>
+                  </div>
+                )}
+                {approval.reason && (
+                  <div>
+                    <dt className="inline text-text-tertiary">Reason: </dt>
+                    <dd className="inline">{approval.reason}</dd>
+                  </div>
+                )}
+                {approval.approvalChannel && (
+                  <div>
+                    <dt className="inline text-text-tertiary">Approval channel: </dt>
+                    <dd className="inline font-mono">{approval.approvalChannel}</dd>
+                  </div>
+                )}
+                {approval.highImpact !== undefined && (
+                  <div>
+                    <dt className="inline text-text-tertiary">High impact: </dt>
+                    <dd className="inline font-mono">{approval.highImpact ? 'yes' : 'no'}</dd>
+                  </div>
+                )}
+                {approval.highImpactConfirmed !== undefined && (
+                  <div>
+                    <dt className="inline text-text-tertiary">High-impact confirmed: </dt>
+                    <dd className="inline font-mono">
+                      {approval.highImpactConfirmed ? 'yes' : 'no'}
+                    </dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="inline text-text-tertiary">Default scope: </dt>
+                  <dd className="inline font-mono">{approvalDefaultScope}</dd>
+                </div>
+                <div>
+                  <dt className="inline text-text-tertiary">Allowed scopes: </dt>
+                  <dd className="inline font-mono">{approvalScopes.join(', ')}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
         </div>
       )}
+
+      {approvalAuditRows.length > 0 && (
+        <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-text-secondary">
+          <p className="font-medium text-text-primary">Approval audit</p>
+          <dl className="mt-1 grid gap-0.5">
+            {approvalAuditRows.map(([label, value]) => (
+              <div key={label} className="break-words">
+                <dt className="inline text-text-tertiary">{label}: </dt>
+                <dd className="inline">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {diagnostics.length > 0 && (
+        <div className="rounded-md bg-warning/5 border border-warning/20 px-3 py-2 text-xs text-warning">
+          <p className="font-medium">Workflow diagnostics</p>
+          <div className="mt-1 space-y-1">
+            {diagnostics.slice(-3).map(diagnostic => (
+              <div key={`${diagnostic.code}:${diagnostic.timestamp}`} className="break-words">
+                <span className="font-mono">{diagnostic.code}</span>
+                <span>: {diagnostic.message}</span>
+                {diagnostic.persistence && (
+                  <span className="ml-1 font-mono">({diagnostic.persistence})</span>
+                )}
+                {diagnostic.eventType && (
+                  <span className="ml-1 text-warning/80">event={diagnostic.eventType}</span>
+                )}
+                {diagnostic.stepName && (
+                  <span className="ml-1 text-warning/80">step={diagnostic.stepName}</span>
+                )}
+                {diagnostic.artifactPath && (
+                  <span className="ml-1 text-warning/80">artifact={diagnostic.artifactPath}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {liveArtifacts.length > 0 && <ArtifactSummary artifacts={liveArtifacts} runId={run.id} />}
 
       {/* Working path */}
       {run.working_path && (
@@ -307,16 +444,23 @@ export function WorkflowRunCard({
           </a>
         )}
         <div className="ml-auto flex items-center gap-1">
-          {run.status === 'paused' && onApprove && (
+          {run.status === 'paused' && onApprove && approvalScopes.includes('once') && (
             <button
               onClick={(): void => {
-                onApprove(run.id);
+                if (confirmHighImpactApproval()) {
+                  onApprove(run.id, 'once', approvalIsHighImpact);
+                }
               }}
               className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-success/80 hover:bg-success/10 hover:text-success transition-colors"
             >
               <CheckCircle className="h-3.5 w-3.5" />
-              Approve
+              Approve once
             </button>
+          )}
+          {run.status === 'paused' && approvalScopes.includes('run') && (
+            <span className="rounded-md px-2 py-1 text-xs text-warning/80 bg-warning/5">
+              Approve for run unavailable: run-scoped approval is not implemented end-to-end yet.
+            </span>
           )}
           {run.status === 'paused' && onReject && (
             <ConfirmRunActionDialog

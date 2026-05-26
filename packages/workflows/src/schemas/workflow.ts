@@ -22,6 +22,31 @@ export const webSearchModeSchema = z.enum(['disabled', 'cached', 'live']);
 
 export type WebSearchMode = z.infer<typeof webSearchModeSchema>;
 
+/**
+ * Workflow routing mode. This is intentionally separate from `interactive`
+ * because `interactive: true` is a UI/runtime presentation hint, while `mode`
+ * is a router contract.
+ */
+export const workflowModeSchema = z.enum(['autonomous', 'guided', 'interactive_only']);
+
+export type WorkflowMode = z.infer<typeof workflowModeSchema>;
+
+/**
+ * Declares the write/lock surface a workflow is expected to use.
+ * - `read_only`            — should not write checkout or artifacts
+ * - `artifact_only`        — writes only scoped artifacts
+ * - `checkout_mutation`    — may mutate the source checkout; keep normal path locks
+ * - `external_side_effect` — may mutate remote systems, credentials, production, or other external state
+ */
+export const workflowLockScopeSchema = z.enum([
+  'read_only',
+  'artifact_only',
+  'checkout_mutation',
+  'external_side_effect',
+]);
+
+export type WorkflowLockScope = z.infer<typeof workflowLockScopeSchema>;
+
 // ---------------------------------------------------------------------------
 // Workflow-level worktree policy
 // ---------------------------------------------------------------------------
@@ -58,6 +83,8 @@ export const workflowBaseSchema = z.object({
   description: z.string().min(1),
   provider: z.string().trim().min(1).optional(),
   model: z.string().optional(),
+  mode: workflowModeSchema.optional(),
+  lock_scope: workflowLockScopeSchema.optional(),
   modelReasoningEffort: modelReasoningEffortSchema.optional(),
   webSearchMode: webSearchModeSchema.optional(),
   additionalDirectories: z.array(z.string()).optional(),

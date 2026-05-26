@@ -2,10 +2,10 @@
   "commands": [
     {
       "approvalRequired": false,
-      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "display": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
       "id": "archon.aco.bootstrap-codex",
       "implementationStatus": "supported",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
@@ -18,59 +18,59 @@
     },
     {
       "approvalRequired": false,
-      "display": "archon context approval-capsule <prompt>",
+      "display": "archon context approval-capsule <prompt> [--no-write-artifact]",
       "id": "archon.context.approval-capsule",
       "implementationStatus": "supported",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,
-      "display": "archon context approval-capsule-verify",
+      "display": "archon context approval-capsule-verify [--no-write-artifact]",
       "id": "archon.context.approval-capsule-verify",
       "implementationStatus": "supported",
-      "mutates": "read-only",
-      "safetyClasses": ["read-only"]
-    },
-    {
-      "approvalRequired": false,
-      "display": "archon context compile <prompt>",
-      "id": "archon.context.compile",
-      "implementationStatus": "supported",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,
-      "display": "archon context graph-waivers",
+      "display": "archon context compile <prompt> [--no-write-artifact]",
+      "id": "archon.context.compile",
+      "implementationStatus": "supported",
+      "mutates": "writes-artifacts",
+      "safetyClasses": ["read-only", "writes-artifacts"]
+    },
+    {
+      "approvalRequired": false,
+      "display": "archon context graph-waivers [--no-write-artifact]",
       "id": "archon.context.graph-waivers",
       "implementationStatus": "supported",
-      "mutates": "read-only",
-      "safetyClasses": ["read-only"]
+      "mutates": "writes-artifacts",
+      "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,
-      "display": "archon context ledgers [prompt]",
+      "display": "archon context ledgers [prompt] [--no-write-artifact]",
       "id": "archon.context.ledgers",
       "implementationStatus": "supported",
-      "mutates": "read-only",
-      "safetyClasses": ["read-only"]
+      "mutates": "writes-artifacts",
+      "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,
-      "display": "archon context route <prompt>",
+      "display": "archon context route <prompt> [--no-write-artifact]",
       "id": "archon.context.route",
       "implementationStatus": "supported",
-      "mutates": "read-only",
-      "safetyClasses": ["read-only"]
+      "mutates": "writes-artifacts",
+      "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,
-      "display": "archon context status [prompt]",
+      "display": "archon context status [prompt] [--no-write-artifact]",
       "id": "archon.context.status",
       "implementationStatus": "supported",
-      "mutates": "read-only",
-      "safetyClasses": ["read-only"]
+      "mutates": "writes-artifacts",
+      "safetyClasses": ["read-only", "writes-artifacts"]
     },
     {
       "approvalRequired": false,

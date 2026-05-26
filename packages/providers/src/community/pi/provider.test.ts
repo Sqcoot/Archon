@@ -845,25 +845,18 @@ describe('PiProvider', () => {
     expect(callArgs.thinkingLevel).toBeUndefined();
   });
 
-  test('Claude-shape object thinking yields system warning and is not applied', async () => {
+  test('Claude-shape object thinking fails closed before session setup', async () => {
     process.env.GEMINI_API_KEY = 'sk-test';
     resetScript(scriptedAgentEnd());
 
-    const { chunks } = await consume(
+    const { error } = await consume(
       new PiProvider().sendQuery('hi', '/tmp', undefined, {
         model: 'google/gemini-2.5-pro',
         nodeConfig: { thinking: { type: 'enabled', budget_tokens: 4000 } },
       })
     );
-
-    const systemChunks = chunks.filter(
-      (c): c is { type: 'system'; content: string } =>
-        typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system'
-    );
-    expect(systemChunks.some(c => c.content.includes('object form is Claude-specific'))).toBe(true);
-
-    const [callArgs] = mockCreateAgentSession.mock.calls[0] as [Record<string, unknown>];
-    expect(callArgs.thinkingLevel).toBeUndefined();
+    expect(String(error)).toContain('object form is Claude-specific');
+    expect(mockCreateAgentSession).not.toHaveBeenCalled();
   });
 
   test('nodeConfig.allowed_tools filters Pi built-in tools', async () => {
@@ -898,22 +891,18 @@ describe('PiProvider', () => {
     expect(callArgs.tools).toEqual([]);
   });
 
-  test('unknown tool names yield system warning', async () => {
+  test('unknown tool names fail closed before session setup', async () => {
     process.env.GEMINI_API_KEY = 'sk-test';
     resetScript(scriptedAgentEnd());
 
-    const { chunks } = await consume(
+    const { error } = await consume(
       new PiProvider().sendQuery('hi', '/tmp', undefined, {
         model: 'google/gemini-2.5-pro',
         nodeConfig: { allowed_tools: ['read', 'WebFetch'] },
       })
     );
-
-    const systemChunks = chunks.filter(
-      (c): c is { type: 'system'; content: string } =>
-        typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system'
-    );
-    expect(systemChunks.some(c => c.content.includes('WebFetch'))).toBe(true);
+    expect(String(error)).toContain('unknown tool names WebFetch');
+    expect(mockCreateAgentSession).not.toHaveBeenCalled();
   });
 
   test('denied_tools alone starts from full built-in set', async () => {
@@ -1115,6 +1104,11 @@ describe('PiProvider', () => {
     expect(caps.envInjection).toBe(true);
     // Best-effort structured output via prompt engineering (not SDK-enforced).
     expect(caps.structuredOutput).toBe(true);
+    expect(caps.structuredOutputMode).toBe('best_effort');
+    expect(caps.hookCapabilities).toMatchObject({
+      workflowNodeHooks: 'unsupported',
+      runtimeConfigHooks: 'disabled',
+    });
     // Still false:
     expect(caps.mcp).toBe(false);
     expect(caps.hooks).toBe(false);
@@ -1183,28 +1177,18 @@ describe('PiProvider', () => {
     expect(loaderArgs?.noExtensions).toBe(true);
   });
 
-  test('nodeConfig.skills with unknown name yields system warning, does not abort', async () => {
+  test('nodeConfig.skills with unknown name fails closed before session setup', async () => {
     process.env.GEMINI_API_KEY = 'sk-test';
     resetScript(scriptedAgentEnd());
 
-    const { chunks, error } = await consume(
+    const { error } = await consume(
       new PiProvider().sendQuery('hi', '/tmp/nonexistent-cwd', undefined, {
         model: 'google/gemini-2.5-pro',
         nodeConfig: { skills: ['definitely-does-not-exist'] },
       })
     );
-    expect(error).toBeUndefined();
-    const systemChunks = chunks.filter(
-      (c): c is { type: 'system'; content: string } =>
-        typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system'
-    );
-    expect(systemChunks.some(c => c.content.includes('definitely-does-not-exist'))).toBe(true);
-
-    // DefaultResourceLoader instantiated without additionalSkillPaths (all missing)
-    const loaderArgs = MockDefaultResourceLoader.mock.calls[0]?.[0] as
-      | Record<string, unknown>
-      | undefined;
-    expect(loaderArgs?.additionalSkillPaths).toBeUndefined();
+    expect(String(error)).toContain('definitely-does-not-exist');
+    expect(MockDefaultResourceLoader).not.toHaveBeenCalled();
   });
 
   test('nodeConfig.skills absent → no additionalSkillPaths option passed', async () => {

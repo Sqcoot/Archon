@@ -2,6 +2,8 @@ import type { Gate, GateRunResult } from '@archon/aco-core';
 import { buildLedgerBundle } from './bundle';
 import type { CommandLedgerEntry, LedgerBundle, LedgerBundleInput, LedgerCounts } from './schemas';
 
+const REQUIRED_LEDGERS_COMMAND = 'archon context ledgers [prompt] [--no-write-artifact]';
+
 export interface LedgerFixtureParityResult {
   readonly gate: 'ledger-fixture-parity-gate';
   readonly counts: LedgerCounts;
@@ -49,7 +51,7 @@ export const ledgerFixtureParityGate: Gate<LedgerBundleInput, LedgerFixtureParit
     if (requiredCommand === undefined) {
       return Promise.resolve({
         status: 'failed',
-        errors: ['missing required command archon context ledgers [prompt]'],
+        errors: [`missing required command ${REQUIRED_LEDGERS_COMMAND}`],
         evidence,
       });
     }
@@ -78,13 +80,13 @@ function validateParity(bundle: LedgerBundle): readonly string[] {
 
   const requiredCommand = findRequiredCommand(bundle);
   if (requiredCommand === undefined) {
-    errors.push('missing required command archon context ledgers [prompt]');
+    errors.push(`missing required command ${REQUIRED_LEDGERS_COMMAND}`);
   } else {
-    if (requiredCommand.mutates !== 'read-only') {
-      errors.push('required ledgers command must be read-only');
+    if (requiredCommand.mutates !== 'writes-artifacts') {
+      errors.push('required ledgers command must be scoped artifact-writing');
     }
-    if (requiredCommand.subject.safety !== 'read-only') {
-      errors.push('required ledgers command must have read-only safety');
+    if (requiredCommand.subject.safety !== 'read-only or writes-artifacts') {
+      errors.push('required ledgers command must have read-only or writes-artifacts safety');
     }
     if (requiredCommand.approvalRequired) {
       errors.push('required ledgers command must not require approval');
@@ -108,7 +110,5 @@ function validateParity(bundle: LedgerBundle): readonly string[] {
 }
 
 function findRequiredCommand(bundle: LedgerBundle): CommandLedgerEntry | undefined {
-  return bundle.commands.find(
-    command => command.subject.command === 'archon context ledgers [prompt]'
-  );
+  return bundle.commands.find(command => command.subject.command === REQUIRED_LEDGERS_COMMAND);
 }

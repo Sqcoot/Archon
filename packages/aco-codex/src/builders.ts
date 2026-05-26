@@ -32,7 +32,7 @@ import {
 } from './renderers';
 
 export const BOOTSTRAP_CODEX_COMMAND =
-  'archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]';
+  'archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]';
 
 export const REQUIRED_CODEX_BOOTSTRAP_ARTIFACTS = [
   ...codexBootstrapArtifactNameValues,
@@ -91,8 +91,8 @@ export const bootstrapCodexCommand: BootstrapCodexCommandDescriptor =
     command: BOOTSTRAP_CODEX_COMMAND,
     owner: 'aco-codex',
     compatibility: 'preserve',
-    defaultMutates: 'read-only',
-    writeArtifactMutates: 'writes-artifacts',
+    defaultMutates: 'writes-artifacts',
+    noWriteArtifactMutates: 'read-only',
     approvalRequired: false,
     evidence: [COMMAND_EVIDENCE],
     manifest: {
@@ -101,7 +101,7 @@ export const bootstrapCodexCommand: BootstrapCodexCommandDescriptor =
       command: BOOTSTRAP_CODEX_COMMAND,
       surface: 'CLI/slash',
       purpose: 'Emit Codex-ready bootstrap capsule',
-      mutates: 'read-only',
+      mutates: 'writes-artifacts',
       approvalRequired: false,
       owner: 'aco-codex',
       compatibility: 'preserve',
@@ -315,7 +315,7 @@ function defaultCodexHarnessCapabilities(): readonly CodexHarnessCapability[] {
       'partial',
       false,
       false,
-      'S4 renders JSON artifacts, but runtime attachment behavior is not implemented.'
+      'S4 renders JSON artifacts and the CLI can persist them in a dossier; live Codex runtime injection remains outside this bootstrap contract.'
     ),
     capability(
       'runtime-event-observation',
@@ -323,7 +323,7 @@ function defaultCodexHarnessCapabilities(): readonly CodexHarnessCapability[] {
       'unknown',
       false,
       false,
-      'S4 models event labels; runtime event observation belongs to a later harness adapter.'
+      'Provider preflight/runtime summary artifacts can state hook event-streaming availability, but this S4 harness does not claim live hook event streaming.'
     ),
     capability(
       'tool-restriction-enforcement',

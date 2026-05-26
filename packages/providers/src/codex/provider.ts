@@ -9,18 +9,31 @@ import {
   type TurnOptions,
   type TurnCompletedEvent,
 } from '@openai/codex-sdk';
+import { createHash } from 'crypto';
+import { existsSync } from 'fs';
+import { appendFile, mkdir, readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
+import {
+  createLogger,
+  ensureScopedArtifactDirectory,
+  resolveScopedArtifactRoot,
+  scopedArtifactPath,
+} from '@archon/paths';
 import type {
   IAgentProvider,
   SendQueryOptions,
   MessageChunk,
   TokenUsage,
   ProviderCapabilities,
+  NodeConfig,
 } from '../types';
 import { parseCodexConfig } from './config';
 import { CODEX_CAPABILITIES } from './capabilities';
 import { resolveCodexBinaryPath } from './binary-resolver';
-import { createLogger } from '@archon/paths';
 import { loadMcpConfig } from '../mcp/config';
+import { runCodexHookBootloaderPreflight } from './hooks-preflight';
+
+type CodexHookPreflightRunner = typeof runCodexHookBootloaderPreflight;
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
 let cachedLog: ReturnType<typeof createLogger> | undefined;
@@ -32,9 +45,461 @@ function getLog(): ReturnType<typeof createLogger> {
 type CodexConfigOverrides = NonNullable<CodexOptions['config']>;
 type CodexConfigValue = CodexConfigOverrides[string];
 
+const DEFAULT_CODEX_SANDBOX_MODE = 'danger-full-access' as const;
+const DEFAULT_CODEX_APPROVAL_POLICY = 'never' as const;
+const DEFAULT_CODEX_NETWORK_ACCESS = true;
+type CodexApprovalPolicy = NonNullable<ReturnType<typeof parseCodexConfig>['approvalPolicy']>;
+
 interface ProviderWarning {
   code: string;
   message: string;
+}
+
+interface CodexRuntimeHookObservation {
+  startedAt: string;
+  endedAt?: string;
+  status: 'running' | 'completed' | 'failed';
+  workflowRunId?: string;
+  nodeId?: string;
+  artifactDirectory: string;
+  preflightReportPath: string;
+  manifestPath: string;
+  eventLogPath: string;
+  summaryPath: string;
+  totalEvents: number;
+  eventTypes: Record<string, number>;
+  hookRelevantEvents: number;
+  permissionRequestRelevantEvents: number;
+  stopContinuationRelevantEvents: number;
+  persistedRelevantEvents: number;
+  droppedRelevantEvents: number;
+  artifactWriteFailures: number;
+  providerHookCapabilities: ProviderCapabilities['hookCapabilities'];
+  hookEventStreaming: boolean;
+  eventStreamingStatus: 'available' | 'unavailable';
+  terminalEventType?: string;
+  warnings: string[];
+  configuredHookSurfaces: {
+    inventoriedHookHandlers: number;
+    permissionRequestHooks: number;
+    stopContinuationHooks: number;
+    permissionRequestBoundedByPreflight: boolean;
+    stopContinuationBoundedByPreflight: boolean;
+  };
+}
+
+const MAX_CODEX_RUNTIME_HOOK_EVENTS = 200;
+const MAX_CODEX_RUNTIME_EVENT_VALUE_LENGTH = 500;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sanitizePathPart(value: string | undefined, fallback: string): string {
+  const cleaned = (value ?? fallback).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  return cleaned.length > 0 ? cleaned.slice(0, 80) : fallback;
+}
+
+function resolveCodexHookArtifactRoot(cwd: string, nodeConfig?: NodeConfig): string | undefined {
+  const runtime = nodeConfig?.archonRuntime;
+  if (!runtime?.artifactsDir) return undefined;
+  const artifactPolicy = resolveScopedArtifactRoot({
+    cwd,
+    artifactsDir: runtime.artifactsDir,
+    source: 'workflow:run-artifacts',
+  });
+  const artifactsDir = artifactPolicy.artifactRoot;
+  const workflowRunId = sanitizePathPart(runtime.workflowRunId, 'workflow');
+  const nodeId = sanitizePathPart(runtime.nodeId, 'node');
+  const runtimeRoot = scopedArtifactPath(artifactsDir, 'codex-hooks-runtime');
+  ensureScopedArtifactDirectory(artifactsDir, runtimeRoot);
+  const nodeRoot = scopedArtifactPath(runtimeRoot, `${workflowRunId}-${nodeId}`);
+  ensureScopedArtifactDirectory(artifactsDir, nodeRoot);
+  return nodeRoot;
+}
+
+function truncateRuntimeValue(value: string): string {
+  return value.length > MAX_CODEX_RUNTIME_EVENT_VALUE_LENGTH
+    ? `${value.slice(0, MAX_CODEX_RUNTIME_EVENT_VALUE_LENGTH)}...`
+    : value;
+}
+
+function collectInterestingRuntimeValues(
+  value: unknown,
+  depth = 0,
+  output: Record<string, string[]> = {}
+): Record<string, string[]> {
+  if (depth > 3 || !isRecord(value)) return output;
+  for (const [key, raw] of Object.entries(value)) {
+    if (/token|secret|password|authorization|api[_-]?key|credential/i.test(key)) {
+      output[key] = ['[redacted]'];
+      continue;
+    }
+    if (
+      /hook|permission|approval|decision|stop|continue|behavior|matcher|tool|status|reason/i.test(
+        key
+      )
+    ) {
+      const rendered =
+        typeof raw === 'string'
+          ? truncateRuntimeValue(raw)
+          : typeof raw === 'number' || typeof raw === 'boolean'
+            ? String(raw)
+            : undefined;
+      if (rendered !== undefined) {
+        output[key] = [...(output[key] ?? []), rendered];
+      }
+    }
+    if (isRecord(raw)) collectInterestingRuntimeValues(raw, depth + 1, output);
+  }
+  return output;
+}
+
+function summarizeCodexRuntimeEvent(event: Record<string, unknown>): {
+  kind: 'codex-runtime-hook-event-summary';
+  schemaVersion: 'archon.codex-hooks.runtime-event-summary.v1';
+  generatedAt: string;
+  persistence: 'persisted';
+  at: string;
+  type: string;
+  itemType?: string;
+  itemId?: string;
+  itemStatus?: string;
+  eventKeys: string[];
+  itemKeys: string[];
+  interestingValues: Record<string, string[]>;
+  relevance: string[];
+} {
+  const item = isRecord(event.item) ? event.item : undefined;
+  const type = typeof event.type === 'string' ? event.type : 'unknown';
+  const itemType = typeof item?.type === 'string' ? item.type : undefined;
+  const itemId = typeof item?.id === 'string' ? item.id : undefined;
+  const itemStatus = typeof item?.status === 'string' ? item.status : undefined;
+  const interestingValues = collectInterestingRuntimeValues(event);
+  const generatedAt = new Date().toISOString();
+  const haystack = [
+    type,
+    itemType,
+    itemStatus,
+    ...Object.keys(event),
+    ...(item ? Object.keys(item) : []),
+    ...Object.values(interestingValues).flat(),
+  ]
+    .filter((part): part is string => typeof part === 'string')
+    .join(' ')
+    .toLowerCase();
+  const relevance: string[] = [];
+  if (haystack.includes('hook')) relevance.push('hook');
+  if (haystack.includes('permissionrequest') || haystack.includes('permission_request')) {
+    relevance.push('permission-request');
+  }
+  if (haystack.includes('approval') || haystack.includes('permission')) {
+    relevance.push('approval');
+  }
+  if (
+    haystack.includes('stop') ||
+    haystack.includes('subagentstop') ||
+    haystack.includes('continuation') ||
+    haystack.includes('continue')
+  ) {
+    relevance.push('stop-continuation');
+  }
+  return {
+    kind: 'codex-runtime-hook-event-summary',
+    schemaVersion: 'archon.codex-hooks.runtime-event-summary.v1',
+    generatedAt,
+    persistence: 'persisted',
+    at: generatedAt,
+    type,
+    ...(itemType ? { itemType } : {}),
+    ...(itemId ? { itemId } : {}),
+    ...(itemStatus ? { itemStatus } : {}),
+    eventKeys: Object.keys(event).slice(0, 40),
+    itemKeys: item ? Object.keys(item).slice(0, 40) : [],
+    interestingValues,
+    relevance: [...new Set(relevance)],
+  };
+}
+
+async function writeRuntimeHookObservationSummary(
+  observation: CodexRuntimeHookObservation
+): Promise<void> {
+  await writeFile(
+    observation.summaryPath,
+    `${JSON.stringify(
+      {
+        kind: 'codex-runtime-hook-observability',
+        schemaVersion: 'archon.codex-hooks.runtime-observability.v1',
+        generatedAt: observation.endedAt ?? observation.startedAt,
+        persistence: observation.artifactWriteFailures > 0 ? 'best_effort_failed' : 'persisted',
+        eventLogPersistence: {
+          status:
+            observation.artifactWriteFailures > 0
+              ? 'best_effort_failed'
+              : observation.droppedRelevantEvents > 0
+                ? 'persisted_with_dropped_events'
+                : 'persisted',
+          persistedRelevantEvents: observation.persistedRelevantEvents,
+          droppedRelevantEvents: observation.droppedRelevantEvents,
+          artifactWriteFailures: observation.artifactWriteFailures,
+          eventCap: MAX_CODEX_RUNTIME_HOOK_EVENTS,
+        },
+        ...observation,
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
+async function runtimeArtifactEntry(
+  path: string,
+  description: string,
+  digestStatus?: string
+): Promise<Record<string, unknown>> {
+  if (digestStatus) {
+    return {
+      path,
+      required: true,
+      description,
+      digestStatus,
+    };
+  }
+
+  const bytes = await readFile(path);
+  return {
+    path,
+    required: true,
+    description,
+    bytes: bytes.byteLength,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  };
+}
+
+async function writeRuntimeHookObservationManifest(
+  observation: CodexRuntimeHookObservation
+): Promise<void> {
+  const mutable = observation.status === 'running';
+  const summaryEntry = await runtimeArtifactEntry(
+    observation.summaryPath,
+    'Runtime hook observability summary produced by the Codex provider.',
+    mutable ? 'mutable_until_turn_end' : undefined
+  );
+  const eventLogEntry = await runtimeArtifactEntry(
+    observation.eventLogPath,
+    'JSONL stream of hook-relevant runtime observations emitted by the Codex provider.',
+    mutable ? 'mutable_until_turn_end' : undefined
+  );
+  const manifestEntry = {
+    path: observation.manifestPath,
+    required: true,
+    description: 'Self-referential runtime hook observability manifest.',
+    digestStatus: 'self-referential',
+  };
+
+  await writeFile(
+    observation.manifestPath,
+    `${JSON.stringify(
+      {
+        kind: 'codex-runtime-hook-observability-manifest',
+        schemaVersion: 'archon.codex-hooks.runtime-observability-manifest.v1',
+        generatedAt: observation.endedAt ?? observation.startedAt,
+        status: observation.status,
+        artifactDirectory: observation.artifactDirectory,
+        preflightReportPath: observation.preflightReportPath,
+        ...(observation.workflowRunId ? { workflowRunId: observation.workflowRunId } : {}),
+        ...(observation.nodeId ? { nodeId: observation.nodeId } : {}),
+        configuredHookSurfaces: observation.configuredHookSurfaces,
+        providerHookCapabilities: observation.providerHookCapabilities,
+        hookEventStreaming: observation.hookEventStreaming,
+        eventStreamingStatus: observation.eventStreamingStatus,
+        eventLogPersistence: {
+          status:
+            observation.artifactWriteFailures > 0
+              ? 'best_effort_failed'
+              : observation.droppedRelevantEvents > 0
+                ? 'persisted_with_dropped_events'
+                : 'persisted',
+          persistedRelevantEvents: observation.persistedRelevantEvents,
+          droppedRelevantEvents: observation.droppedRelevantEvents,
+          artifactWriteFailures: observation.artifactWriteFailures,
+          eventCap: MAX_CODEX_RUNTIME_HOOK_EVENTS,
+        },
+        eventCounts: {
+          totalEvents: observation.totalEvents,
+          hookRelevantEvents: observation.hookRelevantEvents,
+          permissionRequestRelevantEvents: observation.permissionRequestRelevantEvents,
+          stopContinuationRelevantEvents: observation.stopContinuationRelevantEvents,
+          persistedRelevantEvents: observation.persistedRelevantEvents,
+          droppedRelevantEvents: observation.droppedRelevantEvents,
+          artifactWriteFailures: observation.artifactWriteFailures,
+        },
+        requiredArtifacts: {
+          summary: summaryEntry,
+          eventLog: eventLogEntry,
+          manifest: manifestEntry,
+        },
+        files: [manifestEntry, summaryEntry, eventLogEntry],
+        warnings: observation.warnings,
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
+async function createRuntimeHookObservation(
+  artifactDirectory: string,
+  preflightReportPath: string,
+  nodeConfig: NodeConfig | undefined,
+  configuredHookSurfaces: CodexRuntimeHookObservation['configuredHookSurfaces']
+): Promise<CodexRuntimeHookObservation> {
+  await mkdir(artifactDirectory, { recursive: true });
+  const observation: CodexRuntimeHookObservation = {
+    startedAt: new Date().toISOString(),
+    status: 'running',
+    ...(nodeConfig?.archonRuntime?.workflowRunId
+      ? { workflowRunId: nodeConfig.archonRuntime.workflowRunId }
+      : {}),
+    ...(nodeConfig?.archonRuntime?.nodeId ? { nodeId: nodeConfig.archonRuntime.nodeId } : {}),
+    artifactDirectory,
+    preflightReportPath,
+    manifestPath: join(artifactDirectory, 'codex-runtime-hook-observability-manifest.json'),
+    eventLogPath: join(artifactDirectory, 'codex-runtime-hook-events.jsonl'),
+    summaryPath: join(artifactDirectory, 'codex-runtime-hook-observability.json'),
+    totalEvents: 0,
+    eventTypes: {},
+    hookRelevantEvents: 0,
+    permissionRequestRelevantEvents: 0,
+    stopContinuationRelevantEvents: 0,
+    persistedRelevantEvents: 0,
+    droppedRelevantEvents: 0,
+    artifactWriteFailures: 0,
+    providerHookCapabilities: CODEX_CAPABILITIES.hookCapabilities,
+    hookEventStreaming: CODEX_CAPABILITIES.hookCapabilities.hookEventStreaming,
+    eventStreamingStatus: CODEX_CAPABILITIES.hookCapabilities.hookEventStreaming
+      ? 'available'
+      : 'unavailable',
+    warnings: CODEX_CAPABILITIES.hookCapabilities.hookEventStreaming
+      ? []
+      : [
+          'Codex hook event streaming is not available through Archon; runtime observation is limited to provider stream events and preflight-derived hook coverage.',
+        ],
+    configuredHookSurfaces,
+  };
+  await writeFile(observation.eventLogPath, '', 'utf8');
+  await writeRuntimeHookObservationSummary(observation);
+  await writeRuntimeHookObservationManifest(observation);
+  return observation;
+}
+
+function recordRuntimeHookArtifactWriteFailure(
+  observation: CodexRuntimeHookObservation,
+  operation: string,
+  error: unknown
+): void {
+  observation.artifactWriteFailures += 1;
+  const message = `${operation} failed: ${(error as Error).message}`;
+  if (!observation.warnings.includes(message) && observation.warnings.length < 20) {
+    observation.warnings.push(message);
+  }
+}
+
+async function recordRuntimeHookEvent(
+  observation: CodexRuntimeHookObservation | undefined,
+  event: Record<string, unknown>
+): Promise<void> {
+  if (!observation) return;
+  const summary = summarizeCodexRuntimeEvent(event);
+  observation.totalEvents += 1;
+  observation.eventTypes[summary.type] = (observation.eventTypes[summary.type] ?? 0) + 1;
+  if (summary.type === 'turn.completed' || summary.type === 'turn.failed') {
+    observation.terminalEventType = summary.type;
+  }
+  if (summary.relevance.length === 0) return;
+  observation.hookRelevantEvents += summary.relevance.includes('hook') ? 1 : 0;
+  observation.permissionRequestRelevantEvents += summary.relevance.some(
+    relevance => relevance === 'permission-request' || relevance === 'approval'
+  )
+    ? 1
+    : 0;
+  observation.stopContinuationRelevantEvents += summary.relevance.includes('stop-continuation')
+    ? 1
+    : 0;
+  if (observation.persistedRelevantEvents >= MAX_CODEX_RUNTIME_HOOK_EVENTS) {
+    observation.droppedRelevantEvents += 1;
+    return;
+  }
+  try {
+    await appendFile(observation.eventLogPath, `${JSON.stringify(summary)}\n`, 'utf8');
+    observation.persistedRelevantEvents += 1;
+  } catch (error) {
+    recordRuntimeHookArtifactWriteFailure(observation, 'runtime hook event append', error);
+    getLog().warn(
+      { err: error as Error, summaryPath: observation.summaryPath },
+      'codex.runtime_hook_event_append_failed'
+    );
+  }
+}
+
+async function finalizeRuntimeHookObservation(
+  observation: CodexRuntimeHookObservation | undefined,
+  status: 'completed' | 'failed',
+  errorMessage?: string
+): Promise<readonly string[]> {
+  if (!observation) return [];
+  const finalizationWarnings: string[] = [];
+  const addFinalizationWarning = (message: string): void => {
+    observation.warnings.push(message);
+    finalizationWarnings.push(message);
+  };
+  observation.endedAt = new Date().toISOString();
+  observation.status = observation.terminalEventType === 'turn.failed' ? 'failed' : status;
+  if (errorMessage) addFinalizationWarning(`Codex turn ended with error: ${errorMessage}`);
+  const nonDecisionHookHandlers = Math.max(
+    0,
+    observation.configuredHookSurfaces.inventoriedHookHandlers -
+      observation.configuredHookSurfaces.permissionRequestHooks -
+      observation.configuredHookSurfaces.stopContinuationHooks
+  );
+  if (nonDecisionHookHandlers > 0 && observation.hookRelevantEvents === 0) {
+    addFinalizationWarning(
+      `${nonDecisionHookHandlers} Codex hook handler(s) were inventoried outside PermissionRequest/Stop, but the Codex SDK stream did not expose hook lifecycle or decision events to Archon.`
+    );
+  }
+  if (
+    observation.configuredHookSurfaces.permissionRequestHooks > 0 &&
+    observation.permissionRequestRelevantEvents === 0
+  ) {
+    addFinalizationWarning(
+      'PermissionRequest hooks were configured, but the Codex SDK stream did not expose PermissionRequest hook decision events to Archon.'
+    );
+  }
+  if (
+    observation.configuredHookSurfaces.stopContinuationHooks > 0 &&
+    observation.stopContinuationRelevantEvents === 0
+  ) {
+    addFinalizationWarning(
+      'Stop/SubagentStop continuation hooks were configured, but the Codex SDK stream did not expose continuation decision events to Archon.'
+    );
+  }
+  if (observation.droppedRelevantEvents > 0) {
+    addFinalizationWarning(
+      `${observation.droppedRelevantEvents} hook-relevant runtime event summaries were omitted after the ${MAX_CODEX_RUNTIME_HOOK_EVENTS} event cap.`
+    );
+  }
+  try {
+    await writeRuntimeHookObservationSummary(observation);
+    await writeRuntimeHookObservationManifest(observation);
+  } catch (error) {
+    getLog().warn(
+      { err: error as Error, summaryPath: observation.summaryPath },
+      'codex.runtime_hook_summary_write_failed'
+    );
+  }
+  return finalizationWarnings;
 }
 
 // Singleton Codex instance (async because binary path resolution is async)
@@ -73,20 +538,36 @@ async function getCodex(configCodexBinaryPath?: string): Promise<Codex> {
 function buildThreadOptions(
   cwd: string,
   model?: string,
-  assistantConfig?: Record<string, unknown>
+  assistantConfig?: Record<string, unknown>,
+  effectiveApprovalPolicy?: CodexApprovalPolicy
 ): ThreadOptions {
   const config = parseCodexConfig(assistantConfig ?? {});
   return {
     workingDirectory: cwd,
     skipGitRepoCheck: true,
-    sandboxMode: 'danger-full-access',
-    networkAccessEnabled: true,
-    approvalPolicy: 'never',
+    sandboxMode: config.sandboxMode ?? DEFAULT_CODEX_SANDBOX_MODE,
+    networkAccessEnabled: config.networkAccessEnabled ?? DEFAULT_CODEX_NETWORK_ACCESS,
+    approvalPolicy:
+      effectiveApprovalPolicy ?? config.approvalPolicy ?? DEFAULT_CODEX_APPROVAL_POLICY,
     model: model ?? config.model,
     modelReasoningEffort: config.modelReasoningEffort,
     webSearchMode: config.webSearchMode,
     additionalDirectories: config.additionalDirectories,
   };
+}
+
+function isAutonomousCodexRequest(nodeConfig?: NodeConfig): boolean {
+  return nodeConfig?.workflow_mode === 'autonomous';
+}
+
+function resolveCodexApprovalPolicy(
+  configuredApprovalPolicy: CodexApprovalPolicy | undefined,
+  nodeConfig?: NodeConfig
+): CodexApprovalPolicy {
+  if (isAutonomousCodexRequest(nodeConfig)) {
+    return DEFAULT_CODEX_APPROVAL_POLICY;
+  }
+  return configuredApprovalPolicy ?? DEFAULT_CODEX_APPROVAL_POLICY;
 }
 
 function buildCodexEnv(requestEnv: Record<string, string>): Record<string, string> {
@@ -310,7 +791,8 @@ async function* streamCodexEvents(
   hasOutputFormat: boolean,
   threadId: string | null | undefined,
   abortSignal?: AbortSignal,
-  surfaceMcpClientErrors = false
+  surfaceMcpClientErrors = false,
+  runtimeHookObservation?: CodexRuntimeHookObservation
 ): AsyncGenerator<MessageChunk> {
   const state: CodexStreamState = {};
   let accumulatedText = '';
@@ -328,6 +810,8 @@ async function* streamCodexEvents(
   let lastNonMcpError: string | undefined;
 
   for await (const event of events) {
+    await recordRuntimeHookEvent(runtimeHookObservation, event);
+
     if (abortSignal?.aborted) {
       getLog().info('query_aborted_between_events');
       throw new Error('Query aborted');
@@ -635,9 +1119,14 @@ function classifyAndEnrichCodexError(
  */
 export class CodexProvider implements IAgentProvider {
   private readonly retryBaseDelayMs: number;
+  private readonly hookPreflightRunner: CodexHookPreflightRunner;
 
-  constructor(options?: { retryBaseDelayMs?: number }) {
+  constructor(options?: {
+    retryBaseDelayMs?: number;
+    hookPreflightRunner?: CodexHookPreflightRunner;
+  }) {
     this.retryBaseDelayMs = options?.retryBaseDelayMs ?? RETRY_BASE_DELAY_MS;
+    this.hookPreflightRunner = options?.hookPreflightRunner ?? runCodexHookBootloaderPreflight;
   }
 
   private async createCodexClient(
@@ -681,7 +1170,164 @@ export class CodexProvider implements IAgentProvider {
     const codexConfig = parseCodexConfig(assistantConfig);
     const providerWarnings: ProviderWarning[] = [];
     let codexConfigOverrides: CodexConfigOverrides | undefined;
+    const effectiveApprovalPolicy = resolveCodexApprovalPolicy(
+      codexConfig.approvalPolicy,
+      requestOptions?.nodeConfig
+    );
 
+    for (const diagnostic of codexConfig.diagnostics) {
+      providerWarnings.push({
+        code: `codex_config_${diagnostic.field}_${diagnostic.badBehaviour.pattern}`,
+        message: `${diagnostic.message} ${diagnostic.badBehaviour.rationale} [${diagnostic.badBehaviour.pattern}:${diagnostic.badBehaviour.classification}]`,
+      });
+    }
+
+    const fatalConfigDiagnostics = codexConfig.diagnostics.filter(
+      diagnostic => diagnostic.badBehaviour.classification === 'bug'
+    );
+
+    if (
+      isAutonomousCodexRequest(requestOptions?.nodeConfig) &&
+      codexConfig.approvalPolicy !== undefined &&
+      codexConfig.approvalPolicy !== DEFAULT_CODEX_APPROVAL_POLICY
+    ) {
+      providerWarnings.push({
+        code: 'codex_autonomous_approval_policy_overridden',
+        message: `Autonomous Codex workflow requested approvalPolicy=${codexConfig.approvalPolicy}; Archon is using approvalPolicy=${DEFAULT_CODEX_APPROVAL_POLICY} for this run so it does not pause for runtime approvals.`,
+      });
+    }
+
+    const hookArtifactRoot = resolveCodexHookArtifactRoot(cwd, requestOptions?.nodeConfig);
+    const surfaceHookArtifacts = existsSync(cwd);
+    const hookPreflight = await this.hookPreflightRunner({
+      cwd,
+      nodeConfig: requestOptions?.nodeConfig,
+      approvalPolicy: effectiveApprovalPolicy,
+      ...(hookArtifactRoot ? { artifactRoot: hookArtifactRoot } : {}),
+      configuredBinaryPath: codexConfig.codexBinaryPath,
+    });
+    getLog().info(
+      {
+        decision: hookPreflight.report.decision,
+        reportPath: hookPreflight.artifactPaths.report,
+        hookCount: hookPreflight.report.hooks.length,
+      },
+      'codex.hooks_preflight_completed'
+    );
+    if (surfaceHookArtifacts) {
+      providerWarnings.push({
+        code: 'codex_hooks_preflight',
+        message: `Codex hook bootloader preflight ${hookPreflight.report.decision}; report: ${hookPreflight.artifactPaths.report}`,
+      });
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook artifacts manifest',
+        path: hookPreflight.artifactPaths.manifest,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook bootloader report',
+        path: hookPreflight.artifactPaths.report,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook inventory',
+        path: hookPreflight.artifactPaths.inventory,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook coverage',
+        path: hookPreflight.artifactPaths.coverage,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook trust status',
+        path: hookPreflight.artifactPaths.trust,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook trust status JSON',
+        path: hookPreflight.artifactPaths.trustStatus,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook artifact policy',
+        path: hookPreflight.artifactPaths.artifactPolicy,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook contract',
+        path: hookPreflight.artifactPaths.contract,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook contract evidence',
+        path: hookPreflight.artifactPaths.contractEvidence,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex PermissionRequest policy',
+        path: hookPreflight.artifactPaths.permissionRequest,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex PermissionRequest policy JSON',
+        path: hookPreflight.artifactPaths.permissionRequestPolicy,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex hook bad-behaviour lint',
+        path: hookPreflight.artifactPaths.badBehaviourLint,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex Stop continuation policy',
+        path: hookPreflight.artifactPaths.stopContinuation,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex Stop continuation policy JSON',
+        path: hookPreflight.artifactPaths.stopContinuationPolicy,
+      };
+    }
+    if (fatalConfigDiagnostics.length > 0 || hookPreflight.report.decision === 'block') {
+      const blockedWarnings = [...providerWarnings];
+      if (!blockedWarnings.some(warning => warning.code === 'codex_hooks_preflight')) {
+        blockedWarnings.push({
+          code: 'codex_hooks_preflight',
+          message: `Codex hook bootloader preflight ${hookPreflight.report.decision}; report: ${hookPreflight.artifactPaths.report}`,
+        });
+      }
+      for (const warning of blockedWarnings) {
+        yield { type: 'system', content: `⚠️ ${warning.message}` };
+      }
+    }
+    if (fatalConfigDiagnostics.length > 0) {
+      throw new Error(
+        `Codex config contains safety/resource control field(s) that would otherwise be ignored: ${fatalConfigDiagnostics
+          .map(diagnostic => `${diagnostic.field} (${diagnostic.message})`)
+          .join('; ')}. Hook bootloader report: ${hookPreflight.artifactPaths.report}`
+      );
+    }
+    if (hookPreflight.report.decision === 'block') {
+      throw new Error(
+        `Codex hook bootloader blocked this run: ${hookPreflight.report.reasons.join('; ')}. Report: ${hookPreflight.artifactPaths.report}`
+      );
+    }
     if (requestOptions?.nodeConfig?.mcp) {
       const mcpPath = requestOptions.nodeConfig.mcp;
       const { servers, serverNames, missingVars } = await loadMcpConfig(
@@ -700,6 +1346,45 @@ export class CodexProvider implements IAgentProvider {
         });
       }
     }
+    const runtimeHookObservation = surfaceHookArtifacts
+      ? await createRuntimeHookObservation(
+          hookPreflight.artifactPaths.directory,
+          hookPreflight.artifactPaths.report,
+          requestOptions?.nodeConfig,
+          {
+            inventoriedHookHandlers: hookPreflight.report.coverage.inventoriedHookHandlers,
+            permissionRequestHooks: hookPreflight.report.permissionRequest.permissionRequestHooks,
+            stopContinuationHooks: hookPreflight.report.continuation.stopContinuationHooks,
+            permissionRequestBoundedByPreflight: hookPreflight.report.permissionRequest.bounded,
+            stopContinuationBoundedByPreflight: hookPreflight.report.continuation.bounded,
+          }
+        )
+      : undefined;
+    if (runtimeHookObservation) {
+      providerWarnings.push({
+        code: 'codex_runtime_hook_observability',
+        message: `Codex runtime hook observability artifact: ${runtimeHookObservation.summaryPath}`,
+      });
+
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex runtime hook observability manifest',
+        path: runtimeHookObservation.manifestPath,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex runtime hook observability summary',
+        path: runtimeHookObservation.summaryPath,
+      };
+      yield {
+        type: 'artifact',
+        artifactType: 'file_created',
+        label: 'Codex runtime hook event summaries',
+        path: runtimeHookObservation.eventLogPath,
+      };
+    }
 
     for (const warning of providerWarnings) {
       yield { type: 'system', content: `⚠️ ${warning.message}` };
@@ -711,7 +1396,12 @@ export class CodexProvider implements IAgentProvider {
       requestOptions?.env,
       codexConfigOverrides
     );
-    const threadOptions = buildThreadOptions(cwd, requestOptions?.model, assistantConfig);
+    const threadOptions = buildThreadOptions(
+      cwd,
+      requestOptions?.model,
+      assistantConfig,
+      effectiveApprovalPolicy
+    );
 
     if (requestOptions?.abortSignal?.aborted) {
       throw new Error('Query aborted');
@@ -804,13 +1494,31 @@ export class CodexProvider implements IAgentProvider {
           const result = await thread.runStreamed(prompt, turnOptions);
 
           // 5. Stream normalized events (fresh state per attempt to avoid dedup leaks)
-          yield* streamCodexEvents(
+          let normalizedStreamError: string | undefined;
+          for await (const chunk of streamCodexEvents(
             result.events as AsyncIterable<Record<string, unknown>>,
             hasOutputFormat,
             thread.id,
             attemptController.signal,
-            Boolean(requestOptions?.nodeConfig?.mcp)
+            Boolean(requestOptions?.nodeConfig?.mcp),
+            runtimeHookObservation
+          )) {
+            if (chunk.type === 'result' && chunk.isError) {
+              normalizedStreamError =
+                chunk.errors?.join('; ') ??
+                chunk.errorSubtype ??
+                'Codex stream produced an error result';
+            }
+            yield chunk;
+          }
+          const runtimeHookWarnings = await finalizeRuntimeHookObservation(
+            runtimeHookObservation,
+            normalizedStreamError ? 'failed' : 'completed',
+            normalizedStreamError
           );
+          for (const warning of runtimeHookWarnings) {
+            yield { type: 'system', content: `⚠️ ${warning}` };
+          }
           return;
         } catch (error) {
           const err = error as Error;
@@ -830,6 +1538,14 @@ export class CodexProvider implements IAgentProvider {
           );
 
           if (!shouldRetry || attempt >= MAX_SUBPROCESS_RETRIES) {
+            const runtimeHookWarnings = await finalizeRuntimeHookObservation(
+              runtimeHookObservation,
+              'failed',
+              enrichedError.message
+            );
+            for (const warning of runtimeHookWarnings) {
+              yield { type: 'system', content: `⚠️ ${warning}` };
+            }
             throw enrichedError;
           }
 

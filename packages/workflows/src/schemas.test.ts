@@ -19,6 +19,7 @@ import type {
   CancelNode,
   ScriptNode,
   TriggerRule,
+  ApprovalNode,
 } from './schemas';
 
 // ---------------------------------------------------------------------------
@@ -339,6 +340,24 @@ describe('dagNodeSchema — new Claude SDK options', () => {
   test('rejects zero maxBudgetUsd', () => {
     const result = dagNodeSchema.safeParse({ id: 'n', prompt: 'do it', maxBudgetUsd: 0 });
     expect(result.success).toBe(false);
+  });
+
+  test('parses forward-compatible high-impact approval metadata', () => {
+    const result = dagNodeSchema.safeParse({
+      id: 'approve-network',
+      approval: {
+        message: 'Approve network boundary change?',
+        mutation_class: 'network_boundary',
+        high_impact: true,
+        command: 'configure-network-boundary',
+        reason: 'Changes external network access',
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as ApprovalNode).approval.mutation_class).toBe('network_boundary');
+      expect((result.data as ApprovalNode).approval.high_impact).toBe(true);
+    }
   });
 
   test('parses betas array', () => {

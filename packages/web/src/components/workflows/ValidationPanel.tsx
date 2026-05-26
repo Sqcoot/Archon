@@ -123,6 +123,23 @@ export function ValidationPanel({
                   {issue.suggestion != null && (
                     <span className="italic text-text-tertiary">{issue.suggestion}</span>
                   )}
+                  {issue.badBehaviour != null && (
+                    <div className="flex flex-wrap items-center gap-1 text-[10px] text-text-tertiary">
+                      <span
+                        className={cn(
+                          'rounded px-1.5 py-0.5 font-mono',
+                          issue.badBehaviour.classification === 'bug'
+                            ? 'bg-error/10 text-error'
+                            : issue.badBehaviour.classification === 'warning-only'
+                              ? 'bg-warning/10 text-warning'
+                              : 'bg-surface-elevated text-text-secondary'
+                        )}
+                      >
+                        {issue.badBehaviour.pattern}:{issue.badBehaviour.classification}
+                      </span>
+                      <span>{issue.badBehaviour.rationale}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

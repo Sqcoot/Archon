@@ -105,12 +105,13 @@ The file `.archon/scripts/fetch-github-pages.ts` is loaded and executed with
 | `timeout` | number (ms) | No | Hard kill after this many milliseconds. Default: `120000` (2 min) |
 
 Standard DAG fields (`id`, `depends_on`, `when`, `trigger_rule`, `retry`) all
-work. AI-specific fields (`model`, `provider`, `context`, `output_format`,
-`allowed_tools`, `denied_tools`, `hooks`, `mcp`, `skills`, `agents`, `effort`,
-`thinking`, `maxBudgetUsd`, `systemPrompt`, `fallbackModel`, `betas`, `sandbox`)
-are accepted by the parser but emit a loader warning and are ignored at runtime
-— no AI is invoked. `idle_timeout` is also accepted but ignored: script nodes
-run as one-shot subprocesses, so use `timeout` (hard kill after N ms) instead.
+work. Safety/output AI controls (`output_format`, `allowed_tools`,
+`denied_tools`, `hooks`, `mcp`, `skills`, `agents`, `sandbox`) fail loading on
+script nodes because the script executor cannot enforce them. Non-safety
+AI-compatibility fields (`model`, `provider`, `context`, `effort`, `thinking`,
+`maxBudgetUsd`, `systemPrompt`, `fallbackModel`, `betas`) are reported as
+compatibility no-ops. `idle_timeout` has no effect on script nodes; use
+`timeout` (hard kill after N ms) instead.
 
 ## Inline vs Named Scripts
 
@@ -339,11 +340,15 @@ Then reference it by name from any repo's workflow:
 
 ## What Does NOT Work
 
-- **AI-only features** — `hooks`, `mcp`, `skills`, `allowed_tools`,
-  `denied_tools`, `agents`, `model`, `provider`, `output_format`, `effort`,
-  `thinking`, `maxBudgetUsd`, `systemPrompt`, `fallbackModel`, `betas`, and
-  `sandbox` are all ignored at runtime. The loader emits a warning listing
-  the ignored fields.
+- **Safety/output AI controls** — `hooks`, `mcp`, `skills`, `allowed_tools`,
+  `denied_tools`, `agents`, `output_format`, and `sandbox` are rejected on
+  script nodes before schema stripping. They are not warning-only because users
+  would otherwise believe a safety or output control was enforced when the
+  script executor cannot enforce it.
+- **Non-safety AI compatibility fields** — `model`, `provider`, `context`,
+  `effort`, `thinking`, `maxBudgetUsd`, `systemPrompt`, `fallbackModel`, and
+  `betas` have no effect on script nodes. The loader/validator reports them as
+  compatibility no-ops so the behavior is explicit.
 - **Interactive prompts** — the script runs headlessly; any `stdin` read will
   see EOF immediately.
 - **Runtimes other than `bun` and `uv`** — rejected at parse time.

@@ -16,10 +16,17 @@ mock.module('../db/workflows', () => ({
   cancelWorkflowRun: mockCancelWorkflowRun,
 }));
 
-const mockCreateWorkflowEvent = mock(() => Promise.resolve());
+const mockCreateWorkflowEvent = mock(() => Promise.resolve(true));
 
 mock.module('../db/workflow-events', () => ({
   createWorkflowEvent: mockCreateWorkflowEvent,
+}));
+
+const mockEmitWorkflowEvent = mock(() => undefined);
+mock.module('@archon/workflows/event-emitter', () => ({
+  getWorkflowEventEmitter: () => ({
+    emit: mockEmitWorkflowEvent,
+  }),
 }));
 
 const mockLogger = {
@@ -75,6 +82,7 @@ describe('approveWorkflow', () => {
     mockGetWorkflowRun.mockClear();
     mockCreateWorkflowEvent.mockClear();
     mockUpdateWorkflowRun.mockClear();
+    mockEmitWorkflowEvent.mockClear();
   });
 
   test('approves standard approval gate — writes node_completed + approval_received', async () => {
@@ -96,8 +104,107 @@ describe('approveWorkflow', () => {
     // Transitions to failed + clears rejection state
     expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
       status: 'failed',
-      metadata: { approval_response: 'approved', rejection_reason: '', rejection_count: 0 },
+      metadata: expect.objectContaining({
+        approval_response: 'approved',
+        rejection_reason: '',
+        rejection_count: 0,
+        approval_audit: expect.objectContaining({
+          decision: 'approved',
+          node_id: 'review',
+          approval_scope: 'once',
+          approval_channel: 'system',
+          high_impact: false,
+          high_impact_confirmed: false,
+        }),
+      }),
     });
+  });
+
+  test('emits diagnostic when approval event persistence degrades to best-effort failure', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(makePausedRun());
+    mockCreateWorkflowEvent.mockResolvedValueOnce(false);
+    mockCreateWorkflowEvent.mockResolvedValueOnce(true);
+
+    await approveWorkflow('run-1', 'Looks good');
+
+    expect(mockEmitWorkflowEvent).toHaveBeenCalledWith({
+      type: 'workflow_event_persist_failed',
+      runId: 'run-1',
+      eventType: 'node_completed',
+      stepName: 'review',
+      reason: 'database createWorkflowEvent returned best-effort failure',
+      persistence: 'best_effort_failed',
+    });
+  });
+
+  test('blocks every high-impact approval class from normal chat', async () => {
+    for (const mutationClass of ['destructive', 'credential', 'remote', 'production'] as const) {
+      mockGetWorkflowRun.mockResolvedValueOnce(
+        makePausedRun({
+          metadata: {
+            approval: {
+              nodeId: `${mutationClass}-gate`,
+              message: `Approve ${mutationClass} operation?`,
+              type: 'approval',
+              mutationClass,
+            },
+          },
+        })
+      );
+
+      await expect(
+        approveWorkflow('run-1', 'Approved', { approvalChannel: 'chat' })
+      ).rejects.toThrow(
+        `High-impact approval '${mutationClass}' cannot be approved from normal chat`
+      );
+    }
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).not.toHaveBeenCalled();
+  });
+
+  test('blocks explicit highImpact custom approval class from normal chat', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(
+      makePausedRun({
+        metadata: {
+          approval: {
+            nodeId: 'network-gate',
+            message: 'Change network boundary?',
+            type: 'approval',
+            mutationClass: 'network_boundary',
+            highImpact: true,
+          },
+        },
+      })
+    );
+
+    await expect(approveWorkflow('run-1', 'Approved', { approvalChannel: 'chat' })).rejects.toThrow(
+      "High-impact approval 'network_boundary' cannot be approved from normal chat"
+    );
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).not.toHaveBeenCalled();
+  });
+
+  test('allows high-impact approval from explicit CLI channel', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(
+      makePausedRun({
+        metadata: {
+          approval: {
+            nodeId: 'destructive-gate',
+            message: 'Delete remote resources?',
+            type: 'approval',
+            mutationClass: 'destructive',
+          },
+        },
+      })
+    );
+
+    const result = await approveWorkflow('run-1', 'Approved', {
+      approvalChannel: 'cli',
+      highImpactConfirmed: true,
+    });
+
+    expect(result.type).toBe('approval_gate');
+    expect(mockCreateWorkflowEvent).toHaveBeenCalledTimes(2);
   });
 
   test('approves interactive_loop — writes only approval_received, stores loop_user_input', async () => {
@@ -125,7 +232,17 @@ describe('approveWorkflow', () => {
     // Stores loop_user_input in metadata
     expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
       status: 'failed',
-      metadata: { loop_user_input: 'fix the tests' },
+      metadata: expect.objectContaining({
+        loop_user_input: 'fix the tests',
+        approval_audit: expect.objectContaining({
+          decision: 'approved',
+          node_id: 'iterate',
+          approval_scope: 'once',
+          approval_channel: 'system',
+          high_impact: false,
+          high_impact_confirmed: false,
+        }),
+      }),
     });
   });
 
@@ -191,14 +308,36 @@ describe('rejectWorkflow', () => {
     });
     mockGetWorkflowRun.mockResolvedValueOnce(run);
 
-    const result = await rejectWorkflow('run-1', 'needs more tests');
+    const result = await rejectWorkflow('run-1', 'needs more tests', {
+      approvalChannel: 'cli',
+    });
 
     expect(result.cancelled).toBe(false);
     expect(result.workflowName).toBe('test-workflow');
     expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
+    const rejectionEvent = mockCreateWorkflowEvent.mock.calls[0][0] as {
+      data?: Record<string, unknown>;
+    };
+    expect(rejectionEvent.data).toEqual(
+      expect.objectContaining({
+        decision: 'rejected',
+        approval_channel: 'cli',
+      })
+    );
     expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
       status: 'failed',
-      metadata: { rejection_reason: 'needs more tests', rejection_count: 1 },
+      metadata: expect.objectContaining({
+        rejection_reason: 'needs more tests',
+        rejection_count: 1,
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review',
+          rejection_reason: 'needs more tests',
+          approval_channel: 'cli',
+          high_impact: false,
+          high_impact_confirmed: false,
+        }),
+      }),
     });
   });
 
@@ -219,7 +358,20 @@ describe('rejectWorkflow', () => {
     const result = await rejectWorkflow('run-1', 'still broken');
 
     expect(result.cancelled).toBe(true);
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-1');
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+      status: 'cancelled',
+      metadata: expect.objectContaining({
+        rejection_reason: 'still broken',
+        rejection_count: 2,
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review',
+          rejection_reason: 'still broken',
+          approval_channel: 'system',
+        }),
+      }),
+    });
   });
 
   test('rejects without onRejectPrompt — cancels immediately', async () => {
@@ -228,7 +380,19 @@ describe('rejectWorkflow', () => {
     const result = await rejectWorkflow('run-1', 'no good');
 
     expect(result.cancelled).toBe(true);
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-1');
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-1', {
+      status: 'cancelled',
+      metadata: expect.objectContaining({
+        rejection_reason: 'no good',
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review',
+          rejection_reason: 'no good',
+          approval_channel: 'system',
+        }),
+      }),
+    });
   });
 
   test('throws on non-paused run', async () => {

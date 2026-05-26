@@ -498,6 +498,13 @@ Approval nodes **pause the workflow** until a human approves or rejects the gate
   approval:
     message: "Review the plan above before proceeding with implementation."
     capture_response: false        # Optional. true = user's comment stored as $review-gate.output
+    # Required for destructive/credential/remote/production gates:
+    # mutation_class: production   # destructive | credential | remote | production
+    # path: "affected/path-or-scope"
+    # command: "exact command or operation being approved"
+    # reason: "why this high-impact gate is required"
+    # default_scope: once
+    # allowed_scopes: [once]
     on_reject:                     # Optional. AI rework on rejection instead of cancel
       prompt: "Revise based on feedback: $REJECTION_REASON"
       max_attempts: 3              # Range 1–10, default 3. After max, workflow is cancelled.
@@ -510,6 +517,12 @@ Approval nodes **pause the workflow** until a human approves or rejects the gate
 |-------|----------|-------------|
 | `approval.message` | **Yes** | The message shown to the user when the workflow pauses |
 | `approval.capture_response` | No | `true` = user's approval comment stored as `$<node-id>.output` for downstream nodes. Default: `false` (downstream `$<node-id>.output` is empty string) |
+| `approval.mutation_class` | Required for high-impact gates | One of `destructive`, `credential`, `remote`, or `production` for high-impact gates. These require explicit UI/CLI confirmation; normal chat approval is blocked |
+| `approval.path` | Required for high-impact gates unless `command` is clearer | Path, environment, account, or resource affected by the approval |
+| `approval.command` | Required for high-impact gates unless `path` is clearer | Exact command or operation being approved |
+| `approval.reason` | Required for high-impact gates | Human-readable reason explaining why the high-impact operation is needed |
+| `approval.default_scope` | No | Approval scope selected by default. Use `once` for all high-impact gates |
+| `approval.allowed_scopes` | No | Allowed approval scopes. Use `[once]` for high-impact gates because run-scoped approval is not implemented end-to-end |
 | `approval.on_reject.prompt` | No | Prompt run via AI when the user rejects. `$REJECTION_REASON` is substituted with the reject reason. After running, the workflow re-pauses at the same gate |
 | `approval.on_reject.max_attempts` | No | Max times the on_reject prompt runs before the workflow is cancelled. Range: 1–10. Default: 3 |
 

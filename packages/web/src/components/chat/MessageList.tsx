@@ -174,6 +174,14 @@ function WorkflowResultCard({
         label: typeof d.label === 'string' ? d.label : '',
         url: typeof d.url === 'string' ? d.url : undefined,
         path: typeof d.path === 'string' ? d.path : undefined,
+        absolutePath: typeof d.absolutePath === 'string' ? d.absolutePath : undefined,
+        originalPath: typeof d.originalPath === 'string' ? d.originalPath : undefined,
+        failureStage:
+          typeof d.failureStage === 'string'
+            ? d.failureStage
+            : typeof d.failure_stage === 'string'
+              ? d.failure_stage
+              : undefined,
       };
     });
   const artifacts = storeArtifacts.length > 0 ? storeArtifacts : eventArtifacts;

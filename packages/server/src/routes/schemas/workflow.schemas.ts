@@ -94,7 +94,102 @@ export const workflowRunStatusSchema = z
   .enum(['pending', 'running', 'completed', 'failed', 'cancelled', 'paused'])
   .openapi('WorkflowRunStatus');
 
+const workflowApprovalMutationClassSchema = z.string().min(1);
+
+const workflowApprovalScopeSchema = z.enum(['once', 'run']);
+const workflowApprovalChannelSchema = z.enum(['chat', 'web', 'cli', 'system']);
+
+const workflowApprovalMetadataSchema = z
+  .object({
+    type: z.enum(['approval', 'interactive_loop']).optional(),
+    nodeId: z.string().optional(),
+    node_id: z.string().optional(),
+    message: z.string().optional(),
+    mutationClass: workflowApprovalMutationClassSchema.optional(),
+    mutation_class: workflowApprovalMutationClassSchema.optional(),
+    path: z.string().optional(),
+    command: z.string().optional(),
+    reason: z.string().optional(),
+    defaultScope: workflowApprovalScopeSchema.optional(),
+    default_scope: workflowApprovalScopeSchema.optional(),
+    allowedScopes: z.array(workflowApprovalScopeSchema).optional(),
+    allowed_scopes: z.array(workflowApprovalScopeSchema).optional(),
+    approvalChannel: workflowApprovalChannelSchema.optional(),
+    approval_channel: workflowApprovalChannelSchema.optional(),
+    highImpact: z.boolean().optional(),
+    high_impact: z.boolean().optional(),
+    highImpactConfirmed: z.boolean().optional(),
+    high_impact_confirmed: z.boolean().optional(),
+    iteration: z.number().optional(),
+    sessionId: z.string().optional(),
+    session_id: z.string().optional(),
+  })
+  .catchall(z.unknown())
+  .openapi('WorkflowApprovalMetadata');
+
+const workflowApprovalAuditMetadataSchema = z
+  .object({
+    decision: z.enum(['approved', 'rejected']).optional(),
+    nodeId: z.string().optional(),
+    node_id: z.string().optional(),
+    approvalScope: workflowApprovalScopeSchema.optional(),
+    approval_scope: workflowApprovalScopeSchema.optional(),
+    approvalChannel: workflowApprovalChannelSchema.optional(),
+    approval_channel: workflowApprovalChannelSchema.optional(),
+    highImpact: z.boolean().optional(),
+    high_impact: z.boolean().optional(),
+    highImpactConfirmed: z.boolean().optional(),
+    high_impact_confirmed: z.boolean().optional(),
+    mutationClass: workflowApprovalMutationClassSchema.optional(),
+    mutation_class: workflowApprovalMutationClassSchema.optional(),
+    path: z.string().optional(),
+    command: z.string().optional(),
+    reason: z.string().optional(),
+    approvalReason: z.string().optional(),
+    approval_reason: z.string().optional(),
+    rejectionReason: z.string().optional(),
+    rejection_reason: z.string().optional(),
+    defaultScope: workflowApprovalScopeSchema.optional(),
+    default_scope: workflowApprovalScopeSchema.optional(),
+    allowedScopes: z.array(workflowApprovalScopeSchema).optional(),
+    allowed_scopes: z.array(workflowApprovalScopeSchema).optional(),
+  })
+  .catchall(z.unknown())
+  .openapi('WorkflowApprovalAuditMetadata');
+
+const workflowPreExecutionValidationMetadataSchema = z
+  .object({
+    status: z.string().optional(),
+    error_name: z.string().optional(),
+    message: z.string().optional(),
+    hook_bootloader_report_path: z.string().optional(),
+    hook_bad_behaviour_lint_path: z.string().optional(),
+  })
+  .catchall(z.unknown())
+  .openapi('WorkflowPreExecutionValidationMetadata');
+
 /** A workflow run record. */
+const workflowRunMetadataSchema = z
+  .object({
+    approval: workflowApprovalMetadataSchema.optional(),
+    approvalAudit: workflowApprovalAuditMetadataSchema.optional(),
+    approval_audit: workflowApprovalAuditMetadataSchema.optional(),
+    workflow_pre_execution_validation: workflowPreExecutionValidationMetadataSchema.optional(),
+    workflow_event_persist_failures: z
+      .array(
+        z.object({
+          eventType: z.string(),
+          stepName: z.string().optional(),
+          reason: z.string(),
+          persistence: z.literal('best_effort_failed'),
+          timestamp: z.string(),
+        })
+      )
+      .optional(),
+  })
+  .catchall(z.unknown())
+  .openapi('WorkflowRunMetadata');
+
 export const workflowRunSchema = z
   .object({
     id: z.string(),
@@ -104,7 +199,7 @@ export const workflowRunSchema = z
     codebase_id: z.string().nullable(),
     status: workflowRunStatusSchema,
     user_message: z.string(),
-    metadata: z.record(z.unknown()),
+    metadata: workflowRunMetadataSchema,
     started_at: z.string(),
     completed_at: z.string().nullable(),
     last_activity_at: z.string().nullable(),
@@ -157,9 +252,21 @@ export const workflowRunActionResponseSchema = z
   .object({ success: z.boolean(), message: z.string() })
   .openapi('WorkflowRunActionResponse');
 
+/** Approval/rejection action response, including the exact audit metadata persisted on the run. */
+export const workflowRunApprovalActionResponseSchema = workflowRunActionResponseSchema
+  .extend({
+    approvalAudit: workflowApprovalAuditMetadataSchema.optional(),
+    approval_audit: workflowApprovalAuditMetadataSchema.optional(),
+  })
+  .openapi('WorkflowRunApprovalActionResponse');
+
 /** POST /api/workflows/runs/:runId/approve request body. */
 export const approveWorkflowRunBodySchema = z
-  .object({ comment: z.string().optional() })
+  .object({
+    comment: z.string().optional(),
+    scope: z.literal('once').optional(),
+    confirmHighImpact: z.boolean().optional(),
+  })
   .openapi('ApproveWorkflowRunBody');
 
 /** POST /api/workflows/runs/:runId/reject request body. */
@@ -203,8 +310,8 @@ export const dashboardRunsResponseSchema = z
 /** POST /api/workflows/:name/run request body. */
 export const runWorkflowBodySchema = z
   .object({
-    conversationId: z.string(),
-    message: z.string(),
+    conversationId: z.string().trim().min(1, 'conversationId is required'),
+    message: z.string().default(''),
   })
   .openapi('RunWorkflowBody');
 

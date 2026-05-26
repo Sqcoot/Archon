@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { MessageSquare } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, CheckCircle, MessageSquare, Pause, XCircle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { DagNodeProgress } from './DagNodeProgress';
 import { StepLogs } from './StepLogs';
@@ -9,12 +9,27 @@ import { WorkflowLogs } from './WorkflowLogs';
 import { WorkflowDagViewer } from './WorkflowDagViewer';
 import { ArtifactSummary } from './ArtifactSummary';
 import { ChatInterface } from '@/components/chat/ChatInterface';
+import { ConfirmRunActionDialog } from '@/components/dashboard/ConfirmRunActionDialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useWorkflowStore } from '@/stores/workflow-store';
-import { getWorkflowRun, getWorkflowRunByWorker, getCodebase, getWorkflow } from '@/lib/api';
+import {
+  approveWorkflowRun,
+  getWorkflowRun,
+  getWorkflowRunByWorker,
+  getCodebase,
+  getWorkflow,
+  rejectWorkflowRun,
+} from '@/lib/api';
 import { ensureUtc, formatDurationMs } from '@/lib/format';
 import { selectInitialNode } from '@/lib/select-initial-node';
+import {
+  formatWorkflowApprovalAuditRows,
+  normalizeWorkflowApprovalAuditFromMetadata,
+  normalizeWorkflowApprovalFromMetadata,
+  type WorkflowApprovalAuditSummary,
+} from '@/lib/workflow-approval';
+import { workflowPersistenceDiagnosticsFromMetadata } from '@/lib/workflow-diagnostics';
 import type {
   WorkflowState,
   ArtifactType,
@@ -22,6 +37,7 @@ import type {
   DagNodeState,
   WorkflowStepStatus,
   LoopIterationInfo,
+  WorkflowDiagnosticEvent,
 } from '@/lib/types';
 
 import type { WorkflowEventResponse } from '@/lib/api';
@@ -38,13 +54,69 @@ export interface ToolEvent {
 }
 
 const TERMINAL_STATUSES: readonly WorkflowRunStatus[] = ['completed', 'failed', 'cancelled'];
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
 
 function isTerminal(status: WorkflowRunStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
 }
 
+function isHighImpactApprovalClass(mutationClass: string | undefined): boolean {
+  return mutationClass !== undefined && HIGH_IMPACT_APPROVAL_CLASSES.has(mutationClass);
+}
+
+function workflowDiagnosticsFromEvents(
+  runId: string,
+  events: WorkflowEventResponse[]
+): WorkflowDiagnosticEvent[] {
+  return events.flatMap((event): WorkflowDiagnosticEvent[] => {
+    if (event.event_type !== 'workflow_diagnostic') return [];
+    const data = event.data;
+    const code = typeof data.code === 'string' ? data.code : 'workflow_diagnostic';
+    const message = typeof data.message === 'string' ? data.message : undefined;
+    if (!message) return [];
+    const severity =
+      data.severity === 'error' || data.severity === 'warning' || data.severity === 'info'
+        ? data.severity
+        : 'warning';
+    const persistence =
+      data.persistence === 'persisted' || data.persistence === 'best_effort_failed'
+        ? data.persistence
+        : 'persisted';
+    const artifactPath =
+      typeof data.artifactPath === 'string'
+        ? data.artifactPath
+        : typeof data.hook_bootloader_report_path === 'string'
+          ? data.hook_bootloader_report_path
+          : typeof data.hook_bad_behaviour_lint_path === 'string'
+            ? data.hook_bad_behaviour_lint_path
+            : undefined;
+    const timestamp =
+      typeof event.created_at === 'string'
+        ? new Date(ensureUtc(event.created_at)).getTime()
+        : Date.now();
+    return [
+      {
+        type: 'workflow_diagnostic',
+        runId,
+        severity,
+        code,
+        message,
+        persistence,
+        ...(artifactPath ? { artifactPath } : {}),
+        timestamp,
+      },
+    ];
+  });
+}
+
+function formatBoolean(value: boolean | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return value ? 'yes' : 'no';
+}
+
 interface WorkflowRunQueryData {
   workflowState: WorkflowState;
+  approvalAudit: WorkflowApprovalAuditSummary | null;
   workerPlatformId: string | null;
   parentPlatformId: string | null;
   conversationPlatformId: string | null;
@@ -188,6 +260,14 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
                 label: (d.label as string) ?? '',
                 url: d.url as string | undefined,
                 path: d.path as string | undefined,
+                absolutePath: d.absolutePath as string | undefined,
+                originalPath: d.originalPath as string | undefined,
+                failureStage:
+                  typeof d.failureStage === 'string'
+                    ? d.failureStage
+                    : typeof d.failure_stage === 'string'
+                      ? d.failure_stage
+                      : undefined,
               };
             })
             .filter(a => a.label || a.url || a.path),
@@ -195,7 +275,16 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           completedAt: data.run.completed_at
             ? new Date(ensureUtc(data.run.completed_at)).getTime()
             : undefined,
+          approval:
+            data.run.status === 'paused'
+              ? normalizeWorkflowApprovalFromMetadata(data.run.metadata)
+              : undefined,
+          diagnostics: [
+            ...workflowPersistenceDiagnosticsFromMetadata(data.run.id, data.run.metadata),
+            ...workflowDiagnosticsFromEvents(data.run.id, data.events),
+          ],
         },
+        approvalAudit: normalizeWorkflowApprovalAuditFromMetadata(data.run.metadata) ?? null,
         workerPlatformId: data.run.worker_platform_id ?? null,
         parentPlatformId: data.run.parent_platform_id ?? null,
         conversationPlatformId: data.run.conversation_platform_id ?? null,
@@ -212,6 +301,7 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   });
 
   const initialData = queryData?.workflowState ?? null;
+  const approvalAudit = queryData?.approvalAudit ?? null;
   const workerPlatformId = queryData?.workerPlatformId ?? null;
   const parentPlatformId = queryData?.parentPlatformId ?? null;
   const conversationPlatformId = queryData?.conversationPlatformId ?? null;
@@ -356,7 +446,20 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
       // otherwise fall back to the REST snapshot.
       dagNodes: liveWorkflow.dagNodes.length > 0 ? liveWorkflow.dagNodes : initialData.dagNodes,
       artifacts: liveWorkflow.artifacts.length > 0 ? liveWorkflow.artifacts : initialData.artifacts,
-
+      approval:
+        liveWorkflow.status === 'paused'
+          ? (liveWorkflow.approval ?? initialData.approval)
+          : undefined,
+      diagnostics: Array.from(
+        new Map(
+          [...(initialData.diagnostics ?? []), ...(liveWorkflow.diagnostics ?? [])].map(
+            diagnostic => [
+              `${diagnostic.code}:${diagnostic.timestamp}:${diagnostic.eventType ?? ''}:${diagnostic.stepName ?? ''}:${diagnostic.message}`,
+              diagnostic,
+            ]
+          )
+        ).values()
+      ).slice(-5),
       currentIteration: liveWorkflow.currentIteration ?? initialData.currentIteration,
       maxIterations: liveWorkflow.maxIterations ?? initialData.maxIterations,
     };
@@ -485,6 +588,20 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
     setNodeScrollTrigger(prev => prev + 1);
   }, []);
 
+  const approveMutation = useMutation({
+    mutationFn: (input: { scope?: 'once'; confirmHighImpact?: boolean }) =>
+      approveWorkflowRun(runId, undefined, input.scope, input.confirmHighImpact),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['workflowRun', runId] });
+    },
+  });
+  const rejectMutation = useMutation({
+    mutationFn: (reason?: string) => rejectWorkflowRun(runId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['workflowRun', runId] });
+    },
+  });
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-full text-error">
@@ -513,6 +630,30 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
   const elapsed = startedAt ? Math.max(0, completedAt - startedAt) : 0;
 
   const isRunning = workflow.status === 'running' || workflow.status === 'pending';
+  const diagnostics = liveWorkflow?.diagnostics ?? workflow.diagnostics ?? [];
+  const approval = workflow.status === 'paused' ? workflow.approval : undefined;
+  const approvalScopes = approval?.allowedScopes ?? (approval != null ? ['once'] : []);
+  const approvalDefaultScope = approval?.defaultScope ?? approvalScopes[0] ?? 'once';
+  const approvalIsHighImpact =
+    approval?.highImpact === true || isHighImpactApprovalClass(approval?.mutationClass);
+  const approvalMutationError = approveMutation.error ?? rejectMutation.error;
+  const approvalAuditRows = formatWorkflowApprovalAuditRows(approvalAudit);
+
+  const confirmHighImpactApproval = (): boolean => {
+    if (!approvalIsHighImpact) return true;
+    return window.confirm(
+      [
+        `High-impact approval: ${approval?.mutationClass ?? 'unknown'}`,
+        approval?.path ? `Path: ${approval.path}` : undefined,
+        approval?.command ? `Command: ${approval.command}` : undefined,
+        approval?.reason ? `Reason: ${approval.reason}` : undefined,
+        '',
+        'Approve only if you intend to allow this high-impact workflow gate.',
+      ]
+        .filter((line): line is string => line !== undefined)
+        .join('\n')
+    );
+  };
 
   // Pick the platform ID for logs: worker takes precedence over conversation.
   const logsPlatformId = workerPlatformId ?? conversationPlatformId;
@@ -663,6 +804,192 @@ export function WorkflowExecution({ runId }: WorkflowExecutionProps): React.Reac
           <span className="text-xs text-text-secondary">{formatDurationMs(elapsed)}</span>
         </div>
       </div>
+
+      {diagnostics.length > 0 && (
+        <div className="border-b border-warning/20 bg-warning/5 px-4 py-2 text-xs text-warning">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="min-w-0 space-y-1">
+              <p className="font-medium">Workflow diagnostics</p>
+              {diagnostics.map(diagnostic => (
+                <div
+                  key={`${diagnostic.code}:${diagnostic.timestamp}`}
+                  className="break-words text-warning/90"
+                >
+                  <span className="font-mono">{diagnostic.code}</span>
+                  <span>: {diagnostic.message}</span>
+                  {diagnostic.persistence && (
+                    <span className="ml-1 font-mono">({diagnostic.persistence})</span>
+                  )}
+                  {diagnostic.eventType && (
+                    <span className="ml-1 text-warning/80">event={diagnostic.eventType}</span>
+                  )}
+                  {diagnostic.stepName && (
+                    <span className="ml-1 text-warning/80">step={diagnostic.stepName}</span>
+                  )}
+                  {diagnostic.artifactPath && (
+                    <span className="ml-1">
+                      Artifact:{' '}
+                      <span className="font-mono break-all">{diagnostic.artifactPath}</span>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {approvalAuditRows.length > 0 && (
+        <div className="border-b border-primary/20 bg-primary/5 px-4 py-2 text-xs text-text-secondary">
+          <div className="flex items-start gap-2">
+            <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <div className="min-w-0 space-y-1">
+              <p className="font-medium text-text-primary">Approval audit</p>
+              <dl className="grid gap-0.5">
+                {approvalAuditRows.map(([label, value]) => (
+                  <div key={label} className="break-words">
+                    <dt className="inline text-text-tertiary">{label}: </dt>
+                    <dd className="inline">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {workflow.status === 'paused' && (
+        <div className="border-b border-warning/20 bg-warning/5 px-4 py-3 text-xs text-text-secondary">
+          <div className="flex items-start gap-2">
+            <Pause className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="space-y-1">
+                <p className="font-medium text-text-primary">
+                  {approval?.message ?? 'Waiting for approval'}
+                </p>
+                {approval && (
+                  <dl className="grid gap-0.5">
+                    {approval.mutationClass && (
+                      <div>
+                        <dt className="inline text-text-tertiary">Mutation class: </dt>
+                        <dd className="inline font-mono">{approval.mutationClass}</dd>
+                      </div>
+                    )}
+                    {approval.approvalChannel && (
+                      <div>
+                        <dt className="inline text-text-tertiary">Approval channel: </dt>
+                        <dd className="inline font-mono">{approval.approvalChannel}</dd>
+                      </div>
+                    )}
+                    {approval.highImpact !== undefined && (
+                      <div>
+                        <dt className="inline text-text-tertiary">High impact: </dt>
+                        <dd className="inline font-mono">{formatBoolean(approval.highImpact)}</dd>
+                      </div>
+                    )}
+                    {approval.highImpactConfirmed !== undefined && (
+                      <div>
+                        <dt className="inline text-text-tertiary">High-impact confirmed: </dt>
+                        <dd className="inline font-mono">
+                          {formatBoolean(approval.highImpactConfirmed)}
+                        </dd>
+                      </div>
+                    )}
+                    {approval.path && (
+                      <div>
+                        <dt className="inline text-text-tertiary">Path: </dt>
+                        <dd className="inline font-mono">{approval.path}</dd>
+                      </div>
+                    )}
+                    {approval.command && (
+                      <div>
+                        <dt className="inline text-text-tertiary">Command: </dt>
+                        <dd className="inline font-mono">{approval.command}</dd>
+                      </div>
+                    )}
+                    {approval.reason && (
+                      <div>
+                        <dt className="inline text-text-tertiary">Reason: </dt>
+                        <dd className="inline">{approval.reason}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt className="inline text-text-tertiary">Default scope: </dt>
+                      <dd className="inline font-mono">{approvalDefaultScope}</dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-text-tertiary">Allowed scopes: </dt>
+                      <dd className="inline font-mono">{approvalScopes.join(', ')}</dd>
+                    </div>
+                  </dl>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {approvalScopes.includes('once') && (
+                  <button
+                    type="button"
+                    onClick={(): void => {
+                      if (confirmHighImpactApproval()) {
+                        approveMutation.mutate({
+                          scope: 'once',
+                          confirmHighImpact: approvalIsHighImpact,
+                        });
+                      }
+                    }}
+                    disabled={approveMutation.isPending || rejectMutation.isPending}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-success/80 hover:bg-success/10 hover:text-success transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Approve once
+                  </button>
+                )}
+                {approvalScopes.includes('run') && (
+                  <span className="rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
+                    Approve for run unavailable: run-scoped approval is not implemented end-to-end
+                    yet.
+                  </span>
+                )}
+                <ConfirmRunActionDialog
+                  trigger={
+                    <button
+                      type="button"
+                      disabled={approveMutation.isPending || rejectMutation.isPending}
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-error/80 hover:bg-error/10 hover:text-error transition-colors disabled:opacity-50"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Reject
+                    </button>
+                  }
+                  title="Reject workflow?"
+                  description={
+                    <>
+                      Reject the paused workflow <strong>{workflow.workflowName}</strong>. If the
+                      approval node defines an <code>on_reject</code> prompt, it runs with your
+                      reason as <code>$REJECTION_REASON</code>; otherwise the run is cancelled.
+                    </>
+                  }
+                  confirmLabel="Reject"
+                  reasonInput={{
+                    label: 'Reason (optional)',
+                    placeholder: 'Why are you rejecting? Visible to the on_reject prompt.',
+                  }}
+                  onConfirm={(reason): void => {
+                    rejectMutation.mutate(reason);
+                  }}
+                />
+              </div>
+              {(approveMutation.isError || rejectMutation.isError) && (
+                <p className="text-xs text-error">
+                  {approvalMutationError instanceof Error
+                    ? approvalMutationError.message
+                    : 'Action failed - please try again'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View tabs — only for DAG workflows */}
       {isDag && (

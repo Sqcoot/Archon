@@ -197,7 +197,7 @@
   "schemaVersion": "aco.context-package.v1",
   "selectedRoute": {
     "commandId": "archon.context.compile",
-    "display": "archon context compile <prompt>",
+    "display": "archon context compile <prompt> [--no-write-artifact]",
     "implementationStatus": "supported",
     "owner": "aco-context"
   },

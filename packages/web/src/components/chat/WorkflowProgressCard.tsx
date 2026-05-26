@@ -6,10 +6,23 @@ import { cn } from '@/lib/utils';
 import { approveWorkflowRun, getWorkflowRunByWorker, rejectWorkflowRun } from '@/lib/api';
 import { useWorkflowStore } from '@/stores/workflow-store';
 import { ConfirmRunActionDialog } from '@/components/dashboard/ConfirmRunActionDialog';
+import { ArtifactSummary } from '@/components/workflows/ArtifactSummary';
 import { StatusIcon } from '@/components/workflows/StatusIcon';
 import { formatDurationMs } from '@/lib/format';
+import {
+  formatWorkflowApprovalAuditRows,
+  normalizeWorkflowApprovalAuditFromMetadata,
+  normalizeWorkflowApprovalFromMetadata,
+} from '@/lib/workflow-approval';
+import { workflowPersistenceDiagnosticsFromMetadata } from '@/lib/workflow-diagnostics';
 import { isTerminalStatus } from '@/lib/workflow-utils';
 import type { DagNodeState } from '@/lib/types';
+
+const HIGH_IMPACT_APPROVAL_CLASSES = new Set(['destructive', 'credential', 'remote', 'production']);
+
+function isHighImpactApprovalClass(mutationClass: string | undefined): boolean {
+  return mutationClass !== undefined && HIGH_IMPACT_APPROVAL_CLASSES.has(mutationClass);
+}
 
 interface WorkflowProgressCardProps {
   workflowName: string;
@@ -47,8 +60,16 @@ export function WorkflowProgressCard({
   const status = liveState?.status ?? restStatus;
   const dagNodes: DagNodeState[] = liveState?.dagNodes ?? [];
   const currentTool = liveState?.currentTool ?? null;
-  const approval = liveState?.approval ?? null;
+  const approval =
+    liveState?.approval ?? normalizeWorkflowApprovalFromMetadata(runData?.run?.metadata) ?? null;
+  const approvalAuditRows = formatWorkflowApprovalAuditRows(
+    normalizeWorkflowApprovalAuditFromMetadata(runData?.run?.metadata)
+  );
   const error = liveState?.error;
+  const diagnostics =
+    liveState?.diagnostics ??
+    (runId ? workflowPersistenceDiagnosticsFromMetadata(runId, runData?.run?.metadata) : []);
+  const liveArtifacts = liveState?.artifacts ?? [];
   const startedAt = liveState?.startedAt;
 
   const completedCount = dagNodes.filter(n => n.status === 'completed').length;
@@ -84,13 +105,34 @@ export function WorkflowProgressCard({
   }, [isRunning, startedAt]);
 
   // Approve/reject mutations
+  const approvalIsHighImpact =
+    approval?.highImpact === true || isHighImpactApprovalClass(approval?.mutationClass);
   const approveMutation = useMutation({
-    mutationFn: () => approveWorkflowRun(runId ?? ''),
+    mutationFn: (input: { scope?: 'once'; confirmHighImpact?: boolean }) =>
+      approveWorkflowRun(runId ?? '', undefined, input.scope, input.confirmHighImpact),
   });
   const rejectMutation = useMutation({
     mutationFn: (reason?: string) => rejectWorkflowRun(runId ?? '', reason),
   });
   const mutationError = approveMutation.error ?? rejectMutation.error;
+  const approvalScopes = approval?.allowedScopes ?? (approval != null ? ['once'] : []);
+  const approvalDefaultScope = approval?.defaultScope ?? approvalScopes[0] ?? 'once';
+
+  const confirmHighImpactApproval = (): boolean => {
+    if (!approvalIsHighImpact) return true;
+    return window.confirm(
+      [
+        `High-impact approval: ${approval?.mutationClass ?? 'unknown'}`,
+        approval?.path ? `Path: ${approval.path}` : undefined,
+        approval?.command ? `Command: ${approval.command}` : undefined,
+        approval?.reason ? `Reason: ${approval.reason}` : undefined,
+        '',
+        'Approve only if you intend to allow this high-impact workflow gate.',
+      ]
+        .filter((line): line is string => line !== undefined)
+        .join('\n')
+    );
+  };
 
   // Completed duration from live state
   const completedAt = liveState?.completedAt;
@@ -206,21 +248,97 @@ export function WorkflowProgressCard({
             <div className="border-t border-border px-3 py-2 space-y-2">
               <div className="rounded-md bg-warning/5 border border-warning/20 px-3 py-2 flex items-start gap-2">
                 <Pause className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
-                <p className="text-xs text-text-secondary">
-                  {approval?.message ?? 'Waiting for approval'}
-                </p>
+                <div className="space-y-1 text-xs text-text-secondary">
+                  <p>{approval?.message ?? 'Waiting for approval'}</p>
+                  {approval != null &&
+                    (approval.mutationClass ||
+                      approval.path ||
+                      approval.command ||
+                      approval.reason ||
+                      approvalScopes.length > 0) && (
+                      <dl className="grid gap-0.5">
+                        {approval.mutationClass && (
+                          <div>
+                            <dt className="inline text-text-tertiary">Mutation class: </dt>
+                            <dd className="inline font-mono">{approval.mutationClass}</dd>
+                          </div>
+                        )}
+                        {approval.path && (
+                          <div>
+                            <dt className="inline text-text-tertiary">Path: </dt>
+                            <dd className="inline font-mono">{approval.path}</dd>
+                          </div>
+                        )}
+                        {approval.command && (
+                          <div>
+                            <dt className="inline text-text-tertiary">Command: </dt>
+                            <dd className="inline font-mono">{approval.command}</dd>
+                          </div>
+                        )}
+                        {approval.reason && (
+                          <div>
+                            <dt className="inline text-text-tertiary">Reason: </dt>
+                            <dd className="inline">{approval.reason}</dd>
+                          </div>
+                        )}
+                        {approval.approvalChannel && (
+                          <div>
+                            <dt className="inline text-text-tertiary">Approval channel: </dt>
+                            <dd className="inline font-mono">{approval.approvalChannel}</dd>
+                          </div>
+                        )}
+                        {approval.highImpact !== undefined && (
+                          <div>
+                            <dt className="inline text-text-tertiary">High impact: </dt>
+                            <dd className="inline font-mono">
+                              {approval.highImpact ? 'yes' : 'no'}
+                            </dd>
+                          </div>
+                        )}
+                        {approval.highImpactConfirmed !== undefined && (
+                          <div>
+                            <dt className="inline text-text-tertiary">High-impact confirmed: </dt>
+                            <dd className="inline font-mono">
+                              {approval.highImpactConfirmed ? 'yes' : 'no'}
+                            </dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="inline text-text-tertiary">Default scope: </dt>
+                          <dd className="inline font-mono">{approvalDefaultScope}</dd>
+                        </div>
+                        <div>
+                          <dt className="inline text-text-tertiary">Allowed scopes: </dt>
+                          <dd className="inline font-mono">{approvalScopes.join(', ')}</dd>
+                        </div>
+                      </dl>
+                    )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    approveMutation.mutate();
-                  }}
-                  disabled={!runId || approveMutation.isPending || rejectMutation.isPending}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-success/80 hover:bg-success/10 hover:text-success transition-colors disabled:opacity-50"
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Approve
-                </button>
+                {approvalScopes.includes('once') && (
+                  <button
+                    onClick={() => {
+                      if (confirmHighImpactApproval()) {
+                        approveMutation.mutate({
+                          scope: 'once',
+                          confirmHighImpact: approvalIsHighImpact,
+                        });
+                      }
+                    }}
+                    disabled={!runId || approveMutation.isPending || rejectMutation.isPending}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-success/80 hover:bg-success/10 hover:text-success transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Approve once
+                  </button>
+                )}
+                {approvalScopes.includes('run') && (
+                  <span className="rounded-md px-2 py-1 text-xs text-warning/80 bg-warning/5">
+                    Approve for run unavailable: run-scoped approval is not implemented end-to-end
+                    yet.
+                  </span>
+                )}
                 <ConfirmRunActionDialog
                   trigger={
                     <button
@@ -259,6 +377,22 @@ export function WorkflowProgressCard({
             </div>
           )}
 
+          {approvalAuditRows.length > 0 && (
+            <div className="border-t border-border px-3 py-2 text-xs text-text-secondary">
+              <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-2">
+                <p className="font-medium text-text-primary">Approval audit</p>
+                <dl className="mt-1 grid gap-0.5">
+                  {approvalAuditRows.map(([label, value]) => (
+                    <div key={label} className="break-words">
+                      <dt className="inline text-text-tertiary">{label}: </dt>
+                      <dd className="inline">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
+          )}
+
           {/* Current tool activity */}
           {currentTool?.status === 'running' && (
             <div className="flex items-center gap-2 px-3 py-1.5 text-xs border-t border-border">
@@ -274,6 +408,51 @@ export function WorkflowProgressCard({
               title={error}
             >
               {error.slice(0, 120)}
+            </div>
+          )}
+
+          {diagnostics.length > 0 && (
+            <div className="px-3 py-1.5 text-xs text-warning border-t border-border">
+              <p className="font-medium">Workflow diagnostics</p>
+              <div className="mt-1 space-y-1">
+                {diagnostics.slice(-3).map(diagnostic => (
+                  <p
+                    key={`${diagnostic.code}:${diagnostic.timestamp}`}
+                    className="truncate"
+                    title={[
+                      `${diagnostic.code}: ${diagnostic.message}`,
+                      diagnostic.eventType ? `event=${diagnostic.eventType}` : undefined,
+                      diagnostic.stepName ? `step=${diagnostic.stepName}` : undefined,
+                      diagnostic.artifactPath ? `artifact=${diagnostic.artifactPath}` : undefined,
+                    ]
+                      .filter((part): part is string => part !== undefined)
+                      .join(' ')}
+                  >
+                    <span className="font-mono">{diagnostic.code}</span>
+                    <span>: {diagnostic.message}</span>
+                    {diagnostic.persistence && (
+                      <span className="ml-1 font-mono">({diagnostic.persistence})</span>
+                    )}
+                    {diagnostic.eventType && (
+                      <span className="ml-1 text-warning/80">event={diagnostic.eventType}</span>
+                    )}
+                    {diagnostic.stepName && (
+                      <span className="ml-1 text-warning/80">step={diagnostic.stepName}</span>
+                    )}
+                    {diagnostic.artifactPath && (
+                      <span className="ml-1 text-warning/80">
+                        artifact={diagnostic.artifactPath}
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {runId && liveArtifacts.length > 0 && (
+            <div className="border-t border-border px-3 py-2">
+              <ArtifactSummary artifacts={liveArtifacts} runId={runId} />
             </div>
           )}
 

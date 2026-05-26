@@ -1,9 +1,12 @@
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { ConversationLockManager } from '@archon/core';
 import type { WebAdapter } from '../adapters/web';
 import { validationErrorHook } from './openapi-defaults';
 import { mockAllWorkflowModules } from '../test/workflow-mock-factories';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 // ---------------------------------------------------------------------------
 // Mock setup — must be before dynamic imports of mocked modules
@@ -49,6 +52,9 @@ const mockAddMessage = mock(async () => ({
   created_at: new Date().toISOString(),
 }));
 const mockGenerateAndSetTitle = mock(async () => {});
+const mockGetCodebase = mock(async (_id: string) => null as null | { name: string });
+const tempRoots: string[] = [];
+let mockArtifactRoot = '/tmp/artifacts';
 
 // Type aliases for clarity in tests
 type MockWorkflowRun = {
@@ -126,6 +132,7 @@ mock.module('@archon/paths', () => ({
   getDefaultCommandsPath: mock(() => '/tmp/.archon-test-nonexistent/commands/defaults'),
   getDefaultWorkflowsPath: mock(() => '/tmp/.archon-test-nonexistent/workflows/defaults'),
   getArchonWorkspacesPath: () => '/tmp/.archon/workspaces',
+  getRunArtifactsPath: mock(() => mockArtifactRoot),
 }));
 
 mockAllWorkflowModules();
@@ -157,7 +164,7 @@ mock.module('@archon/core/db/conversations', () => ({
 
 mock.module('@archon/core/db/codebases', () => ({
   listCodebases: mock(async () => [{ default_cwd: '/tmp/project' }]),
-  getCodebase: mock(async () => null),
+  getCodebase: mockGetCodebase,
   deleteCodebase: mock(async () => {}),
 }));
 
@@ -196,6 +203,14 @@ mock.module('@archon/core/utils/commands', () => ({
 }));
 
 import { registerApiRoutes } from './api';
+
+afterEach(async () => {
+  mockGetCodebase.mockClear();
+  mockArtifactRoot = '/tmp/artifacts';
+  for (const root of tempRoots.splice(0)) {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -841,6 +856,86 @@ describe('GET /api/workflows/runs/:runId', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests: GET /api/artifacts/:runId/*
+// ---------------------------------------------------------------------------
+
+describe('GET /api/artifacts/:runId/*', () => {
+  beforeEach(() => {
+    mockGetWorkflowRun.mockReset();
+    mockGetCodebase.mockClear();
+  });
+
+  test('serves valid nested artifact files inside the run artifact root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'archon-artifact-route-'));
+    tempRoots.push(root);
+    const artifactDir = join(root, 'artifacts');
+    const nestedDir = join(artifactDir, 'reports');
+    await mkdir(nestedDir, { recursive: true });
+    await writeFile(join(nestedDir, 'summary.md'), '# Safe artifact\n', 'utf-8');
+    mockArtifactRoot = artifactDir;
+    mockGetWorkflowRun.mockResolvedValueOnce({
+      ...MOCK_COMPLETED_RUN,
+      id: 'run-artifact-valid',
+      codebase_id: 'cb-uuid-1',
+    });
+    mockGetCodebase.mockResolvedValueOnce({ name: 'owner/repo' });
+
+    const { app } = makeApp();
+    const response = await app.request('/api/artifacts/run-artifact-valid/reports/summary.md');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/markdown');
+    expect(await response.text()).toBe('# Safe artifact\n');
+  });
+
+  test('blocks symlinked artifacts that resolve outside the run artifact root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'archon-artifact-route-'));
+    tempRoots.push(root);
+    const artifactDir = join(root, 'artifacts');
+    const outsideFile = join(root, 'outside.md');
+    await mkdir(artifactDir, { recursive: true });
+    await writeFile(outsideFile, 'SECRET OUTSIDE ARTIFACT', 'utf-8');
+    await symlink(outsideFile, join(artifactDir, 'leak.md'));
+    mockArtifactRoot = artifactDir;
+    mockGetWorkflowRun.mockResolvedValueOnce({
+      ...MOCK_COMPLETED_RUN,
+      id: 'run-artifact-symlink',
+      codebase_id: 'cb-uuid-1',
+    });
+    mockGetCodebase.mockResolvedValueOnce({ name: 'owner/repo' });
+
+    const { app } = makeApp();
+    const response = await app.request('/api/artifacts/run-artifact-symlink/leak.md');
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toContain('Invalid filename');
+  });
+
+  test('rejects encoded backslash traversal before artifact lookup', async () => {
+    const { app } = makeApp();
+    const response = await app.request(
+      '/api/artifacts/run-artifact-backslash/subdir%5C..%5Csecret.md'
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toContain('Invalid filename');
+    expect(mockGetWorkflowRun).not.toHaveBeenCalled();
+  });
+
+  test('rejects encoded dot path segments before artifact lookup', async () => {
+    const { app } = makeApp();
+    const response = await app.request('/api/artifacts/run-artifact-dot/reports/%2E/summary.md');
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toContain('Invalid filename');
+    expect(mockGetWorkflowRun).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests: GET /api/dashboard/runs
 // ---------------------------------------------------------------------------
 
@@ -1284,6 +1379,19 @@ describe('POST /api/workflows/runs/:runId/approve', () => {
     expect(response.status).toBe(400);
   });
 
+  test('rejects run-scoped approval at the API boundary until implemented end-to-end', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce(MOCK_PAUSED_RUN);
+    const { app } = makeApp();
+    const response = await app.request('/api/workflows/runs/run-paused-1/approve', {
+      method: 'POST',
+      body: JSON.stringify({ scope: 'run' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(400);
+    expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+  });
+
   test('stores user comment as node_output when captureResponse is true', async () => {
     mockGetWorkflowRun.mockResolvedValueOnce({
       ...MOCK_PAUSED_RUN,
@@ -1304,6 +1412,24 @@ describe('POST /api/workflows/runs/:runId/approve', () => {
       headers: { 'Content-Type': 'application/json' },
     });
     expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      success: boolean;
+      approvalAudit?: Record<string, unknown>;
+      approval_audit?: Record<string, unknown>;
+    };
+    expect(body).toMatchObject({
+      success: true,
+      approvalAudit: expect.objectContaining({
+        decision: 'approved',
+        node_id: 'review-gate',
+        approval_channel: 'web',
+      }),
+      approval_audit: expect.objectContaining({
+        decision: 'approved',
+        node_id: 'review-gate',
+        approval_channel: 'web',
+      }),
+    });
     const nodeCompletedCall = mockCreateWorkflowEvent.mock.calls.find(
       (c: unknown[]) => (c[0] as Record<string, unknown>).event_type === 'node_completed'
     );
@@ -1326,6 +1452,175 @@ describe('POST /api/workflows/runs/:runId/approve', () => {
     );
     expect(nodeCompletedCall?.[0]).toMatchObject({
       data: { node_output: '', approval_decision: 'approved' },
+    });
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-paused-1', {
+      status: 'failed',
+      metadata: expect.objectContaining({
+        approval_response: 'approved',
+        approval_audit: expect.objectContaining({
+          decision: 'approved',
+          node_id: 'review-gate',
+          approval_scope: 'once',
+          approval_channel: 'web',
+          high_impact: false,
+          high_impact_confirmed: false,
+        }),
+      }),
+    });
+  });
+
+  test('blocks high-impact web approval without explicit confirmation', async () => {
+    for (const mutationClass of ['destructive', 'credential', 'remote', 'production'] as const) {
+      mockCreateWorkflowEvent.mockClear();
+      mockUpdateWorkflowRun.mockClear();
+      mockGetWorkflowRun.mockResolvedValueOnce({
+        ...MOCK_PAUSED_RUN,
+        id: `run-high-impact-${mutationClass}`,
+        metadata: {
+          approval: {
+            type: 'approval',
+            nodeId: `${mutationClass}-gate`,
+            message: `Approve ${mutationClass} operation?`,
+            mutationClass,
+            command: `${mutationClass}-command`,
+            reason: `${mutationClass} operation requires explicit approval`,
+          },
+        },
+      });
+
+      const { app } = makeApp();
+      const response = await app.request(
+        `/api/workflows/runs/run-high-impact-${mutationClass}/approve`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ comment: 'LGTM' }),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      expect(response.status).toBe(400);
+      expect(mockCreateWorkflowEvent).not.toHaveBeenCalled();
+      expect(mockUpdateWorkflowRun).not.toHaveBeenCalled();
+    }
+  });
+
+  test('allows high-impact web approval with explicit confirmation', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce({
+      ...MOCK_PAUSED_RUN,
+      id: 'run-high-impact-confirmed',
+      metadata: {
+        approval: {
+          type: 'approval',
+          nodeId: 'deploy-gate',
+          message: 'Deploy to production?',
+          mutationClass: 'production',
+          command: 'deploy-prod',
+          reason: 'Production deployment changes live traffic',
+        },
+      },
+    });
+
+    const { app } = makeApp();
+    const response = await app.request('/api/workflows/runs/run-high-impact-confirmed/approve', {
+      method: 'POST',
+      body: JSON.stringify({ comment: 'LGTM', confirmHighImpact: true }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      approvalAudit?: Record<string, unknown>;
+      approval_audit?: Record<string, unknown>;
+    };
+    expect(body).toMatchObject({
+      approvalAudit: expect.objectContaining({
+        decision: 'approved',
+        node_id: 'deploy-gate',
+        approval_channel: 'web',
+        high_impact: true,
+        high_impact_confirmed: true,
+        mutation_class: 'production',
+      }),
+      approval_audit: expect.objectContaining({
+        decision: 'approved',
+        node_id: 'deploy-gate',
+        approval_channel: 'web',
+        high_impact: true,
+        high_impact_confirmed: true,
+        mutation_class: 'production',
+      }),
+    });
+    const approvalReceivedCall = mockCreateWorkflowEvent.mock.calls.find(
+      (c: unknown[]) => (c[0] as Record<string, unknown>).event_type === 'approval_received'
+    );
+    expect(approvalReceivedCall?.[0]).toMatchObject({
+      data: {
+        decision: 'approved',
+        approval_channel: 'web',
+        mutation_class: 'production',
+        high_impact: true,
+        high_impact_confirmed: true,
+        command: 'deploy-prod',
+        reason: 'Production deployment changes live traffic',
+      },
+    });
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-high-impact-confirmed', {
+      status: 'failed',
+      metadata: expect.objectContaining({
+        approval_response: 'approved',
+        approval_audit: expect.objectContaining({
+          decision: 'approved',
+          node_id: 'deploy-gate',
+          approval_scope: 'once',
+          approval_channel: 'web',
+          high_impact: true,
+          high_impact_confirmed: true,
+          mutation_class: 'production',
+          command: 'deploy-prod',
+          reason: 'Production deployment changes live traffic',
+        }),
+      }),
+    });
+  });
+
+  test('preserves custom high-impact mutation class strings during web approval', async () => {
+    mockGetWorkflowRun.mockResolvedValueOnce({
+      ...MOCK_PAUSED_RUN,
+      id: 'run-custom-high-impact',
+      metadata: {
+        approval: {
+          type: 'approval',
+          nodeId: 'network-gate',
+          message: 'Change network boundary?',
+          mutationClass: 'network_boundary',
+          highImpact: true,
+          command: 'apply-network-policy',
+          reason: 'Network boundary changes require explicit review',
+        },
+      },
+    });
+
+    const { app } = makeApp();
+    const response = await app.request('/api/workflows/runs/run-custom-high-impact/approve', {
+      method: 'POST',
+      body: JSON.stringify({ comment: 'LGTM', confirmHighImpact: true }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(response.status).toBe(200);
+    const approvalReceivedCall = mockCreateWorkflowEvent.mock.calls.find(
+      (c: unknown[]) => (c[0] as Record<string, unknown>).event_type === 'approval_received'
+    );
+    expect(approvalReceivedCall?.[0]).toMatchObject({
+      data: {
+        decision: 'approved',
+        approval_channel: 'web',
+        mutation_class: 'network_boundary',
+        high_impact: true,
+        high_impact_confirmed: true,
+        command: 'apply-network-policy',
+        reason: 'Network boundary changes require explicit review',
+      },
     });
   });
 });
@@ -1373,9 +1668,40 @@ describe('POST /api/workflows/runs/:runId/reject', () => {
       headers: { 'Content-Type': 'application/json' },
     });
     expect(response.status).toBe(200);
-    const body = (await response.json()) as { success: boolean; message: string };
+    const body = (await response.json()) as {
+      success: boolean;
+      message: string;
+      approvalAudit?: Record<string, unknown>;
+      approval_audit?: Record<string, unknown>;
+    };
     expect(body.success).toBe(true);
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-paused-1');
+    expect(body).toMatchObject({
+      approvalAudit: expect.objectContaining({
+        decision: 'rejected',
+        node_id: 'review-gate',
+        rejection_reason: 'needs work',
+        approval_channel: 'web',
+      }),
+      approval_audit: expect.objectContaining({
+        decision: 'rejected',
+        node_id: 'review-gate',
+        rejection_reason: 'needs work',
+        approval_channel: 'web',
+      }),
+    });
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-paused-1', {
+      status: 'cancelled',
+      metadata: expect.objectContaining({
+        rejection_reason: 'needs work',
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review-gate',
+          rejection_reason: 'needs work',
+          approval_channel: 'web',
+        }),
+      }),
+    });
   });
 
   test('records rejection and increments count when on_reject configured and under limit', async () => {
@@ -1405,7 +1731,16 @@ describe('POST /api/workflows/runs/:runId/reject', () => {
     expect(body.message).toContain('On-reject prompt');
     expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-on-reject', {
       status: 'failed',
-      metadata: { rejection_reason: 'needs more tests', rejection_count: 1 },
+      metadata: expect.objectContaining({
+        rejection_reason: 'needs more tests',
+        rejection_count: 1,
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review-gate',
+          rejection_reason: 'needs more tests',
+          approval_channel: 'web',
+        }),
+      }),
     });
     expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
   });
@@ -1435,8 +1770,20 @@ describe('POST /api/workflows/runs/:runId/reject', () => {
     const body = (await response.json()) as { success: boolean; message: string };
     expect(body.success).toBe(true);
     expect(body.message).toContain('max attempts reached');
-    expect(mockCancelWorkflowRun).toHaveBeenCalledWith('run-max-attempts');
-    expect(mockUpdateWorkflowRun).not.toHaveBeenCalled();
+    expect(mockCancelWorkflowRun).not.toHaveBeenCalled();
+    expect(mockUpdateWorkflowRun).toHaveBeenCalledWith('run-max-attempts', {
+      status: 'cancelled',
+      metadata: expect.objectContaining({
+        rejection_reason: 'still bad',
+        rejection_count: 3,
+        approval_audit: expect.objectContaining({
+          decision: 'rejected',
+          node_id: 'review-gate',
+          rejection_reason: 'still bad',
+          approval_channel: 'web',
+        }),
+      }),
+    });
   });
 });
 

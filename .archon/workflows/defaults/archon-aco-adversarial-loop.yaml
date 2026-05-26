@@ -1,39 +1,41 @@
 name: archon-aco-adversarial-loop
 description: |
   Use when: S9 needs a conservative adversarial loop contract without claiming autonomous runtime parity.
-  Does: Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using read-only context outputs.
+  Does: Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using scoped artifact context outputs.
   Contract source: @archon/aco-workflows S9 workflow parity.
 provider: codex
 model: gpt-5.3-codex
+mode: autonomous
+lock_scope: artifact_only
 mutates_checkout: false
 
 nodes:
   - id: coordinator
     bash: |
-      archon context route "$ARGUMENTS" --json
+      archon context route "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: skill-bmad-review
     depends_on: [coordinator]
     bash: |
-      archon context compile "$ARGUMENTS" --json
+      archon context compile "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: search-evidence
     depends_on: [skill-bmad-review]
     bash: |
-      archon context graph-waivers --json
+      archon context graph-waivers --json --write-artifact
     timeout: 30000
   - id: planner-contract
     depends_on: [search-evidence]
     bash: |
-      archon context compile "$ARGUMENTS" --json
+      archon context compile "$ARGUMENTS" --json --write-artifact
     timeout: 30000
   - id: generator-qa-evaluator
     depends_on: [planner-contract]
     bash: |
-      archon context approval-capsule-verify --json
+      archon context approval-capsule-verify --json --write-artifact
     timeout: 30000
   - id: feedback-handoff
     depends_on: [generator-qa-evaluator]
     bash: |
-      archon context status "$ARGUMENTS" --json
+      archon context status "$ARGUMENTS" --json --write-artifact
     timeout: 30000

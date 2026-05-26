@@ -34,6 +34,14 @@ describe('buildRoutingRulesWithProject', () => {
 
     expect(rules).toContain('NO knowledge of the conversation history');
   });
+
+  test('routing rules default to autonomous workflow invocation', () => {
+    const rules = buildRoutingRulesWithProject();
+
+    expect(rules).toContain('Default to action');
+    expect(rules).toContain('continue without optional approval prompts');
+    expect(rules).toContain('next-goal text of about 4000 characters');
+  });
 });
 
 describe('formatWorkflowContextSection', () => {

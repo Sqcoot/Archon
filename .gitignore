@@ -65,6 +65,8 @@ artifacts/
 .agents/rca-reports/
 .agents/plans/
 .agents/pr-reviews
+_bmad/
+_bmad-output/
 party-mode-output*/
 party-mode-output*.zip
 .claude/PRPs/

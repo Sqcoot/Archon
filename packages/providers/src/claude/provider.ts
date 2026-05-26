@@ -36,7 +36,8 @@ import type {
   ProviderCapabilities,
   NodeConfig,
 } from '../types';
-import { parseClaudeConfig } from './config';
+import { parseClaudeConfigWithDiagnostics } from './config';
+import type { parseClaudeConfig } from './config';
 import { CLAUDE_CAPABILITIES } from './capabilities';
 import { resolveClaudeBinaryPath } from './binary-resolver';
 import { createLogger } from '@archon/paths';
@@ -269,7 +270,8 @@ interface ProviderWarning {
 /**
  * Translate nodeConfig into Claude SDK-specific options.
  * Called inside sendQuery when nodeConfig is present (workflow path).
- * Returns structured warnings that the caller should yield as system chunks.
+ * Returns structured non-fatal warnings that the caller should yield as system chunks.
+ * Missing required control resources throw before execution.
  */
 async function applyNodeConfig(
   options: Options,
@@ -325,19 +327,16 @@ async function applyNodeConfig(
     if (missingVars.length > 0) {
       const uniqueVars = [...new Set(missingVars)];
       getLog().warn({ missingVars: uniqueVars }, 'claude.mcp_env_vars_missing');
-      warnings.push({
-        code: 'mcp_env_vars_missing',
-        message: `MCP config references undefined env vars: ${uniqueVars.join(', ')}. These will be empty strings — MCP servers may fail to authenticate.`,
-      });
+      throw new Error(
+        `Claude MCP config failed validation: referenced undefined env vars ${uniqueVars.join(', ')}. Refusing to start MCP servers with empty credential/config values.`
+      );
     }
     // Haiku models don't support tool search (lazy loading for many tools)
     if (options.model?.toLowerCase().includes('haiku')) {
       getLog().warn({ model: options.model }, 'claude.mcp_haiku_tool_search_unsupported');
-      warnings.push({
-        code: 'mcp_haiku_tool_search',
-        message:
-          'Using Haiku model with MCP servers — tool search (lazy loading for many tools) is not supported on Haiku. Consider using Sonnet or Opus.',
-      });
+      throw new Error(
+        'Claude MCP config failed validation: Haiku models do not support MCP tool search/lazy loading. Use Sonnet or Opus for MCP-configured workflow nodes.'
+      );
     }
   }
 
@@ -631,7 +630,8 @@ function buildToolCaptureHooks(toolResultQueue: ToolResultEntry[]): Options['hoo
  */
 async function* streamClaudeMessages(
   events: AsyncGenerator,
-  toolResultQueue: ToolResultEntry[]
+  toolResultQueue: ToolResultEntry[],
+  mcpRequired = false
 ): AsyncGenerator<MessageChunk> {
   for await (const msg of events) {
     // Drain tool results captured by hooks before processing the next event
@@ -674,6 +674,9 @@ async function* streamClaudeMessages(
         const failed = sysMsg.mcp_servers.filter(s => s.status !== 'connected');
         if (failed.length > 0) {
           const names = failed.map(s => `${s.name} (${s.status})`).join(', ');
+          if (mcpRequired) {
+            throw new Error(`Claude MCP server connection failed: ${names}`);
+          }
           yield { type: 'system', content: `MCP server connection failed: ${names}` };
         }
       } else {
@@ -854,7 +857,19 @@ export class ClaudeProvider implements IAgentProvider {
     requestOptions?: SendQueryOptions
   ): AsyncGenerator<MessageChunk> {
     let lastError: Error | undefined;
-    const assistantDefaults = parseClaudeConfig(requestOptions?.assistantConfig ?? {});
+    const parsedAssistantDefaults = parseClaudeConfigWithDiagnostics(
+      requestOptions?.assistantConfig ?? {}
+    );
+    if (parsedAssistantDefaults.diagnostics.length > 0) {
+      const details = parsedAssistantDefaults.diagnostics
+        .map(
+          diagnostic =>
+            `${diagnostic.field}: ${diagnostic.message} ${diagnostic.badBehaviour.rationale}`
+        )
+        .join(' ');
+      throw new Error(`Claude provider config failed validation: ${details}`);
+    }
+    const assistantDefaults = parsedAssistantDefaults.config;
 
     // Resolve Claude CLI path once before the retry loop. In binary mode this
     // throws immediately if neither env nor config supplies a valid path, so
@@ -939,7 +954,11 @@ export class ClaudeProvider implements IAgentProvider {
         const events = withFirstMessageTimeout(rawEvents, controller, timeoutMs, diagnostics);
 
         // 5. Stream normalized events
-        yield* streamClaudeMessages(events, toolResultQueue);
+        yield* streamClaudeMessages(
+          events,
+          toolResultQueue,
+          Boolean(requestOptions?.nodeConfig?.mcp)
+        );
         return;
       } catch (error) {
         const err = error as Error;

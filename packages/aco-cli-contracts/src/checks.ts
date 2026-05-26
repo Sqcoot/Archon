@@ -4,7 +4,6 @@ import { acoCommandCatalogSchema, acoCommandDescriptorSchema } from './schemas';
 import type { AcoCommandDescriptor, AcoCommandId, AcoCommandImplementationStatus } from './schemas';
 
 const HIGH_RISK_MUTATIONS: readonly MutationClass[] = [
-  'writes-artifacts',
   'writes-tracked-files',
   'writes-user-files',
   'writes-config',

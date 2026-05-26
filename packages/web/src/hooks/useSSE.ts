@@ -3,6 +3,7 @@ import type {
   SSEEvent,
   ErrorDisplay,
   LoopIterationEvent,
+  WorkflowDiagnosticEvent,
   WorkflowStatusEvent,
   WorkflowArtifactEvent,
   WorkflowDispatchEvent,
@@ -36,6 +37,7 @@ interface SSEHandlers {
   onLockChange: (locked: boolean, queuePosition?: number) => void;
   onSessionInfo: (sessionId: string, cost?: number) => void;
   onWorkflowStatus?: (event: WorkflowStatusEvent) => void;
+  onWorkflowDiagnostic?: (event: WorkflowDiagnosticEvent) => void;
   onWorkflowArtifact?: (event: WorkflowArtifactEvent) => void;
   onDagNode?: (event: DagNodeEvent) => void;
   onLoopIteration?: (event: LoopIterationEvent) => void;
@@ -182,6 +184,9 @@ export function useSSE(
             ) {
               h.onLockChange(false);
             }
+            break;
+          case 'workflow_diagnostic':
+            h.onWorkflowDiagnostic?.(data);
             break;
           case 'workflow_artifact':
             h.onWorkflowArtifact?.(data);

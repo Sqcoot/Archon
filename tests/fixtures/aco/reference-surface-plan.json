@@ -18,47 +18,47 @@
       "compatibility": "preserve"
     },
     {
-      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
       "surface": "CLI/slash",
       "purpose": "Emit Codex-ready bootstrap capsule",
       "safety": "read-only or writes-artifacts",
-      "mutates": "artifact-only when flag set",
+      "mutates": "artifact-only",
       "approvalRequired": "no for artifact writes",
       "owner": "aco-codex",
       "compatibility": "preserve"
     },
     {
-      "command": "archon context status [prompt]",
+      "command": "archon context status [prompt] [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Show readiness, evidence, next decision",
-      "safety": "read-only",
-      "mutates": "no",
-      "approvalRequired": "no",
+      "safety": "read-only or writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no for artifact writes",
       "owner": "aco-context",
       "compatibility": "preserve"
     },
     {
-      "command": "archon context ledgers [prompt]",
+      "command": "archon context ledgers [prompt] [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Show tool and command ledgers",
-      "safety": "read-only",
-      "mutates": "no",
-      "approvalRequired": "no",
+      "safety": "read-only or writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no for artifact writes",
       "owner": "aco-ledgers",
       "compatibility": "preserve"
     },
     {
-      "command": "archon context route <prompt>",
+      "command": "archon context route <prompt> [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Select BMAD advisory route",
-      "safety": "read-only",
-      "mutates": "no",
-      "approvalRequired": "no",
+      "safety": "read-only or writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no for artifact writes",
       "owner": "aco-bmad",
       "compatibility": "preserve"
     },
     {
-      "command": "archon context compile <prompt>",
+      "command": "archon context compile <prompt> [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Compile context package and artifact archive",
       "safety": "writes-artifacts",
@@ -68,7 +68,7 @@
       "compatibility": "preserve"
     },
     {
-      "command": "archon context approval-capsule <prompt>",
+      "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Create approval capsule for approval-required package",
       "safety": "writes-artifacts",
@@ -78,22 +78,22 @@
       "compatibility": "preserve"
     },
     {
-      "command": "archon context approval-capsule-verify",
+      "command": "archon context approval-capsule-verify [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Verify approval contract against artifacts",
-      "safety": "read-only",
-      "mutates": "no",
-      "approvalRequired": "no",
+      "safety": "writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no unless graph/config mutation requested",
       "owner": "aco-context",
       "compatibility": "preserve"
     },
     {
-      "command": "archon context graph-waivers",
+      "command": "archon context graph-waivers [--no-write-artifact]",
       "surface": "CLI",
       "purpose": "Inspect graph waiver closure state",
-      "safety": "read-only",
-      "mutates": "no",
-      "approvalRequired": "no",
+      "safety": "writes-artifacts",
+      "mutates": "artifact-only",
+      "approvalRequired": "no unless graph/config mutation requested",
       "owner": "aco-research",
       "compatibility": "preserve"
     },

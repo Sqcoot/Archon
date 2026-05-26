@@ -694,6 +694,12 @@ function AdvancedTab({
           onUpdate({ hooks: v });
         }}
       />
+      <p className="text-[9px] text-warning">
+        Hooks are provider-capability validated and are only a safety boundary when
+        workflowNodeHooks is enforced for the selected provider. Codex workflow YAML hooks are
+        unsupported and fail validation; use provider-native runtime hooks covered by the Codex hook
+        bootloader artifacts instead.
+      </p>
     </div>
   );
 }

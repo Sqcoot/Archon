@@ -207,13 +207,13 @@ packages/cli/
 ┌──────────────────────────────────────────────────────────────────┐
 │ workflow.ts  workflowEventEmitCommand(runId, eventType, data?)   │
 │              createWorkflowStore().createWorkflowEvent(...)       │
-│              Non-throwing (fire-and-forget)                       │
+│              Non-throwing; reports persisted vs best_effort_failed │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 **Code:** `packages/cli/src/cli.ts` (case 'event'), `packages/cli/src/commands/workflow.ts:workflowEventEmitCommand`
 
-**Contract:** Event persistence is best-effort. `createWorkflowEvent` catches all errors internally -- the CLI prints a confirmation but cannot guarantee the event was stored.
+**Contract:** `createWorkflowEvent` catches persistence errors internally and returns a boolean. The CLI prints `Event persisted` only when the DB write succeeds; otherwise it prints `best_effort_failed` so operators can distinguish an emitted-but-unpersisted audit event.
 
 ---
 

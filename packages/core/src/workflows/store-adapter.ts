@@ -11,8 +11,11 @@ import * as workflowEventDb from '../db/workflow-events';
 import * as codebaseDb from '../db/codebases';
 import * as envVarDb from '../db/env-vars';
 import { getAgentProvider } from '@archon/providers';
+import { getWorkflowEventEmitter } from '@archon/workflows/event-emitter';
+import { markWorkflowEventDiagnosticsAwareStore } from '@archon/workflows/event-persistence';
 import { loadConfig as loadMergedConfig } from '../config/config-loader';
 import { createLogger } from '@archon/paths';
+import { recordWorkflowEventPersistenceDiagnostic } from './persistence-diagnostics';
 
 // Compile-time assertion: MergedConfig must remain a structural subtype of WorkflowConfig.
 // If MergedConfig drifts from WorkflowConfig, this line becomes a type error.
@@ -26,7 +29,7 @@ function getLog(): ReturnType<typeof createLogger> {
 }
 
 export function createWorkflowStore(): IWorkflowStore {
-  return {
+  const store: IWorkflowStore = {
     createWorkflowRun: workflowDb.createWorkflowRun,
     getWorkflowRun: workflowDb.getWorkflowRun,
     getActiveWorkflowRunByPath: workflowDb.getActiveWorkflowRunByPath,
@@ -44,9 +47,27 @@ export function createWorkflowStore(): IWorkflowStore {
     failWorkflowRun: workflowDb.failWorkflowRun,
     pauseWorkflowRun: workflowDb.pauseWorkflowRun,
     cancelWorkflowRun: workflowDb.cancelWorkflowRun,
-    createWorkflowEvent: async (data): Promise<void> => {
+    createWorkflowEvent: async (data): Promise<boolean> => {
       try {
-        await workflowEventDb.createWorkflowEvent(data);
+        const persisted = await workflowEventDb.createWorkflowEvent(data);
+        if (!persisted) {
+          await recordWorkflowEventPersistenceDiagnostic({
+            runId: data.workflow_run_id,
+            eventType: data.event_type,
+            ...(data.step_name ? { stepName: data.step_name } : {}),
+            reason: 'database createWorkflowEvent returned best-effort failure',
+            persistence: 'best_effort_failed',
+          });
+          getWorkflowEventEmitter().emit({
+            type: 'workflow_event_persist_failed',
+            runId: data.workflow_run_id,
+            eventType: data.event_type,
+            ...(data.step_name ? { stepName: data.step_name } : {}),
+            reason: 'database createWorkflowEvent returned best-effort failure',
+            persistence: 'best_effort_failed',
+          });
+        }
+        return persisted;
       } catch (err) {
         // Belt-and-suspenders: workflowEventDb.createWorkflowEvent already catches internally,
         // but this wrapper guarantees the IWorkflowStore non-throwing contract at the boundary.
@@ -54,12 +75,29 @@ export function createWorkflowStore(): IWorkflowStore {
           { err: err as Error, eventType: data.event_type, runId: data.workflow_run_id },
           'workflow_event_create_unexpected_throw'
         );
+        getWorkflowEventEmitter().emit({
+          type: 'workflow_event_persist_failed',
+          runId: data.workflow_run_id,
+          eventType: data.event_type,
+          ...(data.step_name ? { stepName: data.step_name } : {}),
+          reason: (err as Error).message,
+          persistence: 'best_effort_failed',
+        });
+        await recordWorkflowEventPersistenceDiagnostic({
+          runId: data.workflow_run_id,
+          eventType: data.event_type,
+          ...(data.step_name ? { stepName: data.step_name } : {}),
+          reason: (err as Error).message,
+          persistence: 'best_effort_failed',
+        });
+        return false;
       }
     },
     getCompletedDagNodeOutputs: workflowEventDb.getCompletedDagNodeOutputs,
     getCodebase: codebaseDb.getCodebase,
     getCodebaseEnvVars: envVarDb.getCodebaseEnvVars,
   };
+  return markWorkflowEventDiagnosticsAwareStore(store);
 }
 
 /**

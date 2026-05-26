@@ -206,7 +206,8 @@ export type PromptNode = z.infer<typeof promptNodeSchema> & {
 
 /**
  * Bash node schema — extends base with `bash` (shell script) and `timeout` (ms).
- * AI-specific fields from the base are present in the type but ignored at runtime with a warning.
+ * AI-specific compatibility fields from the base are stripped for type compatibility.
+ * Safety/output controls are rejected by loader.ts before schema stripping.
  */
 export const bashNodeSchema = dagNodeBaseSchema.extend({
   bash: z.string(),
@@ -226,7 +227,8 @@ export type BashNode = z.infer<typeof bashNodeSchema> & {
 /**
  * Script node schema — extends base with `script` (inline code or named script),
  * `runtime` ('bun' or 'uv'), `deps` (dependency list), and `timeout` (ms).
- * AI-specific fields from the base are present in the type but ignored at runtime with a warning.
+ * AI-specific compatibility fields from the base are stripped for type compatibility.
+ * Safety/output controls are rejected by loader.ts before schema stripping.
  */
 export const scriptNodeSchema = dagNodeBaseSchema.extend({
   script: z.string().min(1, 'script cannot be empty'),
@@ -247,7 +249,8 @@ export type ScriptNode = z.infer<typeof scriptNodeSchema> & {
 
 /**
  * Loop node schema — extends base with `loop` config.
- * AI-specific fields from the base are present in the type but ignored at runtime with a warning.
+ * AI-specific compatibility fields from the base are stripped for type compatibility.
+ * Safety/output controls are rejected by loader.ts before schema stripping.
  * retry is not supported on loop nodes (enforced at parse time).
  */
 export const loopNodeSchema = dagNodeBaseSchema.extend({
@@ -272,15 +275,45 @@ export const approvalOnRejectSchema = z.object({
 
 export type ApprovalOnReject = z.infer<typeof approvalOnRejectSchema>;
 
+export const approvalMutationClassSchema = z
+  .enum([
+    'read_only',
+    'artifact_only',
+    'checkout_mutation',
+    'external_side_effect',
+    'destructive',
+    'credential',
+    'remote',
+    'production',
+  ])
+  .or(z.string().min(1));
+
+export type ApprovalMutationClass = z.infer<typeof approvalMutationClassSchema>;
+
+export const approvalScopeSchema = z.enum(['once', 'run']);
+
+export type ApprovalScope = z.infer<typeof approvalScopeSchema>;
+
+const approvalMetadataSchema = {
+  mutation_class: approvalMutationClassSchema.optional(),
+  high_impact: z.boolean().optional(),
+  path: z.string().min(1).optional(),
+  command: z.string().min(1).optional(),
+  reason: z.string().min(1).optional(),
+  default_scope: approvalScopeSchema.optional(),
+  allowed_scopes: z.array(approvalScopeSchema).nonempty().optional(),
+};
+
 /**
  * Approval node schema — pauses the workflow for human review.
- * Extends full base for type compatibility; AI-specific fields are ignored at runtime.
+ * Extends full base for type compatibility; safety/output controls are rejected by loader.ts.
  */
 export const approvalNodeSchema = dagNodeBaseSchema.extend({
   approval: z.object({
     message: z.string().min(1, "'approval.message' must not be empty"),
     capture_response: z.boolean().optional(),
     on_reject: approvalOnRejectSchema.optional(),
+    ...approvalMetadataSchema,
   }),
 });
 
@@ -296,7 +329,7 @@ export type ApprovalNode = z.infer<typeof approvalNodeSchema> & {
 
 /**
  * Cancel node schema — terminates the workflow run with a reason string.
- * Extends full base for type compatibility; AI-specific fields are ignored at runtime.
+ * Extends full base for type compatibility; safety/output controls are rejected by loader.ts.
  */
 export const cancelNodeSchema = dagNodeBaseSchema.extend({
   cancel: z.string().min(1, "'cancel' reason must not be empty"),
@@ -326,7 +359,7 @@ export type DagNode =
 // AI-specific fields that are meaningless on non-AI nodes
 // ---------------------------------------------------------------------------
 
-/** AI-specific fields that are meaningless on bash nodes — exported for loader warnings */
+/** AI-specific fields that are meaningless on bash nodes — exported for loader fail-closed checks */
 export const BASH_NODE_AI_FIELDS: readonly string[] = [
   'provider',
   'model',
@@ -390,6 +423,7 @@ export const dagNodeSchema = dagNodeBaseSchema
         message: z.string().min(1, "'approval.message' must not be empty"),
         capture_response: z.boolean().optional(),
         on_reject: approvalOnRejectSchema.optional(),
+        ...approvalMetadataSchema,
       })
       .optional(),
     cancel: z.string().optional(),

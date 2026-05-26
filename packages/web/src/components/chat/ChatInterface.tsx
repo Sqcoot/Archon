@@ -37,6 +37,7 @@ import {
 } from '@/lib/message-cache';
 import { useProject } from '@/contexts/ProjectContext';
 import { ensureUtc } from '@/lib/format';
+import { workflowPersistenceDiagnosticsFromMetadata } from '@/lib/workflow-diagnostics';
 
 function mapMessageRow(row: MessageResponse): ChatMessage {
   let meta: {
@@ -250,6 +251,7 @@ export function ChatInterface({ conversationId }: ChatInterfaceProps): React.Rea
           completedAt: run.completed_at
             ? new Date(ensureUtc(run.completed_at)).getTime()
             : undefined,
+          diagnostics: workflowPersistenceDiagnosticsFromMetadata(run.id, run.metadata),
         });
       })
       .catch((err: unknown) => {

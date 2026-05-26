@@ -85,9 +85,9 @@ export function buildContextOrchestrateContract(): ParseResult<WorkflowParityCon
     id: 'context-orchestrate',
     purpose: 'Preserve context orchestration as a bundled workflow contract',
     triggerDescription:
-      'S9 needs read-only orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.',
+      'S9 needs artifact-scoped orchestration of context status, ledgers, routing, compilation, approval capsule verification, and handoff.',
     workflowDescription:
-      'Runs only read-only context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff.',
+      'Runs safe context CLI surfaces in the order status, ledgers, route, compile, approval capsule, verification, and handoff, with artifact-producing nodes writing scoped dossiers.',
     requiredNodes: contextOrchestrateNodes(),
     roleConstraints: [
       'workflow cannot claim implementation completion without evaluator evidence',
@@ -95,9 +95,9 @@ export function buildContextOrchestrateContract(): ParseResult<WorkflowParityCon
       'handoff must carry context digest and verification status',
     ],
     capabilityConstraints: [
-      'uses only supported S1-S8 read-only context command surfaces',
+      'uses only supported S1-S8 safe context command surfaces',
       'does not refresh graph evidence',
-      'does not request write-artifact flags',
+      'writes only scoped context dossier artifacts under the artifact root',
       'does not install or mutate workflow configuration',
     ],
     artifactContracts: contextOrchestrateArtifacts(),
@@ -112,7 +112,7 @@ export function buildAdversarialLoopContract(): ParseResult<WorkflowParityContra
     triggerDescription:
       'S9 needs a conservative adversarial loop contract without claiming autonomous runtime parity.',
     workflowDescription:
-      'Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using read-only context outputs.',
+      'Represents coordinator, BMAD review, search evidence, planner contract, generator/QA/evaluator, and feedback handoff using scoped artifact context outputs.',
     requiredNodes: adversarialLoopNodes(),
     roleConstraints: [
       'planner proposes criteria but cannot declare final completion',
@@ -215,14 +215,18 @@ function commandBindings(
   return nodes.flatMap(node =>
     node.contextCommandIds.map(commandId => {
       const descriptor = descriptorOrThrow(commandId);
+      const requestedMutationClasses = [descriptor.mutates];
       return {
         nodeId: node.id,
         commandId: descriptor.id,
         display: descriptor.display,
         implementationStatus: descriptor.implementationStatus,
-        requestedMutationClasses: ['read-only'],
+        requestedMutationClasses,
         outputModes: descriptor.outputModes,
-        reason: `${node.id} consumes ${descriptor.display} without mutation flags`,
+        reason:
+          descriptor.mutates === 'writes-artifacts'
+            ? `${node.id} consumes ${descriptor.display} with default scoped artifact writes`
+            : `${node.id} consumes ${descriptor.display} as read-only`,
       } as const;
     })
   );
@@ -282,7 +286,7 @@ function contextOrchestrateNodes(): readonly WorkflowNodeContract[] {
     ),
     node(
       'route',
-      'Select the read-only advisory route for the prompt',
+      'Select the advisory route for the prompt and persist scoped route evidence',
       ['ledgers'],
       ['archon.context.route']
     ),
@@ -329,7 +333,7 @@ function adversarialLoopNodes(): readonly WorkflowNodeContract[] {
     ),
     node(
       'search-evidence',
-      'Read graph waiver state without refreshing graph cache',
+      'Record graph waiver state without refreshing graph cache',
       ['skill-bmad-review'],
       ['archon.context.graph-waivers']
     ),
@@ -368,7 +372,10 @@ function node(
     contextCommandIds: [...contextCommandIds],
     role: roleForNode(id),
     requiredArtifacts: [...requiredArtifacts],
-    completionEvidence: [`${id} output is present`, `${id} contract remains read-only`],
+    completionEvidence: [
+      `${id} output is present`,
+      `${id} contract remains within artifact-only scope`,
+    ],
   };
 }
 

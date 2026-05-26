@@ -1,6 +1,7 @@
 # ACO Ledgers Migration Note
 
-S3 keeps `archon context ledgers [prompt]` out of CLI wiring and captures its data contract in
+S3 originally kept `archon context ledgers [prompt]` out of CLI wiring; the preserved surface is now
+`archon context ledgers [prompt] [--no-write-artifact]`, with default scoped artifact writes captured in
 `@archon/aco-ledgers`.
 
 Future `packages/context-orchestrator/src/ledgers.ts` should call `buildLedgerBundle` for pure

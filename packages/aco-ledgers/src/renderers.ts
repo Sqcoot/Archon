@@ -14,7 +14,7 @@ export function serializeLedgerBundle(bundle: LedgerBundle): string {
 
 export function renderLedgerBundleSummary(bundle: LedgerBundle): string {
   const requiredCommand = bundle.commands.find(
-    command => command.subject.command === 'archon context ledgers [prompt]'
+    command => command.subject.command === 'archon context ledgers [prompt] [--no-write-artifact]'
   );
   const lines = [
     '# ACO Ledger Bundle',

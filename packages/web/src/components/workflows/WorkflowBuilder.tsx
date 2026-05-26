@@ -17,11 +17,12 @@ import {
 import type { CommandEntry } from '@/lib/api';
 import { dagNodesToReactFlow } from '@/lib/dag-layout';
 import { useBuilderKeyboard } from '@/hooks/useBuilderKeyboard';
+import { useProviders } from '@/hooks/useProviders';
 import { useBuilderUndo } from '@/hooks/useBuilderUndo';
 import { useBuilderValidation } from '@/hooks/useBuilderValidation';
 import type { ValidationIssue } from '@/hooks/useBuilderValidation';
 import { BuilderToolbar } from './BuilderToolbar';
-import type { ViewMode } from './BuilderToolbar';
+import type { ViewMode, WorkflowLockScope, WorkflowMode } from './BuilderToolbar';
 import { NodeLibrary } from './NodeLibrary';
 import { WorkflowCanvas, reactFlowToDagNodes } from './WorkflowCanvas';
 import { NodeInspector } from './NodeInspector';
@@ -29,6 +30,11 @@ import { ValidationPanel } from './ValidationPanel';
 import { StatusBar } from './StatusBar';
 import { YamlCodeView } from './YamlCodeView';
 import type { DagNodeData, DagFlowNode } from './DagNodeComponent';
+
+type WorkflowRuntimeControls = Pick<
+  WorkflowDefinition,
+  'modelReasoningEffort' | 'webSearchMode' | 'additionalDirectories'
+>;
 
 const NODE_LIBRARY_WIDTH_KEY = 'archon:nodeLibraryWidth';
 const NODE_LIBRARY_MIN_WIDTH = 160;
@@ -129,6 +135,9 @@ function WorkflowBuilderInner(): React.ReactElement {
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [provider, setProvider] = useState<string | undefined>(undefined);
   const [model, setModel] = useState<string | undefined>(undefined);
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode | undefined>(undefined);
+  const [lockScope, setLockScope] = useState<WorkflowLockScope | undefined>(undefined);
+  const [runtimeControls, setRuntimeControls] = useState<WorkflowRuntimeControls>({});
   const [workflowSource, setWorkflowSource] = useState<WorkflowSource | undefined>(undefined);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -158,8 +167,19 @@ function WorkflowBuilderInner(): React.ReactElement {
 
   const { pushSnapshot, undo, redo } = useBuilderUndo();
   const { zoom } = useViewport();
+  const { providers } = useProviders();
 
-  const validationIssues = useBuilderValidation(workflowName, workflowDescription, nodes, edges);
+  const validationIssues = useBuilderValidation(
+    workflowName,
+    workflowDescription,
+    nodes,
+    edges,
+    provider,
+    providers,
+    workflowMode,
+    lockScope,
+    runtimeControls
+  );
   const errorCount = useMemo(
     () => validationIssues.filter(i => i.severity === 'error').length,
     [validationIssues]
@@ -195,9 +215,32 @@ function WorkflowBuilderInner(): React.ReactElement {
       description,
       provider,
       model,
+      ...(workflowMode ? { mode: workflowMode } : {}),
+      ...(lockScope ? { lock_scope: lockScope } : {}),
+      ...(workflowMode === 'interactive_only' ? { interactive: true } : {}),
+      ...(runtimeControls.modelReasoningEffort
+        ? { modelReasoningEffort: runtimeControls.modelReasoningEffort }
+        : {}),
+      ...(runtimeControls.webSearchMode ? { webSearchMode: runtimeControls.webSearchMode } : {}),
+      ...(runtimeControls.additionalDirectories !== undefined
+        ? { additionalDirectories: runtimeControls.additionalDirectories }
+        : {}),
+      ...(lockScope === 'read_only' || lockScope === 'artifact_only'
+        ? { mutates_checkout: false }
+        : {}),
       nodes: dagNodes,
     };
-  }, [workflowName, workflowDescription, provider, model, nodes, edges]);
+  }, [
+    workflowName,
+    workflowDescription,
+    provider,
+    model,
+    workflowMode,
+    runtimeControls,
+    lockScope,
+    nodes,
+    edges,
+  ]);
 
   const loadWorkflow = useCallback(
     async (name: string): Promise<void> => {
@@ -207,6 +250,13 @@ function WorkflowBuilderInner(): React.ReactElement {
         setWorkflowDescription(workflow.description);
         setProvider(workflow.provider);
         setModel(workflow.model);
+        setWorkflowMode(workflow.mode);
+        setLockScope(workflow.lock_scope);
+        setRuntimeControls({
+          modelReasoningEffort: workflow.modelReasoningEffort,
+          webSearchMode: workflow.webSearchMode,
+          additionalDirectories: workflow.additionalDirectories,
+        });
         setWorkflowSource(source);
         setValidationErrors([]);
 
@@ -290,6 +340,10 @@ function WorkflowBuilderInner(): React.ReactElement {
       setValidationErrors(['Workflow name is required']);
       return;
     }
+    if (errorCount > 0) {
+      setValidationPanelOpen(true);
+      return;
+    }
     try {
       const def = buildDefinition();
       const validation = await validateWorkflow(def);
@@ -306,10 +360,14 @@ function WorkflowBuilderInner(): React.ReactElement {
       setValidationErrors([`Save failed: ${error.message}`]);
       setValidationPanelOpen(true);
     }
-  }, [buildDefinition, workflowName, cwd, workflowSource]);
+  }, [buildDefinition, workflowName, cwd, workflowSource, errorCount]);
 
   const handleRun = useCallback(async (): Promise<void> => {
     if (!workflowName.trim() || hasUnsavedChanges) return;
+    if (errorCount > 0) {
+      setValidationPanelOpen(true);
+      return;
+    }
     try {
       const result = await createConversation(selectedProjectId ?? undefined);
       const conversationId = result.conversationId;
@@ -321,7 +379,7 @@ function WorkflowBuilderInner(): React.ReactElement {
       setValidationErrors([`Run failed: ${error.message}`]);
       setValidationPanelOpen(true);
     }
-  }, [workflowName, hasUnsavedChanges, selectedProjectId, navigate]);
+  }, [workflowName, hasUnsavedChanges, errorCount, selectedProjectId, navigate]);
 
   // Undo/redo handlers
   const handleUndo = useCallback((): void => {
@@ -444,8 +502,11 @@ function WorkflowBuilderInner(): React.ReactElement {
         workflowDescription={workflowDescription}
         provider={provider}
         model={model}
+        workflowMode={workflowMode}
+        lockScope={lockScope}
         hasUnsavedChanges={hasUnsavedChanges}
         validationErrors={toolbarValidationErrors}
+        validationErrorCount={errorCount}
         viewMode={yamlViewMode}
         onNameChange={(n): void => {
           setWorkflowName(n);
@@ -461,6 +522,14 @@ function WorkflowBuilderInner(): React.ReactElement {
         }}
         onModelChange={(m): void => {
           setModel(m);
+          markDirty();
+        }}
+        onWorkflowModeChange={(mode): void => {
+          setWorkflowMode(mode);
+          markDirty();
+        }}
+        onLockScopeChange={(scope): void => {
+          setLockScope(scope);
           markDirty();
         }}
         onViewModeChange={setYamlViewMode}

@@ -38,8 +38,24 @@ export { ClaudeProvider } from './claude/provider';
 export { CodexProvider } from './codex/provider';
 
 // Config parsers
-export { parseClaudeConfig, type ClaudeProviderDefaults } from './claude/config';
-export { parseCodexConfig, type CodexProviderDefaults } from './codex/config';
+export {
+  parseClaudeConfig,
+  parseClaudeConfigWithDiagnostics,
+  type ClaudeConfigDiagnostic,
+  type ClaudeProviderDefaults,
+  type ParsedClaudeConfig,
+} from './claude/config';
+export {
+  parseCodexConfig,
+  type CodexConfigDiagnostic,
+  type CodexProviderDefaults,
+  type ParsedCodexConfig,
+} from './codex/config';
+export {
+  runCodexHookBootloaderPreflight,
+  type CodexHookBootloaderResult,
+  type CodexHookBootloaderReport,
+} from './codex/hooks-preflight';
 
 // Utilities (needed by consumers)
 export { resetCodexSingleton } from './codex/provider';
@@ -51,6 +67,9 @@ export { resolveClaudeBinaryPath, fileExists as claudeFileExists } from './claud
 export {
   PiProvider,
   parsePiConfig,
+  parsePiConfigWithDiagnostics,
   registerPiProvider,
+  type ParsedPiConfig,
+  type PiConfigDiagnostic,
   type PiProviderDefaults,
 } from './community/pi';

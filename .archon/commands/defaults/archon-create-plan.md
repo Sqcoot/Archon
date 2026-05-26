@@ -137,7 +137,7 @@ So that <benefit/value>
 - [ ] Complexity assessment has rationale
 - [ ] Affected systems identified
 
-**GATE**: If requirements are AMBIGUOUS → STOP and ASK user for clarification before proceeding.
+**AUTONOMY GATE**: If requirements are ambiguous, make the best safe engineering assumption, record it in the plan's Assumptions section, and proceed. Stop to ask the user only when every safe implementation path is blocked, credentials/external account authorization are missing, or the next action would be destructive and irreversible.
 
 ---
 

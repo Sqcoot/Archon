@@ -66,7 +66,7 @@ mock.module('@archon/core', () => ({
   generateAndSetTitle: mock(() => Promise.resolve()),
   loadRepoConfig: mock(() => Promise.resolve(null)),
   createWorkflowStore: mock(() => ({
-    createWorkflowEvent: mock(() => Promise.resolve()),
+    createWorkflowEvent: mock(() => Promise.resolve(true)),
   })),
 }));
 
@@ -140,7 +140,7 @@ mock.module('@archon/core/db/workflows', () => ({
 
 mock.module('@archon/core/db/workflow-events', () => ({
   listWorkflowEvents: mock(() => Promise.resolve([])),
-  createWorkflowEvent: mock(() => Promise.resolve()),
+  createWorkflowEvent: mock(() => Promise.resolve(true)),
 }));
 
 describe('workflowListCommand', () => {
@@ -1555,6 +1555,52 @@ describe('workflowStatusCommand', () => {
     expect(calls.some(c => c.includes('running'))).toBe(true);
   });
 
+  it('shows paused approval safety metadata and unsupported run scope in status output', async () => {
+    const workflowDb = await import('@archon/core/db/workflows');
+    (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([
+      {
+        id: 'run-approval',
+        workflow_name: 'deploy-prod',
+        working_path: '/path/to/worktree',
+        status: 'paused',
+        started_at: new Date(Date.now() - 5 * 60 * 1000),
+        metadata: {
+          approval: {
+            type: 'approval',
+            nodeId: 'prod-gate',
+            message: 'Deploy to production?',
+            mutationClass: 'production',
+            path: '/srv/app',
+            command: 'kubectl apply -f deploy.yaml',
+            reason: 'Production deploy gate',
+            highImpact: true,
+            highImpactConfirmed: false,
+            allowedScopes: ['once', 'run'],
+            defaultScope: 'once',
+          },
+        },
+      },
+    ]);
+
+    await workflowStatusCommand();
+
+    const calls = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(calls.some(c => c.includes('Approval node: prod-gate'))).toBe(true);
+    expect(calls.some(c => c.includes('Mutation class: production'))).toBe(true);
+    expect(calls.some(c => c.includes('Path: /srv/app'))).toBe(true);
+    expect(calls.some(c => c.includes('Command: kubectl apply -f deploy.yaml'))).toBe(true);
+    expect(calls.some(c => c.includes('Reason: Production deploy gate'))).toBe(true);
+    expect(calls.some(c => c.includes('High impact: yes'))).toBe(true);
+    expect(calls.some(c => c.includes('High-impact confirmed: no'))).toBe(true);
+    expect(
+      calls.some(c =>
+        c.includes('Approve once: workflow approve run-approval --scope once --confirm-high-impact')
+      )
+    ).toBe(true);
+    expect(calls.some(c => c.includes('Approve for run: unavailable'))).toBe(true);
+    expect(calls.some(c => c.includes('normal chat approval is blocked'))).toBe(true);
+  });
+
   it('should output JSON when json=true', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
     (workflowDb.listWorkflowRuns as ReturnType<typeof mock>).mockResolvedValueOnce([]);
@@ -1947,6 +1993,46 @@ describe('workflowApproveCommand', () => {
     );
   });
 
+  it('should require explicit confirmation for all built-in high-impact approval classes', async () => {
+    const workflowDb = await import('@archon/core/db/workflows');
+
+    for (const mutationClass of ['destructive', 'credential', 'remote', 'production'] as const) {
+      (workflowDb.getWorkflowRun as ReturnType<typeof mock>).mockResolvedValueOnce({
+        id: `run-high-impact-${mutationClass}`,
+        workflow_name: 'deploy',
+        status: 'paused',
+        user_message: `approve ${mutationClass}`,
+        working_path: '/tmp/test-worktree',
+        codebase_id: 'cb-existing',
+        metadata: {
+          approval: {
+            nodeId: `${mutationClass}-gate`,
+            message: `Approve ${mutationClass} operation?`,
+            mutationClass,
+          },
+        },
+      });
+
+      await expect(workflowApproveCommand(`run-high-impact-${mutationClass}`)).rejects.toThrow(
+        `High-impact approval '${mutationClass}' requires explicit high-impact confirmation.`
+      );
+    }
+  });
+
+  it('should reject approve-for-run before loading the run until run scope is implemented end-to-end', async () => {
+    await expect(workflowApproveCommand('run-scope', undefined, { scope: 'run' })).rejects.toThrow(
+      "Approval scope 'run' is not implemented end-to-end yet. Use approval scope 'once'."
+    );
+    const workflowDb = await import('@archon/core/db/workflows');
+    expect(workflowDb.getWorkflowRun).not.toHaveBeenCalled();
+  });
+
+  it('should reject invalid approval scope before loading the run', async () => {
+    await expect(
+      workflowApproveCommand('run-invalid-scope', undefined, { scope: 'forever' })
+    ).rejects.toThrow("Invalid approval scope 'forever'. Expected 'once'.");
+  });
+
   it('should pass codebase_id from run record to workflowRunCommand', async () => {
     const workflowDb = await import('@archon/core/db/workflows');
     const codebaseDb = await import('@archon/core/db/codebases');
@@ -1964,7 +2050,7 @@ describe('workflowApproveCommand', () => {
     });
 
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: mock(() => Promise.resolve(true)),
     });
 
     (
@@ -1986,6 +2072,19 @@ describe('workflowApproveCommand', () => {
       // downstream failure is acceptable
     }
 
+    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith(
+      'run-approve-1',
+      expect.objectContaining({
+        status: 'failed',
+        metadata: expect.objectContaining({
+          approval_audit: expect.objectContaining({
+            decision: 'approved',
+            node_id: 'review-node',
+            approval_channel: 'cli',
+          }),
+        }),
+      })
+    );
     expect(codebaseDb.getCodebase).toHaveBeenCalledWith('cb-existing');
   });
 
@@ -2061,7 +2160,7 @@ describe('workflowApproveCommand', () => {
     });
 
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: mock(() => Promise.resolve(true)),
     });
 
     (codebaseDb.getCodebase as ReturnType<typeof mock>).mockResolvedValueOnce({
@@ -2225,12 +2324,26 @@ describe('workflowRejectCommand', () => {
       metadata: { approval: { type: 'approval', nodeId: 'gate', message: 'Approve?' } },
     });
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: mock(() => Promise.resolve(true)),
     });
 
     await workflowRejectCommand('run-plain', 'not good');
 
-    expect(workflowDb.cancelWorkflowRun).toHaveBeenCalledWith('run-plain');
+    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith(
+      'run-plain',
+      expect.objectContaining({
+        status: 'cancelled',
+        metadata: expect.objectContaining({
+          rejection_reason: 'not good',
+          approval_audit: expect.objectContaining({
+            decision: 'rejected',
+            node_id: 'gate',
+            rejection_reason: 'not good',
+            approval_channel: 'cli',
+          }),
+        }),
+      })
+    );
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Rejected and cancelled'));
   });
 
@@ -2263,10 +2376,22 @@ describe('workflowRejectCommand', () => {
       // downstream workflowRunCommand failure is acceptable in this unit test
     }
 
-    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith('run-on-reject', {
-      status: 'failed',
-      metadata: { rejection_reason: 'needs work', rejection_count: 1 },
-    });
+    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith(
+      'run-on-reject',
+      expect.objectContaining({
+        status: 'failed',
+        metadata: expect.objectContaining({
+          rejection_reason: 'needs work',
+          rejection_count: 1,
+          approval_audit: expect.objectContaining({
+            decision: 'rejected',
+            node_id: 'gate',
+            rejection_reason: 'needs work',
+            approval_channel: 'cli',
+          }),
+        }),
+      })
+    );
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Rejected workflow'));
   });
 
@@ -2348,12 +2473,27 @@ describe('workflowRejectCommand', () => {
       },
     });
     (core.createWorkflowStore as ReturnType<typeof mock>).mockReturnValueOnce({
-      createWorkflowEvent: mock(() => Promise.resolve()),
+      createWorkflowEvent: mock(() => Promise.resolve(true)),
     });
 
     await workflowRejectCommand('run-max', 'still bad');
 
-    expect(workflowDb.cancelWorkflowRun).toHaveBeenCalledWith('run-max');
+    expect(workflowDb.updateWorkflowRun).toHaveBeenCalledWith(
+      'run-max',
+      expect.objectContaining({
+        status: 'cancelled',
+        metadata: expect.objectContaining({
+          rejection_reason: 'still bad',
+          rejection_count: 3,
+          approval_audit: expect.objectContaining({
+            decision: 'rejected',
+            node_id: 'gate',
+            rejection_reason: 'still bad',
+            approval_channel: 'cli',
+          }),
+        }),
+      })
+    );
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('max attempts reached'));
   });
 

@@ -96,11 +96,11 @@ function validateBundle(
   if (bundle.command.owner !== 'aco-codex') {
     errors.push('bootstrap-codex command owner must be aco-codex');
   }
-  if (bundle.command.defaultMutates !== 'read-only') {
-    errors.push('bootstrap-codex command default mode must be read-only');
+  if (bundle.command.defaultMutates !== 'writes-artifacts') {
+    errors.push('bootstrap-codex command default mode must write scoped artifacts');
   }
-  if (bundle.command.writeArtifactMutates !== 'writes-artifacts') {
-    errors.push('bootstrap-codex write mode must be artifact-only');
+  if (bundle.command.noWriteArtifactMutates !== 'read-only') {
+    errors.push('bootstrap-codex no-write-artifact mode must be read-only');
   }
   if (bundle.command.compatibility !== 'preserve') {
     errors.push('bootstrap-codex command compatibility must be preserve');

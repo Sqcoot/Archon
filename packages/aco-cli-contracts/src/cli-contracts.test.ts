@@ -80,7 +80,7 @@ describe('ACO CLI command contracts', () => {
     expect(unregistered.stderr).toContain('no S7 handler is registered');
   });
 
-  test('fails closed for unknown commands, readonly mutation, and missing approval', async () => {
+  test('fails closed for unknown commands and missing approval while allowing scoped artifact writes', async () => {
     const catalog = buildCatalogOrThrow();
     const router = new AcoCommandRouter({ descriptors: catalog.descriptors });
 
@@ -89,11 +89,10 @@ describe('ACO CLI command contracts', () => {
       JSON.parse(await loadGolden('unsupported-command-diagnostic.expected.json'))
     );
 
-    const readonlyMutation = await router.dispatch(
+    const scopedArtifactWrite = await router.dispatch(
       invocation('archon.context.compile', ['writes-artifacts'], true)
     );
-    expect(readonlyMutation.status).toBe('denied');
-    expect(readonlyMutation.stderr).toContain('readonly context forbids');
+    expect(scopedArtifactWrite.status).not.toBe('denied');
 
     const graph = await router.dispatch(invocation('bun.research.graph', ['writes-graph-cache']));
     expect(JSON.parse(renderCliResultJson(graph))).toEqual(

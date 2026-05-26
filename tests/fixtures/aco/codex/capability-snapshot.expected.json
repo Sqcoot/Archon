@@ -173,9 +173,9 @@
   ],
   "command": {
     "approvalRequired": false,
-    "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+    "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
     "compatibility": "preserve",
-    "defaultMutates": "read-only",
+    "defaultMutates": "writes-artifacts",
     "evidence": [
       {
         "confidence": "high",
@@ -188,7 +188,7 @@
     "kind": "codex-bootstrap-command",
     "manifest": {
       "approvalRequired": false,
-      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--write-artifact]",
+      "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
       "compatibility": "preserve",
       "evidence": [
         {
@@ -201,13 +201,13 @@
       ],
       "id": "command.archon-aco-bootstrap-codex",
       "kind": "command-manifest",
-      "mutates": "read-only",
+      "mutates": "writes-artifacts",
       "owner": "aco-codex",
       "purpose": "Emit Codex-ready bootstrap capsule",
       "surface": "CLI/slash"
     },
     "owner": "aco-codex",
-    "writeArtifactMutates": "writes-artifacts"
+    "noWriteArtifactMutates": "read-only"
   },
   "evidence": [
     {

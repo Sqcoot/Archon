@@ -1,19 +1,37 @@
 /**
  * Workflow Executor - runs DAG-based workflows
  */
-import { mkdir } from 'fs/promises';
-import { join } from 'path';
+import { join, relative } from 'path';
 import type { IWorkflowPlatform, WorkflowMessageMetadata } from './deps';
 import type { WorkflowDeps, WorkflowConfig } from './deps';
 import * as archonPaths from '@archon/paths';
-import { createLogger, captureWorkflowInvoked, BUNDLED_VERSION } from '@archon/paths';
+import {
+  createLogger,
+  captureWorkflowInvoked,
+  BUNDLED_VERSION,
+  resolveScopedArtifactRoot,
+} from '@archon/paths';
 import { getDefaultBranch, toRepoPath } from '@archon/git';
 import type { WorkflowDefinition, WorkflowRun, WorkflowExecutionResult } from './schemas';
 import { executeDagWorkflow } from './dag-executor';
+import {
+  validateWorkflowResources,
+  type ValidationConfig,
+  type ValidationIssue,
+} from './validator';
 import { logWorkflowStart, logWorkflowError } from './logger';
 import { formatDuration, parseDbTimestamp } from './utils/duration';
 import { getWorkflowEventEmitter } from './event-emitter';
-import { isRegisteredProvider, getRegisteredProviders } from '@archon/providers';
+import {
+  persistAuditedWorkflowEvent,
+  withWorkflowEventPersistenceDiagnostics,
+} from './event-persistence';
+import {
+  isRegisteredProvider,
+  getRegisteredProviders,
+  parseCodexConfig,
+  runCodexHookBootloaderPreflight,
+} from '@archon/providers';
 import { classifyError, safeSendMessage, type SendMessageContext } from './executor-shared';
 
 /** Lazy-initialized logger (deferred so test mocks can intercept createLogger) */
@@ -28,6 +46,163 @@ function getLog(): ReturnType<typeof createLogger> {
  */
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function workflowRequiresCheckoutPathLock(workflow: WorkflowDefinition): boolean {
+  switch (workflow.lock_scope) {
+    case 'read_only':
+    case 'artifact_only':
+      return false;
+    case 'checkout_mutation':
+    case 'external_side_effect':
+      return true;
+    default:
+      return workflow.mutates_checkout !== false;
+  }
+}
+
+function workflowUsesCodex(workflow: WorkflowDefinition, resolvedProvider: string): boolean {
+  if (resolvedProvider === 'codex') return true;
+  return workflow.nodes.some(node => (node as { provider?: string }).provider === 'codex');
+}
+
+function collectCodexWorkflowNodeHooks(
+  workflow: WorkflowDefinition,
+  resolvedProvider: string
+): Record<string, unknown> | undefined {
+  const hooks: Record<string, unknown> = {};
+  for (const node of workflow.nodes) {
+    const nodeRecord = node as { id: string; provider?: string; hooks?: unknown };
+    const nodeProvider = nodeRecord.provider ?? resolvedProvider;
+    if (nodeProvider !== 'codex' || nodeRecord.hooks === undefined) continue;
+    hooks[nodeRecord.id] = nodeRecord.hooks;
+  }
+  return Object.keys(hooks).length > 0 ? hooks : undefined;
+}
+
+function buildExecutionValidationConfig(config: WorkflowConfig): ValidationConfig {
+  return {
+    loadDefaultCommands: config.defaults?.loadDefaultCommands,
+    commandFolder: config.commands.folder,
+    envVars: config.envVars,
+  };
+}
+
+function formatExecutionValidationIssue(issue: ValidationIssue): string {
+  const node = issue.nodeId ? ` node '${issue.nodeId}'` : '';
+  const badBehaviour = issue.badBehaviour
+    ? ` [${issue.badBehaviour.pattern}:${issue.badBehaviour.classification}]`
+    : '';
+  const hint = issue.hint ? ` Hint: ${issue.hint}` : '';
+  return `${issue.field}${node}: ${issue.message}${badBehaviour}${hint}`;
+}
+
+export class WorkflowPreExecutionValidationError extends Error {
+  readonly workflowName: string;
+  readonly issues: readonly ValidationIssue[];
+  readonly hookBootloaderReportPath?: string;
+  readonly hookBadBehaviourLintPath?: string;
+
+  constructor(
+    workflowName: string,
+    issues: readonly ValidationIssue[],
+    hookBootloaderReportPath?: string,
+    hookBadBehaviourLintPath?: string
+  ) {
+    super(
+      `Workflow '${workflowName}' failed pre-execution validation and was not started: ${issues
+        .map(formatExecutionValidationIssue)
+        .join(
+          '; '
+        )}${hookBootloaderReportPath ? `. Codex hook bootloader report: ${hookBootloaderReportPath}` : ''}${hookBadBehaviourLintPath ? `. Codex hook bad-behaviour lint: ${hookBadBehaviourLintPath}` : ''}`
+    );
+    this.name = 'WorkflowPreExecutionValidationError';
+    this.workflowName = workflowName;
+    this.issues = issues;
+    if (hookBootloaderReportPath) this.hookBootloaderReportPath = hookBootloaderReportPath;
+    if (hookBadBehaviourLintPath) this.hookBadBehaviourLintPath = hookBadBehaviourLintPath;
+  }
+}
+
+function resolveWorkflowCodexApprovalPolicy(
+  workflow: WorkflowDefinition,
+  codexAssistantDefaults: Record<string, unknown> | undefined
+): string {
+  if (workflow.mode === 'autonomous') return 'never';
+  return parseCodexConfig(codexAssistantDefaults ?? {}).approvalPolicy ?? 'never';
+}
+
+async function emitCodexHookPreflightArtifacts(
+  deps: WorkflowDeps,
+  workflowRunId: string,
+  artifactsDir: string,
+  artifactPaths: {
+    manifest: string;
+    report: string;
+    inventory: string;
+    coverage: string;
+    trust: string;
+    trustStatus: string;
+    artifactPolicy: string;
+    stopContinuation: string;
+    stopContinuationPolicy: string;
+    contract: string;
+    contractEvidence: string;
+    permissionRequest: string;
+    permissionRequestPolicy: string;
+    badBehaviourLint: string;
+  }
+): Promise<void> {
+  const emitter = getWorkflowEventEmitter();
+  const artifacts = [
+    ['Codex hook artifacts manifest', artifactPaths.manifest],
+    ['Codex hook bootloader report', artifactPaths.report],
+    ['Codex hooks inventory', artifactPaths.inventory],
+    ['Codex hook coverage', artifactPaths.coverage],
+    ['Codex hook trust status', artifactPaths.trust],
+    ['Codex hook trust status JSON', artifactPaths.trustStatus],
+    ['Codex hook artifact policy', artifactPaths.artifactPolicy],
+    ['Codex Stop continuation policy', artifactPaths.stopContinuation],
+    ['Codex Stop continuation policy JSON', artifactPaths.stopContinuationPolicy],
+    ['Codex hook contract', artifactPaths.contract],
+    ['Codex hook contract evidence', artifactPaths.contractEvidence],
+    ['Codex PermissionRequest policy', artifactPaths.permissionRequest],
+    ['Codex PermissionRequest policy JSON', artifactPaths.permissionRequestPolicy],
+    ['Codex hook bad-behaviour lint', artifactPaths.badBehaviourLint],
+  ] as const;
+
+  for (const [label, path] of artifacts) {
+    const relativePath = relative(artifactsDir, path).replace(/\\/g, '/');
+    const artifactPath = relativePath && !isParentRelativePath(relativePath) ? relativePath : path;
+    emitter.emit({
+      type: 'workflow_artifact',
+      runId: workflowRunId,
+      artifactType: 'file_created',
+      label,
+      path: artifactPath,
+      absolutePath: path,
+    });
+
+    await persistAuditedWorkflowEvent(
+      deps,
+      {
+        workflow_run_id: workflowRunId,
+        event_type: 'workflow_artifact',
+        data: {
+          artifactType: 'file_created',
+          label,
+          path: artifactPath,
+          source: 'codex_hook_bootloader',
+          absolutePath: path,
+        },
+      },
+      `Codex hook bootloader artifact event was emitted but not persisted: ${label}`
+    );
+  }
+}
+
+function isParentRelativePath(path: string): boolean {
+  return path === '..' || path.startsWith('../');
 }
 
 /**
@@ -219,6 +394,7 @@ export async function executeWorkflow(
   conversationDbId: string,
   opts: ExecuteWorkflowOptions = {}
 ): Promise<WorkflowExecutionResult> {
+  deps = withWorkflowEventPersistenceDiagnostics(deps);
   const {
     codebaseId,
     issueContext,
@@ -235,6 +411,40 @@ export async function executeWorkflow(
     envVars: { ...fileConfig.envVars, ...dbEnvVars },
   };
   const configuredCommandFolder = config.commands.folder;
+  const resolvedProvider: string = workflow.provider ?? config.assistant;
+  const providerSource = workflow.provider ? 'workflow definition' : 'config';
+  const assistantDefaults = config.assistants[resolvedProvider];
+  const executionValidationIssues = await validateWorkflowResources(
+    workflow,
+    cwd,
+    buildExecutionValidationConfig(config),
+    config.assistant
+  );
+  const executionValidationErrors = executionValidationIssues.filter(
+    issue => issue.level === 'error'
+  );
+  if (executionValidationErrors.length > 0) {
+    let hookBootloaderReportPath: string | undefined;
+    let hookBadBehaviourLintPath: string | undefined;
+    if (workflowUsesCodex(workflow, resolvedProvider)) {
+      const codexDefaults = config.assistants.codex as Record<string, unknown> | undefined;
+      const codexNodeHooks = collectCodexWorkflowNodeHooks(workflow, resolvedProvider);
+      const hookPreflight = await runCodexHookBootloaderPreflight({
+        cwd,
+        ...(codexNodeHooks ? { nodeConfig: { hooks: codexNodeHooks } } : {}),
+        approvalPolicy: resolveWorkflowCodexApprovalPolicy(workflow, codexDefaults),
+        configuredBinaryPath: parseCodexConfig(codexDefaults ?? {}).codexBinaryPath,
+      });
+      hookBootloaderReportPath = hookPreflight.artifactPaths.report;
+      hookBadBehaviourLintPath = hookPreflight.artifactPaths.badBehaviourLint;
+    }
+    throw new WorkflowPreExecutionValidationError(
+      workflow.name,
+      executionValidationErrors,
+      hookBootloaderReportPath,
+      hookBadBehaviourLintPath
+    );
+  }
 
   // Auto-detect base branch when not configured. Config takes priority.
   // If detection fails, leave empty — substituteWorkflowVariables throws only if $BASE_BRANCH is referenced.
@@ -260,8 +470,6 @@ export async function executeWorkflow(
   // Resolve provider and model once (used by all nodes).
   // Provider is explicit: node.provider ?? workflow.provider ?? config.assistant.
   // Model strings pass through to the SDK as-is — the SDK validates at request time.
-  const resolvedProvider: string = workflow.provider ?? config.assistant;
-  const providerSource = workflow.provider ? 'workflow definition' : 'config';
   if (!isRegisteredProvider(resolvedProvider)) {
     throw new Error(
       `Workflow '${workflow.name}': unknown provider '${resolvedProvider}'. ` +
@@ -270,7 +478,6 @@ export async function executeWorkflow(
           .join(', ')}`
     );
   }
-  const assistantDefaults = config.assistants[resolvedProvider];
   const resolvedModel = workflow.model ?? (assistantDefaults?.model as string | undefined);
 
   getLog().info(
@@ -330,15 +537,19 @@ export async function executeWorkflow(
 
   // Path-lock guard: ensure no other workflow run holds this working_path.
   //
-  // Skipped when `workflow.mutates_checkout` is false — the author asserts
-  // that concurrent runs will not race (e.g. all writes are per-run-scoped).
+  // Skipped for `lock_scope: read_only` and `lock_scope: artifact_only`.
+  // `lock_scope` is the primary contract because it captures intent directly:
+  // checkout-mutating and external-side-effect workflows stay serialized, while
+  // read-only/artifact-only workflows can run concurrently on the same path.
+  // `mutates_checkout: false` remains a legacy fallback for definitions that
+  // have not adopted `lock_scope`.
   //
   // Runs after workflowRun is finalized (pre-created, resumed, or freshly
   // created) so we always have self-ID + started_at for the deterministic
   // older-wins tiebreaker. The query treats `pending` rows older than 5 min
   // as orphaned, so leaks from crashed dispatches or resume orphans don't
   // permanently block the path.
-  if (workflow.mutates_checkout !== false) {
+  if (workflowRequiresCheckoutPathLock(workflow)) {
     try {
       const activeWorkflow = await deps.store.getActiveWorkflowRunByPath(cwd, {
         id: workflowRun.id,
@@ -424,11 +635,18 @@ export async function executeWorkflow(
   }
 
   // Resolve external artifact and log directories
-  const { artifactsDir, logDir } = await resolveProjectPaths(deps, cwd, workflowRun.id, codebaseId);
+  const resolvedPaths = await resolveProjectPaths(deps, cwd, workflowRun.id, codebaseId);
+  const logDir = resolvedPaths.logDir;
+  let artifactsDir = resolvedPaths.artifactsDir;
 
   // Pre-create the artifacts directory so commands can write to it immediately
   try {
-    await mkdir(artifactsDir, { recursive: true });
+    const artifactPolicy = resolveScopedArtifactRoot({
+      cwd,
+      artifactsDir,
+      source: 'workflow:run-artifacts',
+    });
+    artifactsDir = artifactPolicy.artifactRoot;
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     getLog().error(
@@ -458,6 +676,50 @@ export async function executeWorkflow(
 
   // Wrap execution in try-catch to ensure workflow is marked as failed on any error
   try {
+    const emitter = getWorkflowEventEmitter();
+    emitter.registerRun(workflowRun.id, conversationId);
+
+    let codexHookPreflightNotice = '';
+    if (workflowUsesCodex(workflow, resolvedProvider)) {
+      const codexDefaults = (config.assistants.codex ?? {}) as Record<string, unknown>;
+      const hookPreflight = await runCodexHookBootloaderPreflight({
+        cwd,
+        nodeConfig: {
+          workflow_mode: workflow.mode,
+          workflow_lock_scope: workflow.lock_scope,
+          hooks: collectCodexWorkflowNodeHooks(workflow, resolvedProvider),
+        },
+        approvalPolicy: resolveWorkflowCodexApprovalPolicy(workflow, codexDefaults),
+        artifactRoot: join(artifactsDir, 'codex-hooks-preflight'),
+        configuredBinaryPath:
+          typeof codexDefaults.codexBinaryPath === 'string'
+            ? codexDefaults.codexBinaryPath
+            : undefined,
+      });
+      getLog().info(
+        {
+          workflowName: workflow.name,
+          workflowRunId: workflowRun.id,
+          decision: hookPreflight.report.decision,
+          reportPath: hookPreflight.artifactPaths.report,
+          hookCount: hookPreflight.report.hooks.length,
+        },
+        'workflow.codex_hooks_preflight_completed'
+      );
+      await emitCodexHookPreflightArtifacts(
+        deps,
+        workflowRun.id,
+        artifactsDir,
+        hookPreflight.artifactPaths
+      );
+      codexHookPreflightNotice = `\n\nCodex hook bootloader: ${hookPreflight.report.decision}. Report: \`${hookPreflight.artifactPaths.report}\`. Bad-behaviour lint: \`${hookPreflight.artifactPaths.badBehaviourLint}\``;
+      if (hookPreflight.report.decision === 'block') {
+        throw new Error(
+          `Codex hook bootloader blocked this workflow: ${hookPreflight.report.reasons.join('; ')}. Report: ${hookPreflight.artifactPaths.report}. Bad-behaviour lint: ${hookPreflight.artifactPaths.badBehaviourLint}`
+        );
+      }
+    }
+
     getLog().info(
       {
         workflowName: workflow.name,
@@ -469,10 +731,9 @@ export async function executeWorkflow(
     );
     await logWorkflowStart(logDir, workflowRun.id, workflow.name, userMessage);
 
-    // Register run with emitter and emit workflow_started
-    const emitter = getWorkflowEventEmitter();
-    emitter.registerRun(workflowRun.id, conversationId);
-
+    // Emit workflow_started after preflight passes. The run is registered
+    // before preflight so early bootloader failures still route workflow_failed
+    // diagnostics to SSE/web listeners.
     emitter.emit({
       type: 'workflow_started',
       runId: workflowRun.id,
@@ -489,18 +750,15 @@ export async function executeWorkflow(
       platform: platform.getPlatformType(),
       archonVersion: BUNDLED_VERSION,
     });
-    deps.store
-      .createWorkflowEvent({
+    void persistAuditedWorkflowEvent(
+      deps,
+      {
         workflow_run_id: workflowRun.id,
         event_type: 'workflow_started',
         data: { workflowName: workflow.name },
-      })
-      .catch((err: Error) => {
-        getLog().error(
-          { err, workflowRunId: workflowRun.id, eventType: 'workflow_started' },
-          'workflow_event_persist_failed'
-        );
-      });
+      },
+      `Workflow started event was emitted but not persisted for workflow '${workflow.name}'`
+    );
 
     // Set status to running now that execution has started (skip for resumed runs — already running)
     if (!dagPriorCompletedNodes) {
@@ -571,7 +829,7 @@ export async function executeWorkflow(
       .join('\n')
       .trim();
     const descriptionText = cleanDescription || workflow.name;
-    startupMessage += `🚀 **Starting workflow**: \`${workflow.name}\`\n\n> ${descriptionText}`;
+    startupMessage += `🚀 **Starting workflow**: \`${workflow.name}\`\n\n> ${descriptionText}${codexHookPreflightNotice}`;
 
     // Send consolidated message - use critical send with limited retries (1 retry max)
     // to avoid blocking workflow execution while still catching transient failures
@@ -660,18 +918,15 @@ export async function executeWorkflow(
       workflowName: workflow.name,
       error: err.message,
     });
-    deps.store
-      .createWorkflowEvent({
+    void persistAuditedWorkflowEvent(
+      deps,
+      {
         workflow_run_id: workflowRun.id,
         event_type: 'workflow_failed',
         data: { error: err.message },
-      })
-      .catch((err: Error) => {
-        getLog().error(
-          { err, workflowRunId: workflowRun.id, eventType: 'workflow_failed' },
-          'workflow_event_persist_failed'
-        );
-      });
+      },
+      `Workflow failed event was emitted but not persisted for workflow '${workflow.name}'`
+    );
     emitter.unregisterRun(workflowRun.id);
 
     // Notify user about the failure
