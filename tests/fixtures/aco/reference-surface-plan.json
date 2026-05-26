@@ -3,8 +3,8 @@
   "sourceBranch": "codex/aco-stabilization-slices",
   "baseBranch": "dev",
   "generatedFrom": [
-    "/Users/edam/Downloads/aco_rewrite_readonly_artifacts (1)/ledgers/command-ledger.csv",
-    "/Users/edam/Downloads/aco_rewrite_readonly_artifacts (1)/ledgers/capability-inventory.csv"
+    "tests/fixtures/aco/ledgers/command-ledger.csv",
+    "tests/fixtures/aco/ledgers/capability-inventory.csv"
   ],
   "commands": [
     {
