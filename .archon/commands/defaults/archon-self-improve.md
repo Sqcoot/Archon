@@ -103,8 +103,34 @@ global instruction that affects normal Archon use outside this repository.
    ```
 
 10. Stage only intentional tracked files and commit the slice.
-11. Write a handoff and next goal capped near 4000 characters. Update the ignored
-    current-goal file from that next goal.
+11. Write a handoff and next-run candidate list capped near 4000 characters.
+12. Update the ignored current-goal file with the top candidate plus the
+    instruction to re-rank from fresh evidence at the start of the next run.
+
+## Next-Run Recommendation Discipline
+
+Do not let the just-completed slice pollute the next recommendation. The next
+run should not automatically continue nearby work unless that work is still one
+of the best slices after a fresh ranking.
+
+At the end of every run:
+
+1. Generate 3-5 candidate next slices from current evidence:
+   - user-stated priorities
+   - failing or blocked validations
+   - open handoffs and artifacts
+   - workflow behavior that risks infinite, degrading, or ambiguous runs
+   - product impact and ease of validation
+2. Rank candidates by expected value, unblock power, risk reduction, and
+   validation clarity.
+3. Perform a Recency Bias Check for the top candidate:
+   "Would this still be top-ranked if the previous slice had touched a different
+   part of Archon?"
+4. If the answer is no, demote it and choose the best evidence-backed
+   candidate instead.
+5. Write the top candidate and the short ranked list to
+   `$ARTIFACTS_DIR/next_goal_4000chars.txt`, preserving the instruction to
+   re-rank on the next run.
 
 ## Preferred Validation
 
@@ -147,4 +173,4 @@ End with:
 - Commit hash, or the exact reason no commit was made
 - Validation run and result
 - Artifact and handoff paths
-- Next recommended self-improvement goal
+- Ranked next-run candidates with the Recency Bias Check result

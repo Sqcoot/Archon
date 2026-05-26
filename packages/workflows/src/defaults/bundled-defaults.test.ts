@@ -90,6 +90,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('run from the Archon source checkout');
       expect(content).toContain('.archon/state/self-improvement/current_goal_4000chars.txt');
       expect(content).toContain('must not be committed');
+      expect(content).toContain('Recency Bias Check');
+      expect(content).toContain('re-rank from fresh evidence');
     });
   });
 
@@ -125,6 +127,8 @@ describe('bundled-defaults', () => {
       expect(content).toContain('worktree:\n  enabled: false');
       expect(content).toContain('archon-self-improve must run from the Archon source checkout');
       expect(content).toContain('mkdir -p .archon/state/self-improvement');
+      expect(content).toContain('ranked next-slice candidates');
+      expect(content).toContain('Recency Bias Check');
     });
 
     it('should have valid YAML structure', () => {

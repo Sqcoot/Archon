@@ -103,10 +103,14 @@ nodes:
       - commit hash, or exact reason no commit was made
       - validation run and result
       - what remains
-      - next recommended goal
+      - 3-5 ranked next-slice candidates based on current evidence
+      - Recency Bias Check for the top candidate
 
       Also write `$ARTIFACTS_DIR/next_goal_4000chars.txt` with a compact next goal
       suitable for `.archon/state/self-improvement/current_goal_4000chars.txt`.
+      It may name the top-ranked candidate, but it must also instruct the next run
+      to re-rank candidates from fresh evidence instead of blindly continuing the
+      just-finished slice.
 
       Keep the summary explicit that self-improvement mode is repo-local meta-work and
       does not apply to ordinary Archon usage in other repositories.

@@ -35,7 +35,25 @@ Each slice must end with:
 1. A clear artifact or note describing what changed and what remains.
 2. Focused validation appropriate to the touched surface.
 3. A git commit for successful tracked changes.
-4. An updated recommendation for the next self-improvement slice.
+4. A fresh ranked set of next-slice candidates, not a continuation chosen only
+   because it was adjacent to the just-finished work.
+
+## Next-Slice Selection
+
+After each slice, produce 3-5 candidate next slices from current evidence:
+repo status, failing validations, user-stated priorities, open handoffs, risky
+workflow behavior, and product impact. Rank them by expected value, unblock
+power, risk reduction, and validation clarity.
+
+Do not let the just-finished slice dominate the next recommendation. A nearby
+follow-up is valid only when it still ranks highly after asking: "Would this be
+one of the best next slices if the previous run had touched a different area?"
+If the answer is no, list it as context instead of making it the default next
+goal.
+
+The compact current goal may carry the top-ranked candidate and a short
+candidate list, but it must preserve the instruction to re-rank from fresh
+evidence at the start of the next run.
 
 ## Self-Editing Rule
 
