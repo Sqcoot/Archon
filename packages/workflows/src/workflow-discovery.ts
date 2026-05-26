@@ -228,7 +228,7 @@ export async function discoverWorkflows(
         workflowsByFile.set(filename, { workflow, source: 'bundled' });
       }
       allErrors.push(...bundledResult.errors);
-      getLog().info({ count: bundledResult.workflows.size }, 'bundled_default_workflows_loaded');
+      getLog().debug({ count: bundledResult.workflows.size }, 'bundled_default_workflows_loaded');
     } else {
       // Bun: load from filesystem (development mode)
       const appDefaultsPath = archonPaths.getDefaultWorkflowsPath();
@@ -246,7 +246,7 @@ export async function discoverWorkflows(
           );
           allErrors.push(...appResult.errors);
         }
-        getLog().info({ count: appResult.workflows.size }, 'app_default_workflows_loaded');
+        getLog().debug({ count: appResult.workflows.size }, 'app_default_workflows_loaded');
       } catch (error) {
         const err = error as NodeJS.ErrnoException;
         if (err.code !== 'ENOENT') {
@@ -273,7 +273,7 @@ export async function discoverWorkflows(
       workflowsByFile.set(filename, { workflow, source: 'global' });
     }
     allErrors.push(...homeResult.errors);
-    getLog().info({ count: homeResult.workflows.size }, 'home_workflows_loaded');
+    getLog().debug({ count: homeResult.workflows.size }, 'home_workflows_loaded');
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code !== 'ENOENT') {
@@ -288,7 +288,7 @@ export async function discoverWorkflows(
   // for callers without a project context (e.g. UI listing workflows before any codebase is registered).
   if (cwd === null) {
     const workflows = Array.from(workflowsByFile.values());
-    getLog().info(
+    getLog().debug(
       { count: workflows.length, errorCount: allErrors.length, scope: 'no_project_context' },
       'workflows_discovery_completed'
     );
@@ -370,7 +370,7 @@ export async function discoverWorkflows(
   }
 
   const workflows = Array.from(workflowsByFile.values());
-  getLog().info(
+  getLog().debug(
     { count: workflows.length, errorCount: allErrors.length },
     'workflows_discovery_completed'
   );

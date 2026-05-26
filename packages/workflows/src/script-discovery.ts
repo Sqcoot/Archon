@@ -146,7 +146,7 @@ async function scanScriptDir(
 export async function discoverScripts(dir: string): Promise<Map<string, ScriptDefinition>> {
   const scripts = new Map<string, ScriptDefinition>();
   await scanScriptDir(dir, scripts);
-  getLog().info({ count: scripts.size, dir }, 'scripts_discovery_completed');
+  getLog().debug({ count: scripts.size, dir }, 'scripts_discovery_completed');
   return scripts;
 }
 

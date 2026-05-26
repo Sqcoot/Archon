@@ -74,6 +74,14 @@ function formatWorkflowResult(result: WorkflowValidationResult): string {
   return formatValidationResult(result.workflowName, result.issues);
 }
 
+function workflowNameFromLoadErrorFilename(filename: string): string {
+  return filename.replace(/\.ya?ml$/i, '');
+}
+
+function matchesWorkflowName(candidate: string, requested: string): boolean {
+  return candidate === requested || candidate.toLowerCase() === requested.toLowerCase();
+}
+
 // =============================================================================
 // Workflow validation command
 // =============================================================================
@@ -99,46 +107,32 @@ export async function validateWorkflowsCommand(
     loadConfig
   );
 
-  // Build results from load errors (Level 1-2 failures)
-  const results: WorkflowValidationResult[] = [];
+  const availableWorkflowNames = Array.from(
+    new Set([
+      ...workflowEntries.map(({ workflow }) => workflow.name),
+      ...loadErrors.map(loadError => workflowNameFromLoadErrorFilename(loadError.filename)),
+    ])
+  );
 
-  for (const loadError of loadErrors) {
-    results.push(
-      makeWorkflowResult(
-        loadError.filename.replace(/\.ya?ml$/, ''),
-        [{ level: 'error', field: loadError.errorType, message: loadError.error }],
-        loadError.filename
-      )
-    );
-  }
+  const filteredResults: WorkflowValidationResult[] = [];
 
-  // Validate successfully parsed workflows (Level 3)
-  for (const { workflow } of workflowEntries) {
-    const issues = await validateWorkflowResources(
-      workflow,
-      cwd,
-      workflowValidationConfig,
-      defaultProvider
-    );
-    results.push(makeWorkflowResult(workflow.name, issues));
-  }
-
-  // Filter to specific workflow if name provided
-  let filteredResults = results;
+  // Targeted path: validate only the requested workflow/load-error entry.
   if (name) {
-    filteredResults = results.filter(
-      r => r.workflowName === name || r.workflowName.toLowerCase() === name.toLowerCase()
+    const matchingLoadErrors = loadErrors.filter(loadError =>
+      matchesWorkflowName(workflowNameFromLoadErrorFilename(loadError.filename), name)
+    );
+    const matchingWorkflowEntry = workflowEntries.find(({ workflow }) =>
+      matchesWorkflowName(workflow.name, name)
     );
 
-    if (filteredResults.length === 0) {
-      const allNames = results.map(r => r.workflowName);
-      const similar = findSimilar(name, allNames);
+    if (matchingLoadErrors.length === 0 && matchingWorkflowEntry === undefined) {
+      const similar = findSimilar(name, availableWorkflowNames);
       if (json) {
         console.log(
           JSON.stringify({
             error: `Workflow '${name}' not found`,
             suggestions: similar,
-            available: allNames,
+            available: availableWorkflowNames,
           })
         );
       } else {
@@ -146,9 +140,50 @@ export async function validateWorkflowsCommand(
         if (similar.length > 0) {
           console.error(`Did you mean: ${similar.map(s => `'${s}'`).join(', ')}?`);
         }
-        console.error(`Available workflows: ${allNames.join(', ')}`);
+        console.error(`Available workflows: ${availableWorkflowNames.join(', ')}`);
       }
       return 1;
+    }
+
+    for (const loadError of matchingLoadErrors) {
+      filteredResults.push(
+        makeWorkflowResult(
+          workflowNameFromLoadErrorFilename(loadError.filename),
+          [{ level: 'error', field: loadError.errorType, message: loadError.error }],
+          loadError.filename
+        )
+      );
+    }
+
+    if (matchingWorkflowEntry) {
+      const issues = await validateWorkflowResources(
+        matchingWorkflowEntry.workflow,
+        cwd,
+        workflowValidationConfig,
+        defaultProvider
+      );
+      filteredResults.push(makeWorkflowResult(matchingWorkflowEntry.workflow.name, issues));
+    }
+  } else {
+    // Full path: validate all load errors and all parsed workflows.
+    for (const loadError of loadErrors) {
+      filteredResults.push(
+        makeWorkflowResult(
+          workflowNameFromLoadErrorFilename(loadError.filename),
+          [{ level: 'error', field: loadError.errorType, message: loadError.error }],
+          loadError.filename
+        )
+      );
+    }
+
+    for (const { workflow } of workflowEntries) {
+      const issues = await validateWorkflowResources(
+        workflow,
+        cwd,
+        workflowValidationConfig,
+        defaultProvider
+      );
+      filteredResults.push(makeWorkflowResult(workflow.name, issues));
     }
   }
 
