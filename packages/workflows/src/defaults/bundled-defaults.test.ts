@@ -155,9 +155,14 @@ describe('bundled-defaults', () => {
       expect(content).toContain('mutation direction');
       expect(content).toContain('CSV ledger decision');
       expect(content).toContain('cleanup-opportunities.md');
+      expect(content).toContain('slice-plan.md');
+      expect(content).toContain('validation.md');
       expect(content).toContain('best-practice or research evidence used');
       expect(content).toContain('ranked next-slice candidates');
       expect(content).toContain('Recency Bias Check');
+      expect(content).toContain('id: verify-required-artifacts');
+      expect(content).toContain('MISSING_REQUIRED_ARTIFACT: $file');
+      expect(content).toContain('Required artifacts present and non-empty.');
     });
 
     it('should have valid YAML structure', () => {

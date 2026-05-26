@@ -149,7 +149,7 @@ nodes:
 
       $self-improve.output
 
-      ## Required Artifact
+      ## Required Artifacts
 
       Write `$ARTIFACTS_DIR/handoff.md` with:
       - selected slice
@@ -179,11 +179,16 @@ nodes:
       - `$ARTIFACTS_DIR/scope-contract.md` defining why this was Archon meta-work,
         whether ACO was in or out of the chosen slice, and why normal Archon usage
         is not affected.
+      - `$ARTIFACTS_DIR/slice-plan.md` with selected slice, mutation direction,
+        scope boundaries, explicit non-goals, and why this slice beat competing
+        Add/Remove/Consolidate/Stabilize/Clarify candidates.
       - `$ARTIFACTS_DIR/decision-log.md` with the evidence used to choose Add,
         Remove, Consolidate, Stabilize, or Clarify.
       - `$ARTIFACTS_DIR/cleanup-opportunities.md` with stale, duplicated,
         misleading, or removable workflow/command/ACO surfaces found during the
         run, even if they were not selected.
+      - `$ARTIFACTS_DIR/validation.md` listing each validation command run and
+        its pass/fail result, or an exact blocked reason when not run.
       - `$ARTIFACTS_DIR/candidate-ranking.md` with the full next-run ranking and
         the Recency Bias Check.
 
@@ -197,3 +202,37 @@ nodes:
       does not apply to ordinary Archon usage in other repositories.
     depends_on: [self-improve]
     context: fresh
+
+  - id: verify-required-artifacts
+    bash: |
+      set -euo pipefail
+
+      REQUIRED_FILES=(
+        "$ARTIFACTS_DIR/self-improve-goal.md"
+        "$ARTIFACTS_DIR/capability-map.md"
+        "$ARTIFACTS_DIR/ledger-candidates.csv"
+        "$ARTIFACTS_DIR/scope-contract.md"
+        "$ARTIFACTS_DIR/slice-plan.md"
+        "$ARTIFACTS_DIR/decision-log.md"
+        "$ARTIFACTS_DIR/cleanup-opportunities.md"
+        "$ARTIFACTS_DIR/validation.md"
+        "$ARTIFACTS_DIR/handoff.md"
+        "$ARTIFACTS_DIR/candidate-ranking.md"
+        "$ARTIFACTS_DIR/next_goal_4000chars.txt"
+      )
+
+      missing_count=0
+      for file in "${REQUIRED_FILES[@]}"; do
+        if [ ! -s "$file" ]; then
+          echo "MISSING_REQUIRED_ARTIFACT: $file" >&2
+          missing_count=$((missing_count + 1))
+        fi
+      done
+
+      if [ "$missing_count" -gt 0 ]; then
+        echo "ERROR: archon-self-improve summarize must produce all required artifacts." >&2
+        exit 1
+      fi
+
+      echo "Required artifacts present and non-empty."
+    depends_on: [summarize]
