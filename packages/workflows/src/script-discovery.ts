@@ -93,10 +93,14 @@ async function scanScriptDir(
     if (entryStat.isDirectory()) {
       // 1-depth cap: allow one level of grouping (e.g. `.archon/scripts/triage/foo.ts`)
       // but stop there. Matches the workflows/commands convention — no nested folders.
+      // Deeper directories may be test fixtures or other non-script data; skip them
+      // instead of making unrelated workflow validation fail before target filtering.
       if (depth >= MAX_SCRIPT_DISCOVERY_DEPTH) {
-        throw new Error(
-          `Script directory exceeds maximum discovery depth (${String(MAX_SCRIPT_DISCOVERY_DEPTH)}): ${entryPath}`
+        getLog().debug(
+          { entryPath, maxDepth: MAX_SCRIPT_DISCOVERY_DEPTH },
+          'script_nested_directory_skipped'
         );
+        continue;
       }
       await scanScriptDir(entryPath, scripts, depth + 1);
       continue;

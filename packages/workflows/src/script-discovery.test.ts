@@ -211,6 +211,34 @@ describe('scanScriptDir depth cap', () => {
     const result = await discoverScripts('/scripts');
     expect(result.has('too-deep')).toBe(false);
     expect(result.size).toBe(0);
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      { entryPath: '/scripts/level-one/level-two', maxDepth: 1 },
+      'script_nested_directory_skipped'
+    );
+  });
+
+  test('skips nested __tests__ fixtures without failing discovery', async () => {
+    mockReaddir.mockImplementation(async (path: string) => {
+      const p = norm(path);
+      if (p === '/repo/.archon/scripts') return ['__tests__', 'real-script.ts'];
+      if (p === '/repo/.archon/scripts/__tests__') return ['fixtures', 'helper.ts'];
+      if (p === '/repo/.archon/scripts/__tests__/fixtures') return ['malicious'];
+      return [];
+    });
+    mockStat.mockImplementation(async (path: string) => {
+      const p = norm(path);
+      return {
+        isDirectory: () =>
+          p === '/repo/.archon/scripts/__tests__' ||
+          p === '/repo/.archon/scripts/__tests__/fixtures',
+      };
+    });
+
+    const result = await discoverScripts('/repo/.archon/scripts');
+    expect(result.has('real-script')).toBe(true);
+    expect(result.has('helper')).toBe(true);
+    expect(result.has('malicious')).toBe(false);
+    expect(result.size).toBe(2);
   });
 });
 
