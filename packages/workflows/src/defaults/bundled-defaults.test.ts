@@ -96,6 +96,7 @@ describe('bundled-defaults', () => {
       expect(content).toContain('tool-availability-ledger.csv');
       expect(content).toContain('Agentic Search');
       expect(content).toContain('best-practices-evidence.md');
+      expect(content).toContain('.archon/self-improvement/artifact-contract.csv');
       expect(content).toContain('CSV Ledger Discipline');
       expect(content).toContain('ledger-change-plan.md');
       expect(content).toContain('Recency Bias Check');
@@ -161,8 +162,14 @@ describe('bundled-defaults', () => {
       expect(content).toContain('ranked next-slice candidates');
       expect(content).toContain('Recency Bias Check');
       expect(content).toContain('id: verify-required-artifacts');
+      expect(content).toContain('ARTIFACT_LEDGER=".archon/self-improvement/artifact-contract.csv"');
+      expect(content).toContain(
+        'EXPECTED_HEADER="artifact,schema,producer,consumer,required,freshness"'
+      );
       expect(content).toContain('MISSING_REQUIRED_ARTIFACT: $file');
-      expect(content).toContain('Required artifacts present and non-empty.');
+      expect(content).toContain(
+        'Required artifacts present and non-empty per artifact-contract.csv.'
+      );
     });
 
     it('should have valid YAML structure', () => {

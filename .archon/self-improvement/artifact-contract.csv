@@ -1,0 +1,14 @@
+artifact,schema,producer,consumer,required,freshness
+self-improve-goal.md,archon.self-improve.goal.v1,prepare-goal,summarize/next-run,yes,fresh
+capability-map.md,archon.self-improve.capability-map.v1,prepare-goal/summarize,self-improve operator,yes,fresh
+ledger-candidates.csv,archon.self-improve.ledger-candidates.v1,prepare-goal/summarize,next-run slice selector,yes,fresh
+scope-contract.md,archon.self-improve.scope-contract.v1,summarize,meta-boundary reviewer,yes,fresh
+slice-plan.md,archon.self-improve.slice-plan.v1,summarize,next-run planner,yes,fresh
+decision-log.md,archon.self-improve.decision-log.v1,summarize,audit reviewer,yes,fresh
+cleanup-opportunities.md,archon.self-improve.cleanup.v1,summarize,next-run selector,yes,fresh
+validation.md,archon.self-improve.validation.v1,summarize,qa reviewer,yes,fresh
+handoff.md,archon.self-improve.handoff.v1,summarize,next session operator,yes,fresh
+candidate-ranking.md,archon.self-improve.candidate-ranking.v1,summarize,next-run selector,yes,fresh
+next_goal_4000chars.txt,archon.self-improve.next-goal.v1,summarize,current-goal updater,yes,fresh
+best-practices-evidence.md,archon.self-improve.best-practices.v1,summarize,evidence reviewer,no,unknown
+ledger-change-plan.md,archon.self-improve.ledger-change-plan.v1,summarize,ledger reviewer,no,unknown

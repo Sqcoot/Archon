@@ -76,6 +76,15 @@ Recommended artifact names:
 - `$ARTIFACTS_DIR/candidate-ranking.md`
 - `$ARTIFACTS_DIR/next_goal_4000chars.txt`
 
+Required artifact contract source-of-truth is committed at:
+
+```bash
+.archon/self-improvement/artifact-contract.csv
+```
+
+`verify-required-artifacts` must validate required run artifacts against this
+ledger, not a hardcoded shell array.
+
 ## Product and Self-Editing Surface
 
 Archon self-improvement may edit Archon product surfaces when they are part of
@@ -91,6 +100,7 @@ the selected slice:
 The self-improvement loop may also edit itself when that is the selected slice:
 
 - `.archon/self-improvement/default-goal.md`
+- `.archon/self-improvement/artifact-contract.csv`
 - `.archon/commands/defaults/archon-self-improve.md`
 - `.archon/workflows/defaults/archon-self-improve.yaml`
 - Generated bundled defaults required by those files

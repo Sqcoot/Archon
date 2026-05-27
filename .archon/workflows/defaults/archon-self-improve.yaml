@@ -207,32 +207,64 @@ nodes:
     bash: |
       set -euo pipefail
 
-      REQUIRED_FILES=(
-        "$ARTIFACTS_DIR/self-improve-goal.md"
-        "$ARTIFACTS_DIR/capability-map.md"
-        "$ARTIFACTS_DIR/ledger-candidates.csv"
-        "$ARTIFACTS_DIR/scope-contract.md"
-        "$ARTIFACTS_DIR/slice-plan.md"
-        "$ARTIFACTS_DIR/decision-log.md"
-        "$ARTIFACTS_DIR/cleanup-opportunities.md"
-        "$ARTIFACTS_DIR/validation.md"
-        "$ARTIFACTS_DIR/handoff.md"
-        "$ARTIFACTS_DIR/candidate-ranking.md"
-        "$ARTIFACTS_DIR/next_goal_4000chars.txt"
-      )
+      ARTIFACT_LEDGER=".archon/self-improvement/artifact-contract.csv"
+      EXPECTED_HEADER="artifact,schema,producer,consumer,required,freshness"
+
+      if [ ! -s "$ARTIFACT_LEDGER" ]; then
+        echo "ERROR: missing required self-improvement artifact contract CSV: $ARTIFACT_LEDGER" >&2
+        exit 1
+      fi
+
+      header="$(head -n 1 "$ARTIFACT_LEDGER" | tr -d '\r')"
+      if [ "$header" != "$EXPECTED_HEADER" ]; then
+        echo "ERROR: malformed self-improvement artifact contract CSV header." >&2
+        echo "Expected: $EXPECTED_HEADER" >&2
+        echo "Received: $header" >&2
+        exit 1
+      fi
 
       missing_count=0
-      for file in "${REQUIRED_FILES[@]}"; do
-        if [ ! -s "$file" ]; then
-          echo "MISSING_REQUIRED_ARTIFACT: $file" >&2
+      required_count=0
+
+      while IFS=, read -r artifact schema producer consumer required freshness; do
+        artifact="$(printf '%s' "$artifact" | tr -d '\r')"
+        required="$(printf '%s' "$required" | tr -d '\r')"
+
+        if [ "$artifact" = "artifact" ]; then
+          continue
+        fi
+
+        if [ -z "$artifact" ]; then
+          echo "ERROR: artifact contract contains empty artifact cell." >&2
+          missing_count=$((missing_count + 1))
+          continue
+        fi
+
+        if [ "$required" = "yes" ]; then
+          required_count=$((required_count + 1))
+          file="$ARTIFACTS_DIR/$artifact"
+          if [ ! -s "$file" ]; then
+            echo "MISSING_REQUIRED_ARTIFACT: $file" >&2
+            missing_count=$((missing_count + 1))
+          fi
+          continue
+        fi
+
+        if [ "$required" != "no" ]; then
+          echo "ERROR: artifact contract required column must be yes or no for $artifact." >&2
           missing_count=$((missing_count + 1))
         fi
-      done
+      done < "$ARTIFACT_LEDGER"
+
+      if [ "$required_count" -eq 0 ]; then
+        echo "ERROR: artifact contract defines zero required artifacts." >&2
+        exit 1
+      fi
 
       if [ "$missing_count" -gt 0 ]; then
         echo "ERROR: archon-self-improve summarize must produce all required artifacts." >&2
         exit 1
       fi
 
-      echo "Required artifacts present and non-empty."
+      echo "Required artifacts present and non-empty per artifact-contract.csv."
     depends_on: [summarize]
