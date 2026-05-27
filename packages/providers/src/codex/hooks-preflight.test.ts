@@ -1,17 +1,33 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from 'fs/promises';
 import { tmpdir } from 'os';
-import { join, resolve } from 'path';
+import { basename, join, relative, resolve } from 'path';
 import { runCodexHookBootloaderPreflight } from './hooks-preflight';
 
 const tempRoots: string[] = [];
 const originalHome = process.env.HOME;
+const originalPreflightMaxRuns = process.env.ARCHON_CODEX_HOOK_PREFLIGHT_MAX_RUNS;
 
 afterEach(async () => {
   if (originalHome === undefined) {
     delete process.env.HOME;
   } else {
     process.env.HOME = originalHome;
+  }
+  if (originalPreflightMaxRuns === undefined) {
+    delete process.env.ARCHON_CODEX_HOOK_PREFLIGHT_MAX_RUNS;
+  } else {
+    process.env.ARCHON_CODEX_HOOK_PREFLIGHT_MAX_RUNS = originalPreflightMaxRuns;
   }
   for (const root of tempRoots.splice(0)) {
     await rm(root, { recursive: true, force: true });
@@ -274,6 +290,75 @@ describe('runCodexHookBootloaderPreflight', () => {
     expect(policy.source).toBe('default:codex-hooks-preflight');
     expect(policy.artifactRoot).toContain('.archon');
     expect(policy.artifactRoot).toContain('codex-hooks-preflight');
+    expect(result.artifactPaths.directory).toContain(join('codex-hooks-preflight', 'runs'));
+
+    const indexPath = join(policy.artifactRoot ?? '', 'codex-hook-preflight-index.json');
+    const index = JSON.parse(await readFile(indexPath, 'utf8')) as {
+      kind?: string;
+      schemaVersion?: string;
+      producer?: string;
+      currentRun?: { relativePath?: string };
+      retentionPolicy?: { maxRuns?: number };
+      retainedRuns?: { relativePath?: string }[];
+    };
+    expect(index.kind).toBe('codex-hook-preflight-index');
+    expect(index.schemaVersion).toBe('archon.codex-hooks.preflight-index.v1');
+    expect(index.producer).toBe('runCodexHookBootloaderPreflight');
+    expect(index.currentRun?.relativePath).toBe(
+      relative(policy.artifactRoot ?? '', result.artifactPaths.directory)
+    );
+    expect(index.retentionPolicy?.maxRuns).toBe(12);
+    expect(
+      index.retainedRuns?.some(
+        run =>
+          run.relativePath === relative(policy.artifactRoot ?? '', result.artifactPaths.directory)
+      )
+    ).toBe(true);
+  });
+
+  test('retains only configured number of default preflight runs and prunes older run directories', async () => {
+    const cwd = await makeTempRoot('codex-hooks-cwd-');
+    const home = await makeTempRoot('codex-hooks-home-');
+    process.env.HOME = home;
+    process.env.ARCHON_CODEX_HOOK_PREFLIGHT_MAX_RUNS = '1';
+
+    const first = await runCodexHookBootloaderPreflight({
+      cwd,
+      approvalPolicy: 'never',
+      configuredBinaryPath: join(cwd, 'missing-codex-binary'),
+    });
+    const second = await runCodexHookBootloaderPreflight({
+      cwd,
+      approvalPolicy: 'never',
+      configuredBinaryPath: join(cwd, 'missing-codex-binary'),
+    });
+
+    const policy = JSON.parse(await readFile(second.artifactPaths.artifactPolicy, 'utf8')) as {
+      artifactRoot?: string;
+    };
+    const artifactRoot = policy.artifactRoot ?? '';
+    const runsRoot = join(artifactRoot, 'runs');
+    const runDirectories = (await readdir(runsRoot, { withFileTypes: true }))
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+      .sort();
+
+    expect(runDirectories).toEqual([basename(second.artifactPaths.directory)]);
+    expect(runDirectories).not.toContain(basename(first.artifactPaths.directory));
+
+    const indexPath = join(artifactRoot, 'codex-hook-preflight-index.json');
+    const index = JSON.parse(await readFile(indexPath, 'utf8')) as {
+      retentionPolicy?: { maxRuns?: number };
+      retainedRuns?: { relativePath?: string }[];
+      prunedRuns?: { relativePath?: string }[];
+    };
+    expect(index.retentionPolicy?.maxRuns).toBe(1);
+    expect(index.retainedRuns?.map(run => run.relativePath)).toEqual([
+      relative(artifactRoot, second.artifactPaths.directory),
+    ]);
+    expect(index.prunedRuns?.map(run => run.relativePath)).toContain(
+      relative(artifactRoot, first.artifactPaths.directory)
+    );
   });
 
   test('warns instead of blocking when hook inventory is empty and workflow does not rely on hooks', async () => {

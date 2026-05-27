@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, readdir, rm, stat, writeFile } from 'fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'path';
 import { homedir } from 'os';
 import { createRequire } from 'module';
@@ -264,7 +264,24 @@ const MAX_SAFETY_PRIVACY_HOOK_TIMEOUT_SECONDS = 30;
 const MAX_CONTINUATION_HOOK_TIMEOUT_SECONDS = 30;
 const MAX_PERMISSION_REQUEST_HOOK_TIMEOUT_SECONDS = 30;
 const CODEX_DEFAULT_COMMAND_HOOK_TIMEOUT_SECONDS = 600;
+const CODEX_HOOK_PREFLIGHT_RUNS_DIR = 'runs';
+const CODEX_HOOK_PREFLIGHT_INDEX_FILE = 'codex-hook-preflight-index.json';
+const CODEX_HOOK_PREFLIGHT_RETENTION_ENV = 'ARCHON_CODEX_HOOK_PREFLIGHT_MAX_RUNS';
+const DEFAULT_CODEX_HOOK_PREFLIGHT_MAX_RUNS = 12;
 const requireFromHere = createRequire(import.meta.url);
+
+interface CodexHookPreflightRetentionContext {
+  artifactRoot: string;
+  runsRoot: string;
+  runDirectory: string;
+  maxRuns: number;
+}
+
+interface CodexHookPreflightRunEntry {
+  name: string;
+  path: string;
+  mtimeMs: number;
+}
 
 export async function runCodexHookBootloaderPreflight(input: {
   cwd: string;
@@ -276,10 +293,10 @@ export async function runCodexHookBootloaderPreflight(input: {
   const cwd = resolve(input.cwd);
   const projectRoot = findProjectRoot(cwd);
   const generatedAt = new Date().toISOString();
+  const defaultArtifactRoot = join(projectRoot, '.archon', 'artifacts', 'codex-hooks-preflight');
+  const usesDefaultArtifactRoot = !input.artifactRoot && !process.env.ARTIFACTS_DIR;
   const requestedArtifactRoot =
-    input.artifactRoot ??
-    process.env.ARTIFACTS_DIR ??
-    join(projectRoot, '.archon', 'artifacts', 'codex-hooks-preflight', safeTimestamp(generatedAt));
+    input.artifactRoot ?? process.env.ARTIFACTS_DIR ?? defaultArtifactRoot;
   const artifactPolicy = resolveScopedArtifactRoot({
     cwd: projectRoot,
     artifactsDir: requestedArtifactRoot,
@@ -289,7 +306,13 @@ export async function runCodexHookBootloaderPreflight(input: {
         ? 'env:ARTIFACTS_DIR'
         : 'default:codex-hooks-preflight',
   });
-  const artifactDir = artifactPolicy.artifactRoot;
+  let artifactDir = artifactPolicy.artifactRoot;
+  const retentionContext = usesDefaultArtifactRoot
+    ? prepareCodexHookPreflightRetentionDirectory(artifactDir, generatedAt)
+    : undefined;
+  if (retentionContext) {
+    artifactDir = retentionContext.runDirectory;
+  }
 
   const workflowNodeHooks = inspectWorkflowNodeHooks(input.nodeConfig?.hooks);
   const sourceCandidates = codexHookSourceCandidates(projectRoot);
@@ -859,6 +882,9 @@ export async function runCodexHookBootloaderPreflight(input: {
   };
 
   await writeHookBootloaderArtifacts(report);
+  if (retentionContext) {
+    await writeCodexHookPreflightRetentionIndex(retentionContext, generatedAt);
+  }
   return { report, artifactPaths: report.artifactPaths };
 }
 
@@ -874,6 +900,113 @@ function findProjectRoot(cwd: string): string {
 
 function safeTimestamp(value: string): string {
   return value.replace(/[:.]/g, '-');
+}
+
+function resolveCodexHookPreflightMaxRuns(): number {
+  const raw = process.env[CODEX_HOOK_PREFLIGHT_RETENTION_ENV];
+  if (!raw || raw.trim().length === 0) {
+    return DEFAULT_CODEX_HOOK_PREFLIGHT_MAX_RUNS;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return DEFAULT_CODEX_HOOK_PREFLIGHT_MAX_RUNS;
+  }
+  return parsed;
+}
+
+function prepareCodexHookPreflightRetentionDirectory(
+  artifactRoot: string,
+  generatedAt: string
+): CodexHookPreflightRetentionContext {
+  const runsRoot = scopedArtifactPath(artifactRoot, CODEX_HOOK_PREFLIGHT_RUNS_DIR);
+  ensureScopedArtifactDirectory(artifactRoot, runsRoot);
+  const runDirectory = scopedArtifactPath(runsRoot, safeTimestamp(generatedAt));
+  ensureScopedArtifactDirectory(artifactRoot, runDirectory);
+  return {
+    artifactRoot,
+    runsRoot,
+    runDirectory,
+    maxRuns: resolveCodexHookPreflightMaxRuns(),
+  };
+}
+
+async function listCodexHookPreflightRunEntries(
+  context: CodexHookPreflightRetentionContext
+): Promise<CodexHookPreflightRunEntry[]> {
+  const entries = await readdir(context.runsRoot, { withFileTypes: true });
+  const runDirectories: CodexHookPreflightRunEntry[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const path = scopedArtifactPath(context.runsRoot, entry.name);
+    const info = await stat(path);
+    runDirectories.push({
+      name: entry.name,
+      path,
+      mtimeMs: info.mtimeMs,
+    });
+  }
+  runDirectories.sort((left, right) => {
+    if (left.path === context.runDirectory && right.path !== context.runDirectory) return -1;
+    if (right.path === context.runDirectory && left.path !== context.runDirectory) return 1;
+    if (right.mtimeMs !== left.mtimeMs) return right.mtimeMs - left.mtimeMs;
+    return right.name.localeCompare(left.name);
+  });
+  return runDirectories;
+}
+
+async function writeCodexHookPreflightRetentionIndex(
+  context: CodexHookPreflightRetentionContext,
+  generatedAt: string
+): Promise<void> {
+  const allRunDirectories = await listCodexHookPreflightRunEntries(context);
+  const retained = allRunDirectories.slice(0, context.maxRuns);
+  const pruned = allRunDirectories.slice(context.maxRuns);
+  for (const candidate of pruned) {
+    await rm(candidate.path, { recursive: true, force: true });
+  }
+  const indexPath = scopedArtifactPath(context.artifactRoot, CODEX_HOOK_PREFLIGHT_INDEX_FILE);
+  ensureScopedWritableFilePath(context.artifactRoot, indexPath);
+  await writeFile(
+    indexPath,
+    `${JSON.stringify(
+      {
+        kind: 'codex-hook-preflight-index',
+        schemaVersion: 'archon.codex-hooks.preflight-index.v1',
+        generatedAt,
+        producer: 'runCodexHookBootloaderPreflight',
+        consumers: [
+          'Codex provider and workflow operators',
+          'artifact cleanup and retention tooling',
+        ],
+        artifactRoot: context.artifactRoot,
+        runsRoot: context.runsRoot,
+        currentRun: {
+          path: context.runDirectory,
+          relativePath: relative(context.artifactRoot, context.runDirectory),
+        },
+        retentionPolicy: {
+          envVar: CODEX_HOOK_PREFLIGHT_RETENTION_ENV,
+          maxRuns: context.maxRuns,
+          defaultMaxRuns: DEFAULT_CODEX_HOOK_PREFLIGHT_MAX_RUNS,
+          selection: 'newest-by-directory-mtime-then-name',
+          prune: 'remove-oldest-runs-over-limit',
+        },
+        retainedRuns: retained.map(run => ({
+          path: run.path,
+          relativePath: relative(context.artifactRoot, run.path),
+          mtimeMs: run.mtimeMs,
+        })),
+        prunedRuns: pruned.map(run => ({
+          path: run.path,
+          relativePath: relative(context.artifactRoot, run.path),
+          mtimeMs: run.mtimeMs,
+        })),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
 }
 
 function inspectCodexRuntime(
