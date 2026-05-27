@@ -1,6 +1,6 @@
-workflow,purpose,mutates_checkout,artifact_contract,role_contracts,compatibility
-context-orchestrate,status + ledgers + compile + approval + handoff,false,context-orchestrator/*,"status, ledgers, compile, approval, handoff",preserve
-archon-aco-adversarial-loop,ACO-grounded contracted adversarial implementation loop,false in artifact-only phase,aco-adversarial-loop/*,"coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",preserve-harden
-archon-adversarial-dev,GAN-style generation/evaluation app creation,artifact app repo,contracts/feedback/app/state,"negotiator,generator,evaluator",existing reference only
-archon-piv-loop,plan-implement-validate,yes when implementing,plan/validation/progress,"planner,implementer,validator",preserve existing
-archon-workflow-builder,generate workflows from user input,writes workflow when installing,generated-workflow.yaml,"intent extraction, yaml generation, validation, install",preserve existing
+workflow,purpose,mutates_checkout,artifact_contract,role_contracts,owner,compatibility
+context-orchestrate,status + ledgers + compile + approval + handoff,false,context-orchestrator/*,"status, ledgers, compile, approval, handoff",aco-workflows,preserve
+archon-aco-adversarial-loop,ACO-grounded contracted adversarial implementation loop,false in artifact-only phase,aco-adversarial-loop/*,"coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",aco-workflows,preserve-harden
+archon-adversarial-dev,GAN-style generation/evaluation app creation,artifact app repo,contracts/feedback/app/state,"negotiator,generator,evaluator",aco-workflows,existing reference only
+archon-piv-loop,plan-implement-validate,yes when implementing,plan/validation/progress,"planner,implementer,validator",aco-workflows,preserve existing
+archon-workflow-builder,generate workflows from user input,writes workflow when installing,generated-workflow.yaml,"intent extraction, yaml generation, validation, install",aco-workflows,preserve existing

@@ -1,11 +1,11 @@
-tool,category,status,safety,preconditions,fallback
-Git,repo-state,required,read-only by default,repo root available,mark repo evidence unknown
-Bun,runtime,required,can run tests/scripts,dependencies installed,blocked validation
-OPA,policy,required for policy gate,read-only,installed,policy gate blocked
-OpenAI docs MCP,docs evidence,optional/conditional,may need auth/OAuth,configured MCP,Context7/manual
-Context7,docs evidence,optional/conditional,read-only if configured,configured tool,manual docs evidence
-Graphify,graph evidence,required for graph freshness,writes graph artifacts,approved graph refresh,waiver/approval_required
-BMAD skills,advisory routing,required for BMAD parity,read-only advisory,installed skill docs/manifests,unknown-help route
-Codex SDK/harness,provider,required for Codex provider parity,runtime dependent,SDK configured,bootstrap-only / deferred runtime
-Claude SDK,provider,existing built-in,runtime dependent,auth configured,provider unavailable
-Pi SDK,provider,community reference,runtime dependent,package/config available,community provider unavailable
+tool,category,status,safety,preconditions,fallback,owner
+Git,repo-state,required,read-only by default,repo root available,mark repo evidence unknown,aco-ledgers
+Bun,runtime,required,can run tests/scripts,dependencies installed,blocked validation,aco-ledgers
+OPA,policy,required for policy gate,read-only,installed,policy gate blocked,aco-ledgers
+OpenAI docs MCP,docs evidence,optional/conditional,may need auth/OAuth,configured MCP,Context7/manual,aco-ledgers
+Context7,docs evidence,optional/conditional,read-only if configured,configured tool,manual docs evidence,aco-ledgers
+Graphify,graph evidence,required for graph freshness,writes graph artifacts,approved graph refresh,waiver/approval_required,aco-ledgers
+BMAD skills,advisory routing,required for BMAD parity,read-only advisory,installed skill docs/manifests,unknown-help route,aco-ledgers
+Codex SDK/harness,provider,required for Codex provider parity,runtime dependent,SDK configured,bootstrap-only / deferred runtime,aco-ledgers
+Claude SDK,provider,existing built-in,runtime dependent,auth configured,provider unavailable,aco-ledgers
+Pi SDK,provider,community reference,runtime dependent,package/config available,community provider unavailable,aco-ledgers

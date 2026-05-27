@@ -3783,6 +3783,7 @@
       "raw": {
         "category": "advisory routing",
         "fallback": "unknown-help route",
+        "owner": "aco-ledgers",
         "preconditions": "installed skill docs/manifests",
         "safety": "read-only advisory",
         "status": "required for BMAD parity",
@@ -3824,6 +3825,7 @@
       "raw": {
         "category": "runtime",
         "fallback": "blocked validation",
+        "owner": "aco-ledgers",
         "preconditions": "dependencies installed",
         "safety": "can run tests/scripts",
         "status": "required",
@@ -3865,6 +3867,7 @@
       "raw": {
         "category": "provider",
         "fallback": "provider unavailable",
+        "owner": "aco-ledgers",
         "preconditions": "auth configured",
         "safety": "runtime dependent",
         "status": "existing built-in",
@@ -3906,6 +3909,7 @@
       "raw": {
         "category": "provider",
         "fallback": "bootstrap-only / deferred runtime",
+        "owner": "aco-ledgers",
         "preconditions": "SDK configured",
         "safety": "runtime dependent",
         "status": "required for Codex provider parity",
@@ -3947,6 +3951,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "manual docs evidence",
+        "owner": "aco-ledgers",
         "preconditions": "configured tool",
         "safety": "read-only if configured",
         "status": "optional/conditional",
@@ -3988,6 +3993,7 @@
       "raw": {
         "category": "repo-state",
         "fallback": "mark repo evidence unknown",
+        "owner": "aco-ledgers",
         "preconditions": "repo root available",
         "safety": "read-only by default",
         "status": "required",
@@ -4029,6 +4035,7 @@
       "raw": {
         "category": "graph evidence",
         "fallback": "waiver/approval_required",
+        "owner": "aco-ledgers",
         "preconditions": "approved graph refresh",
         "safety": "writes graph artifacts",
         "status": "required for graph freshness",
@@ -4070,6 +4077,7 @@
       "raw": {
         "category": "policy",
         "fallback": "policy gate blocked",
+        "owner": "aco-ledgers",
         "preconditions": "installed",
         "safety": "read-only",
         "status": "required for policy gate",
@@ -4111,6 +4119,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "Context7/manual",
+        "owner": "aco-ledgers",
         "preconditions": "configured MCP",
         "safety": "may need auth/OAuth",
         "status": "optional/conditional",
@@ -4152,6 +4161,7 @@
       "raw": {
         "category": "provider",
         "fallback": "community provider unavailable",
+        "owner": "aco-ledgers",
         "preconditions": "package/config available",
         "safety": "runtime dependent",
         "status": "community reference",
@@ -4191,6 +4201,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "run generate/check bundled",
         "router_required": "no",
         "status": "partial",
@@ -4227,6 +4238,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "local diff and UI tests",
         "router_required": "no",
         "status": "partial",
@@ -4263,6 +4275,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "run validation on branch",
         "router_required": "no",
         "status": "unknown",
@@ -4299,6 +4312,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "capture via local git diff in Codex environment",
         "router_required": "yes",
         "status": "unknown in this session",
@@ -4335,6 +4349,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "provider capability tests and docs evidence",
         "router_required": "yes",
         "status": "unknown",
@@ -4371,6 +4386,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "search local repo and BMAD skill manifests",
         "router_required": "yes",
         "status": "not found in visible branch evidence",
@@ -4410,6 +4426,7 @@
         "artifact_contract": "aco-adversarial-loop/*",
         "compatibility": "preserve-harden",
         "mutates_checkout": "false in artifact-only phase",
+        "owner": "aco-workflows",
         "purpose": "ACO-grounded contracted adversarial implementation loop",
         "role_contracts": "coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",
         "workflow": "archon-aco-adversarial-loop"
@@ -4463,6 +4480,7 @@
         "artifact_contract": "contracts/feedback/app/state",
         "compatibility": "existing reference only",
         "mutates_checkout": "artifact app repo",
+        "owner": "aco-workflows",
         "purpose": "GAN-style generation/evaluation app creation",
         "role_contracts": "negotiator,generator,evaluator",
         "workflow": "archon-adversarial-dev"
@@ -4505,6 +4523,7 @@
         "artifact_contract": "plan/validation/progress",
         "compatibility": "preserve existing",
         "mutates_checkout": "yes when implementing",
+        "owner": "aco-workflows",
         "purpose": "plan-implement-validate",
         "role_contracts": "planner,implementer,validator",
         "workflow": "archon-piv-loop"
@@ -4547,6 +4566,7 @@
         "artifact_contract": "generated-workflow.yaml",
         "compatibility": "preserve existing",
         "mutates_checkout": "writes workflow when installing",
+        "owner": "aco-workflows",
         "purpose": "generate workflows from user input",
         "role_contracts": "intent extraction, yaml generation, validation, install",
         "workflow": "archon-workflow-builder"
@@ -4589,6 +4609,7 @@
         "artifact_contract": "context-orchestrator/*",
         "compatibility": "preserve",
         "mutates_checkout": "false",
+        "owner": "aco-workflows",
         "purpose": "status + ledgers + compile + approval + handoff",
         "role_contracts": "status, ledgers, compile, approval, handoff",
         "workflow": "context-orchestrate"
@@ -4689,7 +4710,7 @@
         "summary": "tool ledger oracle CSV with 10 data rows"
       },
       "fileName": "tool-availability-ledger.csv",
-      "header": ["tool", "category", "status", "safety", "preconditions", "fallback"],
+      "header": ["tool", "category", "status", "safety", "preconditions", "fallback", "owner"],
       "ledger": "tool",
       "rowCount": 10
     },
@@ -4702,7 +4723,7 @@
         "summary": "unknowns ledger oracle CSV with 6 data rows"
       },
       "fileName": "unknowns-ledger.csv",
-      "header": ["unknown", "status", "resolution", "router_required"],
+      "header": ["unknown", "status", "resolution", "router_required", "owner"],
       "ledger": "unknowns",
       "rowCount": 6
     },
@@ -4721,6 +4742,7 @@
         "mutates_checkout",
         "artifact_contract",
         "role_contracts",
+        "owner",
         "compatibility"
       ],
       "ledger": "workflow",
@@ -5042,6 +5064,7 @@
       "raw": {
         "category": "advisory routing",
         "fallback": "unknown-help route",
+        "owner": "aco-ledgers",
         "preconditions": "installed skill docs/manifests",
         "safety": "read-only advisory",
         "status": "required for BMAD parity",
@@ -5083,6 +5106,7 @@
       "raw": {
         "category": "runtime",
         "fallback": "blocked validation",
+        "owner": "aco-ledgers",
         "preconditions": "dependencies installed",
         "safety": "can run tests/scripts",
         "status": "required",
@@ -5124,6 +5148,7 @@
       "raw": {
         "category": "provider",
         "fallback": "provider unavailable",
+        "owner": "aco-ledgers",
         "preconditions": "auth configured",
         "safety": "runtime dependent",
         "status": "existing built-in",
@@ -5165,6 +5190,7 @@
       "raw": {
         "category": "provider",
         "fallback": "bootstrap-only / deferred runtime",
+        "owner": "aco-ledgers",
         "preconditions": "SDK configured",
         "safety": "runtime dependent",
         "status": "required for Codex provider parity",
@@ -5206,6 +5232,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "manual docs evidence",
+        "owner": "aco-ledgers",
         "preconditions": "configured tool",
         "safety": "read-only if configured",
         "status": "optional/conditional",
@@ -5247,6 +5274,7 @@
       "raw": {
         "category": "repo-state",
         "fallback": "mark repo evidence unknown",
+        "owner": "aco-ledgers",
         "preconditions": "repo root available",
         "safety": "read-only by default",
         "status": "required",
@@ -5288,6 +5316,7 @@
       "raw": {
         "category": "graph evidence",
         "fallback": "waiver/approval_required",
+        "owner": "aco-ledgers",
         "preconditions": "approved graph refresh",
         "safety": "writes graph artifacts",
         "status": "required for graph freshness",
@@ -5329,6 +5358,7 @@
       "raw": {
         "category": "policy",
         "fallback": "policy gate blocked",
+        "owner": "aco-ledgers",
         "preconditions": "installed",
         "safety": "read-only",
         "status": "required for policy gate",
@@ -5370,6 +5400,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "Context7/manual",
+        "owner": "aco-ledgers",
         "preconditions": "configured MCP",
         "safety": "may need auth/OAuth",
         "status": "optional/conditional",
@@ -5411,6 +5442,7 @@
       "raw": {
         "category": "provider",
         "fallback": "community provider unavailable",
+        "owner": "aco-ledgers",
         "preconditions": "package/config available",
         "safety": "runtime dependent",
         "status": "community reference",
@@ -5452,6 +5484,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "run generate/check bundled",
         "router_required": "no",
         "status": "partial",
@@ -5488,6 +5521,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "local diff and UI tests",
         "router_required": "no",
         "status": "partial",
@@ -5524,6 +5558,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "run validation on branch",
         "router_required": "no",
         "status": "unknown",
@@ -5560,6 +5595,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "capture via local git diff in Codex environment",
         "router_required": "yes",
         "status": "unknown in this session",
@@ -5596,6 +5632,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "provider capability tests and docs evidence",
         "router_required": "yes",
         "status": "unknown",
@@ -5632,6 +5669,7 @@
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "owner": "aco-ledgers",
         "resolution": "search local repo and BMAD skill manifests",
         "router_required": "yes",
         "status": "not found in visible branch evidence",
@@ -5673,6 +5711,7 @@
         "artifact_contract": "aco-adversarial-loop/*",
         "compatibility": "preserve-harden",
         "mutates_checkout": "false in artifact-only phase",
+        "owner": "aco-workflows",
         "purpose": "ACO-grounded contracted adversarial implementation loop",
         "role_contracts": "coordinator, skill curator, BMAD reviewer, search, planner, contract, generator, QA, evaluator, feedback/handoff",
         "workflow": "archon-aco-adversarial-loop"
@@ -5726,6 +5765,7 @@
         "artifact_contract": "contracts/feedback/app/state",
         "compatibility": "existing reference only",
         "mutates_checkout": "artifact app repo",
+        "owner": "aco-workflows",
         "purpose": "GAN-style generation/evaluation app creation",
         "role_contracts": "negotiator,generator,evaluator",
         "workflow": "archon-adversarial-dev"
@@ -5768,6 +5808,7 @@
         "artifact_contract": "plan/validation/progress",
         "compatibility": "preserve existing",
         "mutates_checkout": "yes when implementing",
+        "owner": "aco-workflows",
         "purpose": "plan-implement-validate",
         "role_contracts": "planner,implementer,validator",
         "workflow": "archon-piv-loop"
@@ -5810,6 +5851,7 @@
         "artifact_contract": "generated-workflow.yaml",
         "compatibility": "preserve existing",
         "mutates_checkout": "writes workflow when installing",
+        "owner": "aco-workflows",
         "purpose": "generate workflows from user input",
         "role_contracts": "intent extraction, yaml generation, validation, install",
         "workflow": "archon-workflow-builder"
@@ -5852,6 +5894,7 @@
         "artifact_contract": "context-orchestrator/*",
         "compatibility": "preserve",
         "mutates_checkout": "false",
+        "owner": "aco-workflows",
         "purpose": "status + ledgers + compile + approval + handoff",
         "role_contracts": "status, ledgers, compile, approval, handoff",
         "workflow": "context-orchestrate"

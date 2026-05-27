@@ -141,6 +141,7 @@ export const toolAvailabilityLedgerRowSchema = optionalFreshnessSchema.extend({
   safety: nonEmptyStringSchema,
   preconditions: nonEmptyStringSchema,
   fallback: nonEmptyStringSchema,
+  owner: nonEmptyStringSchema,
 });
 
 export const unknownsLedgerRowSchema = optionalFreshnessSchema.extend({
@@ -148,6 +149,7 @@ export const unknownsLedgerRowSchema = optionalFreshnessSchema.extend({
   status: nonEmptyStringSchema,
   resolution: nonEmptyStringSchema,
   router_required: nonEmptyStringSchema,
+  owner: nonEmptyStringSchema,
 });
 
 export const workflowLedgerRowSchema = optionalFreshnessSchema.extend({
@@ -156,6 +158,7 @@ export const workflowLedgerRowSchema = optionalFreshnessSchema.extend({
   mutates_checkout: nonEmptyStringSchema,
   artifact_contract: nonEmptyStringSchema,
   role_contracts: nonEmptyStringSchema,
+  owner: nonEmptyStringSchema,
   compatibility: nonEmptyStringSchema,
 });
 
