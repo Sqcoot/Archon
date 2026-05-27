@@ -21,6 +21,7 @@
       "raw": {
         "artifact": "agentic-search.md",
         "consumer": "planner/evaluator",
+        "freshness": "unknown",
         "producer": "Agentic Search role",
         "required": "conditional",
         "schema": "aco.agentic-search-report.v1"
@@ -60,6 +61,7 @@
       "raw": {
         "artifact": "approval-capsule.md",
         "consumer": "human approval gate",
+        "freshness": "unknown",
         "producer": "approval-capsule",
         "required": "conditional",
         "schema": "aco.approval-capsule.md"
@@ -99,6 +101,7 @@
       "raw": {
         "artifact": "approval-contract.json",
         "consumer": "approval verifier",
+        "freshness": "unknown",
         "producer": "approval-capsule",
         "required": "conditional",
         "schema": "aco.approval-contract.v1"
@@ -124,13 +127,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.2",
           "source": "artifact-ledger.csv#L3",
           "summary": "artifact capability-snapshot.json from artifact.capability-snapshot-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.capability-snapshot-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -138,6 +141,7 @@
       "raw": {
         "artifact": "capability-snapshot.json",
         "consumer": "Codex/bootstrap/handoff",
+        "freshness": "fresh",
         "producer": "bootstrap/status",
         "required": "yes",
         "schema": "aco.capability-snapshot.v1"
@@ -163,13 +167,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.4",
           "source": "artifact-ledger.csv#L5",
           "summary": "artifact command-ledger.json from artifact.command-ledger-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.command-ledger-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -177,6 +181,7 @@
       "raw": {
         "artifact": "command-ledger.json",
         "consumer": "compiler/gates/UI",
+        "freshness": "fresh",
         "producer": "ledgers",
         "required": "yes",
         "schema": "aco.ledger-bundle.v1"
@@ -202,13 +207,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.1",
           "source": "artifact-ledger.csv#L2",
           "summary": "artifact context-intent.json from artifact.context-intent-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.context-intent-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -216,6 +221,7 @@
       "raw": {
         "artifact": "context-intent.json",
         "consumer": "compiler/status",
+        "freshness": "fresh",
         "producer": "context-intake",
         "required": "yes",
         "schema": "aco.context-intent.v1"
@@ -241,13 +247,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.6",
           "source": "artifact-ledger.csv#L7",
           "summary": "artifact decision-dossier.json from artifact.decision-dossier-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.decision-dossier-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -255,6 +261,7 @@
       "raw": {
         "artifact": "decision-dossier.json",
         "consumer": "human/Codex/workflow",
+        "freshness": "fresh",
         "producer": "compile",
         "required": "yes",
         "schema": "aco.decision-dossier.v1"
@@ -294,6 +301,7 @@
       "raw": {
         "artifact": "graph-waiver-closure.json",
         "consumer": "readiness gate",
+        "freshness": "unknown",
         "producer": "graph-waivers",
         "required": "conditional",
         "schema": "aco.graph-waiver-closure.v1"
@@ -319,13 +327,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.12",
           "source": "artifact-ledger.csv#L13",
           "summary": "artifact handoff.md from artifact.handoff-md"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.handoff-md",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -333,6 +341,7 @@
       "raw": {
         "artifact": "handoff.md",
         "consumer": "Codex/human/next run",
+        "freshness": "fresh",
         "producer": "compile/bootstrap/evaluator",
         "required": "yes",
         "schema": "aco.handoff.md"
@@ -358,13 +367,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.5",
           "source": "artifact-ledger.csv#L6",
           "summary": "artifact prompt-package.json from artifact.prompt-package-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.prompt-package-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -372,6 +381,7 @@
       "raw": {
         "artifact": "prompt-package.json",
         "consumer": "policy/handoff",
+        "freshness": "fresh",
         "producer": "compile",
         "required": "yes",
         "schema": "aco.prompt-package.v1"
@@ -397,13 +407,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.11",
           "source": "artifact-ledger.csv#L12",
           "summary": "artifact role-contracts.json from artifact.role-contracts-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.role-contracts-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -411,6 +421,7 @@
       "raw": {
         "artifact": "role-contracts.json",
         "consumer": "workflow validator",
+        "freshness": "fresh",
         "producer": "role contract registry",
         "required": "yes for ACO workflows",
         "schema": "aco.role-contracts.v1"
@@ -436,13 +447,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.3",
           "source": "artifact-ledger.csv#L4",
           "summary": "artifact tool-ledger.json from artifact.tool-ledger-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.tool-ledger-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -450,6 +461,7 @@
       "raw": {
         "artifact": "tool-ledger.json",
         "consumer": "compiler/gates/UI",
+        "freshness": "fresh",
         "producer": "ledgers",
         "required": "yes",
         "schema": "aco.ledger-bundle.v1"
@@ -477,13 +489,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.5",
           "source": "capability-inventory.csv#L6",
           "summary": "capability adapters from capability.adapters"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.adapters",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -492,6 +504,7 @@
         "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
         "confidence": "medium",
         "current_surface": "source/worktree/artifact separation",
+        "freshness": "stale",
         "id": "adapters",
         "required_artifact": "adapter tests",
         "rewrite_action": "rewrite",
@@ -518,13 +531,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.11",
           "source": "capability-inventory.csv#L12",
           "summary": "capability agentic-search from capability.agentic-search"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.agentic-search",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -533,6 +546,7 @@
         "capability": "Research discovery",
         "confidence": "medium",
         "current_surface": "surfaces/tests/evidence gaps",
+        "freshness": "stale",
         "id": "agentic-search",
         "required_artifact": "search report schema",
         "rewrite_action": "preserve",
@@ -559,13 +573,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.3",
           "source": "capability-inventory.csv#L4",
           "summary": "capability artifacts from capability.artifacts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.artifacts",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -574,6 +588,7 @@
         "capability": "Prompt packages, capsules, ledgers, dossiers",
         "confidence": "medium",
         "current_surface": "JSON + markdown artifacts",
+        "freshness": "stale",
         "id": "artifacts",
         "required_artifact": "artifact manifest",
         "rewrite_action": "preserve",
@@ -600,13 +615,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.9",
           "source": "capability-inventory.csv#L10",
           "summary": "capability bmad from capability.bmad"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.bmad",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -615,6 +630,7 @@
         "capability": "BMAD routing and advisory roles",
         "confidence": "medium",
         "current_surface": "route mapping and role contracts",
+        "freshness": "stale",
         "id": "bmad",
         "required_artifact": "BMAD role manifest",
         "rewrite_action": "preserve",
@@ -641,13 +657,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.12",
           "source": "capability-inventory.csv#L13",
           "summary": "capability bootload from capability.bootload"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.bootload",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -656,6 +672,7 @@
         "capability": "Session context bootload",
         "confidence": "medium",
         "current_surface": "capability snapshot and handoff",
+        "freshness": "stale",
         "id": "bootload",
         "required_artifact": "bootstrap context",
         "rewrite_action": "preserve",
@@ -682,13 +699,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.17",
           "source": "capability-inventory.csv#L18",
           "summary": "capability codex-harness from capability.codex-harness"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.codex-harness",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -697,6 +714,7 @@
         "capability": "Real Codex harness and bootstrap",
         "confidence": "medium",
         "current_surface": "capsules/events/session handoff",
+        "freshness": "stale",
         "id": "codex-harness",
         "required_artifact": "Codex package",
         "rewrite_action": "preserve-harden",
@@ -723,13 +741,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.1",
           "source": "capability-inventory.csv#L2",
           "summary": "capability commands from capability.commands"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.commands",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -738,6 +756,7 @@
         "capability": "Slash and CLI commands",
         "confidence": "medium",
         "current_surface": "aco bootstrap-codex; archon aco status; archon context *",
+        "freshness": "stale",
         "id": "commands",
         "required_artifact": "CLI/command manifest",
         "rewrite_action": "preserve",
@@ -764,13 +783,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.6",
           "source": "capability-inventory.csv#L7",
           "summary": "capability gates from capability.gates"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.gates",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -779,6 +798,7 @@
         "capability": "ACO validation gates",
         "confidence": "medium",
         "current_surface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "freshness": "stale",
         "id": "gates",
         "required_artifact": "gate registry",
         "rewrite_action": "preserve",
@@ -805,13 +825,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.15",
           "source": "capability-inventory.csv#L16",
           "summary": "capability graphify from capability.graphify"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.graphify",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -820,6 +840,7 @@
         "capability": "Graph evidence and waiver closure",
         "confidence": "medium",
         "current_surface": "upstream graph reports",
+        "freshness": "stale",
         "id": "graphify",
         "required_artifact": "graph evidence schema",
         "rewrite_action": "preserve",
@@ -846,13 +867,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.13",
           "source": "capability-inventory.csv#L14",
           "summary": "capability hooks-plugins from capability.hooks-plugins"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.hooks-plugins",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -861,6 +882,7 @@
         "capability": "Hooks/plugins/future extensions",
         "confidence": "medium",
         "current_surface": "approval-gated manifests",
+        "freshness": "stale",
         "id": "hooks-plugins",
         "required_artifact": "extension registry",
         "rewrite_action": "rewrite",
@@ -887,13 +909,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.14",
           "source": "capability-inventory.csv#L15",
           "summary": "capability ledgers from capability.ledgers"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.ledgers",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -902,6 +924,7 @@
         "capability": "Tool, command, workflow, evidence ledgers",
         "confidence": "medium",
         "current_surface": "status/confidence/freshness/safety",
+        "freshness": "stale",
         "id": "ledgers",
         "required_artifact": "ledger schemas",
         "rewrite_action": "preserve",
@@ -928,13 +951,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.7",
           "source": "capability-inventory.csv#L8",
           "summary": "capability manifests from capability.manifests"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.manifests",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -943,6 +966,7 @@
         "capability": "Capability, provider, workflow, artifact manifests",
         "confidence": "medium",
         "current_surface": "schema-first registry",
+        "freshness": "stale",
         "id": "manifests",
         "required_artifact": "manifest schemas",
         "rewrite_action": "rewrite",
@@ -969,13 +993,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.8",
           "source": "capability-inventory.csv#L9",
           "summary": "capability mcp-context7-docs from capability.mcp-context7-docs"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.mcp-context7-docs",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -984,6 +1008,7 @@
         "capability": "Docs evidence resolution",
         "confidence": "medium",
         "current_surface": "OpenAI docs MCP, Context7, manual",
+        "freshness": "stale",
         "id": "mcp-context7-docs",
         "required_artifact": "docs evidence plan",
         "rewrite_action": "preserve",
@@ -1010,13 +1035,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.16",
           "source": "capability-inventory.csv#L17",
           "summary": "capability providers from capability.providers"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.providers",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -1025,6 +1050,7 @@
         "capability": "Claude/Codex/Pi/future providers",
         "confidence": "medium",
         "current_surface": "generic provider contract",
+        "freshness": "stale",
         "id": "providers",
         "required_artifact": "provider manifest",
         "rewrite_action": "rewrite",
@@ -1051,13 +1077,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.10",
           "source": "capability-inventory.csv#L11",
           "summary": "capability subagents from capability.subagents"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.subagents",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -1066,6 +1092,7 @@
         "capability": "Role contracts and subagent boundaries",
         "confidence": "medium",
         "current_surface": "contractual, not unsupported runtime claims",
+        "freshness": "stale",
         "id": "subagents",
         "required_artifact": "role contract checker",
         "rewrite_action": "preserve-harden",
@@ -1092,13 +1119,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.4",
           "source": "capability-inventory.csv#L5",
           "summary": "capability tools from capability.tools"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.tools",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -1107,6 +1134,7 @@
         "capability": "Tool availability ledger",
         "confidence": "medium",
         "current_surface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "freshness": "stale",
         "id": "tools",
         "required_artifact": "tool ledger",
         "rewrite_action": "preserve",
@@ -1133,13 +1161,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.2",
           "source": "capability-inventory.csv#L3",
           "summary": "capability workflows from capability.workflows"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.workflows",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -1148,6 +1176,7 @@
         "capability": "Default workflows",
         "confidence": "medium",
         "current_surface": "context-orchestrate; archon-aco-adversarial-loop",
+        "freshness": "stale",
         "id": "workflows",
         "required_artifact": "workflow manifest + role contracts",
         "rewrite_action": "preserve",
@@ -1176,13 +1205,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.2",
           "source": "command-ledger.csv#L3",
           "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1192,6 +1221,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-codex",
         "purpose": "Emit Codex-ready bootstrap capsule",
@@ -1223,13 +1253,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.1",
           "source": "command-ledger.csv#L2",
           "summary": "command archon aco status --cwd <repo> [--json] from command.archon-aco-status-cwd-repo-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-aco-status-cwd-repo-json",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1239,6 +1269,7 @@
         "approval_required": "no",
         "command": "archon aco status --cwd <repo> [--json]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-cli",
         "purpose": "Productized ACO status and graph confidence limits",
@@ -1270,13 +1301,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.7",
           "source": "command-ledger.csv#L8",
           "summary": "command archon context approval-capsule <prompt> [--no-write-artifact] from command.archon-context-approval-capsule-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-approval-capsule-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1286,6 +1317,7 @@
         "approval_required": "no to create capsule",
         "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Create approval capsule for approval-required package",
@@ -1317,13 +1349,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.8",
           "source": "command-ledger.csv#L9",
           "summary": "command archon context approval-capsule-verify [--no-write-artifact] from command.archon-context-approval-capsule-verify-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-approval-capsule-verify-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1333,6 +1365,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
@@ -1364,13 +1397,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.6",
           "source": "command-ledger.csv#L7",
           "summary": "command archon context compile <prompt> [--no-write-artifact] from command.archon-context-compile-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-compile-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1380,6 +1413,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Compile context package and artifact archive",
@@ -1411,13 +1445,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.9",
           "source": "command-ledger.csv#L10",
           "summary": "command archon context graph-waivers [--no-write-artifact] from command.archon-context-graph-waivers-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-graph-waivers-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1427,6 +1461,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
@@ -1458,13 +1493,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.4",
           "source": "command-ledger.csv#L5",
           "summary": "command archon context ledgers [prompt] [--no-write-artifact] from command.archon-context-ledgers-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-ledgers-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1474,6 +1509,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
@@ -1505,13 +1541,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.5",
           "source": "command-ledger.csv#L6",
           "summary": "command archon context route <prompt> [--no-write-artifact] from command.archon-context-route-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-route-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1521,6 +1557,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
@@ -1552,13 +1589,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.3",
           "source": "command-ledger.csv#L4",
           "summary": "command archon context status [prompt] [--no-write-artifact] from command.archon-context-status-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-status-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1568,6 +1605,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
@@ -1599,13 +1637,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.10",
           "source": "command-ledger.csv#L11",
           "summary": "command archon context validate from command.archon-context-validate"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-validate",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1615,6 +1653,7 @@
         "approval_required": "no",
         "command": "archon context validate",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-gates",
         "purpose": "Validate ACO research/spec readiness",
@@ -1646,13 +1685,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.12",
           "source": "command-ledger.csv#L13",
           "summary": "command bun run aco:role-contracts from command.bun-run-aco-role-contracts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.bun-run-aco-role-contracts",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1662,6 +1701,7 @@
         "approval_required": "no",
         "command": "bun run aco:role-contracts",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-gates",
         "purpose": "Check role contracts",
@@ -1693,13 +1733,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.11",
           "source": "command-ledger.csv#L12",
           "summary": "command bun run research:graph from command.bun-run-research-graph"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.bun-run-research-graph",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -1709,6 +1749,7 @@
         "approval_required": "yes in readonly contexts",
         "command": "bun run research:graph",
         "compatibility": "preserve-gated",
+        "freshness": "fresh",
         "mutates": "graph cache artifacts",
         "owner": "aco-research",
         "purpose": "Generate graph evidence",
@@ -1766,6 +1807,7 @@
       "raw": {
         "artifact": "agentic-search.md",
         "consumer": "planner/evaluator",
+        "freshness": "unknown",
         "producer": "Agentic Search role",
         "required": "conditional",
         "schema": "aco.agentic-search-report.v1"
@@ -1805,6 +1847,7 @@
       "raw": {
         "artifact": "approval-capsule.md",
         "consumer": "human approval gate",
+        "freshness": "unknown",
         "producer": "approval-capsule",
         "required": "conditional",
         "schema": "aco.approval-capsule.md"
@@ -1844,6 +1887,7 @@
       "raw": {
         "artifact": "approval-contract.json",
         "consumer": "approval verifier",
+        "freshness": "unknown",
         "producer": "approval-capsule",
         "required": "conditional",
         "schema": "aco.approval-contract.v1"
@@ -1869,13 +1913,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.2",
           "source": "artifact-ledger.csv#L3",
           "summary": "artifact capability-snapshot.json from artifact.capability-snapshot-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.capability-snapshot-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -1883,6 +1927,7 @@
       "raw": {
         "artifact": "capability-snapshot.json",
         "consumer": "Codex/bootstrap/handoff",
+        "freshness": "fresh",
         "producer": "bootstrap/status",
         "required": "yes",
         "schema": "aco.capability-snapshot.v1"
@@ -1908,13 +1953,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.4",
           "source": "artifact-ledger.csv#L5",
           "summary": "artifact command-ledger.json from artifact.command-ledger-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.command-ledger-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -1922,6 +1967,7 @@
       "raw": {
         "artifact": "command-ledger.json",
         "consumer": "compiler/gates/UI",
+        "freshness": "fresh",
         "producer": "ledgers",
         "required": "yes",
         "schema": "aco.ledger-bundle.v1"
@@ -1947,13 +1993,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.1",
           "source": "artifact-ledger.csv#L2",
           "summary": "artifact context-intent.json from artifact.context-intent-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.context-intent-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -1961,6 +2007,7 @@
       "raw": {
         "artifact": "context-intent.json",
         "consumer": "compiler/status",
+        "freshness": "fresh",
         "producer": "context-intake",
         "required": "yes",
         "schema": "aco.context-intent.v1"
@@ -1986,13 +2033,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.6",
           "source": "artifact-ledger.csv#L7",
           "summary": "artifact decision-dossier.json from artifact.decision-dossier-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.decision-dossier-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -2000,6 +2047,7 @@
       "raw": {
         "artifact": "decision-dossier.json",
         "consumer": "human/Codex/workflow",
+        "freshness": "fresh",
         "producer": "compile",
         "required": "yes",
         "schema": "aco.decision-dossier.v1"
@@ -2039,6 +2087,7 @@
       "raw": {
         "artifact": "graph-waiver-closure.json",
         "consumer": "readiness gate",
+        "freshness": "unknown",
         "producer": "graph-waivers",
         "required": "conditional",
         "schema": "aco.graph-waiver-closure.v1"
@@ -2064,13 +2113,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.12",
           "source": "artifact-ledger.csv#L13",
           "summary": "artifact handoff.md from artifact.handoff-md"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.handoff-md",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -2078,6 +2127,7 @@
       "raw": {
         "artifact": "handoff.md",
         "consumer": "Codex/human/next run",
+        "freshness": "fresh",
         "producer": "compile/bootstrap/evaluator",
         "required": "yes",
         "schema": "aco.handoff.md"
@@ -2103,13 +2153,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.5",
           "source": "artifact-ledger.csv#L6",
           "summary": "artifact prompt-package.json from artifact.prompt-package-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.prompt-package-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -2117,6 +2167,7 @@
       "raw": {
         "artifact": "prompt-package.json",
         "consumer": "policy/handoff",
+        "freshness": "fresh",
         "producer": "compile",
         "required": "yes",
         "schema": "aco.prompt-package.v1"
@@ -2142,13 +2193,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.11",
           "source": "artifact-ledger.csv#L12",
           "summary": "artifact role-contracts.json from artifact.role-contracts-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.role-contracts-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -2156,6 +2207,7 @@
       "raw": {
         "artifact": "role-contracts.json",
         "consumer": "workflow validator",
+        "freshness": "fresh",
         "producer": "role contract registry",
         "required": "yes for ACO workflows",
         "schema": "aco.role-contracts.v1"
@@ -2181,13 +2233,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.artifact.3",
           "source": "artifact-ledger.csv#L4",
           "summary": "artifact tool-ledger.json from artifact.tool-ledger-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "artifact.tool-ledger-json",
       "kind": "ledger-entry",
       "ledger": "artifact",
@@ -2195,6 +2247,7 @@
       "raw": {
         "artifact": "tool-ledger.json",
         "consumer": "compiler/gates/UI",
+        "freshness": "fresh",
         "producer": "ledgers",
         "required": "yes",
         "schema": "aco.ledger-bundle.v1"
@@ -2220,13 +2273,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.5",
           "source": "capability-inventory.csv#L6",
           "summary": "capability adapters from capability.adapters"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.adapters",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2235,6 +2288,7 @@
         "capability": "GitHub/GitLab/Gitea paths and assistant defaults",
         "confidence": "medium",
         "current_surface": "source/worktree/artifact separation",
+        "freshness": "stale",
         "id": "adapters",
         "required_artifact": "adapter tests",
         "rewrite_action": "rewrite",
@@ -2261,13 +2315,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.11",
           "source": "capability-inventory.csv#L12",
           "summary": "capability agentic-search from capability.agentic-search"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.agentic-search",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2276,6 +2330,7 @@
         "capability": "Research discovery",
         "confidence": "medium",
         "current_surface": "surfaces/tests/evidence gaps",
+        "freshness": "stale",
         "id": "agentic-search",
         "required_artifact": "search report schema",
         "rewrite_action": "preserve",
@@ -2302,13 +2357,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.3",
           "source": "capability-inventory.csv#L4",
           "summary": "capability artifacts from capability.artifacts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.artifacts",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2317,6 +2372,7 @@
         "capability": "Prompt packages, capsules, ledgers, dossiers",
         "confidence": "medium",
         "current_surface": "JSON + markdown artifacts",
+        "freshness": "stale",
         "id": "artifacts",
         "required_artifact": "artifact manifest",
         "rewrite_action": "preserve",
@@ -2343,13 +2399,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.9",
           "source": "capability-inventory.csv#L10",
           "summary": "capability bmad from capability.bmad"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.bmad",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2358,6 +2414,7 @@
         "capability": "BMAD routing and advisory roles",
         "confidence": "medium",
         "current_surface": "route mapping and role contracts",
+        "freshness": "stale",
         "id": "bmad",
         "required_artifact": "BMAD role manifest",
         "rewrite_action": "preserve",
@@ -2384,13 +2441,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.12",
           "source": "capability-inventory.csv#L13",
           "summary": "capability bootload from capability.bootload"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.bootload",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2399,6 +2456,7 @@
         "capability": "Session context bootload",
         "confidence": "medium",
         "current_surface": "capability snapshot and handoff",
+        "freshness": "stale",
         "id": "bootload",
         "required_artifact": "bootstrap context",
         "rewrite_action": "preserve",
@@ -2425,13 +2483,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.17",
           "source": "capability-inventory.csv#L18",
           "summary": "capability codex-harness from capability.codex-harness"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.codex-harness",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2440,6 +2498,7 @@
         "capability": "Real Codex harness and bootstrap",
         "confidence": "medium",
         "current_surface": "capsules/events/session handoff",
+        "freshness": "stale",
         "id": "codex-harness",
         "required_artifact": "Codex package",
         "rewrite_action": "preserve-harden",
@@ -2466,13 +2525,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.1",
           "source": "capability-inventory.csv#L2",
           "summary": "capability commands from capability.commands"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.commands",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2481,6 +2540,7 @@
         "capability": "Slash and CLI commands",
         "confidence": "medium",
         "current_surface": "aco bootstrap-codex; archon aco status; archon context *",
+        "freshness": "stale",
         "id": "commands",
         "required_artifact": "CLI/command manifest",
         "rewrite_action": "preserve",
@@ -2507,13 +2567,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.6",
           "source": "capability-inventory.csv#L7",
           "summary": "capability gates from capability.gates"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.gates",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2522,6 +2582,7 @@
         "capability": "ACO validation gates",
         "confidence": "medium",
         "current_surface": "intake/preconditions/intent/evidence/policy/traceability/roles",
+        "freshness": "stale",
         "id": "gates",
         "required_artifact": "gate registry",
         "rewrite_action": "preserve",
@@ -2548,13 +2609,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.15",
           "source": "capability-inventory.csv#L16",
           "summary": "capability graphify from capability.graphify"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.graphify",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2563,6 +2624,7 @@
         "capability": "Graph evidence and waiver closure",
         "confidence": "medium",
         "current_surface": "upstream graph reports",
+        "freshness": "stale",
         "id": "graphify",
         "required_artifact": "graph evidence schema",
         "rewrite_action": "preserve",
@@ -2589,13 +2651,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.13",
           "source": "capability-inventory.csv#L14",
           "summary": "capability hooks-plugins from capability.hooks-plugins"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.hooks-plugins",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2604,6 +2666,7 @@
         "capability": "Hooks/plugins/future extensions",
         "confidence": "medium",
         "current_surface": "approval-gated manifests",
+        "freshness": "stale",
         "id": "hooks-plugins",
         "required_artifact": "extension registry",
         "rewrite_action": "rewrite",
@@ -2630,13 +2693,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.14",
           "source": "capability-inventory.csv#L15",
           "summary": "capability ledgers from capability.ledgers"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.ledgers",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2645,6 +2708,7 @@
         "capability": "Tool, command, workflow, evidence ledgers",
         "confidence": "medium",
         "current_surface": "status/confidence/freshness/safety",
+        "freshness": "stale",
         "id": "ledgers",
         "required_artifact": "ledger schemas",
         "rewrite_action": "preserve",
@@ -2671,13 +2735,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.7",
           "source": "capability-inventory.csv#L8",
           "summary": "capability manifests from capability.manifests"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.manifests",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2686,6 +2750,7 @@
         "capability": "Capability, provider, workflow, artifact manifests",
         "confidence": "medium",
         "current_surface": "schema-first registry",
+        "freshness": "stale",
         "id": "manifests",
         "required_artifact": "manifest schemas",
         "rewrite_action": "rewrite",
@@ -2712,13 +2777,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.8",
           "source": "capability-inventory.csv#L9",
           "summary": "capability mcp-context7-docs from capability.mcp-context7-docs"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.mcp-context7-docs",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2727,6 +2792,7 @@
         "capability": "Docs evidence resolution",
         "confidence": "medium",
         "current_surface": "OpenAI docs MCP, Context7, manual",
+        "freshness": "stale",
         "id": "mcp-context7-docs",
         "required_artifact": "docs evidence plan",
         "rewrite_action": "preserve",
@@ -2753,13 +2819,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.16",
           "source": "capability-inventory.csv#L17",
           "summary": "capability providers from capability.providers"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.providers",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2768,6 +2834,7 @@
         "capability": "Claude/Codex/Pi/future providers",
         "confidence": "medium",
         "current_surface": "generic provider contract",
+        "freshness": "stale",
         "id": "providers",
         "required_artifact": "provider manifest",
         "rewrite_action": "rewrite",
@@ -2794,13 +2861,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.10",
           "source": "capability-inventory.csv#L11",
           "summary": "capability subagents from capability.subagents"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.subagents",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2809,6 +2876,7 @@
         "capability": "Role contracts and subagent boundaries",
         "confidence": "medium",
         "current_surface": "contractual, not unsupported runtime claims",
+        "freshness": "stale",
         "id": "subagents",
         "required_artifact": "role contract checker",
         "rewrite_action": "preserve-harden",
@@ -2835,13 +2903,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.4",
           "source": "capability-inventory.csv#L5",
           "summary": "capability tools from capability.tools"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.tools",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2850,6 +2918,7 @@
         "capability": "Tool availability ledger",
         "confidence": "medium",
         "current_surface": "MCP, Context7, OpenAI docs, graph, CLI, git",
+        "freshness": "stale",
         "id": "tools",
         "required_artifact": "tool ledger",
         "rewrite_action": "preserve",
@@ -2876,13 +2945,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.capability.2",
           "source": "capability-inventory.csv#L3",
           "summary": "capability workflows from capability.workflows"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "capability.workflows",
       "kind": "ledger-entry",
       "ledger": "capability",
@@ -2891,6 +2960,7 @@
         "capability": "Default workflows",
         "confidence": "medium",
         "current_surface": "context-orchestrate; archon-aco-adversarial-loop",
+        "freshness": "stale",
         "id": "workflows",
         "required_artifact": "workflow manifest + role contracts",
         "rewrite_action": "preserve",
@@ -2917,13 +2987,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.2",
           "source": "command-ledger.csv#L3",
           "summary": "command archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact] from command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-aco-bootstrap-codex-event-event-format-markdown-json-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -2933,6 +3003,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon aco bootstrap-codex --event <event> --format markdown|json [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-codex",
         "purpose": "Emit Codex-ready bootstrap capsule",
@@ -2964,13 +3035,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.1",
           "source": "command-ledger.csv#L2",
           "summary": "command archon aco status --cwd <repo> [--json] from command.archon-aco-status-cwd-repo-json"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-aco-status-cwd-repo-json",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -2980,6 +3051,7 @@
         "approval_required": "no",
         "command": "archon aco status --cwd <repo> [--json]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-cli",
         "purpose": "Productized ACO status and graph confidence limits",
@@ -3011,13 +3083,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.7",
           "source": "command-ledger.csv#L8",
           "summary": "command archon context approval-capsule <prompt> [--no-write-artifact] from command.archon-context-approval-capsule-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-approval-capsule-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3027,6 +3099,7 @@
         "approval_required": "no to create capsule",
         "command": "archon context approval-capsule <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Create approval capsule for approval-required package",
@@ -3058,13 +3131,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.8",
           "source": "command-ledger.csv#L9",
           "summary": "command archon context approval-capsule-verify [--no-write-artifact] from command.archon-context-approval-capsule-verify-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-approval-capsule-verify-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3074,6 +3147,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context approval-capsule-verify [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Verify approval contract against artifacts",
@@ -3105,13 +3179,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.6",
           "source": "command-ledger.csv#L7",
           "summary": "command archon context compile <prompt> [--no-write-artifact] from command.archon-context-compile-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-compile-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3121,6 +3195,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context compile <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Compile context package and artifact archive",
@@ -3152,13 +3227,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.9",
           "source": "command-ledger.csv#L10",
           "summary": "command archon context graph-waivers [--no-write-artifact] from command.archon-context-graph-waivers-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-graph-waivers-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3168,6 +3243,7 @@
         "approval_required": "no unless graph/config mutation requested",
         "command": "archon context graph-waivers [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-research",
         "purpose": "Inspect graph waiver closure state",
@@ -3199,13 +3275,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.4",
           "source": "command-ledger.csv#L5",
           "summary": "command archon context ledgers [prompt] [--no-write-artifact] from command.archon-context-ledgers-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-ledgers-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3215,6 +3291,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context ledgers [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-ledgers",
         "purpose": "Show tool and command ledgers",
@@ -3246,13 +3323,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.5",
           "source": "command-ledger.csv#L6",
           "summary": "command archon context route <prompt> [--no-write-artifact] from command.archon-context-route-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-route-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3262,6 +3339,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context route <prompt> [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-bmad",
         "purpose": "Select BMAD advisory route",
@@ -3293,13 +3371,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.3",
           "source": "command-ledger.csv#L4",
           "summary": "command archon context status [prompt] [--no-write-artifact] from command.archon-context-status-prompt-no-write-artifact"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-status-prompt-no-write-artifact",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3309,6 +3387,7 @@
         "approval_required": "no for artifact writes",
         "command": "archon context status [prompt] [--no-write-artifact]",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "artifact-only",
         "owner": "aco-context",
         "purpose": "Show readiness, evidence, next decision",
@@ -3340,13 +3419,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.10",
           "source": "command-ledger.csv#L11",
           "summary": "command archon context validate from command.archon-context-validate"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.archon-context-validate",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3356,6 +3435,7 @@
         "approval_required": "no",
         "command": "archon context validate",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-gates",
         "purpose": "Validate ACO research/spec readiness",
@@ -3387,13 +3467,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.12",
           "source": "command-ledger.csv#L13",
           "summary": "command bun run aco:role-contracts from command.bun-run-aco-role-contracts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.bun-run-aco-role-contracts",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3403,6 +3483,7 @@
         "approval_required": "no",
         "command": "bun run aco:role-contracts",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates": "no",
         "owner": "aco-gates",
         "purpose": "Check role contracts",
@@ -3434,13 +3515,13 @@
       "evidence": [
         {
           "confidence": "high",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.command.11",
           "source": "command-ledger.csv#L12",
           "summary": "command bun run research:graph from command.bun-run-research-graph"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "command.bun-run-research-graph",
       "kind": "ledger-entry",
       "ledger": "command",
@@ -3450,6 +3531,7 @@
         "approval_required": "yes in readonly contexts",
         "command": "bun run research:graph",
         "compatibility": "preserve-gated",
+        "freshness": "fresh",
         "mutates": "graph cache artifacts",
         "owner": "aco-research",
         "purpose": "Generate graph evidence",
@@ -3481,18 +3563,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.8",
           "source": "risk-ledger.csv#L9",
           "summary": "risk Approval waivers become permanent from risk.approval-waivers-become-permanent"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.approval-waivers-become-permanent",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "gates",
       "raw": {
+        "freshness": "fresh",
         "impact": "unsafe readiness claims",
         "mitigation": "approval scoped to run and contract hash",
         "owner": "gates",
@@ -3517,18 +3600,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.1",
           "source": "risk-ledger.csv#L2",
           "summary": "risk Copying exploratory branch wholesale from risk.copying-exploratory-branch-wholesale"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.copying-exploratory-branch-wholesale",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "implementation lead",
       "raw": {
+        "freshness": "fresh",
         "impact": "keeps coupling and hidden side effects",
         "mitigation": "new dev branch, port by manifest-backed slices",
         "owner": "implementation lead",
@@ -3553,18 +3637,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.3",
           "source": "risk-ledger.csv#L4",
           "summary": "risk Graph refresh hidden in compile/status from risk.graph-refresh-hidden-in-compile-status"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.graph-refresh-hidden-in-compile-status",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-research",
       "raw": {
+        "freshness": "fresh",
         "impact": "unexpected network/artifact mutation",
         "mitigation": "graph refresh approval-gated command only",
         "owner": "aco-research",
@@ -3589,18 +3674,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.5",
           "source": "risk-ledger.csv#L6",
           "summary": "risk Path confusion source vs worktree vs artifacts from risk.path-confusion-source-vs-worktree-vs-artifacts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.path-confusion-source-vs-worktree-vs-artifacts",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-paths/adapters",
       "raw": {
+        "freshness": "fresh",
         "impact": "nested worktrees and corrupted codebase cwd",
         "mitigation": "branded paths and canonical layout",
         "owner": "aco-paths/adapters",
@@ -3625,18 +3711,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.7",
           "source": "risk-ledger.csv#L8",
           "summary": "risk Provider manifests overpromise capabilities from risk.provider-manifests-overpromise-capabilities"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.provider-manifests-overpromise-capabilities",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "provider adapters",
       "raw": {
+        "freshness": "fresh",
         "impact": "runtime failures",
         "mitigation": "capability matrix requires evidence status and fallback",
         "owner": "provider adapters",
@@ -3661,18 +3748,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.6",
           "source": "risk-ledger.csv#L7",
           "summary": "risk Schema drift without fixtures from risk.schema-drift-without-fixtures"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.schema-drift-without-fixtures",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "QA",
       "raw": {
+        "freshness": "fresh",
         "impact": "breaks integrations silently",
         "mitigation": "golden compatibility tests",
         "owner": "QA",
@@ -3697,18 +3785,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.2",
           "source": "risk-ledger.csv#L3",
           "summary": "risk Unsupported Codex subagent/tool restriction claims from risk.unsupported-codex-subagent-tool-restriction-claims"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.unsupported-codex-subagent-tool-restriction-claims",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-codex",
       "raw": {
+        "freshness": "fresh",
         "impact": "false safety guarantees",
         "mitigation": "role contracts are artifact contracts unless runtime is proved",
         "owner": "aco-codex",
@@ -3733,18 +3822,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.4",
           "source": "risk-ledger.csv#L5",
           "summary": "risk Web imports server internals from risk.web-imports-server-internals"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.web-imports-server-internals",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "web/API",
       "raw": {
+        "freshness": "fresh",
         "impact": "tight coupling and type drift",
         "mitigation": "generated API types only",
         "owner": "web/API",
@@ -3769,13 +3859,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.7",
           "source": "tool-availability-ledger.csv#L8",
           "summary": "tool BMAD skills from tool.bmad-skills"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.bmad-skills",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -3783,6 +3873,7 @@
       "raw": {
         "category": "advisory routing",
         "fallback": "unknown-help route",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "installed skill docs/manifests",
         "safety": "read-only advisory",
@@ -3811,13 +3902,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.2",
           "source": "tool-availability-ledger.csv#L3",
           "summary": "tool Bun from tool.bun"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.bun",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -3825,6 +3916,7 @@
       "raw": {
         "category": "runtime",
         "fallback": "blocked validation",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "dependencies installed",
         "safety": "can run tests/scripts",
@@ -3867,6 +3959,7 @@
       "raw": {
         "category": "provider",
         "fallback": "provider unavailable",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "auth configured",
         "safety": "runtime dependent",
@@ -3909,6 +4002,7 @@
       "raw": {
         "category": "provider",
         "fallback": "bootstrap-only / deferred runtime",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "SDK configured",
         "safety": "runtime dependent",
@@ -3951,6 +4045,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "manual docs evidence",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "configured tool",
         "safety": "read-only if configured",
@@ -3979,13 +4074,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.1",
           "source": "tool-availability-ledger.csv#L2",
           "summary": "tool Git from tool.git"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.git",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -3993,6 +4088,7 @@
       "raw": {
         "category": "repo-state",
         "fallback": "mark repo evidence unknown",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "repo root available",
         "safety": "read-only by default",
@@ -4021,13 +4117,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.tool.6",
           "source": "tool-availability-ledger.csv#L7",
           "summary": "tool Graphify from tool.graphify"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "tool.graphify",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -4035,6 +4131,7 @@
       "raw": {
         "category": "graph evidence",
         "fallback": "waiver/approval_required",
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "preconditions": "approved graph refresh",
         "safety": "writes graph artifacts",
@@ -4063,13 +4160,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.3",
           "source": "tool-availability-ledger.csv#L4",
           "summary": "tool OPA from tool.opa"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.opa",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -4077,6 +4174,7 @@
       "raw": {
         "category": "policy",
         "fallback": "policy gate blocked",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "installed",
         "safety": "read-only",
@@ -4119,6 +4217,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "Context7/manual",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "configured MCP",
         "safety": "may need auth/OAuth",
@@ -4161,6 +4260,7 @@
       "raw": {
         "category": "provider",
         "fallback": "community provider unavailable",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "package/config available",
         "safety": "runtime dependent",
@@ -4189,18 +4289,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.6",
           "source": "unknowns-ledger.csv#L7",
           "summary": "unknown All generated bundled defaults affected from unknown.all-generated-bundled-defaults-affected"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.all-generated-bundled-defaults-affected",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "run generate/check bundled",
         "router_required": "no",
@@ -4226,18 +4327,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.5",
           "source": "unknowns-ledger.csv#L6",
           "summary": "unknown All web UI component changes from unknown.all-web-ui-component-changes"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.all-web-ui-component-changes",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "local diff and UI tests",
         "router_required": "no",
@@ -4263,18 +4365,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.3",
           "source": "unknowns-ledger.csv#L4",
           "summary": "unknown Current branch test pass/fail state from unknown.current-branch-test-pass-fail-state"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.current-branch-test-pass-fail-state",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "run validation on branch",
         "router_required": "no",
@@ -4300,18 +4403,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.1",
           "source": "unknowns-ledger.csv#L2",
           "summary": "unknown Exact 233-file changed list and full 50k-line diff from unknown.exact-233-file-changed-list-and-full-50k-line-diff"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.exact-233-file-changed-list-and-full-50k-line-diff",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "capture via local git diff in Codex environment",
         "router_required": "yes",
@@ -4337,18 +4441,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.2",
           "source": "unknowns-ledger.csv#L3",
           "summary": "unknown Exact runtime capabilities of real Codex harness from unknown.exact-runtime-capabilities-of-real-codex-harness"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.exact-runtime-capabilities-of-real-codex-harness",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "provider capability tests and docs evidence",
         "router_required": "yes",
@@ -4374,18 +4479,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.4",
           "source": "unknowns-ledger.csv#L5",
           "summary": "unknown Whether party-mode-uncertainty-router exists as executable command from unknown.whether-party-mode-uncertainty-router-exists-as-executable-command"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.whether-party-mode-uncertainty-router-exists-as-executable-command",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "search local repo and BMAD skill manifests",
         "router_required": "yes",
@@ -4411,13 +4517,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.2",
           "source": "workflow-ledger.csv#L3",
           "summary": "workflow archon-aco-adversarial-loop from workflow.archon-aco-adversarial-loop"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-aco-adversarial-loop",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -4425,6 +4531,7 @@
       "raw": {
         "artifact_contract": "aco-adversarial-loop/*",
         "compatibility": "preserve-harden",
+        "freshness": "fresh",
         "mutates_checkout": "false in artifact-only phase",
         "owner": "aco-workflows",
         "purpose": "ACO-grounded contracted adversarial implementation loop",
@@ -4465,13 +4572,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.3",
           "source": "workflow-ledger.csv#L4",
           "summary": "workflow archon-adversarial-dev from workflow.archon-adversarial-dev"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-adversarial-dev",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -4479,6 +4586,7 @@
       "raw": {
         "artifact_contract": "contracts/feedback/app/state",
         "compatibility": "existing reference only",
+        "freshness": "fresh",
         "mutates_checkout": "artifact app repo",
         "owner": "aco-workflows",
         "purpose": "GAN-style generation/evaluation app creation",
@@ -4508,13 +4616,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.4",
           "source": "workflow-ledger.csv#L5",
           "summary": "workflow archon-piv-loop from workflow.archon-piv-loop"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-piv-loop",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -4522,6 +4630,7 @@
       "raw": {
         "artifact_contract": "plan/validation/progress",
         "compatibility": "preserve existing",
+        "freshness": "fresh",
         "mutates_checkout": "yes when implementing",
         "owner": "aco-workflows",
         "purpose": "plan-implement-validate",
@@ -4551,13 +4660,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.5",
           "source": "workflow-ledger.csv#L6",
           "summary": "workflow archon-workflow-builder from workflow.archon-workflow-builder"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-workflow-builder",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -4565,6 +4674,7 @@
       "raw": {
         "artifact_contract": "generated-workflow.yaml",
         "compatibility": "preserve existing",
+        "freshness": "fresh",
         "mutates_checkout": "writes workflow when installing",
         "owner": "aco-workflows",
         "purpose": "generate workflows from user input",
@@ -4594,13 +4704,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.1",
           "source": "workflow-ledger.csv#L2",
           "summary": "workflow context-orchestrate from workflow.context-orchestrate"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.context-orchestrate",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -4608,6 +4718,7 @@
       "raw": {
         "artifact_contract": "context-orchestrator/*",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates_checkout": "false",
         "owner": "aco-workflows",
         "purpose": "status + ledgers + compile + approval + handoff",
@@ -4641,7 +4752,7 @@
         "summary": "artifact ledger oracle CSV with 12 data rows"
       },
       "fileName": "artifact-ledger.csv",
-      "header": ["artifact", "schema", "producer", "consumer", "required"],
+      "header": ["artifact", "schema", "producer", "consumer", "required", "freshness"],
       "ledger": "artifact",
       "rowCount": 12
     },
@@ -4661,7 +4772,8 @@
         "rewrite_action",
         "required_artifact",
         "status",
-        "confidence"
+        "confidence",
+        "freshness"
       ],
       "ledger": "capability",
       "rowCount": 17
@@ -4683,7 +4795,8 @@
         "mutates",
         "approval_required",
         "owner",
-        "compatibility"
+        "compatibility",
+        "freshness"
       ],
       "ledger": "command",
       "rowCount": 12
@@ -4697,7 +4810,7 @@
         "summary": "risk ledger oracle CSV with 8 data rows"
       },
       "fileName": "risk-ledger.csv",
-      "header": ["risk", "impact", "mitigation", "owner"],
+      "header": ["risk", "impact", "mitigation", "owner", "freshness"],
       "ledger": "risk",
       "rowCount": 8
     },
@@ -4710,7 +4823,16 @@
         "summary": "tool ledger oracle CSV with 10 data rows"
       },
       "fileName": "tool-availability-ledger.csv",
-      "header": ["tool", "category", "status", "safety", "preconditions", "fallback", "owner"],
+      "header": [
+        "tool",
+        "category",
+        "status",
+        "safety",
+        "preconditions",
+        "fallback",
+        "owner",
+        "freshness"
+      ],
       "ledger": "tool",
       "rowCount": 10
     },
@@ -4723,7 +4845,7 @@
         "summary": "unknowns ledger oracle CSV with 6 data rows"
       },
       "fileName": "unknowns-ledger.csv",
-      "header": ["unknown", "status", "resolution", "router_required", "owner"],
+      "header": ["unknown", "status", "resolution", "router_required", "owner", "freshness"],
       "ledger": "unknowns",
       "rowCount": 6
     },
@@ -4743,7 +4865,8 @@
         "artifact_contract",
         "role_contracts",
         "owner",
-        "compatibility"
+        "compatibility",
+        "freshness"
       ],
       "ledger": "workflow",
       "rowCount": 5
@@ -4759,18 +4882,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.8",
           "source": "risk-ledger.csv#L9",
           "summary": "risk Approval waivers become permanent from risk.approval-waivers-become-permanent"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.approval-waivers-become-permanent",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "gates",
       "raw": {
+        "freshness": "fresh",
         "impact": "unsafe readiness claims",
         "mitigation": "approval scoped to run and contract hash",
         "owner": "gates",
@@ -4795,18 +4919,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.1",
           "source": "risk-ledger.csv#L2",
           "summary": "risk Copying exploratory branch wholesale from risk.copying-exploratory-branch-wholesale"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.copying-exploratory-branch-wholesale",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "implementation lead",
       "raw": {
+        "freshness": "fresh",
         "impact": "keeps coupling and hidden side effects",
         "mitigation": "new dev branch, port by manifest-backed slices",
         "owner": "implementation lead",
@@ -4831,18 +4956,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.3",
           "source": "risk-ledger.csv#L4",
           "summary": "risk Graph refresh hidden in compile/status from risk.graph-refresh-hidden-in-compile-status"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.graph-refresh-hidden-in-compile-status",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-research",
       "raw": {
+        "freshness": "fresh",
         "impact": "unexpected network/artifact mutation",
         "mitigation": "graph refresh approval-gated command only",
         "owner": "aco-research",
@@ -4867,18 +4993,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.5",
           "source": "risk-ledger.csv#L6",
           "summary": "risk Path confusion source vs worktree vs artifacts from risk.path-confusion-source-vs-worktree-vs-artifacts"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.path-confusion-source-vs-worktree-vs-artifacts",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-paths/adapters",
       "raw": {
+        "freshness": "fresh",
         "impact": "nested worktrees and corrupted codebase cwd",
         "mitigation": "branded paths and canonical layout",
         "owner": "aco-paths/adapters",
@@ -4903,18 +5030,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.7",
           "source": "risk-ledger.csv#L8",
           "summary": "risk Provider manifests overpromise capabilities from risk.provider-manifests-overpromise-capabilities"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.provider-manifests-overpromise-capabilities",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "provider adapters",
       "raw": {
+        "freshness": "fresh",
         "impact": "runtime failures",
         "mitigation": "capability matrix requires evidence status and fallback",
         "owner": "provider adapters",
@@ -4939,18 +5067,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.6",
           "source": "risk-ledger.csv#L7",
           "summary": "risk Schema drift without fixtures from risk.schema-drift-without-fixtures"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.schema-drift-without-fixtures",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "QA",
       "raw": {
+        "freshness": "fresh",
         "impact": "breaks integrations silently",
         "mitigation": "golden compatibility tests",
         "owner": "QA",
@@ -4975,18 +5104,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.2",
           "source": "risk-ledger.csv#L3",
           "summary": "risk Unsupported Codex subagent/tool restriction claims from risk.unsupported-codex-subagent-tool-restriction-claims"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.unsupported-codex-subagent-tool-restriction-claims",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "aco-codex",
       "raw": {
+        "freshness": "fresh",
         "impact": "false safety guarantees",
         "mitigation": "role contracts are artifact contracts unless runtime is proved",
         "owner": "aco-codex",
@@ -5011,18 +5141,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.risk.4",
           "source": "risk-ledger.csv#L5",
           "summary": "risk Web imports server internals from risk.web-imports-server-internals"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "risk.web-imports-server-internals",
       "kind": "ledger-entry",
       "ledger": "risk",
       "owner": "web/API",
       "raw": {
+        "freshness": "fresh",
         "impact": "tight coupling and type drift",
         "mitigation": "generated API types only",
         "owner": "web/API",
@@ -5050,13 +5181,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.7",
           "source": "tool-availability-ledger.csv#L8",
           "summary": "tool BMAD skills from tool.bmad-skills"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.bmad-skills",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -5064,6 +5195,7 @@
       "raw": {
         "category": "advisory routing",
         "fallback": "unknown-help route",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "installed skill docs/manifests",
         "safety": "read-only advisory",
@@ -5092,13 +5224,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.2",
           "source": "tool-availability-ledger.csv#L3",
           "summary": "tool Bun from tool.bun"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.bun",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -5106,6 +5238,7 @@
       "raw": {
         "category": "runtime",
         "fallback": "blocked validation",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "dependencies installed",
         "safety": "can run tests/scripts",
@@ -5148,6 +5281,7 @@
       "raw": {
         "category": "provider",
         "fallback": "provider unavailable",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "auth configured",
         "safety": "runtime dependent",
@@ -5190,6 +5324,7 @@
       "raw": {
         "category": "provider",
         "fallback": "bootstrap-only / deferred runtime",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "SDK configured",
         "safety": "runtime dependent",
@@ -5232,6 +5367,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "manual docs evidence",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "configured tool",
         "safety": "read-only if configured",
@@ -5260,13 +5396,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.1",
           "source": "tool-availability-ledger.csv#L2",
           "summary": "tool Git from tool.git"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.git",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -5274,6 +5410,7 @@
       "raw": {
         "category": "repo-state",
         "fallback": "mark repo evidence unknown",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "repo root available",
         "safety": "read-only by default",
@@ -5302,13 +5439,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.tool.6",
           "source": "tool-availability-ledger.csv#L7",
           "summary": "tool Graphify from tool.graphify"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "tool.graphify",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -5316,6 +5453,7 @@
       "raw": {
         "category": "graph evidence",
         "fallback": "waiver/approval_required",
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "preconditions": "approved graph refresh",
         "safety": "writes graph artifacts",
@@ -5344,13 +5482,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.tool.3",
           "source": "tool-availability-ledger.csv#L4",
           "summary": "tool OPA from tool.opa"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "tool.opa",
       "kind": "ledger-entry",
       "ledger": "tool",
@@ -5358,6 +5496,7 @@
       "raw": {
         "category": "policy",
         "fallback": "policy gate blocked",
+        "freshness": "fresh",
         "owner": "aco-ledgers",
         "preconditions": "installed",
         "safety": "read-only",
@@ -5400,6 +5539,7 @@
       "raw": {
         "category": "docs evidence",
         "fallback": "Context7/manual",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "configured MCP",
         "safety": "may need auth/OAuth",
@@ -5442,6 +5582,7 @@
       "raw": {
         "category": "provider",
         "fallback": "community provider unavailable",
+        "freshness": "unknown",
         "owner": "aco-ledgers",
         "preconditions": "package/config available",
         "safety": "runtime dependent",
@@ -5472,18 +5613,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.6",
           "source": "unknowns-ledger.csv#L7",
           "summary": "unknown All generated bundled defaults affected from unknown.all-generated-bundled-defaults-affected"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.all-generated-bundled-defaults-affected",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "run generate/check bundled",
         "router_required": "no",
@@ -5509,18 +5651,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.5",
           "source": "unknowns-ledger.csv#L6",
           "summary": "unknown All web UI component changes from unknown.all-web-ui-component-changes"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.all-web-ui-component-changes",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "local diff and UI tests",
         "router_required": "no",
@@ -5546,18 +5689,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.3",
           "source": "unknowns-ledger.csv#L4",
           "summary": "unknown Current branch test pass/fail state from unknown.current-branch-test-pass-fail-state"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.current-branch-test-pass-fail-state",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "run validation on branch",
         "router_required": "no",
@@ -5583,18 +5727,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.1",
           "source": "unknowns-ledger.csv#L2",
           "summary": "unknown Exact 233-file changed list and full 50k-line diff from unknown.exact-233-file-changed-list-and-full-50k-line-diff"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.exact-233-file-changed-list-and-full-50k-line-diff",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "capture via local git diff in Codex environment",
         "router_required": "yes",
@@ -5620,18 +5765,19 @@
       "evidence": [
         {
           "confidence": "low",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.2",
           "source": "unknowns-ledger.csv#L3",
           "summary": "unknown Exact runtime capabilities of real Codex harness from unknown.exact-runtime-capabilities-of-real-codex-harness"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.exact-runtime-capabilities-of-real-codex-harness",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "provider capability tests and docs evidence",
         "router_required": "yes",
@@ -5657,18 +5803,19 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "stale",
           "id": "evidence.ledger.unknowns.4",
           "source": "unknowns-ledger.csv#L5",
           "summary": "unknown Whether party-mode-uncertainty-router exists as executable command from unknown.whether-party-mode-uncertainty-router-exists-as-executable-command"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "stale",
       "id": "unknown.whether-party-mode-uncertainty-router-exists-as-executable-command",
       "kind": "ledger-entry",
       "ledger": "unknowns",
       "owner": "aco-ledgers",
       "raw": {
+        "freshness": "stale",
         "owner": "aco-ledgers",
         "resolution": "search local repo and BMAD skill manifests",
         "router_required": "yes",
@@ -5696,13 +5843,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.2",
           "source": "workflow-ledger.csv#L3",
           "summary": "workflow archon-aco-adversarial-loop from workflow.archon-aco-adversarial-loop"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-aco-adversarial-loop",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -5710,6 +5857,7 @@
       "raw": {
         "artifact_contract": "aco-adversarial-loop/*",
         "compatibility": "preserve-harden",
+        "freshness": "fresh",
         "mutates_checkout": "false in artifact-only phase",
         "owner": "aco-workflows",
         "purpose": "ACO-grounded contracted adversarial implementation loop",
@@ -5750,13 +5898,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.3",
           "source": "workflow-ledger.csv#L4",
           "summary": "workflow archon-adversarial-dev from workflow.archon-adversarial-dev"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-adversarial-dev",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -5764,6 +5912,7 @@
       "raw": {
         "artifact_contract": "contracts/feedback/app/state",
         "compatibility": "existing reference only",
+        "freshness": "fresh",
         "mutates_checkout": "artifact app repo",
         "owner": "aco-workflows",
         "purpose": "GAN-style generation/evaluation app creation",
@@ -5793,13 +5942,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.4",
           "source": "workflow-ledger.csv#L5",
           "summary": "workflow archon-piv-loop from workflow.archon-piv-loop"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-piv-loop",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -5807,6 +5956,7 @@
       "raw": {
         "artifact_contract": "plan/validation/progress",
         "compatibility": "preserve existing",
+        "freshness": "fresh",
         "mutates_checkout": "yes when implementing",
         "owner": "aco-workflows",
         "purpose": "plan-implement-validate",
@@ -5836,13 +5986,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.5",
           "source": "workflow-ledger.csv#L6",
           "summary": "workflow archon-workflow-builder from workflow.archon-workflow-builder"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.archon-workflow-builder",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -5850,6 +6000,7 @@
       "raw": {
         "artifact_contract": "generated-workflow.yaml",
         "compatibility": "preserve existing",
+        "freshness": "fresh",
         "mutates_checkout": "writes workflow when installing",
         "owner": "aco-workflows",
         "purpose": "generate workflows from user input",
@@ -5879,13 +6030,13 @@
       "evidence": [
         {
           "confidence": "medium",
-          "freshness": "unknown",
+          "freshness": "fresh",
           "id": "evidence.ledger.workflow.1",
           "source": "workflow-ledger.csv#L2",
           "summary": "workflow context-orchestrate from workflow.context-orchestrate"
         }
       ],
-      "freshness": "unknown",
+      "freshness": "fresh",
       "id": "workflow.context-orchestrate",
       "kind": "ledger-entry",
       "ledger": "workflow",
@@ -5893,6 +6044,7 @@
       "raw": {
         "artifact_contract": "context-orchestrator/*",
         "compatibility": "preserve",
+        "freshness": "fresh",
         "mutates_checkout": "false",
         "owner": "aco-workflows",
         "purpose": "status + ledgers + compile + approval + handoff",

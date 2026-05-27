@@ -1,9 +1,9 @@
-risk,impact,mitigation,owner
-Copying exploratory branch wholesale,keeps coupling and hidden side effects,"new dev branch, port by manifest-backed slices",implementation lead
-Unsupported Codex subagent/tool restriction claims,false safety guarantees,role contracts are artifact contracts unless runtime is proved,aco-codex
-Graph refresh hidden in compile/status,unexpected network/artifact mutation,graph refresh approval-gated command only,aco-research
-Web imports server internals,tight coupling and type drift,generated API types only,web/API
-Path confusion source vs worktree vs artifacts,nested worktrees and corrupted codebase cwd,branded paths and canonical layout,aco-paths/adapters
-Schema drift without fixtures,breaks integrations silently,golden compatibility tests,QA
-Provider manifests overpromise capabilities,runtime failures,capability matrix requires evidence status and fallback,provider adapters
-Approval waivers become permanent,unsafe readiness claims,approval scoped to run and contract hash,gates
+risk,impact,mitigation,owner,freshness
+Copying exploratory branch wholesale,keeps coupling and hidden side effects,"new dev branch, port by manifest-backed slices",implementation lead,fresh
+Unsupported Codex subagent/tool restriction claims,false safety guarantees,role contracts are artifact contracts unless runtime is proved,aco-codex,fresh
+Graph refresh hidden in compile/status,unexpected network/artifact mutation,graph refresh approval-gated command only,aco-research,fresh
+Web imports server internals,tight coupling and type drift,generated API types only,web/API,fresh
+Path confusion source vs worktree vs artifacts,nested worktrees and corrupted codebase cwd,branded paths and canonical layout,aco-paths/adapters,fresh
+Schema drift without fixtures,breaks integrations silently,golden compatibility tests,QA,fresh
+Provider manifests overpromise capabilities,runtime failures,capability matrix requires evidence status and fallback,provider adapters,fresh
+Approval waivers become permanent,unsafe readiness claims,approval scoped to run and contract hash,gates,fresh

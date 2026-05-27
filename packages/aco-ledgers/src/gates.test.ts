@@ -35,7 +35,7 @@ describe('ledger fixture parity gate', () => {
     const inputs = await loadLedgerInputs();
     const result = await ledgerFixtureParityGate.run({
       ...inputs,
-      command: appendFreshnessColumn(inputs.command, 'fresh'),
+      command: setFreshnessColumn(inputs.command, 'fresh'),
     });
 
     expect(result.status).toBe('passed');
@@ -58,7 +58,7 @@ describe('ledger fixture parity gate', () => {
     await expectGateFailure(
       {
         ...inputs,
-        command: appendFreshnessColumn(inputs.command, 'ancient'),
+        command: setFreshnessColumn(inputs.command, 'ancient'),
       },
       'invalid freshness'
     );
@@ -168,8 +168,21 @@ async function expectGateFailure(input: unknown, expectedMessage: string): Promi
   expect(result.errors.join('\n')).toContain(expectedMessage);
 }
 
-function appendFreshnessColumn(csv: string, freshness: string): string {
+function setFreshnessColumn(csv: string, freshness: string): string {
   const [header, ...rows] = csv.trimEnd().split('\n');
   if (header === undefined) return csv;
-  return `${header},freshness\n${rows.map(row => `${row},${freshness}`).join('\n')}\n`;
+  const columns = header.split(',');
+  const freshnessIndex = columns.indexOf('freshness');
+
+  if (freshnessIndex === -1) {
+    return `${header},freshness\n${rows.map(row => `${row},${freshness}`).join('\n')}\n`;
+  }
+
+  const updatedRows = rows.map(row => {
+    const cells = row.split(',');
+    while (cells.length < columns.length) cells.push('');
+    cells[freshnessIndex] = freshness;
+    return cells.join(',');
+  });
+  return `${header}\n${updatedRows.join('\n')}\n`;
 }

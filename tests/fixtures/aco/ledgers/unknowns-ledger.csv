@@ -1,7 +1,7 @@
-unknown,status,resolution,router_required,owner
-Exact 233-file changed list and full 50k-line diff,unknown in this session,capture via local git diff in Codex environment,yes,aco-ledgers
-Exact runtime capabilities of real Codex harness,unknown,provider capability tests and docs evidence,yes,aco-ledgers
-Current branch test pass/fail state,unknown,run validation on branch,no,aco-ledgers
-Whether party-mode-uncertainty-router exists as executable command,not found in visible branch evidence,search local repo and BMAD skill manifests,yes,aco-ledgers
-All web UI component changes,partial,local diff and UI tests,no,aco-ledgers
-All generated bundled defaults affected,partial,run generate/check bundled,no,aco-ledgers
+unknown,status,resolution,router_required,owner,freshness
+Exact 233-file changed list and full 50k-line diff,unknown in this session,capture via local git diff in Codex environment,yes,aco-ledgers,stale
+Exact runtime capabilities of real Codex harness,unknown,provider capability tests and docs evidence,yes,aco-ledgers,stale
+Current branch test pass/fail state,unknown,run validation on branch,no,aco-ledgers,stale
+Whether party-mode-uncertainty-router exists as executable command,not found in visible branch evidence,search local repo and BMAD skill manifests,yes,aco-ledgers,stale
+All web UI component changes,partial,local diff and UI tests,no,aco-ledgers,stale
+All generated bundled defaults affected,partial,run generate/check bundled,no,aco-ledgers,stale
