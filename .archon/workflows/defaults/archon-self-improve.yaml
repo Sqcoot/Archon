@@ -226,7 +226,8 @@ nodes:
       missing_count=0
       required_count=0
 
-      while IFS=, read -r artifact schema producer consumer required freshness; do
+      while IFS= read -r row || [ -n "$row" ]; do
+        IFS=, read -r artifact schema producer consumer required freshness <<< "$row"
         artifact="$(printf '%s' "$artifact" | tr -d '\r')"
         required="$(printf '%s' "$required" | tr -d '\r')"
 
